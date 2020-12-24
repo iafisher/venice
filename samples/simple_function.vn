@@ -1,0 +1,4 @@
+fn double(x: int): int {
+  print(x)
+  return x * 2
+}
