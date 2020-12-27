@@ -115,6 +115,20 @@ def vgenerate_statement(outfile, ast, *, indent=0):
         if ast.else_clause:
             outfile.write(("  " * indent) + "else:\n")
             vgenerate_block(outfile, ast.else_clause, indent=indent + 1)
+    elif isinstance(ast, (AstLet, AstAssign)):
+        outfile.write("  " * indent)
+        if isinstance(ast.label, str):
+            outfile.write(ast.label)
+        else:
+            vgenerate_expression(outfile, ast.label, bracketed=False)
+        outfile.write(" = ")
+        vgenerate_expression(outfile, ast.value, bracketed=False)
+        outfile.write("\n")
+    elif isinstance(ast, AstWhile):
+        outfile.write(("  " * indent) + "while ")
+        vgenerate_expression(outfile, ast.condition, bracketed=False)
+        outfile.write(":\n")
+        vgenerate_block(outfile, ast.statements, indent=indent + 1)
     elif isinstance(ast, AstExpressionStatement):
         outfile.write("  " * indent)
         vgenerate_expression(outfile, ast.value, bracketed=False)
@@ -179,6 +193,8 @@ AstLet = namedtuple("AstLet", ["label", "value"])
 AstReturn = namedtuple("AstReturn", ["value"])
 AstIf = namedtuple("AstIf", ["if_clauses", "else_clause"])
 AstIfClause = namedtuple("AstElifClause", ["condition", "statements"])
+AstWhile = namedtuple("AstWhile", ["condition", "statements"])
+AstAssign = namedtuple("AstAssign", ["label", "value"])
 AstExpressionStatement = namedtuple("AstExpressionStatement", ["value"])
 
 AstCall = namedtuple("AstCall", ["function", "arguments"])
@@ -191,13 +207,15 @@ AstLiteral = namedtuple("AstLiteral", ["value"])
 # Based on https://docs.python.org/3.6/reference/expressions.html#operator-precedence
 # Higher precedence means tighter-binding.
 PRECEDENCE_LOWEST = 0
-PRECEDENCE_CMP = 1
-PRECEDENCE_ADD_SUB = 2
-PRECEDENCE_MUL_DIV = 3
-PRECEDENCE_PREFIX = 4
-PRECEDENCE_CALL = 5
+PRECEDENCE_ASSIGN = 1
+PRECEDENCE_CMP = 2
+PRECEDENCE_ADD_SUB = 3
+PRECEDENCE_MUL_DIV = 4
+PRECEDENCE_PREFIX = 5
+PRECEDENCE_CALL = 6
 
 PRECEDENCE_MAP = {
+    "TOKEN_ASSIGN": PRECEDENCE_ASSIGN,
     "TOKEN_CMP": PRECEDENCE_CMP,
     "TOKEN_PLUS": PRECEDENCE_ADD_SUB,
     "TOKEN_MINUS": PRECEDENCE_ADD_SUB,
@@ -269,11 +287,16 @@ class Parser:
             return self.match_return()
         elif token.type == "TOKEN_IF":
             return self.match_if()
+        elif token.type == "TOKEN_WHILE":
+            return self.match_while()
         else:
             self.push_back(token)
             value = self.match_expression()
             self.expect("TOKEN_NEWLINE")
-            return AstExpressionStatement(value)
+            if isinstance(value, AstAssign):
+                return value
+            else:
+                return AstExpressionStatement(value)
 
     def match_let(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
@@ -307,6 +330,11 @@ class Parser:
                 break
 
         return AstIf(if_clauses=clauses, else_clause=else_clause)
+
+    def match_while(self):
+        condition = self.match_expression()
+        statements = self.match_block()
+        return AstWhile(condition, statements)
 
     def match_expression(self, precedence=PRECEDENCE_LOWEST):
         left = self.match_prefix()
@@ -351,6 +379,9 @@ class Parser:
             args = self.match_arguments()
             self.expect("TOKEN_RPAREN")
             return AstCall(left, args)
+        elif token.type == "TOKEN_ASSIGN":
+            right = self.match_expression(precedence)
+            return AstAssign(left, right)
         else:
             right = self.match_expression(precedence)
             return AstInfix(token.value, left, right)
@@ -423,7 +454,9 @@ class Parser:
 
 
 class Lexer:
-    keywords = frozenset(["fn", "let", "if", "elif", "else", "true", "false", "return"])
+    keywords = frozenset(
+        ["fn", "let", "if", "elif", "else", "true", "false", "return", "while"]
+    )
     special = {
         "(": "TOKEN_LPAREN",
         ")": "TOKEN_RPAREN",
