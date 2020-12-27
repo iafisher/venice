@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import textwrap
 from collections import namedtuple
 from io import StringIO
 
@@ -40,9 +41,21 @@ def main(args):
             print(f"Error: unknown subcommand {args[0]!r}", file=sys.stderr)
             sys.exit(1)
     elif len(args) == 1:
-        path = args[0]
-        with open(path, "r", encoding="utf8") as infile:
-            vcompile(infile, sys.stdout)
+        if args[0] in ("-h", "--help"):
+            print(
+                textwrap.dedent(
+                    """\
+                v.py <path>           Compile the program and print the output.
+                v.py run <path>       Compile and run the program.
+                v.py parse <path>     Print the AST of the program.
+                v.py tokenize<path>   Print the lexical tokens of the program.
+                v.py --help           Print this help message."""
+                )
+            )
+        else:
+            path = args[0]
+            with open(path, "r", encoding="utf8") as infile:
+                vcompile(infile, sys.stdout)
     else:
         print(f"Error: expected 1 or 2 arguments, got {len(args)}", file=sys.stderr)
         sys.exit(1)
