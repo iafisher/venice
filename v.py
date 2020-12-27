@@ -24,6 +24,18 @@ def main(args):
                 ast = vparse(infile)
 
             pretty_print_tree(ast)
+        elif args[0] == "tokenize":
+            with open(args[1], "r", encoding="utf8") as infile:
+                lexer = Lexer(infile)
+                while True:
+                    token = lexer.next()
+                    if token.type == "TOKEN_EOF":
+                        break
+                    else:
+                        if token.type == "TOKEN_STRING":
+                            print(token.type.ljust(20), repr(token.value))
+                        else:
+                            print(token.type.ljust(20), token.value)
         else:
             print(f"Error: unknown subcommand {args[0]!r}", file=sys.stderr)
             sys.exit(1)
