@@ -11,21 +11,29 @@ def main(args):
     #     with open(output_path, "w", encoding="utf8") as outfile:
     #         vcompile(infile, outfile)
 
-    if len(args) == 2 and args[0] == "run":
-        vrun(args[1])
-    else:
+    if len(args) == 2:
+        if args[0] == "run":
+            outfile = StringIO()
+            with open(args[1], "r", encoding="utf8") as infile:
+                vcompile(infile, outfile)
+
+            program = outfile.getvalue()
+            exec(program, {}, {})
+        elif args[0] == "parse":
+            with open(args[1], "r", encoding="utf8") as infile:
+                ast = vparse(infile)
+
+            pretty_print_tree(ast)
+        else:
+            print(f"Error: unknown subcommand {args[0]!r}", file=sys.stderr)
+            sys.exit(1)
+    elif len(args) == 1:
         path = args[0]
         with open(path, "r", encoding="utf8") as infile:
             vcompile(infile, sys.stdout)
-
-
-def vrun(path):
-    outfile = StringIO()
-    with open(path, "r", encoding="utf8") as infile:
-        vcompile(infile, outfile)
-
-    program = outfile.getvalue()
-    exec(program, {}, {})
+    else:
+        print(f"Error: expected 1 or 2 arguments, got {len(args)}", file=sys.stderr)
+        sys.exit(1)
 
 
 def vcompile(infile, outfile):
@@ -420,6 +428,26 @@ def write_with_indent(outfile, contents, *, indent):
         outfile.write("    " * indent)
 
     outfile.write(contents)
+
+
+def pretty_print_tree(ast, indent=0):
+    print(("  " * indent) + ast.__class__.__name__)
+    for key, value in ast._asdict().items():
+        print(("  " * (indent + 1)) + key + ":", end="")
+        if isinstance(value, AstSymbol):
+            print(f" AstSymbol({value.label!r})")
+        elif isinstance(value, AstLiteral):
+            print(f" AstLiteral({value.value!r})")
+        else:
+            print()
+            if not isinstance(value, list):
+                value = [value]
+
+            for subvalue in value:
+                if subvalue.__class__.__name__.startswith("Ast"):
+                    pretty_print_tree(subvalue, indent + 2)
+                else:
+                    print(("  " * (indent + 2)) + repr(subvalue))
 
 
 class VeniceError(Exception):
