@@ -159,13 +159,17 @@ AstSymbol = namedtuple("AstSymbol", ["label"])
 AstLiteral = namedtuple("AstLiteral", ["value"])
 
 
+# Based on https://docs.python.org/3.6/reference/expressions.html#operator-precedence
+# Higher precedence means tighter-binding.
 PRECEDENCE_LOWEST = 0
-PRECEDENCE_ADD_SUB = 1
-PRECEDENCE_MUL_DIV = 2
-PRECEDENCE_PREFIX = 3
-PRECEDENCE_CALL = 4
+PRECEDENCE_CMP = 1
+PRECEDENCE_ADD_SUB = 2
+PRECEDENCE_MUL_DIV = 3
+PRECEDENCE_PREFIX = 4
+PRECEDENCE_CALL = 5
 
 PRECEDENCE_MAP = {
+    "TOKEN_CMP": PRECEDENCE_CMP,
     "TOKEN_PLUS": PRECEDENCE_ADD_SUB,
     "TOKEN_MINUS": PRECEDENCE_ADD_SUB,
     "TOKEN_ASTERISK": PRECEDENCE_MUL_DIV,
@@ -380,7 +384,6 @@ class Lexer:
         "-": "TOKEN_MINUS",
         "*": "TOKEN_ASTERISK",
         "/": "TOKEN_SLASH",
-        "=": "TOKEN_ASSIGN",
         ":": "TOKEN_COLON",
     }
     escapes = {
@@ -424,6 +427,27 @@ class Lexer:
         elif c == '"':
             value = self.read_string()
             return Token("TOKEN_STRING", value)
+        elif c == ">":
+            c2 = self.read()
+            if c2 == "=":
+                return Token("TOKEN_CMP", ">=")
+            else:
+                self.push_back(c2)
+                return Token("TOKEN_CMP", ">")
+        elif c == "<":
+            c2 = self.read()
+            if c2 == "=":
+                return Token("TOKEN_CMP", ">=")
+            else:
+                self.push_back(c2)
+                return Token("TOKEN_CMP", "<")
+        elif c == "=":
+            c2 = self.read()
+            if c2 == "=":
+                return Token("TOKEN_CMP", "==")
+            else:
+                self.push_back(c2)
+                return Token("TOKEN_ASSIGN", "=")
         else:
             return Token(self.special.get(c, "TOKEN_UNKNOWN"), c)
 
