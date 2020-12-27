@@ -49,20 +49,33 @@ def vcompile_string(program):
     return outfile.getvalue()
 
 
-def vgenerate(outfile, ast, *, indent=0):
+def vgenerate(outfile, ast):
+    if isinstance(ast, AstProgram):
+        for statement in ast.statements:
+            vgenerate_statement(outfile, statement)
+    else:
+        raise VeniceError("argument to vgenerate must be an AstProgram")
+
+
+def vgenerate_statement(outfile, ast, *, indent=0):
+    if indent > 0:
+        outfile.write("  " * indent)
+
     if isinstance(ast, AstFunction):
-        write_with_indent(outfile, f"def {ast.label}(", indent=indent)
+        outfile.write(f"def {ast.label}(")
         outfile.write(", ".join(parameter.label for parameter in ast.parameters))
         outfile.write("):\n")
         for statement in ast.statements:
-            vgenerate(outfile, statement, indent=indent + 1)
-            outfile.write("\n")
+            vgenerate_statement(outfile, statement, indent=indent + 1)
     elif isinstance(ast, AstReturn):
-        write_with_indent(outfile, "return ", indent=indent)
+        outfile.write("return ")
         vgenerate_expression(outfile, ast.value, bracketed=False)
+        outfile.write("\n")
+    elif isinstance(ast, AstExpressionStatement):
+        vgenerate_expression(outfile, ast.value, bracketed=False)
+        outfile.write("\n")
     else:
-        write_with_indent(outfile, "", indent=indent)
-        vgenerate_expression(outfile, ast, bracketed=False)
+        raise VeniceError(f"unknown AST statement type: {ast.__class__.__name__}")
 
 
 def vgenerate_expression(outfile, ast, *, bracketed):
@@ -89,7 +102,7 @@ def vgenerate_expression(outfile, ast, *, bracketed):
     elif isinstance(ast, AstLiteral):
         outfile.write(repr(ast.value))
     else:
-        raise VeniceError(f"unknown AST type: {ast.__class__.__name__}")
+        raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
 
 
 def vcheck(ast):
@@ -101,6 +114,8 @@ def vparse(infile):
     return Parser(Lexer(infile)).parse()
 
 
+AstProgram = namedtuple("AstProgram", ["statements"])
+
 AstFunction = namedtuple(
     "AstFunction", ["label", "parameters", "return_type", "statements"]
 )
@@ -108,6 +123,7 @@ AstParameter = namedtuple("AstParameter", ["label", "type"])
 
 AstLet = namedtuple("AstLet", ["label", "value"])
 AstReturn = namedtuple("AstReturn", ["value"])
+AstExpressionStatement = namedtuple("AstExpressionStatement", ["value"])
 
 AstCall = namedtuple("AstCall", ["function", "arguments"])
 AstInfix = namedtuple("AstInfix", ["operator", "left", "right"])
@@ -122,15 +138,19 @@ class Parser:
         self.pushed_back = None
 
     def parse(self):
-        token = self.next()
-        if token.type == "TOKEN_FN":
-            ast = self.match_function()
-        else:
-            self.push_back(token)
-            ast = self.match_statement()
+        statements = []
 
-        self.expect("TOKEN_EOF")
-        return ast
+        while True:
+            token = self.next()
+            if token.type == "TOKEN_EOF":
+                break
+            elif token.type == "TOKEN_FN":
+                statements.append(self.match_function())
+            else:
+                self.push_back(token)
+                statements.append(self.match_statement())
+
+        return AstProgram(statements)
 
     def match_function(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
@@ -168,7 +188,8 @@ class Parser:
             return self.match_return()
         else:
             self.push_back(token)
-            return self.match_expression(PRECEDENCE_LOWEST)
+            value = self.match_expression(PRECEDENCE_LOWEST)
+            return AstExpressionStatement(value)
 
     def match_let(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
@@ -421,13 +442,6 @@ PRECEDENCE_MAP = {
 
 def is_symbol_char(c):
     return c.isdigit() or c.isalpha() or c == "_"
-
-
-def write_with_indent(outfile, contents, *, indent):
-    if indent != 0:
-        outfile.write("    " * indent)
-
-    outfile.write(contents)
 
 
 def pretty_print_tree(ast, indent=0):
