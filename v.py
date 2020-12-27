@@ -11,9 +11,21 @@ def main(args):
     #     with open(output_path, "w", encoding="utf8") as outfile:
     #         vcompile(infile, outfile)
 
-    path = args[0]
+    if len(args) == 2 and args[0] == "run":
+        vrun(args[1])
+    else:
+        path = args[0]
+        with open(path, "r", encoding="utf8") as infile:
+            vcompile(infile, sys.stdout)
+
+
+def vrun(path):
+    outfile = StringIO()
     with open(path, "r", encoding="utf8") as infile:
-        vcompile(infile, sys.stdout)
+        vcompile(infile, outfile)
+
+    program = outfile.getvalue()
+    exec(program, {}, {})
 
 
 def vcompile(infile, outfile):
