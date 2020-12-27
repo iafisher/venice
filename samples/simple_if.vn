@@ -1,5 +1,17 @@
-if true {
+if false {
+  print("AARGH!")
+} elif true {
   print("Good!")
 } else {
-  print("Uh oh...")
+  print("Oops")
+}
+
+if true {
+  print("Great!")
+}
+
+if false {
+  print("Not good")
+} elif not true {
+  print("Equally bad")
 }

@@ -62,26 +62,32 @@ def vgenerate_block(outfile, statements, *, indent=0):
 
 
 def vgenerate_statement(outfile, ast, *, indent=0):
-    if indent > 0:
-        outfile.write("  " * indent)
-
     if isinstance(ast, AstFunction):
-        outfile.write(f"def {ast.label}(")
+        outfile.write(("  " * indent) + f"def {ast.label}(")
         outfile.write(", ".join(parameter.label for parameter in ast.parameters))
         outfile.write("):\n")
         vgenerate_block(outfile, ast.statements, indent=indent + 1)
     elif isinstance(ast, AstReturn):
-        outfile.write("return ")
+        outfile.write(("  " * indent) + "return ")
         vgenerate_expression(outfile, ast.value, bracketed=False)
         outfile.write("\n")
     elif isinstance(ast, AstIf):
-        outfile.write("if ")
-        vgenerate_expression(outfile, ast.condition, bracketed=False)
-        outfile.write(":\n")
-        vgenerate_block(outfile, ast.true_clause, indent=indent + 1)
-        outfile.write(("  " * indent) + "else:\n")
-        vgenerate_block(outfile, ast.false_clause, indent=indent + 1)
+        for i, clause in enumerate(ast.if_clauses):
+            outfile.write("  " * indent)
+            if i == 0:
+                outfile.write("if ")
+            else:
+                outfile.write("elif ")
+
+            vgenerate_expression(outfile, clause.condition, bracketed=False)
+            outfile.write(":\n")
+            vgenerate_block(outfile, clause.statements, indent=indent + 1)
+
+        if ast.else_clause:
+            outfile.write(("  " * indent) + "else:\n")
+            vgenerate_block(outfile, ast.else_clause, indent=indent + 1)
     elif isinstance(ast, AstExpressionStatement):
+        outfile.write("  " * indent)
         vgenerate_expression(outfile, ast.value, bracketed=False)
         outfile.write("\n")
     else:
@@ -98,6 +104,15 @@ def vgenerate_expression(outfile, ast, *, bracketed):
         vgenerate_expression(outfile, ast.left, bracketed=True)
         outfile.write(" " + ast.operator + " ")
         vgenerate_expression(outfile, ast.right, bracketed=True)
+
+        if bracketed:
+            outfile.write(")")
+    elif isinstance(ast, AstPrefix):
+        if bracketed:
+            outfile.write("(")
+
+        outfile.write(ast.operator + " ")
+        vgenerate_expression(outfile, ast.value, bracketed=True)
 
         if bracketed:
             outfile.write(")")
@@ -133,7 +148,8 @@ AstParameter = namedtuple("AstParameter", ["label", "type"])
 
 AstLet = namedtuple("AstLet", ["label", "value"])
 AstReturn = namedtuple("AstReturn", ["value"])
-AstIf = namedtuple("AstIf", ["condition", "true_clause", "false_clause"])
+AstIf = namedtuple("AstIf", ["if_clauses", "else_clause"])
+AstIfClause = namedtuple("AstElifClause", ["condition", "statements"])
 AstExpressionStatement = namedtuple("AstExpressionStatement", ["value"])
 
 AstCall = namedtuple("AstCall", ["function", "arguments"])
@@ -231,13 +247,24 @@ class Parser:
         return AstReturn(value)
 
     def match_if(self):
+        clauses = []
         condition = self.match_expression()
-        true_clause = self.match_block()
-        self.expect("TOKEN_ELSE")
-        false_clause = self.match_block()
-        return AstIf(
-            condition=condition, true_clause=true_clause, false_clause=false_clause
-        )
+        statements = self.match_block()
+        clauses.append(AstIfClause(condition, statements))
+        else_clause = None
+        while True:
+            token = self.next()
+            if token.type == "TOKEN_ELIF":
+                condition = self.match_expression()
+                statements = self.match_block()
+                clauses.append(AstIfClause(condition, statements))
+            elif token.type == "TOKEN_ELSE":
+                else_clause = self.match_block()
+            else:
+                self.push_back(token)
+                break
+
+        return AstIf(if_clauses=clauses, else_clause=else_clause)
 
     def match_expression(self, precedence=PRECEDENCE_LOWEST):
         left = self.match_prefix()
@@ -267,6 +294,8 @@ class Parser:
             self.expect("TOKEN_RPAREN")
         elif token.type == "TOKEN_MINUS":
             left = AstPrefix("-", self.match_expression(PRECEDENCE_PREFIX))
+        elif token.type == "TOKEN_NOT":
+            left = AstPrefix("not", self.match_expression(PRECEDENCE_PREFIX))
         else:
             if token.type == "TOKEN_EOF":
                 raise VeniceError("premature end of input")
@@ -340,7 +369,7 @@ class Parser:
 
 
 class Lexer:
-    keywords = frozenset(["fn", "let", "if", "then", "else", "true", "false", "return"])
+    keywords = frozenset(["fn", "let", "if", "elif", "else", "true", "false", "return"])
     special = {
         "(": "TOKEN_LPAREN",
         ")": "TOKEN_RPAREN",
@@ -382,7 +411,9 @@ class Lexer:
         if c.isalpha() or c == "_":
             self.push_back(c)
             value = self.read_symbol()
-            if value in self.keywords:
+            if value == "not":
+                return Token("TOKEN_NOT", value)
+            elif value in self.keywords:
                 return Token("TOKEN_" + value.upper(), value)
             else:
                 return Token("TOKEN_SYMBOL", value)
