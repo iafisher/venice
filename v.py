@@ -138,6 +138,8 @@ def vgenerate_statement(outfile, ast, *, indent=0):
         outfile.write("  " * indent)
         vgenerate_expression(outfile, ast.value, bracketed=False)
         outfile.write("\n")
+    elif isinstance(ast, AstStructDeclaration):
+        vgenerate_struct_declaration(outfile, ast, indent=indent)
     else:
         raise VeniceError(f"unknown AST statement type: {ast.__class__.__name__}")
 
@@ -179,10 +181,49 @@ def vgenerate_expression(outfile, ast, *, bracketed):
             if i != len(ast.values) - 1:
                 outfile.write(", ")
         outfile.write("]")
+    elif isinstance(ast, AstStructExpression):
+        outfile.write(ast.label + "(")
+        for i, field in enumerate(ast.fields):
+            outfile.write(field.label + "=")
+            vgenerate_expression(outfile, field.value, bracketed=False)
+            if i != len(ast.fields) - 1:
+                outfile.write(", ")
+        outfile.write(")")
     elif isinstance(ast, AstLiteral):
         outfile.write(repr(ast.value))
     else:
         raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
+
+
+def vgenerate_struct_declaration(outfile, ast, *, indent):
+    outfile.write(("  " * indent) + "class " + ast.label + ":\n")
+    parameters = ", ".join(field.label for field in ast.fields)
+    outfile.write(("  " * (indent + 1)) + f"def __init__(self, *, {parameters}):\n")
+    for field in ast.fields:
+        outfile.write(
+            ("  " * (indent + 2)) + "self." + field.label + " = " + field.label + "\n"
+        )
+
+    outfile.write("\n")
+
+    fields = repr([field.label for field in ast.fields])
+    outfile.write(textwrap.indent(STRUCT_STR_TEMPLATE % fields, "  " * (indent + 1)))
+
+
+STRUCT_STR_TEMPLATE = """\
+def __str__(self):
+    builder = [self.__class__.__name__, " {"]
+    fields = %s
+    for i, field in enumerate(fields):
+        builder.append(" " + field + ": ")
+        builder.append(repr(getattr(self, field)))
+        if i != len(fields) - 1:
+            builder.append(",")
+        else:
+            builder.append(" ")
+    builder.append("}")
+    return "".join(builder)
+"""
 
 
 def vcheck(ast):
@@ -208,6 +249,8 @@ AstIfClause = namedtuple("AstElifClause", ["condition", "statements"])
 AstWhile = namedtuple("AstWhile", ["condition", "statements"])
 AstFor = namedtuple("AstFor", ["loop_variable", "iterator", "statements"])
 AstAssign = namedtuple("AstAssign", ["label", "value"])
+AstStructDeclaration = namedtuple("AstStructDeclaration", ["label", "fields"])
+AstStructDeclarationField = namedtuple("AstStructDeclarationField", ["label", "type"])
 AstExpressionStatement = namedtuple("AstExpressionStatement", ["value"])
 
 AstCall = namedtuple("AstCall", ["function", "arguments"])
@@ -216,6 +259,8 @@ AstPrefix = namedtuple("AstPrefix", ["operator", "value"])
 AstSymbol = namedtuple("AstSymbol", ["label"])
 AstLiteral = namedtuple("AstLiteral", ["value"])
 AstList = namedtuple("AstList", ["values"])
+AstStructExpression = namedtuple("AstStructExpression", ["label", "fields"])
+AstStructExpressionField = namedtuple("AstStructExpressionField", ["label", "value"])
 
 
 # Based on https://docs.python.org/3.6/reference/expressions.html#operator-precedence
@@ -237,6 +282,8 @@ PRECEDENCE_MAP = {
     "TOKEN_SLASH": PRECEDENCE_MUL_DIV,
     # The left parenthesis is the "infix operator" for function-call expressions.
     "TOKEN_LPAREN": PRECEDENCE_CALL,
+    # The left curly brace is the "infix operator" for struct expressions.
+    "TOKEN_LCURLY": PRECEDENCE_CALL,
 }
 
 
@@ -305,6 +352,8 @@ class Parser:
             return self.match_while()
         elif token.type == "TOKEN_FOR":
             return self.match_for()
+        elif token.type == "TOKEN_STRUCT":
+            return self.match_struct_declaration()
         else:
             self.push_back(token)
             value = self.match_expression()
@@ -361,6 +410,24 @@ class Parser:
             loop_variable=symbol_token.value, iterator=iterator, statements=statements
         )
 
+    def match_struct_declaration(self):
+        symbol_token = self.expect("TOKEN_SYMBOL")
+        self.expect("TOKEN_LCURLY")
+        fields = []
+        while True:
+            field_token = self.expect("TOKEN_SYMBOL")
+            self.expect("TOKEN_COLON")
+            type_tree = self.match_type()
+            fields.append(AstStructDeclarationField(field_token.value, type_tree))
+            token = self.expect(["TOKEN_COMMA", "TOKEN_RCURLY"])
+            if token.type == "TOKEN_COMMA":
+                continue
+            else:
+                break
+
+        self.expect("TOKEN_NEWLINE")
+        return AstStructDeclaration(symbol_token.value, fields)
+
     def match_expression(self, precedence=PRECEDENCE_LOWEST):
         left = self.match_prefix()
 
@@ -408,6 +475,13 @@ class Parser:
             args = self.match_arguments()
             self.expect("TOKEN_RPAREN")
             return AstCall(left, args)
+        elif token.type == "TOKEN_LCURLY":
+            if not isinstance(left, AstSymbol):
+                raise VeniceError("label of struct literal must be a symbol")
+
+            fields = self.match_struct_fields()
+            self.expect("TOKEN_RCURLY")
+            return AstStructExpression(left.label, fields)
         elif token.type == "TOKEN_ASSIGN":
             right = self.match_expression(precedence)
             return AstAssign(left, right)
@@ -427,6 +501,20 @@ class Parser:
                 break
 
         return arguments
+
+    def match_struct_fields(self):
+        fields = []
+        while True:
+            field_token = self.expect("TOKEN_SYMBOL")
+            self.expect("TOKEN_COLON")
+            value = self.match_expression()
+            fields.append(AstStructExpressionField(field_token.value, value))
+            token = self.next()
+            if token.type != "TOKEN_COMMA":
+                self.push_back(token)
+                break
+
+        return fields
 
     def match_parameters(self):
         parameters = []
@@ -494,6 +582,7 @@ class Lexer:
             "in",
             "let",
             "return",
+            "struct",
             "true",
             "while",
         ]
