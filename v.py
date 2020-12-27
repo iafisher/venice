@@ -193,6 +193,8 @@ class Parser:
             left = AstLiteral(False)
         elif token.type == "TOKEN_SYMBOL":
             left = AstSymbol(token.value)
+        elif token.type == "TOKEN_STRING":
+            left = AstLiteral(token.value)
         elif token.type == "TOKEN_LPAREN":
             left = self.match_expression(PRECEDENCE_LOWEST)
             self.expect("TOKEN_RPAREN")
@@ -285,6 +287,18 @@ class Lexer:
         "=": "TOKEN_ASSIGN",
         ":": "TOKEN_COLON",
     }
+    escapes = {
+        '"': '"',
+        "'": "'",
+        "n": "\n",
+        "r": "\r",
+        "\\": "\\",
+        "t": "\t",
+        "b": "\b",
+        "f": "\f",
+        "v": "\v",
+        "0": "\0",
+    }
 
     def __init__(self, infile):
         self.infile = infile
@@ -309,31 +323,49 @@ class Lexer:
             self.push_back(c)
             value = self.read_int()
             return Token("TOKEN_INT", value)
+        elif c == '"':
+            value = self.read_string()
+            return Token("TOKEN_STRING", value)
         else:
             return Token(self.special.get(c, "TOKEN_UNKNOWN"), c)
-
-    def skip_whitespace(self):
-        self.read_while(str.isspace)
-
-    def read(self):
-        if self.pushed_back:
-            c = self.pushed_back
-            self.pushed_back = ""
-            return c
-        else:
-            c = self.infile.read(1)
-            if c == "":
-                self.done = True
-            return c
-
-    def push_back(self, c):
-        self.pushed_back = c
 
     def read_symbol(self):
         return self.read_while(is_symbol_char)
 
     def read_int(self):
         return self.read_while(str.isdigit)
+
+    def read_string(self):
+        chars = []
+        while True:
+            c = self.read()
+            if self.done:
+                # TODO(2020-12-27): Better error
+                return Token("TOKEN_UNKNOWN", "".join(chars))
+            elif c == '"':
+                break
+            elif c == "\\":
+                c2 = self.read()
+                if self.done:
+                    # TODO(2020-12-27): Better error
+                    return Token("TOKEN_UNKNOWN", "".join(chars))
+                else:
+                    chars.append(self.get_backslash_escape(c2))
+            else:
+                chars.append(c)
+
+        return "".join(chars)
+
+    def get_backslash_escape(self, c):
+        # TODO(2020-12-27): Warning for unrecognized escapes
+        # TODO(2020-12-27): Hex and octal escape codes
+        return self.escapes.get(c, "\\" + c)
+
+    def push_back(self, c):
+        self.pushed_back = c
+
+    def skip_whitespace(self):
+        self.read_while(str.isspace)
 
     def read_while(self, pred):
         chars = []
@@ -347,6 +379,17 @@ class Lexer:
                 break
 
         return "".join(chars)
+
+    def read(self):
+        if self.pushed_back:
+            c = self.pushed_back
+            self.pushed_back = ""
+            return c
+        else:
+            c = self.infile.read(1)
+            if c == "":
+                self.done = True
+            return c
 
 
 Token = namedtuple("Token", ["type", "value"])
