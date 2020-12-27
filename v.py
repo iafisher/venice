@@ -33,7 +33,11 @@ def main(args):
                     if token.type == "TOKEN_EOF":
                         break
                     else:
-                        if token.type == "TOKEN_STRING":
+                        if token.type in (
+                            "TOKEN_STRING",
+                            "TOKEN_NEWLINE",
+                            "TOKEN_UNKNOWN",
+                        ):
                             print(token.type.ljust(20), repr(token.value))
                         else:
                             print(token.type.ljust(20), token.value)
@@ -213,6 +217,8 @@ class Parser:
         statements = []
 
         while True:
+            self.skip_newlines()
+
             token = self.next()
             if token.type == "TOKEN_EOF":
                 break
@@ -241,8 +247,11 @@ class Parser:
 
     def match_block(self):
         self.expect("TOKEN_LCURLY")
+        self.expect("TOKEN_NEWLINE")
         statements = []
         while True:
+            self.skip_newlines()
+
             token = self.next()
             if token.type == "TOKEN_RCURLY":
                 break
@@ -263,16 +272,19 @@ class Parser:
         else:
             self.push_back(token)
             value = self.match_expression()
+            self.expect("TOKEN_NEWLINE")
             return AstExpressionStatement(value)
 
     def match_let(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_ASSIGN")
         value = self.match_expression()
+        self.expect("TOKEN_NEWLINE")
         return AstLet(label=symbol_token.value, value=value)
 
     def match_return(self):
         value = self.match_expression()
+        self.expect("TOKEN_NEWLINE")
         return AstReturn(value)
 
     def match_if(self):
@@ -282,7 +294,9 @@ class Parser:
         clauses.append(AstIfClause(condition, statements))
         else_clause = None
         while True:
-            token = self.next()
+            token = self.expect(
+                ["TOKEN_ELIF", "TOKEN_ELSE", "TOKEN_NEWLINE", "TOKEN_EOF"]
+            )
             if token.type == "TOKEN_ELIF":
                 condition = self.match_expression()
                 statements = self.match_block()
@@ -290,7 +304,6 @@ class Parser:
             elif token.type == "TOKEN_ELSE":
                 else_clause = self.match_block()
             else:
-                self.push_back(token)
                 break
 
         return AstIf(if_clauses=clauses, else_clause=else_clause)
@@ -329,7 +342,7 @@ class Parser:
             if token.type == "TOKEN_EOF":
                 raise VeniceError("premature end of input")
             else:
-                raise VeniceError(f"unexpected token {token.value!r}")
+                raise VeniceError(f"unexpected token {token!r}")
 
         return left
 
@@ -373,6 +386,15 @@ class Parser:
         symbol_token = self.expect("TOKEN_SYMBOL")
         return AstSymbol(symbol_token.value)
 
+    def skip_newlines(self):
+        while True:
+            token = self.next()
+            if token.type == "TOKEN_NEWLINE":
+                continue
+            else:
+                self.push_back(token)
+                break
+
     def next(self):
         if self.pushed_back is not None:
             token = self.pushed_back
@@ -384,12 +406,15 @@ class Parser:
     def push_back(self, token):
         self.pushed_back = token
 
-    def expect(self, type):
+    def expect(self, type_or_types):
+        if isinstance(type_or_types, str):
+            type_or_types = {type_or_types}
+        else:
+            type_or_types = set(type_or_types)
+
         token = self.next()
-        if token.type != type:
-            if type == "TOKEN_EOF":
-                raise VeniceError("trailing input")
-            elif token.type == "TOKEN_EOF":
+        if token.type not in type_or_types:
+            if token.type == "TOKEN_EOF":
                 raise VeniceError("premature end of input")
             else:
                 raise VeniceError(f"unexpected token {token!r}")
@@ -410,6 +435,7 @@ class Lexer:
         "*": "TOKEN_ASTERISK",
         "/": "TOKEN_SLASH",
         ":": "TOKEN_COLON",
+        "\n": "TOKEN_NEWLINE",
     }
     escapes = {
         '"': '"',
@@ -428,6 +454,8 @@ class Lexer:
         self.infile = infile
         self.done = False
         self.pushed_back = ""
+        self.line = 1
+        self.column = 1
 
     def next(self):
         self.skip_whitespace()
@@ -512,7 +540,7 @@ class Lexer:
         self.pushed_back = c
 
     def skip_whitespace(self):
-        self.read_while(str.isspace)
+        self.read_while(lambda c: c.isspace() and c != "\n")
 
     def read_while(self, pred):
         chars = []
