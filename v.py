@@ -51,10 +51,14 @@ def vcompile_string(program):
 
 def vgenerate(outfile, ast):
     if isinstance(ast, AstProgram):
-        for statement in ast.statements:
-            vgenerate_statement(outfile, statement)
+        vgenerate_block(outfile, ast.statements)
     else:
         raise VeniceError("argument to vgenerate must be an AstProgram")
+
+
+def vgenerate_block(outfile, statements, *, indent=0):
+    for statement in statements:
+        vgenerate_statement(outfile, statement, indent=indent)
 
 
 def vgenerate_statement(outfile, ast, *, indent=0):
@@ -65,12 +69,18 @@ def vgenerate_statement(outfile, ast, *, indent=0):
         outfile.write(f"def {ast.label}(")
         outfile.write(", ".join(parameter.label for parameter in ast.parameters))
         outfile.write("):\n")
-        for statement in ast.statements:
-            vgenerate_statement(outfile, statement, indent=indent + 1)
+        vgenerate_block(outfile, ast.statements, indent=indent + 1)
     elif isinstance(ast, AstReturn):
         outfile.write("return ")
         vgenerate_expression(outfile, ast.value, bracketed=False)
         outfile.write("\n")
+    elif isinstance(ast, AstIf):
+        outfile.write("if ")
+        vgenerate_expression(outfile, ast.condition, bracketed=False)
+        outfile.write(":\n")
+        vgenerate_block(outfile, ast.true_clause, indent=indent + 1)
+        outfile.write(("  " * indent) + "else:\n")
+        vgenerate_block(outfile, ast.false_clause, indent=indent + 1)
     elif isinstance(ast, AstExpressionStatement):
         vgenerate_expression(outfile, ast.value, bracketed=False)
         outfile.write("\n")
@@ -123,6 +133,7 @@ AstParameter = namedtuple("AstParameter", ["label", "type"])
 
 AstLet = namedtuple("AstLet", ["label", "value"])
 AstReturn = namedtuple("AstReturn", ["value"])
+AstIf = namedtuple("AstIf", ["condition", "true_clause", "false_clause"])
 AstExpressionStatement = namedtuple("AstExpressionStatement", ["value"])
 
 AstCall = namedtuple("AstCall", ["function", "arguments"])
@@ -130,6 +141,22 @@ AstInfix = namedtuple("AstInfix", ["operator", "left", "right"])
 AstPrefix = namedtuple("AstPrefix", ["operator", "value"])
 AstSymbol = namedtuple("AstSymbol", ["label"])
 AstLiteral = namedtuple("AstLiteral", ["value"])
+
+
+PRECEDENCE_LOWEST = 0
+PRECEDENCE_ADD_SUB = 1
+PRECEDENCE_MUL_DIV = 2
+PRECEDENCE_PREFIX = 3
+PRECEDENCE_CALL = 4
+
+PRECEDENCE_MAP = {
+    "TOKEN_PLUS": PRECEDENCE_ADD_SUB,
+    "TOKEN_MINUS": PRECEDENCE_ADD_SUB,
+    "TOKEN_ASTERISK": PRECEDENCE_MUL_DIV,
+    "TOKEN_SLASH": PRECEDENCE_MUL_DIV,
+    # The left parenthesis is the "infix operator" for function-call expressions.
+    "TOKEN_LPAREN": PRECEDENCE_CALL,
+}
 
 
 class Parser:
@@ -186,22 +213,33 @@ class Parser:
             return self.match_let()
         elif token.type == "TOKEN_RETURN":
             return self.match_return()
+        elif token.type == "TOKEN_IF":
+            return self.match_if()
         else:
             self.push_back(token)
-            value = self.match_expression(PRECEDENCE_LOWEST)
+            value = self.match_expression()
             return AstExpressionStatement(value)
 
     def match_let(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_ASSIGN")
-        value = self.match_expression(PRECEDENCE_LOWEST)
+        value = self.match_expression()
         return AstLet(label=symbol_token.value, value=value)
 
     def match_return(self):
-        value = self.match_expression(PRECEDENCE_LOWEST)
+        value = self.match_expression()
         return AstReturn(value)
 
-    def match_expression(self, precedence):
+    def match_if(self):
+        condition = self.match_expression()
+        true_clause = self.match_block()
+        self.expect("TOKEN_ELSE")
+        false_clause = self.match_block()
+        return AstIf(
+            condition=condition, true_clause=true_clause, false_clause=false_clause
+        )
+
+    def match_expression(self, precedence=PRECEDENCE_LOWEST):
         left = self.match_prefix()
 
         token = self.next()
@@ -225,7 +263,7 @@ class Parser:
         elif token.type == "TOKEN_STRING":
             left = AstLiteral(token.value)
         elif token.type == "TOKEN_LPAREN":
-            left = self.match_expression(PRECEDENCE_LOWEST)
+            left = self.match_expression()
             self.expect("TOKEN_RPAREN")
         elif token.type == "TOKEN_MINUS":
             left = AstPrefix("-", self.match_expression(PRECEDENCE_PREFIX))
@@ -249,7 +287,7 @@ class Parser:
     def match_arguments(self):
         arguments = []
         while True:
-            argument = self.match_expression(PRECEDENCE_LOWEST)
+            argument = self.match_expression()
             arguments.append(argument)
 
             token = self.next()
@@ -422,22 +460,6 @@ class Lexer:
 
 
 Token = namedtuple("Token", ["type", "value"])
-
-
-PRECEDENCE_LOWEST = 0
-PRECEDENCE_ADD_SUB = 1
-PRECEDENCE_MUL_DIV = 2
-PRECEDENCE_PREFIX = 3
-PRECEDENCE_CALL = 4
-
-PRECEDENCE_MAP = {
-    "TOKEN_PLUS": PRECEDENCE_ADD_SUB,
-    "TOKEN_MINUS": PRECEDENCE_ADD_SUB,
-    "TOKEN_ASTERISK": PRECEDENCE_MUL_DIV,
-    "TOKEN_SLASH": PRECEDENCE_MUL_DIV,
-    # The left parenthesis is the "infix operator" for function-call expressions.
-    "TOKEN_LPAREN": PRECEDENCE_CALL,
-}
 
 
 def is_symbol_char(c):
