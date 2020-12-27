@@ -129,6 +129,11 @@ def vgenerate_statement(outfile, ast, *, indent=0):
         vgenerate_expression(outfile, ast.condition, bracketed=False)
         outfile.write(":\n")
         vgenerate_block(outfile, ast.statements, indent=indent + 1)
+    elif isinstance(ast, AstFor):
+        outfile.write(("  " * indent) + "for " + ast.loop_variable + " in ")
+        vgenerate_expression(outfile, ast.iterator, bracketed=False)
+        outfile.write(":\n")
+        vgenerate_block(outfile, ast.statements, indent=indent + 1)
     elif isinstance(ast, AstExpressionStatement):
         outfile.write("  " * indent)
         vgenerate_expression(outfile, ast.value, bracketed=False)
@@ -167,6 +172,13 @@ def vgenerate_expression(outfile, ast, *, bracketed):
             if i != len(ast.arguments) - 1:
                 outfile.write(", ")
         outfile.write(")")
+    elif isinstance(ast, AstList):
+        outfile.write("[")
+        for i, value in enumerate(ast.values):
+            vgenerate_expression(outfile, value, bracketed=False)
+            if i != len(ast.values) - 1:
+                outfile.write(", ")
+        outfile.write("]")
     elif isinstance(ast, AstLiteral):
         outfile.write(repr(ast.value))
     else:
@@ -194,6 +206,7 @@ AstReturn = namedtuple("AstReturn", ["value"])
 AstIf = namedtuple("AstIf", ["if_clauses", "else_clause"])
 AstIfClause = namedtuple("AstElifClause", ["condition", "statements"])
 AstWhile = namedtuple("AstWhile", ["condition", "statements"])
+AstFor = namedtuple("AstFor", ["loop_variable", "iterator", "statements"])
 AstAssign = namedtuple("AstAssign", ["label", "value"])
 AstExpressionStatement = namedtuple("AstExpressionStatement", ["value"])
 
@@ -202,6 +215,7 @@ AstInfix = namedtuple("AstInfix", ["operator", "left", "right"])
 AstPrefix = namedtuple("AstPrefix", ["operator", "value"])
 AstSymbol = namedtuple("AstSymbol", ["label"])
 AstLiteral = namedtuple("AstLiteral", ["value"])
+AstList = namedtuple("AstList", ["values"])
 
 
 # Based on https://docs.python.org/3.6/reference/expressions.html#operator-precedence
@@ -289,6 +303,8 @@ class Parser:
             return self.match_if()
         elif token.type == "TOKEN_WHILE":
             return self.match_while()
+        elif token.type == "TOKEN_FOR":
+            return self.match_for()
         else:
             self.push_back(token)
             value = self.match_expression()
@@ -336,6 +352,15 @@ class Parser:
         statements = self.match_block()
         return AstWhile(condition, statements)
 
+    def match_for(self):
+        symbol_token = self.expect("TOKEN_SYMBOL")
+        self.expect("TOKEN_IN")
+        iterator = self.match_expression()
+        statements = self.match_block()
+        return AstFor(
+            loop_variable=symbol_token.value, iterator=iterator, statements=statements
+        )
+
     def match_expression(self, precedence=PRECEDENCE_LOWEST):
         left = self.match_prefix()
 
@@ -366,6 +391,10 @@ class Parser:
             left = AstPrefix("-", self.match_expression(PRECEDENCE_PREFIX))
         elif token.type == "TOKEN_NOT":
             left = AstPrefix("not", self.match_expression(PRECEDENCE_PREFIX))
+        elif token.type == "TOKEN_LSQUARE":
+            values = self.match_arguments()
+            self.expect("TOKEN_RSQUARE")
+            return AstList(values)
         else:
             if token.type == "TOKEN_EOF":
                 raise VeniceError("premature end of input")
@@ -455,7 +484,19 @@ class Parser:
 
 class Lexer:
     keywords = frozenset(
-        ["fn", "let", "if", "elif", "else", "true", "false", "return", "while"]
+        [
+            "elif",
+            "else",
+            "false",
+            "fn",
+            "for",
+            "if",
+            "in",
+            "let",
+            "return",
+            "true",
+            "while",
+        ]
     )
     special = {
         "(": "TOKEN_LPAREN",
@@ -469,6 +510,8 @@ class Lexer:
         "/": "TOKEN_SLASH",
         ":": "TOKEN_COLON",
         "\n": "TOKEN_NEWLINE",
+        "[": "TOKEN_LSQUARE",
+        "]": "TOKEN_RSQUARE",
     }
     escapes = {
         '"': '"',

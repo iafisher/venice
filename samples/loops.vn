@@ -3,3 +3,7 @@ while i >= 0 {
   print(i)
   i = i - 1
 }
+
+for x in ["a", "b", "c"] {
+  print(x)
+}
