@@ -186,14 +186,6 @@ def vgenerate_expression(outfile, ast, *, bracketed):
             if i != len(ast.values) - 1:
                 outfile.write(", ")
         outfile.write("]")
-    elif isinstance(ast, AstStructExpression):
-        outfile.write(ast.label + "(")
-        for i, field in enumerate(ast.fields):
-            outfile.write(field.label + "=")
-            vgenerate_expression(outfile, field.value, bracketed=False)
-            if i != len(ast.fields) - 1:
-                outfile.write(", ")
-        outfile.write(")")
     elif isinstance(ast, AstLiteral):
         outfile.write(repr(ast.value))
     else:
@@ -319,9 +311,6 @@ def vcheck_expression(ast, symbol_table):
                 )
 
         return VeniceListType(item_type)
-    elif isinstance(ast, AstStructExpression):
-        # TODO
-        pass
     elif isinstance(ast, AstLiteral):
         if isinstance(ast.value, str):
             return VeniceType("string")
@@ -405,8 +394,6 @@ AstPrefix = namedtuple("AstPrefix", ["operator", "value"])
 AstSymbol = namedtuple("AstSymbol", ["label"])
 AstLiteral = namedtuple("AstLiteral", ["value"])
 AstList = namedtuple("AstList", ["values"])
-AstStructExpression = namedtuple("AstStructExpression", ["label", "fields"])
-AstStructExpressionField = namedtuple("AstStructExpressionField", ["label", "value"])
 
 
 # Based on https://docs.python.org/3.6/reference/expressions.html#operator-precedence
