@@ -1,4 +1,4 @@
-fn double(x: int): int {
+fn double(x: integer): integer {
   print(x)
   return x * 2
 }

@@ -222,7 +222,7 @@ def __str__(self):
 
 
 def vcheck(ast):
-    vcheck_block(ast.statements, SymbolTable())
+    vcheck_block(ast.statements, SymbolTable.with_globals())
 
 
 def vcheck_block(statements, symbol_table):
@@ -232,8 +232,17 @@ def vcheck_block(statements, symbol_table):
 
 def vcheck_statement(ast, symbol_table):
     if isinstance(ast, AstFunction):
-        # TODO
-        pass
+        parameter_types = [
+            VeniceKeywordArgumentType(p.label, resolve_type(p.type))
+            for p in ast.parameters
+        ]
+        symbol_table.put(
+            ast.label,
+            VeniceFunctionType(
+                parameter_types=parameter_types,
+                return_type=resolve_type(ast.return_type),
+            ),
+        )
     elif isinstance(ast, AstReturn):
         # TODO
         pass
@@ -268,8 +277,12 @@ def vcheck_statement(ast, symbol_table):
     elif isinstance(ast, AstExpressionStatement):
         vcheck_expression(ast.value, symbol_table)
     elif isinstance(ast, AstStructDeclaration):
-        # TODO
-        pass
+        field_types = [
+            VeniceKeywordArgumentType(p.label, resolve_type(p.type)) for p in ast.fields
+        ]
+        symbol_table.put(
+            ast.label, VeniceStructType(field_types=field_types),
+        )
     else:
         raise VeniceError(f"unknown AST statement type: {ast.__class__.__name__}")
 
@@ -296,9 +309,41 @@ def vcheck_expression(ast, symbol_table):
             vassert(ast.value, symbol_table, VENICE_TYPE_INTEGER)
             return VENICE_TYPE_INTEGER
     elif isinstance(ast, AstCall):
-        # TODO: check against function definition
-        for argument in ast.arguments:
-            vcheck_expression(argument, symbol_table)
+        function_type = vcheck_expression(ast.function, symbol_table)
+        if isinstance(function_type, VeniceFunctionType):
+            if len(function_type.parameter_types) != len(ast.arguments):
+                raise VeniceError(
+                    f"expected {len(function_type.parameters)} arguments, "
+                    + "got {len(ast.arguments)}"
+                )
+
+            for parameter, argument in zip(
+                function_type.parameter_types, ast.arguments
+            ):
+                if isinstance(argument, AstKeywordArgument):
+                    vassert(argument.value, symbol_table, parameter.type)
+                else:
+                    vassert(argument, symbol_table, parameter.type)
+
+            return function_type.return_type
+        elif isinstance(function_type, VeniceStructType):
+            for parameter, argument in zip(function_type.field_types, ast.arguments):
+                if not isinstance(argument, AstKeywordArgument):
+                    raise VeniceError(
+                        "struct constructor only accepts keyword arguments"
+                    )
+
+                if not argument.label == parameter.label:
+                    raise VeniceError(
+                        f"expected keyword argument {parameter.label}, "
+                        + "got {argument.label}"
+                    )
+
+                vassert(argument.value, symbol_table, parameter.type)
+
+            return function_type
+        else:
+            raise VeniceError(f"{function_type!r} is not a function type")
     elif isinstance(ast, AstList):
         # TODO: empty list
         item_type = vcheck_expression(ast.values[0], symbol_table)
@@ -335,7 +380,20 @@ def vassert(ast, symbol_table, expected):
         raise VeniceError(f"expected {expected!r}, got {actual!r}")
 
 
+def resolve_type(type_tree):
+    if isinstance(type_tree, AstSymbol):
+        if type_tree.label in {"boolean", "integer", "string"}:
+            return VeniceType(type_tree.label)
+        else:
+            raise VeniceError(f"unknown type: {type_tree.label}")
+    else:
+        raise VeniceError(f"{type_tree!r} cannot be interpreted as a type")
+
+
 def are_types_compatible(expected_type, actual_type):
+    if expected_type == VENICE_TYPE_ANY:
+        return True
+
     return expected_type == actual_type
 
 
@@ -344,16 +402,32 @@ VeniceListType = namedtuple("VeniceListType", ["item_type"])
 VeniceFunctionType = namedtuple(
     "VeniceFunctionType", ["parameter_types", "return_type"]
 )
+VeniceStructType = namedtuple("VeniceStructType", ["field_types"])
+VeniceKeywordArgumentType = namedtuple("VeniceKeywordArgumentType", ["label", "type"])
 
 VENICE_TYPE_BOOLEAN = VeniceType("boolean")
 VENICE_TYPE_INTEGER = VeniceType("integer")
 VENICE_TYPE_STRING = VeniceType("string")
+VENICE_TYPE_VOID = VeniceType("void")
+VENICE_TYPE_ANY = VeniceType("any")
 
 
 class SymbolTable:
     def __init__(self, parent=None):
         self.parent = parent
         self.symbols = {}
+
+    @classmethod
+    def with_globals(cls):
+        symbol_table = cls(parent=None)
+        symbol_table.put(
+            "print",
+            VeniceFunctionType(
+                [VeniceKeywordArgumentType(label="x", type=VENICE_TYPE_ANY)],
+                return_type=VENICE_TYPE_VOID,
+            ),
+        )
+        return symbol_table
 
     def has(self, symbol):
         if symbol in self.symbols:
