@@ -230,8 +230,150 @@ def __str__(self):
 
 
 def vcheck(ast):
-    # TODO(2020-12-24): Real type-checker.
-    pass
+    vcheck_block(ast.statements, SymbolTable())
+
+
+def vcheck_block(statements, symbol_table):
+    for statement in statements:
+        vcheck_statement(statement, symbol_table)
+
+
+def vcheck_statement(ast, symbol_table):
+    if isinstance(ast, AstFunction):
+        # TODO
+        pass
+    elif isinstance(ast, AstReturn):
+        # TODO
+        pass
+    elif isinstance(ast, AstIf):
+        for clause in ast.if_clauses:
+            vassert(clause.condition, symbol_table, VeniceType("boolean"))
+            vcheck_block(clause.statements, symbol_table)
+
+        if ast.else_clause:
+            vcheck_block(ast.else_clause, symbol_table)
+    elif isinstance(ast, AstLet):
+        symbol_table.put(ast.label, vcheck_expression(ast.value, symbol_table))
+    elif isinstance(ast, AstAssign):
+        original_type = symbol_table.get(ast.label.label)
+        if original_type is None:
+            raise VeniceError(f"assignment to undefined variable: {ast.label}")
+
+        vassert(ast.value, symbol_table, original_type)
+    elif isinstance(ast, AstWhile):
+        vassert(ast.condition, symbol_table, VeniceType("boolean"))
+        vcheck_block(ast.statements, symbol_table)
+    elif isinstance(ast, AstFor):
+        iterator_type = vcheck_expression(ast.iterator, symbol_table)
+        if not isinstance(iterator_type, VeniceListType):
+            raise VeniceError("loop iterator must be list")
+
+        loop_variable_type = iterator_type.item_type
+        loop_symbol_table = SymbolTable(parent=symbol_table)
+        loop_symbol_table.put(ast.loop_variable, loop_variable_type)
+
+        vcheck_block(ast.statements, loop_symbol_table)
+    elif isinstance(ast, AstExpressionStatement):
+        vcheck_expression(ast.value, symbol_table)
+    elif isinstance(ast, AstStructDeclaration):
+        # TODO
+        pass
+    else:
+        raise VeniceError(f"unknown AST statement type: {ast.__class__.__name__}")
+
+
+def vcheck_expression(ast, symbol_table):
+    if isinstance(ast, AstSymbol):
+        symbol_type = symbol_table.get(ast.label)
+        if symbol_type is not None:
+            return symbol_type
+        else:
+            raise VeniceError(f"undefined symbol: {ast.label}")
+    elif isinstance(ast, AstInfix):
+        vassert(ast.left, symbol_table, VeniceType("integer"))
+        vassert(ast.right, symbol_table, VeniceType("integer"))
+        if ast.operator in [">=", "<=", ">", "<", "==", "!="]:
+            return VeniceType("boolean")
+        else:
+            return VeniceType("integer")
+    elif isinstance(ast, AstPrefix):
+        if ast.operator == "not":
+            vassert(ast.value, symbol_table, VeniceType("boolean"))
+            return VeniceType("boolean")
+        else:
+            vassert(ast.value, symbol_table, VeniceType("integer"))
+            return VeniceType("integer")
+    elif isinstance(ast, AstCall):
+        # TODO: check against function definition
+        for argument in ast.arguments:
+            vcheck_expression(argument, symbol_table)
+    elif isinstance(ast, AstList):
+        # TODO: empty list
+        item_type = vcheck_expression(ast.values[0], symbol_table)
+        for value in ast.values[1:]:
+            another_item_type = vcheck_expression(value, symbol_table)
+            if another_item_type != item_type:
+                raise VeniceError(
+                    "list contains items of multiple types: "
+                    + f"{item_type!r} and {another_item_type!r}"
+                )
+
+        return VeniceListType(item_type)
+    elif isinstance(ast, AstStructExpression):
+        # TODO
+        pass
+    elif isinstance(ast, AstLiteral):
+        if isinstance(ast.value, str):
+            return VeniceType("string")
+        elif isinstance(ast.value, bool):
+            # This must come before `int` because bools are ints in Python.
+            return VeniceType("boolean")
+        elif isinstance(ast.value, int):
+            return VeniceType("integer")
+        else:
+            raise VeniceError(
+                f"unknown AstLiteral type: {ast.value.__class__.__name__}"
+            )
+    else:
+        raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
+
+
+def vassert(ast, symbol_table, expected):
+    type = vcheck_expression(ast, symbol_table)
+    if type != expected:
+        raise VeniceError(f"expected {expected!r}, got {type!r}")
+
+
+VeniceType = namedtuple("VeniceType", ["label"])
+VeniceListType = namedtuple("VeniceListType", ["item_type"])
+VeniceFunctionType = namedtuple(
+    "VeniceFunctionType", ["parameter_types", "return_type"]
+)
+
+
+class SymbolTable:
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.symbols = {}
+
+    def has(self, symbol):
+        if symbol in self.symbols:
+            return True
+        elif self.parent:
+            return self.parent.has(symbol)
+        else:
+            return False
+
+    def get(self, symbol):
+        if symbol in self.symbols:
+            return self.symbols[symbol]
+        elif self.parent:
+            return self.parent.get(symbol)
+        else:
+            return None
+
+    def put(self, symbol, type):
+        self.symbols[symbol] = type
 
 
 def vparse(infile):
