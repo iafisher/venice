@@ -170,7 +170,12 @@ def vgenerate_expression(outfile, ast, *, bracketed):
         vgenerate_expression(outfile, ast.function, bracketed=True)
         outfile.write("(")
         for i, argument in enumerate(ast.arguments):
-            vgenerate_expression(outfile, argument, bracketed=True)
+            if isinstance(argument, AstKeywordArgument):
+                outfile.write(argument.label + "=")
+                vgenerate_expression(outfile, argument.value, bracketed=True)
+            else:
+                vgenerate_expression(outfile, argument, bracketed=True)
+
             if i != len(ast.arguments) - 1:
                 outfile.write(", ")
         outfile.write(")")
@@ -212,16 +217,14 @@ def vgenerate_struct_declaration(outfile, ast, *, indent):
 
 STRUCT_STR_TEMPLATE = """\
 def __str__(self):
-    builder = [self.__class__.__name__, " {"]
+    builder = [self.__class__.__name__, "("]
     fields = %s
     for i, field in enumerate(fields):
-        builder.append(" " + field + ": ")
+        builder.append(field + ": ")
         builder.append(repr(getattr(self, field)))
         if i != len(fields) - 1:
-            builder.append(",")
-        else:
-            builder.append(" ")
-    builder.append("}")
+            builder.append(", ")
+    builder.append(")")
     return "".join(builder)
 """
 
@@ -254,6 +257,7 @@ AstStructDeclarationField = namedtuple("AstStructDeclarationField", ["label", "t
 AstExpressionStatement = namedtuple("AstExpressionStatement", ["value"])
 
 AstCall = namedtuple("AstCall", ["function", "arguments"])
+AstKeywordArgument = namedtuple("AstKeywordArgument", ["label", "value"])
 AstInfix = namedtuple("AstInfix", ["operator", "left", "right"])
 AstPrefix = namedtuple("AstPrefix", ["operator", "value"])
 AstSymbol = namedtuple("AstSymbol", ["label"])
@@ -282,8 +286,6 @@ PRECEDENCE_MAP = {
     "TOKEN_SLASH": PRECEDENCE_MUL_DIV,
     # The left parenthesis is the "infix operator" for function-call expressions.
     "TOKEN_LPAREN": PRECEDENCE_CALL,
-    # The left curly brace is the "infix operator" for struct expressions.
-    "TOKEN_LCURLY": PRECEDENCE_CALL,
 }
 
 
@@ -459,7 +461,7 @@ class Parser:
         elif token.type == "TOKEN_NOT":
             left = AstPrefix("not", self.match_expression(PRECEDENCE_PREFIX))
         elif token.type == "TOKEN_LSQUARE":
-            values = self.match_arguments()
+            values = self.match_sequence()
             self.expect("TOKEN_RSQUARE")
             return AstList(values)
         else:
@@ -475,13 +477,6 @@ class Parser:
             args = self.match_arguments()
             self.expect("TOKEN_RPAREN")
             return AstCall(left, args)
-        elif token.type == "TOKEN_LCURLY":
-            if not isinstance(left, AstSymbol):
-                raise VeniceError("label of struct literal must be a symbol")
-
-            fields = self.match_struct_fields()
-            self.expect("TOKEN_RCURLY")
-            return AstStructExpression(left.label, fields)
         elif token.type == "TOKEN_ASSIGN":
             right = self.match_expression(precedence)
             return AstAssign(left, right)
@@ -489,7 +484,7 @@ class Parser:
             right = self.match_expression(precedence)
             return AstInfix(token.value, left, right)
 
-    def match_arguments(self):
+    def match_sequence(self):
         arguments = []
         while True:
             argument = self.match_expression()
@@ -502,19 +497,28 @@ class Parser:
 
         return arguments
 
-    def match_struct_fields(self):
-        fields = []
+    def match_arguments(self):
+        arguments = []
         while True:
-            field_token = self.expect("TOKEN_SYMBOL")
-            self.expect("TOKEN_COLON")
-            value = self.match_expression()
-            fields.append(AstStructExpressionField(field_token.value, value))
+            argument = self.match_expression()
+            if isinstance(argument, AstSymbol):
+                token = self.next()
+                if token.type == "TOKEN_COLON":
+                    label = argument.label
+                    argument = self.match_expression()
+                    arguments.append(AstKeywordArgument(label=label, value=argument))
+                else:
+                    self.push_back(token)
+                    arguments.append(argument)
+            else:
+                arguments.append(argument)
+
             token = self.next()
             if token.type != "TOKEN_COMMA":
                 self.push_back(token)
                 break
 
-        return fields
+        return arguments
 
     def match_parameters(self):
         parameters = []
