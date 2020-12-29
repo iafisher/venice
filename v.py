@@ -239,7 +239,7 @@ def vcheck_statement(ast, symbol_table):
         pass
     elif isinstance(ast, AstIf):
         for clause in ast.if_clauses:
-            vassert(clause.condition, symbol_table, VeniceType("boolean"))
+            vassert(clause.condition, symbol_table, VENICE_TYPE_BOOLEAN)
             vcheck_block(clause.statements, symbol_table)
 
         if ast.else_clause:
@@ -253,7 +253,7 @@ def vcheck_statement(ast, symbol_table):
 
         vassert(ast.value, symbol_table, original_type)
     elif isinstance(ast, AstWhile):
-        vassert(ast.condition, symbol_table, VeniceType("boolean"))
+        vassert(ast.condition, symbol_table, VENICE_TYPE_BOOLEAN)
         vcheck_block(ast.statements, symbol_table)
     elif isinstance(ast, AstFor):
         iterator_type = vcheck_expression(ast.iterator, symbol_table)
@@ -282,19 +282,19 @@ def vcheck_expression(ast, symbol_table):
         else:
             raise VeniceError(f"undefined symbol: {ast.label}")
     elif isinstance(ast, AstInfix):
-        vassert(ast.left, symbol_table, VeniceType("integer"))
-        vassert(ast.right, symbol_table, VeniceType("integer"))
+        vassert(ast.left, symbol_table, VENICE_TYPE_INTEGER)
+        vassert(ast.right, symbol_table, VENICE_TYPE_INTEGER)
         if ast.operator in [">=", "<=", ">", "<", "==", "!="]:
-            return VeniceType("boolean")
+            return VENICE_TYPE_BOOLEAN
         else:
-            return VeniceType("integer")
+            return VENICE_TYPE_INTEGER
     elif isinstance(ast, AstPrefix):
         if ast.operator == "not":
-            vassert(ast.value, symbol_table, VeniceType("boolean"))
-            return VeniceType("boolean")
+            vassert(ast.value, symbol_table, VENICE_TYPE_BOOLEAN)
+            return VENICE_TYPE_BOOLEAN
         else:
-            vassert(ast.value, symbol_table, VeniceType("integer"))
-            return VeniceType("integer")
+            vassert(ast.value, symbol_table, VENICE_TYPE_INTEGER)
+            return VENICE_TYPE_INTEGER
     elif isinstance(ast, AstCall):
         # TODO: check against function definition
         for argument in ast.arguments:
@@ -303,8 +303,10 @@ def vcheck_expression(ast, symbol_table):
         # TODO: empty list
         item_type = vcheck_expression(ast.values[0], symbol_table)
         for value in ast.values[1:]:
+            # TODO: Probably need a more robust way of checking item types, e.g.
+            # collecting all types and seeing if there's a common super-type.
             another_item_type = vcheck_expression(value, symbol_table)
-            if another_item_type != item_type:
+            if not are_types_compatible(item_type, another_item_type):
                 raise VeniceError(
                     "list contains items of multiple types: "
                     + f"{item_type!r} and {another_item_type!r}"
@@ -313,12 +315,12 @@ def vcheck_expression(ast, symbol_table):
         return VeniceListType(item_type)
     elif isinstance(ast, AstLiteral):
         if isinstance(ast.value, str):
-            return VeniceType("string")
+            return VENICE_TYPE_STRING
         elif isinstance(ast.value, bool):
             # This must come before `int` because bools are ints in Python.
-            return VeniceType("boolean")
+            return VENICE_TYPE_BOOLEAN
         elif isinstance(ast.value, int):
-            return VeniceType("integer")
+            return VENICE_TYPE_INTEGER
         else:
             raise VeniceError(
                 f"unknown AstLiteral type: {ast.value.__class__.__name__}"
@@ -328,9 +330,13 @@ def vcheck_expression(ast, symbol_table):
 
 
 def vassert(ast, symbol_table, expected):
-    type = vcheck_expression(ast, symbol_table)
-    if type != expected:
-        raise VeniceError(f"expected {expected!r}, got {type!r}")
+    actual = vcheck_expression(ast, symbol_table)
+    if not are_types_compatible(expected, actual):
+        raise VeniceError(f"expected {expected!r}, got {actual!r}")
+
+
+def are_types_compatible(expected_type, actual_type):
+    return expected_type == actual_type
 
 
 VeniceType = namedtuple("VeniceType", ["label"])
@@ -338,6 +344,10 @@ VeniceListType = namedtuple("VeniceListType", ["item_type"])
 VeniceFunctionType = namedtuple(
     "VeniceFunctionType", ["parameter_types", "return_type"]
 )
+
+VENICE_TYPE_BOOLEAN = VeniceType("boolean")
+VENICE_TYPE_INTEGER = VeniceType("integer")
+VENICE_TYPE_STRING = VeniceType("string")
 
 
 class SymbolTable:
