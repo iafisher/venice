@@ -1,0 +1,27 @@
+enum Optional {
+  Some(int),
+  None,
+}
+
+match x {
+  case Some(y) {
+  },
+  case None {
+  },
+}
+
+if let Some(y) = x {
+}
+
+if x.label == "Some":
+    y = x.values[0]
+
+class Optional:
+    def __init__(self, label, *values):
+        self.label = label
+        self.values = values
+
+
+if x.label == "Some":
+    ...
+elif x.label == "None":

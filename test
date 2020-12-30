@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -eu
+
+main() {
+  failed=""
+  for path in samples/*.vn samples/typecheck/good/*.vn; do
+    echo "$path"
+    if ! ./v.py "$path" > /dev/null; then
+      failed="true"
+    fi
+  done
+
+  for path in samples/typecheck/bad/*.vn; do
+    echo "$path"
+    if ./v.py "$path" &> /dev/null; then
+      echo "ERROR: expected $path to fail to type-check"
+      failed="true"
+    fi
+  done
+
+  if [[ -n "$failed" ]]; then
+    exit 1
+  fi
+}
+
+main "$@"
