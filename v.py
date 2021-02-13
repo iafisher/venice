@@ -193,6 +193,16 @@ def vgenerate_expression(outfile, ast, *, bracketed):
         outfile.write("[")
         vgenerate_expression(outfile, ast.index, bracketed=False)
         outfile.write("]")
+    elif isinstance(ast, AstMap):
+        outfile.write("{")
+        for i, pair in enumerate(ast.pairs):
+            vgenerate_expression(outfile, pair.key, bracketed=False)
+            outfile.write(": ")
+            vgenerate_expression(outfile, pair.value, bracketed=False)
+
+            if i != len(ast.pairs) - 1:
+                outfile.write(", ")
+        outfile.write("}")
     else:
         raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
 
@@ -379,15 +389,42 @@ def vcheck_expression(ast, symbol_table):
         list_type = vcheck_expression(ast.list, symbol_table)
         index_type = vcheck_expression(ast.index, symbol_table)
 
-        if not isinstance(list_type, VeniceListType):
+        if isinstance(list_type, VeniceListType):
+            if index_type != VENICE_TYPE_INTEGER:
+                raise VeniceError(
+                    f"index expression must be of integer type, not {index_type!r}"
+                )
+
+            return list_type.item_type
+        elif isinstance(list_type, VeniceMapType):
+            if not are_types_compatible(list_type.key_type, index_type):
+                raise VeniceError(
+                    f"expected {list_type.key_type!r} for map key, "
+                    + f"got {index_type!r}"
+                )
+
+            return list_type.value_type
+        else:
             raise VeniceError(f"{list_type!r} is not a list type")
+    elif isinstance(ast, AstMap):
+        key_type = vcheck_expression(ast.pairs[0].key, symbol_table)
+        value_type = vcheck_expression(ast.pairs[0].value, symbol_table)
+        for pair in ast.pairs[1:]:
+            another_key_type = vcheck_expression(pair.key, symbol_table)
+            another_value_type = vcheck_expression(pair.value, symbol_table)
+            if not are_types_compatible(key_type, another_key_type):
+                raise VeniceError(
+                    "map contains keys of multiple types: "
+                    + f"{key_type!r} and {another_key_type!r}"
+                )
 
-        if index_type != VENICE_TYPE_INTEGER:
-            raise VeniceError(
-                f"index expression must be of integer type, not {index_type!r}"
-            )
+            if not are_types_compatible(value_type, another_value_type):
+                raise VeniceError(
+                    "map contains values of multiple types: "
+                    + f"{value_type!r} and {another_value_type!r}"
+                )
 
-        return list_type.item_type
+        return VeniceMapType(key_type, value_type)
     else:
         raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
 
@@ -422,6 +459,7 @@ VeniceFunctionType = namedtuple(
 )
 VeniceStructType = namedtuple("VeniceStructType", ["field_types"])
 VeniceKeywordArgumentType = namedtuple("VeniceKeywordArgumentType", ["label", "type"])
+VeniceMapType = namedtuple("VeniceMapType", ["key_type", "value_type"])
 
 VENICE_TYPE_BOOLEAN = VeniceType("boolean")
 VENICE_TYPE_INTEGER = VeniceType("integer")
@@ -497,6 +535,8 @@ AstPrefix = namedtuple("AstPrefix", ["operator", "value"])
 AstSymbol = namedtuple("AstSymbol", ["label"])
 AstLiteral = namedtuple("AstLiteral", ["value"])
 AstList = namedtuple("AstList", ["values"])
+AstMap = namedtuple("AstMap", ["pairs"])
+AstMapLiteralPair = namedtuple("AstMapLiteralPair", ["key", "value"])
 
 
 # Based on https://docs.python.org/3.6/reference/expressions.html#operator-precedence
@@ -697,6 +737,10 @@ class Parser:
             values = self.match_sequence()
             self.expect("TOKEN_RSQUARE")
             return AstList(values)
+        elif token.type == "TOKEN_LCURLY":
+            key_value_pairs = self.match_map_literal()
+            self.expect("TOKEN_RCURLY")
+            return AstMap(key_value_pairs)
         else:
             if token.type == "TOKEN_EOF":
                 raise VeniceError("premature end of input")
@@ -733,6 +777,21 @@ class Parser:
                 break
 
         return arguments
+
+    def match_map_literal(self):
+        pairs = []
+        while True:
+            key = self.match_expression()
+            self.expect("TOKEN_COLON")
+            value = self.match_expression()
+            pairs.append(AstMapLiteralPair(key, value))
+
+            token = self.next()
+            if token.type != "TOKEN_COMMA":
+                self.push_back(token)
+                break
+
+        return pairs
 
     def match_arguments(self):
         arguments = []
