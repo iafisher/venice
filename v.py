@@ -609,7 +609,7 @@ class Parser:
     def match_function(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_LPAREN")
-        parameters = self.match_parameters()
+        parameters = self.match_comma_separated(self.match_parameter, "TOKEN_RPAREN")
         self.expect("TOKEN_RPAREN")
         self.expect("TOKEN_COLON")
         return_type = self.match_type()
@@ -756,11 +756,13 @@ class Parser:
         elif token.type == "TOKEN_NOT":
             left = AstPrefix("not", self.match_expression(PRECEDENCE_PREFIX))
         elif token.type == "TOKEN_LSQUARE":
-            values = self.match_sequence()
+            values = self.match_comma_separated(self.match_expression, "TOKEN_RSQUARE")
             self.expect("TOKEN_RSQUARE")
             return AstList(values)
         elif token.type == "TOKEN_LCURLY":
-            key_value_pairs = self.match_map_literal()
+            key_value_pairs = self.match_comma_separated(
+                self.match_key_value_pair, "TOKEN_RCURLY"
+            )
             self.expect("TOKEN_RCURLY")
             return AstMap(key_value_pairs)
         else:
@@ -773,7 +775,8 @@ class Parser:
 
     def match_infix(self, left, token, precedence):
         if token.type == "TOKEN_LPAREN":
-            args = self.match_arguments()
+            # args = self.match_arguments()
+            args = self.match_comma_separated(self.match_argument, "TOKEN_RPAREN")
             self.expect("TOKEN_RPAREN")
             return AstCall(left, args)
         elif token.type == "TOKEN_LSQUARE":
@@ -787,96 +790,58 @@ class Parser:
             right = self.match_expression(precedence)
             return AstInfix(token.value, left, right)
 
-    def match_sequence(self):
-        arguments = []
-        while True:
-            argument = self.match_expression()
-            arguments.append(argument)
-
+    def match_argument(self):
+        argument = self.match_expression()
+        if isinstance(argument, AstSymbol):
             token = self.next()
-            if token.type != "TOKEN_COMMA":
-                self.push_back(token)
-                break
-
-        return arguments
-
-    def match_map_literal(self):
-        pairs = []
-        while True:
-            key = self.match_expression()
-            self.expect("TOKEN_COLON")
-            value = self.match_expression()
-            pairs.append(AstMapLiteralPair(key, value))
-
-            token = self.next()
-            if token.type != "TOKEN_COMMA":
-                self.push_back(token)
-                break
-
-        return pairs
-
-    def match_arguments(self):
-        arguments = []
-        while True:
-            argument = self.match_expression()
-            if isinstance(argument, AstSymbol):
-                token = self.next()
-                if token.type == "TOKEN_COLON":
-                    label = argument.label
-                    argument = self.match_expression()
-                    arguments.append(AstKeywordArgument(label=label, value=argument))
-                else:
-                    self.push_back(token)
-                    arguments.append(argument)
+            if token.type == "TOKEN_COLON":
+                label = argument.label
+                argument = self.match_expression()
+                return AstKeywordArgument(label=label, value=argument)
             else:
-                arguments.append(argument)
-
-            token = self.next()
-            if token.type != "TOKEN_COMMA":
                 self.push_back(token)
-                break
+                return argument
+        else:
+            return argument
 
-        return arguments
+    def match_parameter(self):
+        symbol_token = self.expect("TOKEN_SYMBOL")
+        self.expect("TOKEN_COLON")
+        symbol_type = self.match_type()
+        return AstParameter(label=symbol_token.value, type=symbol_type)
 
-    def match_parameters(self):
-        parameters = []
-        while True:
-            token = self.expect({"TOKEN_SYMBOL", "TOKEN_RPAREN"})
-            if token.type == "TOKEN_RPAREN":
-                self.push_back(token)
-                break
-
-            self.expect("TOKEN_COLON")
-            symbol_type = self.match_type()
-            parameters.append(AstParameter(label=token.value, type=symbol_type))
-
-            token = self.next()
-            if token.type != "TOKEN_COMMA":
-                self.push_back(token)
-                break
-        return parameters
+    def match_key_value_pair(self):
+        key = self.match_expression()
+        self.expect("TOKEN_COLON")
+        value = self.match_expression()
+        return AstMapLiteralPair(key, value)
 
     def match_type(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         token = self.next()
         if token.type == "TOKEN_LANGLE":
-            inner_types = self.match_type_sequence()
+            inner_types = self.match_comma_separated(self.match_type, "TOKEN_RANGLE")
             self.expect("TOKEN_RANGLE")
             return AstParameterizedType(symbol_token, inner_types)
         else:
             self.push_back(token)
             return AstSymbol(symbol_token.value)
 
-    def match_type_sequence(self):
-        types = []
+    def match_comma_separated(self, matcher, terminator):
+        values = []
         while True:
-            types.append(self.match_type())
+            token = self.next()
+            self.push_back(token)
+            if token.type == terminator:
+                break
+
+            values.append(matcher())
 
             token = self.next()
             if token.type != "TOKEN_COMMA":
                 self.push_back(token)
                 break
-        return types
+        return values
 
     def skip_newlines(self):
         while True:
