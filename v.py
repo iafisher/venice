@@ -441,6 +441,23 @@ def resolve_type(type_tree):
             return VeniceType(type_tree.label)
         else:
             raise VeniceError(f"unknown type: {type_tree.label}")
+    elif isinstance(type_tree, AstParameterizedType):
+        ptype = type_tree.type.value
+        if ptype == "map":
+            if len(type_tree.parameters) != 2:
+                raise VeniceError("map type requires exactly 2 parameters")
+
+            return VeniceMapType(
+                resolve_type(type_tree.parameters[0]),
+                resolve_type(type_tree.parameters[1]),
+            )
+        elif ptype == "list":
+            if len(type_tree.parameters) != 1:
+                raise VeniceError("list type requires exactly 1 parameter")
+
+            return VeniceListType(resolve_type(type_tree.parameters[0]))
+        else:
+            raise VeniceError(f"{ptype} cannot be parameterized")
     else:
         raise VeniceError(f"{type_tree!r} cannot be interpreted as a type")
 
@@ -537,6 +554,7 @@ AstLiteral = namedtuple("AstLiteral", ["value"])
 AstList = namedtuple("AstList", ["values"])
 AstMap = namedtuple("AstMap", ["pairs"])
 AstMapLiteralPair = namedtuple("AstMapLiteralPair", ["key", "value"])
+AstParameterizedType = namedtuple("AstParameterizedType", ["type", "parameters"])
 
 
 # Based on https://docs.python.org/3.6/reference/expressions.html#operator-precedence
@@ -551,7 +569,11 @@ PRECEDENCE_CALL = 6
 
 PRECEDENCE_MAP = {
     "TOKEN_ASSIGN": PRECEDENCE_ASSIGN,
-    "TOKEN_CMP": PRECEDENCE_CMP,
+    "TOKEN_LTE": PRECEDENCE_CMP,
+    "TOKEN_GTE": PRECEDENCE_CMP,
+    "TOKEN_LANGLE": PRECEDENCE_CMP,
+    "TOKEN_RANGLE": PRECEDENCE_CMP,
+    "TOKEN_EQ": PRECEDENCE_CMP,
     "TOKEN_PLUS": PRECEDENCE_ADD_SUB,
     "TOKEN_MINUS": PRECEDENCE_ADD_SUB,
     "TOKEN_ASTERISK": PRECEDENCE_MUL_DIV,
@@ -836,7 +858,25 @@ class Parser:
 
     def match_type(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
-        return AstSymbol(symbol_token.value)
+        token = self.next()
+        if token.type == "TOKEN_LANGLE":
+            inner_types = self.match_type_sequence()
+            self.expect("TOKEN_RANGLE")
+            return AstParameterizedType(symbol_token, inner_types)
+        else:
+            self.push_back(token)
+            return AstSymbol(symbol_token.value)
+
+    def match_type_sequence(self):
+        types = []
+        while True:
+            types.append(self.match_type())
+
+            token = self.next()
+            if token.type != "TOKEN_COMMA":
+                self.push_back(token)
+                break
+        return types
 
     def skip_newlines(self):
         while True:
@@ -952,21 +992,21 @@ class Lexer:
         elif c == ">":
             c2 = self.read()
             if c2 == "=":
-                return Token("TOKEN_CMP", ">=")
+                return Token("TOKEN_GTE", ">=")
             else:
                 self.push_back(c2)
-                return Token("TOKEN_CMP", ">")
+                return Token("TOKEN_RANGLE", ">")
         elif c == "<":
             c2 = self.read()
             if c2 == "=":
-                return Token("TOKEN_CMP", ">=")
+                return Token("TOKEN_LTE", "<=")
             else:
                 self.push_back(c2)
-                return Token("TOKEN_CMP", "<")
+                return Token("TOKEN_LANGLE", "<")
         elif c == "=":
             c2 = self.read()
             if c2 == "=":
-                return Token("TOKEN_CMP", "==")
+                return Token("TOKEN_EQ", "==")
             else:
                 self.push_back(c2)
                 return Token("TOKEN_ASSIGN", "=")
