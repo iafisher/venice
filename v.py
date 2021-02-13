@@ -188,6 +188,11 @@ def vgenerate_expression(outfile, ast, *, bracketed):
         outfile.write("]")
     elif isinstance(ast, AstLiteral):
         outfile.write(repr(ast.value))
+    elif isinstance(ast, AstIndex):
+        vgenerate_expression(outfile, ast.list, bracketed=True)
+        outfile.write("[")
+        vgenerate_expression(outfile, ast.index, bracketed=False)
+        outfile.write("]")
     else:
         raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
 
@@ -370,6 +375,19 @@ def vcheck_expression(ast, symbol_table):
             raise VeniceError(
                 f"unknown AstLiteral type: {ast.value.__class__.__name__}"
             )
+    elif isinstance(ast, AstIndex):
+        list_type = vcheck_expression(ast.list, symbol_table)
+        index_type = vcheck_expression(ast.index, symbol_table)
+
+        if not isinstance(list_type, VeniceListType):
+            raise VeniceError(f"{list_type!r} is not a list type")
+
+        if index_type != VENICE_TYPE_INTEGER:
+            raise VeniceError(
+                f"index expression must be of integer type, not {index_type!r}"
+            )
+
+        return list_type.item_type
     else:
         raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
 
@@ -472,6 +490,7 @@ AstStructDeclarationField = namedtuple("AstStructDeclarationField", ["label", "t
 AstExpressionStatement = namedtuple("AstExpressionStatement", ["value"])
 
 AstCall = namedtuple("AstCall", ["function", "arguments"])
+AstIndex = namedtuple("AstIndex", ["list", "index"])
 AstKeywordArgument = namedtuple("AstKeywordArgument", ["label", "value"])
 AstInfix = namedtuple("AstInfix", ["operator", "left", "right"])
 AstPrefix = namedtuple("AstPrefix", ["operator", "value"])
@@ -499,6 +518,7 @@ PRECEDENCE_MAP = {
     "TOKEN_SLASH": PRECEDENCE_MUL_DIV,
     # The left parenthesis is the "infix operator" for function-call expressions.
     "TOKEN_LPAREN": PRECEDENCE_CALL,
+    "TOKEN_LSQUARE": PRECEDENCE_CALL,
 }
 
 
@@ -690,6 +710,10 @@ class Parser:
             args = self.match_arguments()
             self.expect("TOKEN_RPAREN")
             return AstCall(left, args)
+        elif token.type == "TOKEN_LSQUARE":
+            index = self.match_expression()
+            self.expect("TOKEN_RSQUARE")
+            return AstIndex(left, index)
         elif token.type == "TOKEN_ASSIGN":
             right = self.match_expression(precedence)
             return AstAssign(left, right)
