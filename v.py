@@ -204,6 +204,10 @@ def vgenerate_expression(outfile, ast, *, bracketed):
             if i != len(ast.pairs) - 1:
                 outfile.write(", ")
         outfile.write("}")
+    elif isinstance(ast, AstFieldAccess):
+        vgenerate_expression(outfile, ast.value, bracketed=True)
+        outfile.write(".")
+        outfile.write(ast.field.value)
     else:
         raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
 
@@ -329,8 +333,8 @@ def vcheck_expression(ast, symbol_table):
         if isinstance(function_type, VeniceFunctionType):
             if len(function_type.parameter_types) != len(ast.arguments):
                 raise VeniceError(
-                    f"expected {len(function_type.parameters)} arguments, "
-                    + "got {len(ast.arguments)}"
+                    f"expected {len(function_type.parameter_types)} arguments, "
+                    + f"got {len(ast.arguments)}"
                 )
 
             for parameter, argument in zip(
@@ -426,6 +430,16 @@ def vcheck_expression(ast, symbol_table):
                 )
 
         return VeniceMapType(key_type, value_type)
+    elif isinstance(ast, AstFieldAccess):
+        struct_type = vcheck_expression(ast.value, symbol_table)
+        if not isinstance(struct_type, VeniceStructType):
+            raise VeniceError(f"expected struct type, got {struct_type!r}")
+
+        for field in struct_type.field_types:
+            if field.label == ast.field.value:
+                return field.type
+
+        raise VeniceError(f"{struct_type!r} does not have field: {ast.field.value}")
     else:
         raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
 
@@ -556,6 +570,7 @@ AstList = namedtuple("AstList", ["values"])
 AstMap = namedtuple("AstMap", ["pairs"])
 AstMapLiteralPair = namedtuple("AstMapLiteralPair", ["key", "value"])
 AstParameterizedType = namedtuple("AstParameterizedType", ["type", "parameters"])
+AstFieldAccess = namedtuple("AstFieldAccess", ["value", "field"])
 
 
 # Based on https://docs.python.org/3.6/reference/expressions.html#operator-precedence
@@ -582,6 +597,7 @@ PRECEDENCE_MAP = {
     # The left parenthesis is the "infix operator" for function-call expressions.
     "TOKEN_LPAREN": PRECEDENCE_CALL,
     "TOKEN_LSQUARE": PRECEDENCE_CALL,
+    "TOKEN_PERIOD": PRECEDENCE_CALL,
 }
 
 
@@ -776,7 +792,6 @@ class Parser:
 
     def match_infix(self, left, token, precedence):
         if token.type == "TOKEN_LPAREN":
-            # args = self.match_arguments()
             args = self.match_comma_separated(self.match_argument, "TOKEN_RPAREN")
             self.expect("TOKEN_RPAREN")
             return AstCall(left, args)
@@ -787,6 +802,9 @@ class Parser:
         elif token.type == "TOKEN_ASSIGN":
             right = self.match_expression(precedence)
             return AstAssign(left, right)
+        elif token.type == "TOKEN_PERIOD":
+            symbol_token = self.expect("TOKEN_SYMBOL")
+            return AstFieldAccess(left, symbol_token)
         else:
             right = self.match_expression(precedence)
             return AstInfix(token.value, left, right)
@@ -911,6 +929,7 @@ class Lexer:
         "\n": "TOKEN_NEWLINE",
         "[": "TOKEN_LSQUARE",
         "]": "TOKEN_RSQUARE",
+        ".": "TOKEN_PERIOD",
     }
     escapes = {
         '"': '"',
