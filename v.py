@@ -19,7 +19,8 @@ def main(args):
                 vcompile(infile, outfile)
 
             program = outfile.getvalue()
-            exec(program, {}, {})
+            env = {}
+            exec(program, env, env)
         elif args[0] == "parse":
             with open(args[1], "r", encoding="utf8") as infile:
                 ast = vparse(infile)

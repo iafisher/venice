@@ -4,3 +4,5 @@ print(m["one"] + 3)
 fn make_map(): map<string, integer> {
   return m
 }
+
+print(make_map())
