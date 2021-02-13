@@ -819,10 +819,14 @@ class Parser:
     def match_parameters(self):
         parameters = []
         while True:
-            symbol_token = self.expect("TOKEN_SYMBOL")
+            token = self.expect({"TOKEN_SYMBOL", "TOKEN_RPAREN"})
+            if token.type == "TOKEN_RPAREN":
+                self.push_back(token)
+                break
+
             self.expect("TOKEN_COLON")
             symbol_type = self.match_type()
-            parameters.append(AstParameter(label=symbol_token.value, type=symbol_type))
+            parameters.append(AstParameter(label=token.value, type=symbol_type))
 
             token = self.next()
             if token.type != "TOKEN_COMMA":
