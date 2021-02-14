@@ -959,12 +959,12 @@ class Lexer:
     def __init__(self, infile):
         self.infile = infile
         self.done = False
-        self.pushed_back = ""
+        self.pushed_back = []
         self.line = 1
         self.column = 1
 
     def next(self):
-        self.skip_whitespace()
+        self.skip_whitespace_and_comments()
 
         if self.done:
             return Token("TOKEN_EOF", "")
@@ -1043,10 +1043,25 @@ class Lexer:
         return self.escapes.get(c, "\\" + c)
 
     def push_back(self, c):
-        self.pushed_back = c
+        self.pushed_back.append(c)
 
-    def skip_whitespace(self):
-        self.read_while(lambda c: c.isspace() and c != "\n")
+    def skip_whitespace_and_comments(self):
+        while True:
+            c = self.read()
+            if c.isspace() and c != "\n":
+                self.read_while(lambda c: c.isspace() and c != "\n")
+            elif c == "/":
+                c2 = self.read()
+                if c2 == "/":
+                    self.read_while(lambda c: c != "\n")
+                    continue
+                else:
+                    self.push_back("/")
+                    self.push_back("/")
+                    break
+            else:
+                self.push_back(c)
+                break
 
     def read_while(self, pred):
         chars = []
@@ -1063,9 +1078,7 @@ class Lexer:
 
     def read(self):
         if self.pushed_back:
-            c = self.pushed_back
-            self.pushed_back = ""
-            return c
+            return self.pushed_back.pop()
         else:
             c = self.infile.read(1)
             if c == "":
