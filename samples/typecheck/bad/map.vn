@@ -1,3 +1,5 @@
+// ERROR: expected VeniceType(label='integer'), got VeniceType(label='string')
+
 fn identity(x: integer): integer {
   return x
 }

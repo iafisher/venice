@@ -34,15 +34,19 @@ def main():
 
 def check_path(path, *, expect_failure=False):
     result = subprocess.run(
-        ["./v.py", "run", path],
+        ["./v.py", "run", path, "--quiet"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         encoding="utf8",
     )
+
+    expected_output = get_expected_output(path)
     if expect_failure:
+        if expected_output and expected_output != result.stderr.rstrip("\n"):
+            return False
+
         return result.returncode != 0
     else:
-        expected_output = get_expected_output(path)
         if expected_output and expected_output != result.stdout.rstrip("\n"):
             return False
 
