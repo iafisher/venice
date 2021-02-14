@@ -245,27 +245,39 @@ def vcheck(ast):
     vcheck_block(ast.statements, SymbolTable.with_globals())
 
 
-def vcheck_block(statements, symbol_table):
+def vcheck_block(statements, symbol_table, return_type=None):
     for statement in statements:
-        vcheck_statement(statement, symbol_table)
+        vcheck_statement(statement, symbol_table, return_type=return_type)
 
 
-def vcheck_statement(ast, symbol_table):
+def vcheck_statement(ast, symbol_table, return_type=None):
     if isinstance(ast, AstFunction):
         parameter_types = [
             VeniceKeywordArgumentType(p.label, resolve_type(p.type))
             for p in ast.parameters
         ]
+        f_return_type = resolve_type(ast.return_type)
         symbol_table.put(
             ast.label,
             VeniceFunctionType(
-                parameter_types=parameter_types,
-                return_type=resolve_type(ast.return_type),
+                parameter_types=parameter_types, return_type=f_return_type,
             ),
         )
+
+        body_symbol_table = SymbolTable(parent=symbol_table)
+        for ptype in parameter_types:
+            symbol_table.put(ptype.label, ptype.type)
+
+        vcheck_block(ast.statements, body_symbol_table, return_type=f_return_type)
     elif isinstance(ast, AstReturn):
-        # TODO
-        pass
+        if return_type is None:
+            raise VeniceError("return statement outside of function")
+
+        actual_return_type = vcheck_expression(ast.value, symbol_table)
+        if not are_types_compatible(return_type, actual_return_type):
+            raise VeniceError(
+                f"expected return type of {return_type!r}, got {actual_return_type!r}"
+            )
     elif isinstance(ast, AstIf):
         for clause in ast.if_clauses:
             vassert(clause.condition, symbol_table, VENICE_TYPE_BOOLEAN)

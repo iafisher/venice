@@ -1,0 +1,3 @@
+fn identity(x: integer): integer {
+  return "a string"
+}
