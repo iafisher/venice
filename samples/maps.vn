@@ -1,3 +1,6 @@
+// 4
+// 2
+
 let m = {"one": 1, "two": 2}
 print(m["one"] + 3)
 
@@ -5,4 +8,4 @@ fn make_map(): map<string, integer> {
   return m
 }
 
-print(make_map())
+print(make_map()["two"])

@@ -12,14 +12,16 @@ def init(precommit):
     precommit.check(checks.NoWhitespaceInFilePath())
     precommit.check(checks.DoNotSubmit())
 
+    pyinclude = ["test"]
+
     # Check Python format with black.
-    precommit.check(checks.PythonFormat())
+    precommit.check(checks.PythonFormat(include=pyinclude))
 
     # Lint Python code with flake8.
-    precommit.check(checks.PythonLint())
+    precommit.check(checks.PythonLint(include=pyinclude))
 
     # Check the order of Python imports with isort.
-    precommit.check(checks.PythonImportOrder())
+    precommit.check(checks.PythonImportOrder(include=pyinclude))
 
     # Check that requirements.txt matches pip freeze.
     precommit.check(checks.PipFreeze(venv=".venv"))
