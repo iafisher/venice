@@ -276,7 +276,8 @@ def vcheck_statement(ast, symbol_table, return_type=None):
         actual_return_type = vcheck_expression(ast.value, symbol_table)
         if not are_types_compatible(return_type, actual_return_type):
             raise VeniceError(
-                f"expected return type of {return_type!r}, got {actual_return_type!r}"
+                f"expected return type of {type_to_string(return_type)}, "
+                + f"got {type_to_string(actual_return_type)}"
             )
     elif isinstance(ast, AstIf):
         for clause in ast.if_clauses:
@@ -313,7 +314,7 @@ def vcheck_statement(ast, symbol_table, return_type=None):
             VeniceKeywordArgumentType(p.label, resolve_type(p.type)) for p in ast.fields
         ]
         symbol_table.put(
-            ast.label, VeniceStructType(field_types=field_types),
+            ast.label, VeniceStructType(name=ast.label, field_types=field_types),
         )
     else:
         raise VeniceError(f"unknown AST statement type: {ast.__class__.__name__}")
@@ -375,7 +376,7 @@ def vcheck_expression(ast, symbol_table):
 
             return function_type
         else:
-            raise VeniceError(f"{function_type!r} is not a function type")
+            raise VeniceError(f"{type_to_string(function_type)} is not a function type")
     elif isinstance(ast, AstList):
         # TODO: empty list
         item_type = vcheck_expression(ast.values[0], symbol_table)
@@ -386,7 +387,8 @@ def vcheck_expression(ast, symbol_table):
             if not are_types_compatible(item_type, another_item_type):
                 raise VeniceError(
                     "list contains items of multiple types: "
-                    + f"{item_type!r} and {another_item_type!r}"
+                    + f"{type_to_string(item_type)} "
+                    + f"and {type_to_string(another_item_type)}"
                 )
 
         return VeniceListType(item_type)
@@ -409,20 +411,21 @@ def vcheck_expression(ast, symbol_table):
         if isinstance(list_type, VeniceListType):
             if index_type != VENICE_TYPE_INTEGER:
                 raise VeniceError(
-                    f"index expression must be of integer type, not {index_type!r}"
+                    f"index expression must be of integer type, "
+                    + f"not {type_to_string(index_type)}"
                 )
 
             return list_type.item_type
         elif isinstance(list_type, VeniceMapType):
             if not are_types_compatible(list_type.key_type, index_type):
                 raise VeniceError(
-                    f"expected {list_type.key_type!r} for map key, "
-                    + f"got {index_type!r}"
+                    f"expected {type_to_string(list_type.key_type)} for map key, "
+                    + f"got {type_to_string(index_type)}"
                 )
 
             return list_type.value_type
         else:
-            raise VeniceError(f"{list_type!r} is not a list type")
+            raise VeniceError(f"{type_to_string(list_type)} is not a list type")
     elif isinstance(ast, AstMap):
         key_type = vcheck_expression(ast.pairs[0].key, symbol_table)
         value_type = vcheck_expression(ast.pairs[0].value, symbol_table)
@@ -432,26 +435,32 @@ def vcheck_expression(ast, symbol_table):
             if not are_types_compatible(key_type, another_key_type):
                 raise VeniceError(
                     "map contains keys of multiple types: "
-                    + f"{key_type!r} and {another_key_type!r}"
+                    + f"{type_to_string(key_type)} "
+                    + f"and {type_to_string(another_key_type)}"
                 )
 
             if not are_types_compatible(value_type, another_value_type):
                 raise VeniceError(
                     "map contains values of multiple types: "
-                    + f"{value_type!r} and {another_value_type!r}"
+                    + f"{type_to_string(value_type)} "
+                    + f"and {type_to_string(another_value_type)}"
                 )
 
         return VeniceMapType(key_type, value_type)
     elif isinstance(ast, AstFieldAccess):
         struct_type = vcheck_expression(ast.value, symbol_table)
         if not isinstance(struct_type, VeniceStructType):
-            raise VeniceError(f"expected struct type, got {struct_type!r}")
+            raise VeniceError(
+                f"expected struct type, got {type_to_string(struct_type)}"
+            )
 
         for field in struct_type.field_types:
             if field.label == ast.field.value:
                 return field.type
 
-        raise VeniceError(f"{struct_type!r} does not have field: {ast.field.value}")
+        raise VeniceError(
+            f"{type_to_string(struct_type)} does not have field: {ast.field.value}"
+        )
     else:
         raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
 
@@ -459,7 +468,9 @@ def vcheck_expression(ast, symbol_table):
 def vassert(ast, symbol_table, expected):
     actual = vcheck_expression(ast, symbol_table)
     if not are_types_compatible(expected, actual):
-        raise VeniceError(f"expected {expected!r}, got {actual!r}")
+        raise VeniceError(
+            f"expected {type_to_string(expected)}, got {type_to_string(actual)}"
+        )
 
 
 def resolve_type(type_tree):
@@ -484,9 +495,11 @@ def resolve_type(type_tree):
 
             return VeniceListType(resolve_type(type_tree.parameters[0]))
         else:
-            raise VeniceError(f"{ptype} cannot be parameterized")
+            raise VeniceError(f"{type_to_string(ptype)} cannot be parameterized")
     else:
-        raise VeniceError(f"{type_tree!r} cannot be interpreted as a type")
+        raise VeniceError(
+            f"{type_to_string(type_tree)} cannot be interpreted as a type"
+        )
 
 
 def are_types_compatible(expected_type, actual_type):
@@ -496,12 +509,36 @@ def are_types_compatible(expected_type, actual_type):
     return expected_type == actual_type
 
 
+def type_to_string(t):
+    if isinstance(t, VeniceType):
+        return t.label
+    elif isinstance(t, VeniceListType):
+        return f"list<{type_to_string(t.item_type)}>"
+    elif isinstance(t, VeniceFunctionType):
+        if t.parameter_types:
+            return (
+                "fn<"
+                + ", ".join(map(type_to_string, t.parameter_types))
+                + f", {type_to_string(t.return_type)}>"
+            )
+        else:
+            return f"fn<{type_to_string(t.return_type)}>"
+    elif isinstance(t, VeniceMapType):
+        return f"map<{type_to_string(t.key_type)}, {type_to_string(t.value_type)}>"
+    elif isinstance(t, VeniceKeywordArgumentType):
+        return type_to_string(t.type)
+    elif isinstance(t, VeniceStructType):
+        return t.name
+    else:
+        raise ValueError(t)
+
+
 VeniceType = namedtuple("VeniceType", ["label"])
 VeniceListType = namedtuple("VeniceListType", ["item_type"])
 VeniceFunctionType = namedtuple(
     "VeniceFunctionType", ["parameter_types", "return_type"]
 )
-VeniceStructType = namedtuple("VeniceStructType", ["field_types"])
+VeniceStructType = namedtuple("VeniceStructType", ["name", "field_types"])
 VeniceKeywordArgumentType = namedtuple("VeniceKeywordArgumentType", ["label", "type"])
 VeniceMapType = namedtuple("VeniceMapType", ["key_type", "value_type"])
 

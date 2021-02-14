@@ -1,4 +1,4 @@
-// ERROR: expected VeniceType(label='integer'), got VeniceType(label='string')
+// ERROR: expected integer, got string
 
 fn identity(x: integer): integer {
   return x
