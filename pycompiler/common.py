@@ -1,0 +1,2 @@
+class VeniceError(Exception):
+    pass

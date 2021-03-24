@@ -1,0 +1,30 @@
+from collections import namedtuple
+
+Program = namedtuple("Program", ["statements"])
+
+Function = namedtuple("Function", ["label", "parameters", "return_type", "statements"])
+Parameter = namedtuple("Parameter", ["label", "type"])
+
+Let = namedtuple("Let", ["label", "value"])
+Return = namedtuple("Return", ["value"])
+If = namedtuple("If", ["if_clauses", "else_clause"])
+IfClause = namedtuple("ElifClause", ["condition", "statements"])
+While = namedtuple("While", ["condition", "statements"])
+For = namedtuple("For", ["loop_variable", "iterator", "statements"])
+Assign = namedtuple("Assign", ["label", "value"])
+StructDeclaration = namedtuple("StructDeclaration", ["label", "fields"])
+StructDeclarationField = namedtuple("StructDeclarationField", ["label", "type"])
+ExpressionStatement = namedtuple("ExpressionStatement", ["value"])
+
+Call = namedtuple("Call", ["function", "arguments"])
+Index = namedtuple("Index", ["list", "index"])
+KeywordArgument = namedtuple("KeywordArgument", ["label", "value"])
+Infix = namedtuple("Infix", ["operator", "left", "right"])
+Prefix = namedtuple("Prefix", ["operator", "value"])
+Symbol = namedtuple("Symbol", ["label"])
+Literal = namedtuple("Literal", ["value"])
+List = namedtuple("List", ["values"])
+Map = namedtuple("Map", ["pairs"])
+MapLiteralPair = namedtuple("MapLiteralPair", ["key", "value"])
+ParameterizedType = namedtuple("ParameterizedType", ["type", "parameters"])
+FieldAccess = namedtuple("FieldAccess", ["value", "field"])
