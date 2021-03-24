@@ -69,6 +69,7 @@ def main(args):
 def vcompile(infile, outfile):
     ast = vparse(infile)
     vcheck(ast)
+    # vgenerate_js(outfile, ast)
     vgenerate(outfile, ast)
 
 
@@ -77,6 +78,157 @@ def vcompile_string(program):
     outfile = StringIO()
     vcompile(infile, outfile)
     return outfile.getvalue()
+
+
+def vgenerate_js(outfile, ast):
+    if isinstance(ast, AstProgram):
+        vgenerate_js_block(outfile, ast.statements)
+    else:
+        raise VeniceError("argument to vgenerate must be an AstProgram")
+
+
+def vgenerate_js_block(outfile, statements, *, indent=0):
+    for statement in statements:
+        vgenerate_js_statement(outfile, statement, indent=indent)
+
+
+def vgenerate_js_statement(outfile, ast, *, indent=0):
+    if isinstance(ast, AstFunction):
+        outfile.write(("  " * indent) + f"function {ast.label}(")
+        outfile.write(", ".join(parameter.label for parameter in ast.parameters))
+        outfile.write(") {\n")
+        vgenerate_js_block(outfile, ast.statements, indent=indent + 1)
+        outfile.write(("  " * indent) + "}\n")
+    elif isinstance(ast, AstReturn):
+        outfile.write(("  " * indent) + "return ")
+        vgenerate_js_expression(outfile, ast.value, bracketed=False)
+        outfile.write(";\n")
+    elif isinstance(ast, AstIf):
+        for i, clause in enumerate(ast.if_clauses):
+            outfile.write("  " * indent)
+            if i == 0:
+                outfile.write("if (")
+            else:
+                outfile.write("else if (")
+
+            vgenerate_js_expression(outfile, clause.condition, bracketed=False)
+            outfile.write(") {\n")
+            vgenerate_js_block(outfile, clause.statements, indent=indent + 1)
+
+        if ast.else_clause:
+            outfile.write(("  " * indent) + "} else {\n")
+            vgenerate_js_block(outfile, ast.else_clause, indent=indent + 1)
+
+        outfile.write(("  " * indent) + "}\n")
+    elif isinstance(ast, AstLet):
+        outfile.write(("  " * indent) + "var ")
+        if isinstance(ast.label, str):
+            outfile.write(ast.label)
+        else:
+            vgenerate_js_expression(outfile, ast.label, bracketed=False)
+        outfile.write(" = ")
+        vgenerate_js_expression(outfile, ast.value, bracketed=False)
+        outfile.write(";\n")
+    elif isinstance(ast, AstAssign):
+        outfile.write("  " * indent)
+        if isinstance(ast.label, str):
+            outfile.write(ast.label)
+        else:
+            vgenerate_js_expression(outfile, ast.label, bracketed=False)
+        outfile.write(" = ")
+        vgenerate_js_expression(outfile, ast.value, bracketed=False)
+        outfile.write(";\n")
+    elif isinstance(ast, AstWhile):
+        outfile.write(("  " * indent) + "while (")
+        vgenerate_js_expression(outfile, ast.condition, bracketed=False)
+        outfile.write(") {\n")
+        vgenerate_js_block(outfile, ast.statements, indent=indent + 1)
+        outfile.write(("  " * indent) + "}\n")
+    elif isinstance(ast, AstFor):
+        outfile.write(("  " * indent) + "for (var " + ast.loop_variable + " of ")
+        vgenerate_js_expression(outfile, ast.iterator, bracketed=False)
+        outfile.write(") { \n")
+        vgenerate_js_block(outfile, ast.statements, indent=indent + 1)
+        outfile.write(("  " * indent) + "}\n")
+    elif isinstance(ast, AstExpressionStatement):
+        outfile.write("  " * indent)
+        vgenerate_js_expression(outfile, ast.value, bracketed=False)
+        outfile.write(";\n")
+    elif isinstance(ast, AstStructDeclaration):
+        vgenerate_js_struct_declaration(outfile, ast, indent=indent)
+    else:
+        raise VeniceError(f"unknown AST statement type: {ast.__class__.__name__}")
+
+
+def vgenerate_js_expression(outfile, ast, *, bracketed):
+    if isinstance(ast, AstSymbol):
+        outfile.write(ast.label)
+    elif isinstance(ast, AstInfix):
+        if bracketed:
+            outfile.write("(")
+
+        vgenerate_js_expression(outfile, ast.left, bracketed=True)
+        outfile.write(" " + ast.operator + " ")
+        vgenerate_js_expression(outfile, ast.right, bracketed=True)
+
+        if bracketed:
+            outfile.write(")")
+    elif isinstance(ast, AstPrefix):
+        if bracketed:
+            outfile.write("(")
+
+        outfile.write(ast.operator + " ")
+        vgenerate_js_expression(outfile, ast.value, bracketed=True)
+
+        if bracketed:
+            outfile.write(")")
+    elif isinstance(ast, AstCall):
+        vgenerate_js_expression(outfile, ast.function, bracketed=True)
+        outfile.write("(")
+        for i, argument in enumerate(ast.arguments):
+            if isinstance(argument, AstKeywordArgument):
+                outfile.write(argument.label + "=")
+                vgenerate_js_expression(outfile, argument.value, bracketed=True)
+            else:
+                vgenerate_js_expression(outfile, argument, bracketed=True)
+
+            if i != len(ast.arguments) - 1:
+                outfile.write(", ")
+        outfile.write(")")
+    elif isinstance(ast, AstList):
+        outfile.write("[")
+        for i, value in enumerate(ast.values):
+            vgenerate_js_expression(outfile, value, bracketed=False)
+            if i != len(ast.values) - 1:
+                outfile.write(", ")
+        outfile.write("]")
+    elif isinstance(ast, AstLiteral):
+        outfile.write(repr(ast.value))
+    elif isinstance(ast, AstIndex):
+        vgenerate_js_expression(outfile, ast.list, bracketed=True)
+        outfile.write("[")
+        vgenerate_js_expression(outfile, ast.index, bracketed=False)
+        outfile.write("]")
+    elif isinstance(ast, AstMap):
+        outfile.write("{")
+        for i, pair in enumerate(ast.pairs):
+            vgenerate_js_expression(outfile, pair.key, bracketed=False)
+            outfile.write(": ")
+            vgenerate_js_expression(outfile, pair.value, bracketed=False)
+
+            if i != len(ast.pairs) - 1:
+                outfile.write(", ")
+        outfile.write("}")
+    elif isinstance(ast, AstFieldAccess):
+        vgenerate_js_expression(outfile, ast.value, bracketed=True)
+        outfile.write(".")
+        outfile.write(ast.field.value)
+    else:
+        raise VeniceError(f"unknown AST expression type: {ast.__class__.__name__}")
+
+
+def vgenerate_js_struct_declaration(outfile, ast, *, indent):
+    raise NotImplementedError
 
 
 def vgenerate(outfile, ast):
