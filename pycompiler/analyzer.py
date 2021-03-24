@@ -1,7 +1,7 @@
-import ast
 from collections import namedtuple
 
-from common import VeniceError
+from pycompiler import ast
+from pycompiler.common import VeniceError
 
 
 def vcheck(tree):

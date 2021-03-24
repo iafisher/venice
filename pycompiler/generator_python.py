@@ -1,7 +1,7 @@
-import ast
 import textwrap
 
-from common import VeniceError
+from pycompiler import ast
+from pycompiler.common import VeniceError
 
 
 def vgenerate_python(outfile, tree):

@@ -1,6 +1,5 @@
-import ast
-
-from common import VeniceError
+from pycompiler import ast
+from pycompiler.common import VeniceError
 
 
 def vgenerate_javascript(outfile, tree):

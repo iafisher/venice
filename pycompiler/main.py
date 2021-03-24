@@ -1,13 +1,13 @@
 import argparse
-import ast
 import sys
 from io import StringIO
-from parser import Lexer, vparse
 
-from analyzer import vcheck
-from common import VeniceError
-from generator_javascript import vgenerate_javascript
-from generator_python import vgenerate_python
+from pycompiler import ast
+from pycompiler.analyzer import vcheck
+from pycompiler.common import VeniceError
+from pycompiler.generator_javascript import vgenerate_javascript
+from pycompiler.generator_python import vgenerate_python
+from pycompiler.parser import Lexer, vparse
 
 
 def main():
