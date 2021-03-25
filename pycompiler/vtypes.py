@@ -29,7 +29,7 @@ class VeniceFunctionType(VeniceAbstractType):
 
     def __str__(self):
         ptypes = ", ".join(map(str, self.parameter_types))
-        return f"fn<{ptypes}, self.return_type>"
+        return f"fn<{ptypes}, {self.return_type}>"
 
 
 @attrs
