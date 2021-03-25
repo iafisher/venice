@@ -262,7 +262,7 @@ class Parser:
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_COLON")
         symbol_type = self.match_type()
-        return ast.ParameterNode(label=symbol_token.value, type=symbol_type)
+        return ast.ParameterNode(label=symbol_token.value, type_label=symbol_type)
 
     def match_key_value_pair(self):
         key = self.match_expression()

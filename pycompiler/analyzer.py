@@ -14,7 +14,7 @@ def vcheck_block(statements, symbol_table, return_type=None):
 def vcheck_statement(tree, symbol_table, return_type=None):
     if isinstance(tree, ast.FunctionNode):
         parameter_types = [
-            vtypes.VeniceKeywordArgumentType(p.label, resolve_type(p.type))
+            vtypes.VeniceKeywordArgumentType(p.label, resolve_type(p.type_label))
             for p in tree.parameters
         ]
         f_return_type = resolve_type(tree.return_type)
@@ -71,7 +71,7 @@ def vcheck_statement(tree, symbol_table, return_type=None):
         vcheck_expression(tree.value, symbol_table)
     elif isinstance(tree, ast.StructDeclarationNode):
         field_types = [
-            vtypes.VeniceKeywordArgumentType(p.label, resolve_type(p.type))
+            vtypes.VeniceKeywordArgumentType(p.label, resolve_type(p.type_label))
             for p in tree.fields
         ]
         symbol_table.put(
@@ -231,7 +231,7 @@ def resolve_type(type_tree):
         else:
             raise VeniceError(f"unknown type: {type_tree.label}")
     elif isinstance(type_tree, ast.ParameterizedTypeNode):
-        ptype = type_tree.type.value
+        ptype = type_tree.type_label.value
         if ptype == "map":
             if len(type_tree.parameters) != 2:
                 raise VeniceError("map type requires exactly 2 parameters")

@@ -21,7 +21,7 @@ class FunctionNode(AbstractNode):
 @attrs
 class ParameterNode(AbstractNode):
     label = attrib()
-    type = attrib()
+    type_label = attrib()
 
 
 @attrs
@@ -75,7 +75,7 @@ class StructDeclarationNode(AbstractNode):
 @attrs
 class StructDeclarationFieldNode(AbstractNode):
     label = attrib()
-    type = attrib()
+    type_label = attrib()
 
 
 @attrs
@@ -142,7 +142,7 @@ class MapLiteralPairNode(AbstractNode):
 
 @attrs
 class ParameterizedTypeNode(AbstractNode):
-    type = attrib()
+    type_label = attrib()
     parameters = attrib()
 
 
