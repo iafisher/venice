@@ -1,4 +1,4 @@
-from collections import namedtuple
+from attr import attrib, attrs
 
 from pycompiler import ast
 from pycompiler.common import VeniceError
@@ -509,7 +509,10 @@ class Lexer:
             return c
 
 
-Token = namedtuple("Token", ["type", "value"])
+@attrs
+class Token:
+    type = attrib()
+    value = attrib()
 
 
 def is_symbol_char(c):
