@@ -31,7 +31,7 @@ def vgenerate_statement(outfile, tree, *, indent=0):
             if i == 0:
                 outfile.write("if (")
             else:
-                outfile.write("else if (")
+                outfile.write("} else if (")
 
             vgenerate_expression(outfile, clause.condition, bracketed=False)
             outfile.write(") {\n")
@@ -99,7 +99,8 @@ def vgenerate_expression(outfile, tree, *, bracketed):
         if bracketed:
             outfile.write("(")
 
-        outfile.write(tree.operator + " ")
+        op = "!" if tree.operator == "not" else tree.operator
+        outfile.write(op + " ")
         vgenerate_expression(outfile, tree.value, bracketed=True)
 
         if bracketed:
@@ -133,7 +134,10 @@ def vgenerate_expression(outfile, tree, *, bracketed):
                 outfile.write(", ")
         outfile.write("]")
     elif isinstance(tree, ast.LiteralNode):
-        outfile.write(repr(tree.value))
+        if isinstance(tree.value, bool):
+            outfile.write(repr(tree.value).lower())
+        else:
+            outfile.write(repr(tree.value))
     elif isinstance(tree, ast.IndexNode):
         vgenerate_expression(outfile, tree.list, bracketed=True)
         outfile.write("[")
