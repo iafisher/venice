@@ -2,6 +2,8 @@ import argparse
 import sys
 from io import StringIO
 
+import attr
+
 from pycompiler import ast
 from pycompiler.analyzer import vcheck
 from pycompiler.common import VeniceError
@@ -103,20 +105,19 @@ def vcompile_string(program, *, js=False):
 
 def pretty_print_tree(tree, indent=0):
     print(("  " * indent) + tree.__class__.__name__)
-    for key, value in tree._asdict().items():
+    for key, value in attr.asdict(tree, recurse=False).items():
         print(("  " * (indent + 1)) + key + ":", end="")
-        if isinstance(value, ast.Symbol):
-            print(f" ast.Symbol({value.label!r})")
-        elif isinstance(value, ast.Literal):
-            print(f" ast.Literal({value.value!r})")
+        if isinstance(value, ast.SymbolNode):
+            print(f" ast.SymbolNode({value.label!r})")
+        elif isinstance(value, ast.LiteralNode):
+            print(f" ast.LiteralNode({value.value!r})")
         else:
             print()
             if not isinstance(value, list):
                 value = [value]
 
             for subvalue in value:
-                # TODO(2021-03-24): Clean up this hacky logic.
-                if getattr(subvalue.__class__, "__module__", "").endswith("ast"):
+                if isinstance(subvalue, ast.AbstractNode):
                     pretty_print_tree(subvalue, indent + 2)
                 else:
                     print(("  " * (indent + 2)) + repr(subvalue))

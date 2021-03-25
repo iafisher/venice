@@ -24,7 +24,7 @@ def init(precommit):
     precommit.check(checks.PythonImportOrder(include=pyinclude))
 
     # Check that requirements.txt matches pip freeze.
-    precommit.check(checks.PipFreeze(venv=".venv"))
+    # precommit.check(checks.PipFreeze(venv=".venv"))
 
     # Check Python static type annotations with mypy.
     # precommit.check(checks.PythonTypes())

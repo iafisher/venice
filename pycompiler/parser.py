@@ -56,7 +56,7 @@ class Parser:
                 self.push_back(token)
                 statements.append(self.match_statement())
 
-        return ast.Program(statements)
+        return ast.ProgramNode(statements)
 
     def match_function(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
@@ -66,7 +66,7 @@ class Parser:
         self.expect("TOKEN_COLON")
         return_type = self.match_type()
         statements = self.match_block()
-        return ast.Function(
+        return ast.FunctionNode(
             label=symbol_token.value,
             parameters=parameters,
             return_type=return_type,
@@ -107,28 +107,28 @@ class Parser:
             self.push_back(token)
             value = self.match_expression()
             self.expect("TOKEN_NEWLINE")
-            if isinstance(value, ast.Assign):
+            if isinstance(value, ast.AssignNode):
                 return value
             else:
-                return ast.ExpressionStatement(value)
+                return ast.ExpressionStatementNode(value)
 
     def match_let(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_ASSIGN")
         value = self.match_expression()
         self.expect("TOKEN_NEWLINE")
-        return ast.Let(label=symbol_token.value, value=value)
+        return ast.LetNode(label=symbol_token.value, value=value)
 
     def match_return(self):
         value = self.match_expression()
         self.expect("TOKEN_NEWLINE")
-        return ast.Return(value)
+        return ast.ReturnNode(value)
 
     def match_if(self):
         clauses = []
         condition = self.match_expression()
         statements = self.match_block()
-        clauses.append(ast.IfClause(condition, statements))
+        clauses.append(ast.IfClauseNode(condition, statements))
         else_clause = None
         while True:
             token = self.expect(
@@ -137,25 +137,25 @@ class Parser:
             if token.type == "TOKEN_ELIF":
                 condition = self.match_expression()
                 statements = self.match_block()
-                clauses.append(ast.IfClause(condition, statements))
+                clauses.append(ast.IfClauseNode(condition, statements))
             elif token.type == "TOKEN_ELSE":
                 else_clause = self.match_block()
             else:
                 break
 
-        return ast.If(if_clauses=clauses, else_clause=else_clause)
+        return ast.IfNode(if_clauses=clauses, else_clause=else_clause)
 
     def match_while(self):
         condition = self.match_expression()
         statements = self.match_block()
-        return ast.While(condition, statements)
+        return ast.WhileNode(condition, statements)
 
     def match_for(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_IN")
         iterator = self.match_expression()
         statements = self.match_block()
-        return ast.For(
+        return ast.ForNode(
             loop_variable=symbol_token.value, iterator=iterator, statements=statements
         )
 
@@ -167,7 +167,7 @@ class Parser:
             field_token = self.expect("TOKEN_SYMBOL")
             self.expect("TOKEN_COLON")
             type_tree = self.match_type()
-            fields.append(ast.StructDeclarationField(field_token.value, type_tree))
+            fields.append(ast.StructDeclarationFieldNode(field_token.value, type_tree))
             token = self.expect(["TOKEN_COMMA", "TOKEN_RCURLY"])
             if token.type == "TOKEN_COMMA":
                 continue
@@ -175,7 +175,7 @@ class Parser:
                 break
 
         self.expect("TOKEN_NEWLINE")
-        return ast.StructDeclaration(symbol_token.value, fields)
+        return ast.StructDeclarationNode(symbol_token.value, fields)
 
     def match_expression(self, precedence=PRECEDENCE_LOWEST):
         left = self.match_prefix()
@@ -191,32 +191,32 @@ class Parser:
     def match_prefix(self):
         token = self.next()
         if token.type == "TOKEN_INT":
-            left = ast.Literal(int(token.value))
+            left = ast.LiteralNode(int(token.value))
         elif token.type == "TOKEN_TRUE":
-            left = ast.Literal(True)
+            left = ast.LiteralNode(True)
         elif token.type == "TOKEN_FALSE":
-            left = ast.Literal(False)
+            left = ast.LiteralNode(False)
         elif token.type == "TOKEN_SYMBOL":
-            left = ast.Symbol(token.value)
+            left = ast.SymbolNode(token.value)
         elif token.type == "TOKEN_STRING":
-            left = ast.Literal(token.value)
+            left = ast.LiteralNode(token.value)
         elif token.type == "TOKEN_LPAREN":
             left = self.match_expression()
             self.expect("TOKEN_RPAREN")
         elif token.type == "TOKEN_MINUS":
-            left = ast.Prefix("-", self.match_expression(PRECEDENCE_PREFIX))
+            left = ast.PrefixNode("-", self.match_expression(PRECEDENCE_PREFIX))
         elif token.type == "TOKEN_NOT":
-            left = ast.Prefix("not", self.match_expression(PRECEDENCE_PREFIX))
+            left = ast.PrefixNode("not", self.match_expression(PRECEDENCE_PREFIX))
         elif token.type == "TOKEN_LSQUARE":
             values = self.match_comma_separated(self.match_expression, "TOKEN_RSQUARE")
             self.expect("TOKEN_RSQUARE")
-            return ast.List(values)
+            return ast.ListNode(values)
         elif token.type == "TOKEN_LCURLY":
             key_value_pairs = self.match_comma_separated(
                 self.match_key_value_pair, "TOKEN_RCURLY"
             )
             self.expect("TOKEN_RCURLY")
-            return ast.Map(key_value_pairs)
+            return ast.MapNode(key_value_pairs)
         else:
             if token.type == "TOKEN_EOF":
                 raise VeniceError("premature end of input")
@@ -229,29 +229,29 @@ class Parser:
         if token.type == "TOKEN_LPAREN":
             args = self.match_comma_separated(self.match_argument, "TOKEN_RPAREN")
             self.expect("TOKEN_RPAREN")
-            return ast.Call(left, args)
+            return ast.CallNode(left, args)
         elif token.type == "TOKEN_LSQUARE":
             index = self.match_expression()
             self.expect("TOKEN_RSQUARE")
-            return ast.Index(left, index)
+            return ast.IndexNode(left, index)
         elif token.type == "TOKEN_ASSIGN":
             right = self.match_expression(precedence)
-            return ast.Assign(left, right)
+            return ast.AssignNode(left, right)
         elif token.type == "TOKEN_PERIOD":
             symbol_token = self.expect("TOKEN_SYMBOL")
-            return ast.FieldAccess(left, symbol_token)
+            return ast.FieldAccessNode(left, symbol_token)
         else:
             right = self.match_expression(precedence)
-            return ast.Infix(token.value, left, right)
+            return ast.InfixNode(token.value, left, right)
 
     def match_argument(self):
         argument = self.match_expression()
-        if isinstance(argument, ast.Symbol):
+        if isinstance(argument, ast.SymbolNode):
             token = self.next()
             if token.type == "TOKEN_COLON":
                 label = argument.label
                 argument = self.match_expression()
-                return ast.KeywordArgument(label=label, value=argument)
+                return ast.KeywordArgumentNode(label=label, value=argument)
             else:
                 self.push_back(token)
                 return argument
@@ -262,13 +262,13 @@ class Parser:
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_COLON")
         symbol_type = self.match_type()
-        return ast.Parameter(label=symbol_token.value, type=symbol_type)
+        return ast.ParameterNode(label=symbol_token.value, type=symbol_type)
 
     def match_key_value_pair(self):
         key = self.match_expression()
         self.expect("TOKEN_COLON")
         value = self.match_expression()
-        return ast.MapLiteralPair(key, value)
+        return ast.MapLiteralPairNode(key, value)
 
     def match_type(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
@@ -276,10 +276,10 @@ class Parser:
         if token.type == "TOKEN_LANGLE":
             inner_types = self.match_comma_separated(self.match_type, "TOKEN_RANGLE")
             self.expect("TOKEN_RANGLE")
-            return ast.ParameterizedType(symbol_token, inner_types)
+            return ast.ParameterizedTypeNode(symbol_token, inner_types)
         else:
             self.push_back(token)
-            return ast.Symbol(symbol_token.value)
+            return ast.SymbolNode(symbol_token.value)
 
     def match_comma_separated(self, matcher, terminator):
         values = []
