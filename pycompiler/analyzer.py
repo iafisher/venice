@@ -4,6 +4,7 @@ from pycompiler.common import VeniceError
 
 def vcheck(tree):
     vcheck_block(tree.statements, SymbolTable.with_globals())
+    tree.type = vtypes.VENICE_TYPE_VOID
 
 
 def vcheck_block(statements, symbol_table, return_type=None):
@@ -12,6 +13,7 @@ def vcheck_block(statements, symbol_table, return_type=None):
 
 
 def vcheck_statement(tree, symbol_table, return_type=None):
+    tree.type = vtypes.VENICE_TYPE_VOID
     if isinstance(tree, ast.FunctionNode):
         parameter_types = [
             vtypes.VeniceKeywordArgumentType(p.label, resolve_type(p.type_label))
@@ -86,23 +88,23 @@ def vcheck_expression(tree, symbol_table):
     if isinstance(tree, ast.SymbolNode):
         symbol_type = symbol_table.get(tree.label)
         if symbol_type is not None:
-            return symbol_type
+            tree.type = symbol_type
         else:
             raise VeniceError(f"undefined symbol: {tree.label}")
     elif isinstance(tree, ast.InfixNode):
         vassert(tree.left, symbol_table, vtypes.VENICE_TYPE_INTEGER)
         vassert(tree.right, symbol_table, vtypes.VENICE_TYPE_INTEGER)
         if tree.operator in [">=", "<=", ">", "<", "==", "!="]:
-            return vtypes.VENICE_TYPE_BOOLEAN
+            tree.type = vtypes.VENICE_TYPE_BOOLEAN
         else:
-            return vtypes.VENICE_TYPE_INTEGER
+            tree.type = vtypes.VENICE_TYPE_INTEGER
     elif isinstance(tree, ast.PrefixNode):
         if tree.operator == "not":
             vassert(tree.value, symbol_table, vtypes.VENICE_TYPE_BOOLEAN)
-            return vtypes.VENICE_TYPE_BOOLEAN
+            tree.type = vtypes.VENICE_TYPE_BOOLEAN
         else:
             vassert(tree.value, symbol_table, vtypes.VENICE_TYPE_INTEGER)
-            return vtypes.VENICE_TYPE_INTEGER
+            tree.type = vtypes.VENICE_TYPE_INTEGER
     elif isinstance(tree, ast.CallNode):
         function_type = vcheck_expression(tree.function, symbol_table)
         if isinstance(function_type, vtypes.VeniceFunctionType):
@@ -120,7 +122,7 @@ def vcheck_expression(tree, symbol_table):
                 else:
                     vassert(argument, symbol_table, parameter.type)
 
-            return function_type.return_type
+            tree.type = function_type.return_type
         elif isinstance(function_type, vtypes.VeniceStructType):
             for parameter, argument in zip(function_type.field_types, tree.arguments):
                 if not isinstance(argument, ast.KeywordArgumentNode):
@@ -136,7 +138,7 @@ def vcheck_expression(tree, symbol_table):
 
                 vassert(argument.value, symbol_table, parameter.type)
 
-            return function_type
+            tree.type = function_type
         else:
             raise VeniceError(f"{function_type} is not a function type")
     elif isinstance(tree, ast.ListNode):
@@ -152,15 +154,15 @@ def vcheck_expression(tree, symbol_table):
                     + f"{item_type} and {another_item_type}"
                 )
 
-        return vtypes.VeniceListType(item_type)
+        tree.type = vtypes.VeniceListType(item_type)
     elif isinstance(tree, ast.LiteralNode):
         if isinstance(tree.value, str):
-            return vtypes.VENICE_TYPE_STRING
+            tree.type = vtypes.VENICE_TYPE_STRING
         elif isinstance(tree.value, bool):
             # This must come before `int` because bools are ints in Python.
-            return vtypes.VENICE_TYPE_BOOLEAN
+            tree.type = vtypes.VENICE_TYPE_BOOLEAN
         elif isinstance(tree.value, int):
-            return vtypes.VENICE_TYPE_INTEGER
+            tree.type = vtypes.VENICE_TYPE_INTEGER
         else:
             raise VeniceError(
                 f"unknown ast.LiteralNode type: {tree.value.__class__.__name__}"
@@ -182,7 +184,7 @@ def vcheck_expression(tree, symbol_table):
                     f"expected {list_type.key_type} for map key, got {index_type}"
                 )
 
-            return list_type.value_type
+            tree.type = list_type.value_type
         else:
             raise VeniceError(f"{list_type} is not a list type")
     elif isinstance(tree, ast.MapNode):
@@ -203,7 +205,7 @@ def vcheck_expression(tree, symbol_table):
                     + f"{value_type} and {another_value_type}"
                 )
 
-        return vtypes.VeniceMapType(key_type, value_type)
+        tree.type = vtypes.VeniceMapType(key_type, value_type)
     elif isinstance(tree, ast.FieldAccessNode):
         struct_type = vcheck_expression(tree.value, symbol_table)
         if not isinstance(struct_type, vtypes.VeniceStructType):
@@ -211,11 +213,14 @@ def vcheck_expression(tree, symbol_table):
 
         for field in struct_type.field_types:
             if field.label == tree.field.value:
-                return field.type
-
-        raise VeniceError(f"{struct_type} does not have field: {tree.field.value}")
+                tree.type = field.type
+                break
+        else:
+            raise VeniceError(f"{struct_type} does not have field: {tree.field.value}")
     else:
         raise VeniceError(f"unknown AST expression type: {tree.__class__.__name__}")
+
+    return tree.type
 
 
 def vassert(tree, symbol_table, expected):
@@ -275,6 +280,7 @@ class SymbolTable:
                     )
                 ],
                 return_type=vtypes.VENICE_TYPE_VOID,
+                javascript_name="console.log",
             ),
         )
         return symbol_table

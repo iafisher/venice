@@ -25,6 +25,7 @@ class VeniceListType(VeniceAbstractType):
 class VeniceFunctionType(VeniceAbstractType):
     parameter_types = attrib()
     return_type = attrib()
+    javascript_name = attrib(default=None)
 
     def __str__(self):
         ptypes = ", ".join(map(str, self.parameter_types))
