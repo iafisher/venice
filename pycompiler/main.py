@@ -20,7 +20,7 @@ def main():
 
     parser_run = subparsers.add_parser("run")
     parser_run.add_argument("--quiet", action="store_true")
-    parser_run.add_argument("--js", action="store_true")
+    parser_run.add_argument("--python", action="store_true")
     parser_run.add_argument("path")
     parser_run.set_defaults(func=main_run)
 
@@ -34,7 +34,7 @@ def main():
 
     parser_compile = subparsers.add_parser("compile")
     parser_compile.add_argument("path")
-    parser_compile.add_argument("--js", action="store_true")
+    parser_compile.add_argument("--python", action="store_true")
     parser_compile.set_defaults(func=main_compile)
 
     args = parser.parse_args()
@@ -45,7 +45,7 @@ def main_run(args):
     with tempfile.NamedTemporaryFile("w", encoding="utf8") as outfile:
         with open(args.path, "r", encoding="utf8") as infile:
             try:
-                vcompile(infile, outfile, js=args.js)
+                vcompile(infile, outfile, python=args.python)
             except VeniceError as e:
                 if args.quiet:
                     print(f"ERROR: {e}", file=sys.stderr)
@@ -54,10 +54,10 @@ def main_run(args):
                     raise e
 
         outfile.flush()
-        if args.js:
-            subprocess.run(["node", outfile.name])
-        else:
+        if args.python:
             subprocess.run(["python3", outfile.name])
+        else:
+            subprocess.run(["node", outfile.name])
 
 
 def main_parse(args):
@@ -83,23 +83,23 @@ def main_tokenize(args):
 
 def main_compile(args):
     with open(args.path, "r", encoding="utf8") as infile:
-        vcompile(infile, sys.stdout, js=args.js)
+        vcompile(infile, sys.stdout, python=args.python)
 
 
-def vcompile(infile, outfile, *, js=False):
+def vcompile(infile, outfile, *, python=False):
     ast = vparse(infile)
     vcheck(ast)
 
-    if js:
-        vgenerate_javascript(outfile, ast)
-    else:
+    if python:
         vgenerate_python(outfile, ast)
+    else:
+        vgenerate_javascript(outfile, ast)
 
 
-def vcompile_string(program, *, js=False):
+def vcompile_string(program, *, python=False):
     infile = StringIO(program)
     outfile = StringIO()
-    vcompile(infile, outfile, js=js)
+    vcompile(infile, outfile, python=python)
     return outfile.getvalue()
 
 

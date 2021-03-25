@@ -34,7 +34,7 @@ def main():
 
 def check_path(path, *, expect_failure=False):
     result = subprocess.run(
-        ["./v", "run", path, "--quiet", "--js"],
+        ["./v", "run", path, "--quiet"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         encoding="utf8",
