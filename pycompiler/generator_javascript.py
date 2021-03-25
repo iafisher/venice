@@ -1,4 +1,4 @@
-from pycompiler import ast
+from pycompiler import ast, vtypes
 from pycompiler.common import VeniceError
 
 
@@ -109,18 +109,30 @@ def vgenerate_expression(outfile, tree, *, bracketed):
         if bracketed:
             outfile.write(")")
     elif isinstance(tree, ast.CallNode):
-        vgenerate_expression(outfile, tree.function, bracketed=True)
-        outfile.write("(")
-        for i, argument in enumerate(tree.arguments):
-            if isinstance(argument, ast.KeywordArgumentNode):
-                outfile.write(argument.label + "=")
+        if isinstance(tree.function, ast.SymbolNode) and isinstance(
+            tree.function.type, vtypes.VeniceStructType
+        ):
+            outfile.write("{ ")
+            for i, argument in enumerate(tree.arguments):
+                outfile.write(argument.label + ": ")
                 vgenerate_expression(outfile, argument.value, bracketed=True)
-            else:
-                vgenerate_expression(outfile, argument, bracketed=True)
 
-            if i != len(tree.arguments) - 1:
-                outfile.write(", ")
-        outfile.write(")")
+                if i != len(tree.arguments) - 1:
+                    outfile.write(", ")
+            outfile.write(" }")
+        else:
+            vgenerate_expression(outfile, tree.function, bracketed=True)
+            outfile.write("(")
+            for i, argument in enumerate(tree.arguments):
+                if isinstance(argument, ast.KeywordArgumentNode):
+                    outfile.write(argument.label + "=")
+                    vgenerate_expression(outfile, argument.value, bracketed=True)
+                else:
+                    vgenerate_expression(outfile, argument, bracketed=True)
+
+                if i != len(tree.arguments) - 1:
+                    outfile.write(", ")
+            outfile.write(")")
     elif isinstance(tree, ast.ListNode):
         outfile.write("[")
         for i, value in enumerate(tree.values):
