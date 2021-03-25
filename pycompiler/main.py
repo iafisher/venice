@@ -121,7 +121,3 @@ def pretty_print_tree(tree, indent=0):
                     pretty_print_tree(subvalue, indent + 2)
                 else:
                     print(("  " * (indent + 2)) + repr(subvalue))
-
-
-if __name__ == "__main__":
-    main()

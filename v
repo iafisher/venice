@@ -1,5 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env python3
+from pycompiler import main
 
-set -e
-
-python3 pycompiler/main.py "$@"
+main.main()
