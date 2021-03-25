@@ -105,7 +105,15 @@ def vgenerate_expression(outfile, tree, *, bracketed):
         if bracketed:
             outfile.write(")")
     elif isinstance(tree, ast.CallNode):
-        vgenerate_expression(outfile, tree.function, bracketed=True)
+        # TODO(2021-03-24): Fix this ugly hack to get JavaScript to work. The proper way
+        # is to include a `javascript_name` field for each entry in the symbol table,
+        # and attach that to the syntax tree during analysis so that generation can use
+        # it.
+        if isinstance(tree.function, ast.SymbolNode) and tree.function.label == "print":
+            outfile.write("console.log")
+        else:
+            vgenerate_expression(outfile, tree.function, bracketed=True)
+
         outfile.write("(")
         for i, argument in enumerate(tree.arguments):
             if isinstance(argument, ast.KeywordArgumentNode):
