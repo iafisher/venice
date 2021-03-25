@@ -1,5 +1,7 @@
 import argparse
+import subprocess
 import sys
+import tempfile
 from io import StringIO
 
 import attr
@@ -40,24 +42,22 @@ def main():
 
 
 def main_run(args):
-    outfile = StringIO()
-    with open(args.path, "r", encoding="utf8") as infile:
-        try:
-            vcompile(infile, outfile, js=args.js)
-        except VeniceError as e:
-            if args.quiet:
-                print(f"ERROR: {e}", file=sys.stderr)
-                sys.exit(1)
-            else:
-                raise e
+    with tempfile.NamedTemporaryFile("w", encoding="utf8") as outfile:
+        with open(args.path, "r", encoding="utf8") as infile:
+            try:
+                vcompile(infile, outfile, js=args.js)
+            except VeniceError as e:
+                if args.quiet:
+                    print(f"ERROR: {e}", file=sys.stderr)
+                    sys.exit(1)
+                else:
+                    raise e
 
-    program = outfile.getvalue()
-
-    if not args.js:
-        env = {}
-        exec(program, env, env)
-    else:
-        raise NotImplementedError
+        outfile.flush()
+        if args.js:
+            subprocess.run(["node", outfile.name])
+        else:
+            subprocess.run(["python3", outfile.name])
 
 
 def main_parse(args):
