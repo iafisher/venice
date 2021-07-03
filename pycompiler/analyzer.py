@@ -310,6 +310,17 @@ class SymbolTable:
                 javascript_name="console.log",
             ),
         )
+        symbol_table.put(
+            "input",
+            vtypes.VeniceFunctionType(
+                [
+                    vtypes.VeniceKeywordArgumentType(
+                        label="x", type=vtypes.VENICE_TYPE_STRING
+                    )
+                ],
+                return_type=vtypes.VENICE_TYPE_STRING,
+            ),
+        )
         return symbol_table
 
     def has(self, symbol):

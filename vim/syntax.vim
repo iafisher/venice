@@ -11,7 +11,7 @@ if exists("b:current_syntax")
 endif
 let b:current_syntax = "venice"
 
-syn keyword veniceBuiltin  false integer list map print string true
+syn keyword veniceBuiltin  false input integer list map print string true
 syn keyword veniceKeywords elif else fn for if in let return struct while
 
 syn match veniceComment "//.*$"
