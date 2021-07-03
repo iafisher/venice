@@ -105,12 +105,26 @@ def vcheck_expression(tree, symbol_table):
         else:
             raise VeniceError(f"undefined symbol: {tree.label}")
     elif isinstance(tree, ast.InfixNode):
-        vassert(tree.left, symbol_table, vtypes.VENICE_TYPE_INTEGER)
-        vassert(tree.right, symbol_table, vtypes.VENICE_TYPE_INTEGER)
+        left_type = vcheck_expression(tree.left, symbol_table)
+        right_type = vcheck_expression(tree.right, symbol_table)
+
+        if not left_type == right_type:
+            raise VeniceError(
+                "types do not match for {tree.operator}: "
+                + f"{left_type} and {right_type}"
+            )
+
+        if tree.operator in ("+", ">=", "<=", ">", "<", "==", "!="):
+            if left_type not in (vtypes.VENICE_TYPE_INTEGER, vtypes.VENICE_TYPE_STRING):
+                raise VeniceError("expected integer or string")
+        else:
+            if left_type != vtypes.VENICE_TYPE_INTEGER:
+                raise VeniceError("expected integer")
+
         if tree.operator in [">=", "<=", ">", "<", "==", "!="]:
             tree.type = vtypes.VENICE_TYPE_BOOLEAN
         else:
-            tree.type = vtypes.VENICE_TYPE_INTEGER
+            tree.type = left_type
     elif isinstance(tree, ast.PrefixNode):
         if tree.operator == "not":
             vassert(tree.value, symbol_table, vtypes.VENICE_TYPE_BOOLEAN)
