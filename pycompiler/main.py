@@ -18,6 +18,14 @@ def main():
     parser = argparse.ArgumentParser(description="The Venice programming language.")
     subparsers = parser.add_subparsers()
 
+    parser_compile = subparsers.add_parser("compile")
+    parser_compile.add_argument("path")
+    parser_compile.add_argument("--python", action="store_true")
+    parser_compile.set_defaults(func=main_compile)
+
+    parser_repl = subparsers.add_parser("repl")
+    parser_repl.set_defaults(func=main_repl)
+
     parser_run = subparsers.add_parser("run")
     parser_run.add_argument("--quiet", action="store_true")
     parser_run.add_argument("--python", action="store_true")
@@ -32,13 +40,32 @@ def main():
     parser_tokenize.add_argument("path")
     parser_tokenize.set_defaults(func=main_tokenize)
 
-    parser_compile = subparsers.add_parser("compile")
-    parser_compile.add_argument("path")
-    parser_compile.add_argument("--python", action="store_true")
-    parser_compile.set_defaults(func=main_compile)
-
     args = parser.parse_args()
     args.func(args)
+
+
+def main_compile(args):
+    with open(args.path, "r", encoding="utf8") as infile:
+        vcompile(infile, sys.stdout, python=args.python)
+
+
+def main_repl(args):
+    while True:
+        try:
+            line = input(">>> ")
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+
+        infile = StringIO(line)
+        outfile = StringIO()
+
+        vcompile(infile, outfile, python=True)
+
+        globals_map = {}
+        locals_map = {}
+        result = eval(outfile.getvalue(), globals_map, locals_map)
+        print(repr(result))
 
 
 def main_run(args):
@@ -79,11 +106,6 @@ def main_tokenize(args):
                     print(token.type.ljust(20), repr(token.value))
                 else:
                     print(token.type.ljust(20), token.value)
-
-
-def main_compile(args):
-    with open(args.path, "r", encoding="utf8") as infile:
-        vcompile(infile, sys.stdout, python=args.python)
 
 
 def vcompile(infile, outfile, *, python=False):

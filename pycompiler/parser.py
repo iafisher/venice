@@ -106,7 +106,7 @@ class Parser:
         else:
             self.push_back(token)
             value = self.match_expression()
-            self.expect("TOKEN_NEWLINE")
+            self.expect(("TOKEN_NEWLINE", "TOKEN_EOF"))
             if isinstance(value, ast.AssignNode):
                 return value
             else:
