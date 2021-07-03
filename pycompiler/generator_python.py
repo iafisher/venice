@@ -6,6 +6,9 @@ from pycompiler.common import VeniceError
 
 def vgenerate_python(outfile, tree):
     if isinstance(tree, ast.ProgramNode):
+        outfile.write("import sys\n")
+        outfile.write('sys.path.append("/home/iafisher/dev/venice")\n')
+        outfile.write("import venicelib\n\n")
         vgenerate_block(outfile, tree.statements)
     else:
         raise VeniceError("argument to vgenerate must be an ast.ProgramNode")
@@ -60,9 +63,6 @@ def vgenerate_statement(outfile, tree, *, indent=0):
             ("  " * indent) + "for " + ", ".join(tree.loop_variables) + " in "
         )
         vgenerate_expression(outfile, tree.iterator, bracketed=False)
-        # TODO(2021-07-03): Fix this ugly hack.
-        if len(tree.loop_variables) == 2:
-            outfile.write(".items()")
         outfile.write(":\n")
         vgenerate_block(outfile, tree.statements, indent=indent + 1)
     elif isinstance(tree, ast.ExpressionStatementNode):
@@ -125,7 +125,7 @@ def vgenerate_expression(outfile, tree, *, bracketed):
         vgenerate_expression(outfile, tree.index, bracketed=False)
         outfile.write("]")
     elif isinstance(tree, ast.MapNode):
-        outfile.write("{")
+        outfile.write("venicelib.VeniceMap({")
         for i, pair in enumerate(tree.pairs):
             vgenerate_expression(outfile, pair.key, bracketed=False)
             outfile.write(": ")
@@ -133,7 +133,7 @@ def vgenerate_expression(outfile, tree, *, bracketed):
 
             if i != len(tree.pairs) - 1:
                 outfile.write(", ")
-        outfile.write("}")
+        outfile.write("})")
     elif isinstance(tree, ast.FieldAccessNode):
         vgenerate_expression(outfile, tree.value, bracketed=True)
         outfile.write(".")
