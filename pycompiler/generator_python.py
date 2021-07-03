@@ -56,8 +56,13 @@ def vgenerate_statement(outfile, tree, *, indent=0):
         outfile.write(":\n")
         vgenerate_block(outfile, tree.statements, indent=indent + 1)
     elif isinstance(tree, ast.ForNode):
-        outfile.write(("  " * indent) + "for " + tree.loop_variable + " in ")
+        outfile.write(
+            ("  " * indent) + "for " + ", ".join(tree.loop_variables) + " in "
+        )
         vgenerate_expression(outfile, tree.iterator, bracketed=False)
+        # TODO(2021-07-03): Fix this ugly hack.
+        if len(tree.loop_variables) == 2:
+            outfile.write(".items()")
         outfile.write(":\n")
         vgenerate_block(outfile, tree.statements, indent=indent + 1)
     elif isinstance(tree, ast.ExpressionStatementNode):

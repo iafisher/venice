@@ -180,12 +180,23 @@ class Parser:
 
     @debuggable
     def match_for(self):
-        symbol_token = self.expect("TOKEN_SYMBOL")
+        symbols_list = []
+        token = self.expect("TOKEN_SYMBOL")
+        symbols_list.append(token.value)
+        while True:
+            token = self.next()
+            if token.type == "TOKEN_COMMA":
+                token = self.expect("TOKEN_SYMBOL")
+                symbols_list.append(token.value)
+            else:
+                self.push_back(token)
+                break
+
         self.expect("TOKEN_IN")
         iterator = self.match_expression()
         statements = self.match_block()
         return ast.ForNode(
-            loop_variable=symbol_token.value, iterator=iterator, statements=statements
+            loop_variables=symbols_list, iterator=iterator, statements=statements
         )
 
     @debuggable
@@ -322,10 +333,11 @@ class Parser:
     def match_comma_separated(self, matcher, terminator):
         values = []
         while True:
-            token = self.next()
-            self.push_back(token)
-            if token.type == terminator:
-                break
+            if terminator is not None:
+                token = self.next()
+                self.push_back(token)
+                if token.type == terminator:
+                    break
 
             values.append(matcher())
 

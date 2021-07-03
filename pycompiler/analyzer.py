@@ -61,12 +61,25 @@ def vcheck_statement(tree, symbol_table, return_type=None):
         vcheck_block(tree.statements, symbol_table)
     elif isinstance(tree, ast.ForNode):
         iterator_type = vcheck_expression(tree.iterator, symbol_table)
-        if not isinstance(iterator_type, vtypes.VeniceListType):
-            raise VeniceError("loop iterator must be list")
 
-        loop_variable_type = iterator_type.item_type
-        loop_symbol_table = SymbolTable(parent=symbol_table)
-        loop_symbol_table.put(tree.loop_variable, loop_variable_type)
+        if isinstance(iterator_type, vtypes.VeniceListType):
+            if len(tree.loop_variables) > 1:
+                raise VeniceError("too many loop variables for list iterator")
+
+            loop_variable_type = iterator_type.item_type
+            loop_symbol_table = SymbolTable(parent=symbol_table)
+            loop_symbol_table.put(tree.loop_variables[0], loop_variable_type)
+        elif isinstance(iterator_type, vtypes.VeniceMapType):
+            if len(tree.loop_variables) != 2:
+                raise VeniceError(
+                    "expected exactly two loop variables for map iterator"
+                )
+
+            loop_symbol_table = SymbolTable(parent=symbol_table)
+            loop_symbol_table.put(tree.loop_variables[0], iterator_type.key_type)
+            loop_symbol_table.put(tree.loop_variables[1], iterator_type.value_type)
+        else:
+            raise VeniceError("loop iterator must be list or map")
 
         vcheck_block(tree.statements, loop_symbol_table)
     elif isinstance(tree, ast.ExpressionStatementNode):

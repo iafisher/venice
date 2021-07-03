@@ -55,7 +55,7 @@ class WhileNode(AbstractNode):
 
 @attrs
 class ForNode(AbstractNode):
-    loop_variable = attrib()
+    loop_variables = attrib()
     iterator = attrib()
     statements = attrib()
 
