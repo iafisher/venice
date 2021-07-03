@@ -1,4 +1,4 @@
-// { name: 'John Doe', email: 'john@example.com', age: 34 }
+// User(name: 'John Doe', email: 'john@example.com', age: 34)
 // John Doe
 
 // Declare a struct.

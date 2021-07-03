@@ -20,7 +20,7 @@ def main():
 
     parser_compile = subparsers.add_parser("compile")
     parser_compile.add_argument("path")
-    parser_compile.add_argument("--python", action="store_true")
+    parser_compile.add_argument("--javascript", action="store_true")
     parser_compile.set_defaults(func=main_compile)
 
     parser_repl = subparsers.add_parser("repl")
@@ -28,7 +28,7 @@ def main():
 
     parser_run = subparsers.add_parser("run")
     parser_run.add_argument("--quiet", action="store_true")
-    parser_run.add_argument("--python", action="store_true")
+    parser_run.add_argument("--javascript", action="store_true")
     parser_run.add_argument("path")
     parser_run.set_defaults(func=main_run)
 
@@ -46,7 +46,7 @@ def main():
 
 def main_compile(args):
     with open(args.path, "r", encoding="utf8") as infile:
-        vcompile(infile, sys.stdout, python=args.python)
+        vcompile(infile, sys.stdout, javascript=args.javascript)
 
 
 def main_repl(args):
@@ -60,7 +60,7 @@ def main_repl(args):
         infile = StringIO(line)
         outfile = StringIO()
 
-        vcompile(infile, outfile, python=True)
+        vcompile(infile, outfile)
 
         globals_map = {}
         locals_map = {}
@@ -72,7 +72,7 @@ def main_run(args):
     with tempfile.NamedTemporaryFile("w", encoding="utf8") as outfile:
         with open(args.path, "r", encoding="utf8") as infile:
             try:
-                vcompile(infile, outfile, python=args.python)
+                vcompile(infile, outfile, javascript=args.javascript)
             except VeniceError as e:
                 if args.quiet:
                     print(f"ERROR: {e}", file=sys.stderr)
@@ -81,10 +81,10 @@ def main_run(args):
                     raise e
 
         outfile.flush()
-        if args.python:
-            subprocess.run(["python3", outfile.name])
-        else:
+        if args.javascript:
             subprocess.run(["node", outfile.name])
+        else:
+            subprocess.run(["python3", outfile.name])
 
 
 def main_parse(args):
@@ -108,20 +108,20 @@ def main_tokenize(args):
                     print(token.type.ljust(20), token.value)
 
 
-def vcompile(infile, outfile, *, python=False):
+def vcompile(infile, outfile, *, javascript=False):
     ast = vparse(infile)
     vcheck(ast)
 
-    if python:
-        vgenerate_python(outfile, ast)
-    else:
+    if javascript:
         vgenerate_javascript(outfile, ast)
+    else:
+        vgenerate_python(outfile, ast)
 
 
-def vcompile_string(program, *, python=False):
+def vcompile_string(program, *, javascript=False):
     infile = StringIO(program)
     outfile = StringIO()
-    vcompile(infile, outfile, python=python)
+    vcompile(infile, outfile, javascript=javascript)
     return outfile.getvalue()
 
 
