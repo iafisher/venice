@@ -11,12 +11,14 @@ if exists("b:current_syntax")
 endif
 let b:current_syntax = "venice"
 
-syn keyword veniceKeywords elif else false fn for if in let return struct true while
+syn keyword veniceBuiltin  false integer list map print string true
+syn keyword veniceKeywords elif else fn for if in let return struct while
 
 syn match veniceComment "//.*$"
 
 syn region veniceString start=+"+ skip=+\\\\\|\\"+ end=+"+
 
+hi def link veniceBuiltin    Function
 hi def link veniceComment    Comment
 hi def link veniceKeywords   Statement
 hi def link veniceString     String
