@@ -44,10 +44,10 @@ def vcheck_statement(tree, symbol_table, return_type=None):
     elif isinstance(tree, ast.IfNode):
         for clause in tree.if_clauses:
             vassert(clause.condition, symbol_table, vtypes.VENICE_TYPE_BOOLEAN)
-            vcheck_block(clause.statements, symbol_table)
+            vcheck_block(clause.statements, symbol_table, return_type=return_type)
 
         if tree.else_clause:
-            vcheck_block(tree.else_clause, symbol_table)
+            vcheck_block(tree.else_clause, symbol_table, return_type=return_type)
     elif isinstance(tree, ast.LetNode):
         symbol_table.put(tree.label, vcheck_expression(tree.value, symbol_table))
     elif isinstance(tree, ast.AssignNode):
@@ -58,7 +58,7 @@ def vcheck_statement(tree, symbol_table, return_type=None):
         vassert(tree.value, symbol_table, original_type)
     elif isinstance(tree, ast.WhileNode):
         vassert(tree.condition, symbol_table, vtypes.VENICE_TYPE_BOOLEAN)
-        vcheck_block(tree.statements, symbol_table)
+        vcheck_block(tree.statements, symbol_table, return_type=return_type)
     elif isinstance(tree, ast.ForNode):
         iterator_type = vcheck_expression(tree.iterator, symbol_table)
 
@@ -81,7 +81,7 @@ def vcheck_statement(tree, symbol_table, return_type=None):
         else:
             raise VeniceError("loop iterator must be list or map")
 
-        vcheck_block(tree.statements, loop_symbol_table)
+        vcheck_block(tree.statements, loop_symbol_table, return_type=return_type)
     elif isinstance(tree, ast.ExpressionStatementNode):
         vcheck_expression(tree.value, symbol_table)
     elif isinstance(tree, ast.StructDeclarationNode):
