@@ -4,8 +4,8 @@ from pycompiler import ast
 from pycompiler.common import VeniceError
 
 
-def vparse(infile):
-    return Parser(Lexer(infile)).parse()
+def vparse(infile, *, debug=False):
+    return Parser(Lexer(infile), debug=debug).parse()
 
 
 # Based on https://docs.python.org/3.6/reference/expressions.html#operator-precedence
@@ -36,10 +36,31 @@ PRECEDENCE_MAP = {
 }
 
 
+def debuggable(f):
+    def wrapped(self, *args, **kwargs):
+        name = f.__name__
+        if self.debug:
+            indent = "  " * (self.debug_indent * 2)
+            self.debug_indent += 1
+            print(f"{indent}{name}")
+
+        r = f(self, *args, **kwargs)
+
+        if self.debug:
+            print(f"{indent}{name} returned (value = {r!r})")
+            self.debug_indent -= 1
+
+        return r
+
+    return wrapped
+
+
 class Parser:
-    def __init__(self, lexer):
+    def __init__(self, lexer, *, debug=False):
         self.lexer = lexer
         self.pushed_back = None
+        self.debug = debug
+        self.debug_indent = 0
 
     def parse(self):
         statements = []
@@ -58,6 +79,7 @@ class Parser:
 
         return ast.ProgramNode(statements)
 
+    @debuggable
     def match_function(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_LPAREN")
@@ -73,6 +95,7 @@ class Parser:
             statements=statements,
         )
 
+    @debuggable
     def match_block(self):
         self.expect("TOKEN_LCURLY")
         self.expect("TOKEN_NEWLINE")
@@ -89,6 +112,7 @@ class Parser:
 
         return statements
 
+    @debuggable
     def match_statement(self):
         token = self.next()
         if token.type == "TOKEN_LET":
@@ -112,6 +136,7 @@ class Parser:
             else:
                 return ast.ExpressionStatementNode(value)
 
+    @debuggable
     def match_let(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_ASSIGN")
@@ -119,11 +144,13 @@ class Parser:
         self.expect("TOKEN_NEWLINE")
         return ast.LetNode(label=symbol_token.value, value=value)
 
+    @debuggable
     def match_return(self):
         value = self.match_expression()
         self.expect("TOKEN_NEWLINE")
         return ast.ReturnNode(value)
 
+    @debuggable
     def match_if(self):
         clauses = []
         condition = self.match_expression()
@@ -145,11 +172,13 @@ class Parser:
 
         return ast.IfNode(if_clauses=clauses, else_clause=else_clause)
 
+    @debuggable
     def match_while(self):
         condition = self.match_expression()
         statements = self.match_block()
         return ast.WhileNode(condition, statements)
 
+    @debuggable
     def match_for(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_IN")
@@ -159,6 +188,7 @@ class Parser:
             loop_variable=symbol_token.value, iterator=iterator, statements=statements
         )
 
+    @debuggable
     def match_struct_declaration(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_LCURLY")
@@ -177,6 +207,7 @@ class Parser:
         self.expect("TOKEN_NEWLINE")
         return ast.StructDeclarationNode(symbol_token.value, fields)
 
+    @debuggable
     def match_expression(self, precedence=PRECEDENCE_LOWEST):
         left = self.match_prefix()
 
@@ -188,6 +219,7 @@ class Parser:
         self.push_back(token)
         return left
 
+    @debuggable
     def match_prefix(self):
         token = self.next()
         if token.type == "TOKEN_INT":
@@ -225,6 +257,7 @@ class Parser:
 
         return left
 
+    @debuggable
     def match_infix(self, left, token, precedence):
         if token.type == "TOKEN_LPAREN":
             args = self.match_comma_separated(self.match_argument, "TOKEN_RPAREN")
@@ -244,6 +277,7 @@ class Parser:
             right = self.match_expression(precedence)
             return ast.InfixNode(token.value, left, right)
 
+    @debuggable
     def match_argument(self):
         argument = self.match_expression()
         if isinstance(argument, ast.SymbolNode):
@@ -258,18 +292,21 @@ class Parser:
         else:
             return argument
 
+    @debuggable
     def match_parameter(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         self.expect("TOKEN_COLON")
         symbol_type = self.match_type()
         return ast.ParameterNode(label=symbol_token.value, type_label=symbol_type)
 
+    @debuggable
     def match_key_value_pair(self):
         key = self.match_expression()
         self.expect("TOKEN_COLON")
         value = self.match_expression()
         return ast.MapLiteralPairNode(key, value)
 
+    @debuggable
     def match_type(self):
         symbol_token = self.expect("TOKEN_SYMBOL")
         token = self.next()
@@ -281,6 +318,7 @@ class Parser:
             self.push_back(token)
             return ast.SymbolNode(symbol_token.value)
 
+    @debuggable
     def match_comma_separated(self, matcher, terminator):
         values = []
         while True:

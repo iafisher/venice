@@ -34,6 +34,7 @@ def main():
 
     parser_parse = subparsers.add_parser("parse")
     parser_parse.add_argument("path")
+    parser_parse.add_argument("--debug", action="store_true")
     parser_parse.set_defaults(func=main_parse)
 
     parser_tokenize = subparsers.add_parser("tokenize")
@@ -89,7 +90,11 @@ def main_run(args):
 
 def main_parse(args):
     with open(args.path, "r", encoding="utf8") as infile:
-        ast = vparse(infile)
+        ast = vparse(infile, debug=args.debug)
+
+    if args.debug:
+        print()
+        print()
 
     pretty_print_tree(ast)
 
