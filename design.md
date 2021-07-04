@@ -145,10 +145,11 @@ for letter in letters {
 /**
  * Structs
  */
-struct User(
-  name: string,
-  age: integer,
-)
+struct User(name: string, age: integer) {
+  as_string(self) -> string {
+    return "${self.name}, aged {self.age}"
+  }
+}
 
 let u = User(name = "John Doe", age = 24)
 print(u.name)  // John Doe
@@ -159,11 +160,11 @@ print(u.age)  // 25
 /**
  * Algebraic data types
  */
-enum Expression(
+enum Expression {
   InfixOperation(op: string, left: Expression, right: Expression),
   Integer(integer),
   String(string),
-)
+}
 
 let e = Expression::InfixOperation(
   op = "+",
@@ -220,6 +221,34 @@ match x {
 if let Key(code, ...) = event {
   print(code)
 }
+
+/**
+ * Interfaces
+ */
+interface StringLike {
+  as_string() -> string,
+}
+
+struct Foo(x: integer) {
+  as_string(self) -> string {
+    return "Foo(${self.x})"
+  }
+}
+
+fn print_anything(x: StringLike) {
+  print(x.as_string())
+}
+
+/**
+ * Generics
+ */
+enum Optional<T>(
+  Some(T),
+  None
+)
+
+// Type C must implement the interface StringLike.
+struct Collection<A, B, C: StringLike>(a: A, b: B, c: C)
 ```
 
 
@@ -241,11 +270,13 @@ parameter      := SYMBOL COLON type (EQ expression)?
 
 parameter_list_with_asterisk := (parameter COMMA)* ASTERISK COMMA (parameter COMMA)* parameter COMMA?
 
-enum_declaration := ENUM SYMBOL LPAREN (enum_case COMMA)* enum_case COMMA? RPAREN
+enum_declaration := ENUM SYMBOL type_parameter_list? LCURLY (enum_case COMMA)* enum_case COMMA? RCURLY
 enum_case        := SYMBOL (LPAREN (parameter_list | symbol_list) RPAREN)?
 symbol_list      := (SYMBOL COMMA)* SYMBOL COMMA?
 
-struct_declaration := STRUCT SYMBOL LPAREN parameter_list RPAREN
+struct_declaration := STRUCT SYMBOL type_parameter_list? LPAREN parameter_list RPAREN struct_body
+struct_body        := LCURLY function_declaration* RCURLY
+struct_method      := SYMBOL LPAREN SELF (COMMA (parameter_list | parameter_list_with_asterisk))? RPAREN (ARROW type)? block
 
 variable_declaration := (LET | CONST) SYMBOL (COLON type)? EQ expression
 
@@ -273,7 +304,8 @@ call       := expression LPAREN (argument_list | argument_list_with_keywords)? R
 argument_list := (expression COMMA)* expression COMMA?
 argument_list_with_keywords := (argument_list COMMA)? (SYMBOL EQ expression COMMA)* SYMBOL EQ expression COMMA?
 
-type := SYMBOL | SYMBOL LANGLE symbol_list RANGLE
+type := SYMBOL type_parameter_list?
+type_paramater_list := LANGLE symbol_list RANGLE
 ```
 
 
