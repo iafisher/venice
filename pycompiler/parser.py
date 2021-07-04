@@ -127,6 +127,10 @@ class Parser:
             return self.match_for()
         elif token.type == "TOKEN_STRUCT":
             return self.match_struct_declaration()
+        elif token.type == "TOKEN_ENUM":
+            return self.match_enum_declaration()
+        elif token.type == "TOKEN_MATCH":
+            return self.match_match()
         else:
             self.push_back(token)
             value = self.match_expression()
@@ -217,6 +221,67 @@ class Parser:
 
         self.expect("TOKEN_NEWLINE")
         return ast.StructDeclarationNode(symbol_token.value, fields)
+
+    @debuggable
+    def match_enum_declaration(self):
+        symbol = self.expect("TOKEN_SYMBOL").value
+        self.expect("TOKEN_LCURLY")
+        self.accept("TOKEN_NEWLINE")
+        cases = []
+        while True:
+            symbol_token = self.expect(("TOKEN_SYMBOL", "TOKEN_RCURLY"))
+            if symbol_token.type == "TOKEN_RCURLY":
+                break
+
+            token = self.next()
+            parameters = []
+            if token.type == "TOKEN_LPAREN":
+                parameters = self.match_comma_separated(
+                    self.match_parameter, "TOKEN_RPAREN"
+                )
+                self.expect("TOKEN_RPAREN")
+            else:
+                self.push_back(token)
+
+            cases.append(
+                ast.EnumDeclarationCaseNode(
+                    label=symbol_token.value, parameters=parameters
+                )
+            )
+
+            saw_comma = self.accept("TOKEN_COMMA")
+            if not saw_comma:
+                self.accept("TOKEN_NEWLINE")
+                self.expect("TOKEN_RCURLY")
+                break
+            else:
+                self.accept("TOKEN_NEWLINE")
+
+        self.expect("TOKEN_NEWLINE")
+        return ast.EnumDeclarationNode(label=symbol, cases=cases)
+
+    @debuggable
+    def match_match(self):
+        e = self.match_expression()
+        self.expect("TOKEN_LCURLY")
+        self.expect("TOKEN_NEWLINE")
+        cases = []
+        while True:
+            token = self.expect(("TOKEN_CASE", "TOKEN_RCURLY"))
+            if token.type == "TOKEN_RCURLY":
+                break
+
+            pattern = self.match_expression()
+            statements = self.match_block()
+            cases.append(ast.MatchCaseNode(pattern=pattern, statements=statements))
+            saw_comma = self.accept("TOKEN_COMMA")
+            self.expect("TOKEN_NEWLINE")
+            if not saw_comma:
+                self.expect("TOKEN_RCURLY")
+                break
+
+        self.expect("TOKEN_NEWLINE")
+        return ast.MatchNode(value=e, cases=cases)
 
     @debuggable
     def match_expression(self, precedence=PRECEDENCE_LOWEST):
@@ -359,13 +424,33 @@ class Parser:
     def next(self):
         if self.pushed_back is not None:
             token = self.pushed_back
+            suffix = " (pushed back)"
             self.pushed_back = None
-            return token
         else:
-            return self.lexer.next()
+            token = self.lexer.next()
+            suffix = ""
+
+        if self.debug:
+            indent = "  " * (self.debug_indent * 2)
+            print(f"{indent}{token!r}{suffix}")
+
+        return token
 
     def push_back(self, token):
         self.pushed_back = token
+
+    def accept(self, type_or_types):
+        if isinstance(type_or_types, str):
+            type_or_types = {type_or_types}
+        else:
+            type_or_types = set(type_or_types)
+
+        token = self.next()
+        if token.type not in type_or_types:
+            self.push_back(token)
+            return False
+        else:
+            return True
 
     def expect(self, type_or_types):
         if isinstance(type_or_types, str):
@@ -386,14 +471,17 @@ class Parser:
 class Lexer:
     keywords = frozenset(
         [
+            "case",
             "elif",
             "else",
+            "enum",
             "false",
             "fn",
             "for",
             "if",
             "in",
             "let",
+            "match",
             "return",
             "struct",
             "true",

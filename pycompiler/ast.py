@@ -79,6 +79,30 @@ class StructDeclarationFieldNode(AbstractNode):
 
 
 @attrs
+class EnumDeclarationNode(AbstractNode):
+    label = attrib()
+    cases = attrib()
+
+
+@attrs
+class EnumDeclarationCaseNode(AbstractNode):
+    label = attrib()
+    parameters = attrib()
+
+
+@attrs
+class MatchNode(AbstractNode):
+    value = attrib()
+    cases = attrib()
+
+
+@attrs
+class MatchCaseNode(AbstractNode):
+    pattern = attrib()
+    statements = attrib()
+
+
+@attrs
 class ExpressionStatementNode(AbstractNode):
     value = attrib()
 
