@@ -12,8 +12,8 @@ Venice is a high-level, statically-typed programming language.
 <!-- TODO(2021-07-04): Put a concise but demonstrative example of Venice code here. -->
 
 
-## Language reference
-```
+## A tour of Venice
+```venice
 /**
  * Numbers
  *
@@ -197,6 +197,59 @@ match x {
 // Like in Rust, if the last line of each clause of a match statement is an
 // expression of equivalent types, the match statement overall can be used as
 // an expression.
+```
+
+
+## Language reference
+### Syntax
+```bnf
+program := import* declaration+
+import  := IMPORT SYMBOL
+
+declaration := function_declaration
+             | enum_declaration
+             | struct_declaration
+             | variable_declaration
+
+function_declaration := FN SYMBOL LPAREN (parameter_list | parameter_list_with_asterisk)? RPAREN (ARROW type)? block
+
+parameter_list := (parameter COMMA)* parameter COMMA?
+parameter      := SYMBOL COLON type (EQ expression)?
+
+parameter_list_with_asterisk := (parameter COMMA)* ASTERISK COMMA (parameter COMMA)* parameter COMMA?
+
+enum_declaration := ENUM SYMBOL LPAREN (enum_case COMMA)* enum_case COMMA? RPAREN
+enum_case        := SYMBOL (LPAREN (parameter_list | symbol_list) RPAREN)?
+symbol_list      := (SYMBOL COMMA)* SYMBOL COMMA?
+
+struct_declaration := STRUCT SYMBOL LPAREN parameter_list RPAREN
+
+variable_declaration := (LET | CONST) SYMBOL (COLON type)? EQ expression
+
+block     := LCURLY NEWLINE (statement NEWLINE)* RCURLY
+statement := while | for | if | return | assign | match | BREAK | CONTINUE | expression
+
+while  := WHILE expression block
+for    := FOR symbol IN expression block
+if     := IF expression BLOCK elif* else?
+elif   := ELSE IF expression block
+else   := ELSE block
+return := RETURN expression
+assign := SYMBOL (EQ | PLUS_EQ | MINUS_EQ | TIMES_EQ | DIV_EQ) expression
+match  := MATCH expression LCURLY (match_case COMMA)+ (DEFAULT block COMMA?)? RCURLY
+
+match_case    := CASE match_pattern BLOCK
+match_pattern := SYMBOL | symbol_list (COMMA ELLIPSIS)?
+
+expression := atom | prefix | infix | call | LPAREN expression RPAREN
+prefix     := OP expression
+infix      := expression OP expression
+call       := expression LPAREN (argument_list | argument_list_with_keywords)? RPAREN
+
+argument_list := (expression COMMA)* expression COMMA?
+argument_list_with_keywords := (argument_list COMMA)? (SYMBOL EQ expression COMMA)* SYMBOL EQ expression COMMA?
+
+type := SYMBOL | SYMBOL LANGLE symbol_list RANGLE
 ```
 
 
