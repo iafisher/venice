@@ -191,12 +191,35 @@ print_infix(e)
 /**
  * Pattern matching
  */
+enum InputEvent(
+  MouseClick(x: integer, y: integer),
+  Key(code: integer, shift: boolean, ctrl: boolean),
+  Fn(integer),
+  Esc,
+)
+
 match x {
-  // TODO
+  // Match a struct subtype.
+  case MouseClick(x, y) {
+  },
+  // Match part of a struct's fields.
+  case Key(code, ...) {
+  },
+  // Match regular subtypes.
+  Fn(x) {
+  },
+  Esc {
+  },
+  // Match statements must be exhaustive.
 }
 // Like in Rust, if the last line of each clause of a match statement is an
 // expression of equivalent types, the match statement overall can be used as
 // an expression.
+
+// Pattern matching can also be done in 'if let' statements like in Rust.
+if let Key(code, ...) = event {
+  print(code)
+}
 ```
 
 
@@ -231,13 +254,14 @@ statement := while | for | if | return | assign | match | BREAK | CONTINUE | exp
 
 while  := WHILE expression block
 for    := FOR symbol IN expression block
-if     := IF expression BLOCK elif* else?
-elif   := ELSE IF expression block
+if     := IF condition BLOCK elif* else?
+elif   := ELSE IF condition block
 else   := ELSE block
 return := RETURN expression
 assign := SYMBOL (EQ | PLUS_EQ | MINUS_EQ | TIMES_EQ | DIV_EQ) expression
 match  := MATCH expression LCURLY (match_case COMMA)+ (DEFAULT block COMMA?)? RCURLY
 
+condition     := expression | LET match_pattern EQ expression
 match_case    := CASE match_pattern BLOCK
 match_pattern := SYMBOL | symbol_list (COMMA ELLIPSIS)?
 
