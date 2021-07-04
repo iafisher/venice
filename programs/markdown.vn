@@ -1,0 +1,18 @@
+// Reads a Markdown file and returns a list of headers.
+fn extract_headers(path: string) -> list<string> {
+  let headers = []
+  with open(path) as f {
+    var in_code_block = false
+    for line in f {
+      line = line.strip()
+      if line.starts_with("```") {
+        in_code_block = not in_code_block
+        continue
+      } else if not in_code_block and line.starts_with("#") {
+        header = line.strip_left("#").strip_left()
+        headers.append(header)
+      }
+    }
+  }
+  return headers
+}

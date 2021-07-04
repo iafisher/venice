@@ -1,0 +1,263 @@
+###
+A parser to match the following grammar:
+
+  e := e (PLUS | MINUS) e
+     | MINUS e
+     | SYMBOL LPAREN ((e COMMA)* e)? RPAREN
+     | SYMBOL
+     | INTEGER
+###
+
+enum Tree {
+  Infix(operator: string, left: Tree, right: Tree),
+  Prefix(operator: string, operand: Tree),
+  Call(function: string, arguments: list<Tree>),
+  Symbol(string),
+  Integer(integer),
+}
+
+class Parser {
+  private lexer: Lexer
+
+  new(lexer: Lexer) {
+    self.lexer = lexer
+  }
+
+  public parse() -> Result<Tree, ParserError> {
+    self.lexer.advance()!
+    let e = self.match_expression()!
+    if not self.lexer.done() {
+      return Error(ParserError::TrailingInput)
+    }
+    return Ok(e)
+  }
+
+  public match_expression() -> Result<Tree, ParserError> {
+    let token = self.lexer.current()
+    match token.type {
+      case Symbol, Integer {
+        let left = self.match_prefix()!
+        let next_token = self.lexer.current()
+        if let Plus, Minus = next_token.type {
+          let operator = "+" if next_token.type == TokenType::Plus else "-"
+          self.lexer.advance()!
+          let right = self.match_expression()!
+          return Ok(Tree::Infix(operator = operator, left = left, right = right))
+        } else {
+          return Ok(prefix)
+        }
+      },
+      case Minus {
+        self.lexer.advance()
+        let operand = self.match_expression()
+        return Ok(Tree::Prefix(operator = "-", operand = operand))
+      },
+      case EndOfInput {
+        return Error(ParserError::PrematureEndOfInput)
+      },
+      default {
+        return Error(ParserError::UnexpectedToken(token))
+      },
+    }
+  }
+
+  public match_prefix() -> Result<Tree, ParserError> {
+    let token = self.lexer.current()
+    let next_token = self.lexer.advance()!
+    match token.type {
+      case Integer {
+        return Ok(Tree::Integer(integer(token.value)))
+      },
+      case Symbol {
+        if let LeftParenthesis = next_token.type {
+          self.lexer.advance()!
+          let arguments = self.match_arguments()!
+          self.lexer.assert(TokenType::RightParenthesis)!
+          self.lexer.advance()!
+          return Ok(Tree::Call(function = token.value, arguments = arguments))
+        } else {
+          return Ok(Tree::Symbol(token.value))
+        }
+      },
+      case EndOfInput {
+        return Error(ParserError::PrematureEndOfInput)
+      },
+      default {
+        return Error(ParserError::UnexpectedToken(token))
+      },
+    }
+  }
+
+  public match_arguments() -> Result<list<Tree>, ParserError> {
+    let arguments = []
+    while true {
+      if let RightParenthesis, EndOfInput = self.lexer.current() {
+        break
+      }
+
+      let argument = self.match_expression()!
+      arguments.append(argument)
+      match self.lexer.current() {
+        case Comma {
+          self.lexer.advance()!
+        },
+        case RightParenthesis, EndOfInput {
+          break
+        },
+        default {}
+      }
+    }
+    return arguments
+  }
+}
+
+enum ParserError {
+  UnexpectedToken(Token),
+  PrematureEndOfInput
+  TrailingInput,
+  UnexpectedCharacter(character)
+}
+
+enum TokenType {
+  Symbol, Integer, LeftParenthesis, RightParenthesis, Comma, Plus, Minus, EndOfInput,
+  StartOfInput,
+}
+
+struct Token(type: TokenType, value: string, line: integer, column: integer) {}
+
+
+class Lexer {
+  private text: string
+  private current_token: Token
+  private current_index: integer
+  private current_line: integer
+  private current_column: integer
+
+  new(text: string) {
+    self.text = text
+    self.current_token =
+      Token(type = TokenType::StartOfInput, value = "", line = 0, column = 0);
+    self.current_index = 0
+    self.current_line = 1
+    self.current_column = 1
+  }
+
+  public advance() -> Result<Token, ParserError> {
+    self.skip_whitespace()
+    if self.done() {
+      return Ok(
+        Token(
+          type = TokenType::EndOfInput,
+          value = "",
+          line = self.current_line,
+          column = self.current_column))
+    }
+
+    let line = self.current_line
+    let column = self.current_column
+    if self.current_character().is_digit() {
+      let value = self.read_integer()
+      return Ok(Token(
+        type = TokenType::Integer, value = value, line = line, column = column))
+    } else if self.current_character().is_alphabetic() {
+      let line = self.current_line
+      let column = self.current_column
+      let value = self.read_symbol()
+      return Ok(Token(
+        type = TokenType::Symbol, value = value, line = line, column = column))
+    } else if self.current_character() == '(' {
+      self.advance_character()
+      return Ok(
+        Token(
+          type = TokenType::LeftParenthesis,
+          value = "(",
+          line = line,
+          column = column))
+    } else if self.current_character() == ')' {
+      self.advance_character()
+      return Ok(
+        Token(
+          type = TokenType::RightParenthesis,
+          value = ")",
+          line = line,
+          column = column))
+    } else if self.current_character() == '+' {
+      self.advance_character()
+      return Ok(
+        Token(
+          type = TokenType::Plus,
+          value = "+",
+          line = line,
+          column = column))
+    } else if self.current_character() == '-' {
+      self.advance_character()
+      return Ok(
+        Token(
+          type = TokenType::Minus,
+          value = "-",
+          line = line,
+          column = column))
+    } else if self.current_character() == ',' {
+      self.advance_character()
+      return Ok(
+        Token(
+          type = TokenType::Comma,
+          value = ",",
+          line = line,
+          column = column))
+    } else {
+      return Error(ParserError::UnexpectedCharacter(self.current_character()))
+    }
+  }
+
+  public current() -> Token {
+    return self.current_token
+  },
+
+  public assert(type: TokenType) -> Result<void, ParserError> {
+    if (self.current_token.type != type) {
+      return Error(ParserError::UnexpectedToken(self.current_token))
+    }
+  }
+
+  public done() -> boolean {
+    return self.current_index == self.text.length()
+  }
+
+  private skip_whitespace() {
+    while self.current_character().is_whitespace() {
+      self.advance_character()
+    }
+  }
+
+  private read_symbol() -> string {
+    let start_index = self.current_index
+    while self.current_character().is_alphabetic() {
+      self.advance_character()
+    }
+    return self.text[start_index:self.current_index]
+  }
+
+  private read_integer() -> string {
+    let start_index = self.current_index
+    while self.current_character().is_digit() {
+      self.advance_character()
+    }
+    return self.text[start_index:self.current_index]
+  }
+
+  private advance_character() {
+    if self.current_character() == '\n' {
+      self.current_line += 1
+      self.current_column = 1
+    } else {
+      self.current_column += 1
+    }
+
+    self.current_index += 1
+  }
+
+  private current_character() -> character {
+    return self.text[self.current_index]
+  }
+}

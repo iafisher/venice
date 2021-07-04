@@ -1,0 +1,15 @@
+fn fibonacci(n: integer) -> integer {
+  if n < 1 {
+    return 0
+  }
+
+  var i = 1
+  var fib_i = 1
+  var fib_i_minus_1 = 0
+  while i < n {
+    let tmp = fib_i
+    fib_i += fib_i_minus_1
+    fib_i_minus_1 = tmp
+  }
+  return fib_i
+}

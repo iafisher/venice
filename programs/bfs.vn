@@ -1,0 +1,23 @@
+import containers
+
+type graph = map<string, list<string>>
+
+fn breadth_first_search<string>(g: graph<string>, start_node: string): list<string> {
+  let queue = containers::queue()
+  let visited = containers::set()
+
+  queue.push(start_node)
+  visited.add(start_node)
+
+  let results_list = []
+  while queue.length() > 0 {
+    let node = queue.pop()
+    results_list.append(node)
+    for neighbor in g[node] {
+      if neighbor not in visited {
+        visited.add(neighbor)
+        queue.push(neighbor)
+      }
+  }
+  return results_list
+}

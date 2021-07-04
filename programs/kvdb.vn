@@ -1,0 +1,58 @@
+import io
+
+
+class Database {
+  private path: string
+  private cache: Optional<map<string, string>>
+
+  new(path: string) {
+    self.path = path
+    self.cache = None
+  }
+
+  public get(key: string) -> Optional<string> {
+    let values = self.read()
+    return values.get(key)
+  }
+
+  public set(key: string, value: string) {
+    let values = self.read()
+    values[key] = value
+    self.write()
+  }
+
+  public has(key: string) -> boolean {
+    let values = self.read()
+    return key in values
+  }
+
+  public delete(key: string) {
+    let values = self.read()
+    values.delete(key)
+    self.write()
+  }
+
+  private read() -> map<string, string> {
+    if let Some(cache) = self.cache {
+      return cache
+    }
+
+    with io::open(self.path) as f {
+      let cache = {}
+      for line in f {
+        let key, value = line.split("=", max_split = 1, trim = true)
+        cache[key] = value
+      }
+      self.cache = Some(cache)
+      return cache
+    }
+  }
+
+  private write() {
+    with io::open(self.path, io::OpenOptions::Write) as f {
+      for key, value in self.cache {
+        f.write("${key} = ${value}\n")
+      }
+    }
+  }
+}
