@@ -230,7 +230,7 @@ interface StringLike {
 }
 
 struct Foo(x: integer) {
-  as_string(self) -> string {
+  as_string(self) -> string for StringLike {
     return "Foo(${self.x})"
   }
 }
