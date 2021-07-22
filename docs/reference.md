@@ -1,20 +1,14 @@
 # The Venice programming language
 - Author: Ian Fisher (iafisher@fastmail.com)
 - Status: draft
-- Last updated: July 4, 2021
+- Last updated: July 21, 2021
 
 
 **NOTE**: Nothing described in this document has been implemented yet.
 
 
-Venice is a high-level, statically-typed programming language.
-
-<!-- TODO(2021-07-04): Put a concise but demonstrative example of Venice code here. -->
-
-
-## Language reference
-### Atomic values
-#### Integers, real numbers and booleans
+## Atomic values
+### Integers, real numbers and booleans
 Integers can be written in decimal (`42`), hexadecimal (`0x2a`), octal (`0o52`), and binary (`0b101010`). Leading zeroes are not allowed for unprefixed integer literals, so that C-style octal numbers are not misinterpreted as decimal numbers.
 
 Real numbers can be written in standard decimal notation (`3.14`) or in scientific notation (`1e10`).
