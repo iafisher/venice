@@ -12,75 +12,66 @@ Venice is a high-level, statically-typed programming language.
 <!-- TODO(2021-07-04): Put a concise but demonstrative example of Venice code here. -->
 
 
-## A tour of Venice
-```venice
-/**
- * Numbers
- *
- * Integers and real numbers are arbitrary precision, unless the floating-point
- * format is explicitly requested with the 'f' suffix.
- */
-42
-0x2a
-0o52
-0b101010
-1e7
-// A decimal number
-3.14159
-// A floating-point number
-3.14159f
+## Language reference
+### Atomic values
+#### Integers, real numbers and booleans
+Integers can be written in decimal (`42`), hexadecimal (`0x2a`), octal (`0o52`), and binary (`0b101010`). Leading zeroes are not allowed for unprefixed integer literals, so that C-style octal numbers are not misinterpreted as decimal numbers.
 
+Real numbers can be written in standard decimal notation (`3.14`) or in scientific notation (`1e10`).
 
-/**
- * Booleans
- */
-true
-false
+The `integer` and `real` types in Venice are arbitrary precision. Fixed-width signed and unsigned integer types are also available: `i64`, `i32`, `i16`, `i8`, `u64`, `u32`, `u16`, and `u8`. Standard IEEE 754 single and double precision floating-point number types are available as `float` and `double`.
 
+<!-- TODO(2021-07-22): Implicit and explicit coercion of integer and real types. -->
 
-/**
- * Strings
- */
+The two boolean literals are written as `true` and `false`.
 
-"a single line string"
-// Strings may contain newlines.
+### Strings and characters
+String literals are enclosed in double quotes (`"hello, world"`). Standard backslash escapes are supported:
+
+- `\'` for a single quote (although single quotes do not need to be backslash-escaped)
+- `\"` for a double quote
+- `\\` for a backslash
+- `\n` for a newline
+- `\r` for a carriage return
+- `\t` for a tab
+- `\b` for a backspace
+- `\f` for a form feed
+- `\v` for a vertical tab
+- `\0` for a null character
+- `\xFF` for the Unicode character with hex value `FF`
+- `\uxxxx` for the Unicode character with 16-bit hex value `xxxx`
+- `\Uxxxxxxxx` for the Unicode character with 32-bit hex value `xxxxxxxx`
+
+String literals may contain backslashes. The following string literal is equal to `"hello\n world"`:
+
+```
 "hello
-  world"
-// Long strings can be broken over multiple lines with a backslash.
-// The two strings below are equivalent. (Note that leading whitespace is
-// stripped from the second line, but trailing whitespace is preserved on the
-// first line.)
-"a \\
- b"
-"a b"
-// Single quotes are used for characters.
-'a'
-// Venice supports string interpolation.
-"1 + 1 = ${1 + 1}"
+ world"
+```
+
+If the newline is immediately preceded by a backslash, then leading whitespace is stripped from the next line. The following string literal is equal to `"hello world"`:
+
+```
+"hello \
+         world"
+```
+
+Expressions can be interpolated into Venice strings using `${...}`, e.g. `1 + 1 = ${1 + 1}`.
+
+Character literals are enclosed in single quotes (`'a'`) and support the same set of backslash escapes as string literals.
+
+### Lists and tuples
+A list stores an ordered sequence of elements of the same type (`[1, 2, 3]`).
+
+A tuple stores a fixed number of elements, potentially of different types (`(1, "two", 3.0)`).
+
+### Maps and sets
+A map associates keys with values, with efficient look-up, insertion and deletion (`{1: "one", 2: "two", 3: "three"}`). All keys must be of the same type, and all values must be of the same type, but the key type and value type may differ.
+
+A set stores an unordered collection of elements of the same type with no duplicates (`{1, 2, 3}`).
 
 
-/**
- * Lists
- *
- * All elements of a list must be of the same type.
- */
-[1, 2, 3]
-
-
-/**
- * Tuples
- *
- * A tuple may contain elements of different types, but its length is fixed.
- */
-(1, "two", 3.0)
-
-
-/**
- * Maps
- */
-{1: "one", 2: "two", 3: "three"}
-
-
+```venice
 /**
  * Declarations and assignments
  */
@@ -93,8 +84,7 @@ var x = 10
 x = 9
 
 
-/**
- * Functions
+/** * Functions
  *
  * A function declaration must list the types of its parameters and its return
  * value.
@@ -252,8 +242,7 @@ struct Collection<A, B, C: StringLike>(a: A, b: B, c: C)
 ```
 
 
-## Language reference
-### Syntax
+## Formal syntax
 ```bnf
 program := import* declaration+
 import  := IMPORT SYMBOL
