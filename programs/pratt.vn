@@ -19,7 +19,7 @@ enum Tree {
 class Parser {
   private lexer: Lexer
 
-  new(lexer: Lexer) {
+  constructor(lexer: Lexer) {
     self.lexer = lexer
   }
 
@@ -113,7 +113,7 @@ class Parser {
 
 enum ParserError {
   UnexpectedToken(Token),
-  PrematureEndOfInput
+  PrematureEndOfInput,
   TrailingInput,
   UnexpectedCharacter(character)
 }
@@ -123,7 +123,12 @@ enum TokenType {
   StartOfInput,
 }
 
-struct Token(type: TokenType, value: string, line: integer, column: integer) {}
+class Token {
+  public type: TokenType
+  public value: string
+  public line: integer
+  public column: integer
+}
 
 
 class Lexer {
@@ -133,7 +138,7 @@ class Lexer {
   private current_line: integer
   private current_column: integer
 
-  new(text: string) {
+  constructor(text: string) {
     self.text = text
     self.current_token =
       Token(type = TokenType::StartOfInput, value = "", line = 0, column = 0);

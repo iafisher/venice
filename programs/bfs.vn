@@ -1,8 +1,8 @@
 import containers
 
-type graph = map<string, list<string>>
+alias graph<T> = map<T, list<T>>
 
-fn breadth_first_search<string>(g: graph<string>, start_node: string): list<string> {
+fn breadth_first_search<T>(g: graph<T>, start_node: T): list<T> {
   let queue = containers::queue()
   let visited = containers::set()
 

@@ -1,4 +1,4 @@
-// Reads a Markdown file and returns a list of headers.
+# Reads a Markdown file and returns a list of headers.
 fn extract_headers(path: string) -> list<string> {
   let headers = []
   with open(path) as f {

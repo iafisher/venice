@@ -147,11 +147,11 @@ for letter in letters {
 
 
 ## Advanced data types
-### Structured data
-Structs in Venice are similar to structs in C and Rust.
+### Classes
+Classes in Venice are similar to structs in C and Rust (and unlike classes in object-oriented languages like Python and Java).
 
 ```venice
-struct User {
+class User {
   public name: string
   public age: integer
 }
@@ -162,12 +162,12 @@ u.age += 1
 print(u.age)  // 25
 ```
 
-A constructor is generated for structs by default, and struct objects can be compared for equality, hashed, and printed as long as all their constituent types can be.
+A constructor is generated for classes by default, and objects can be compared for equality, hashed, and printed as long as all their constituent types can be.
 
-Methods can be defined on a struct.
+Methods can be defined on a class.
 
 ```venice
-struct User {
+class User {
   public name: string
   public age: integer
 
@@ -177,7 +177,7 @@ struct User {
 }
 ```
 
-Methods and struct fields must be declared as either `public` or `private`.
+Methods and fields must be declared as either `public` or `private`.
 
 ### Algebraic data types
 Venice supports algebraic data types (ADTs).
@@ -196,7 +196,7 @@ let e = Expression::InfixOperation(
 }
 ```
 
-Struct-like types declared inside ADTs can also be used as independent types as if they were regular structs.
+Class-like types declared inside ADTs can also be used as independent types as if they were regular classes.
 
 ```venice
 fn print_infix(e: Expression::InfixOperation) {
@@ -233,10 +233,10 @@ enum InputEvent {
 }
 
 match x {
-  // Match a struct-like subtype.
+  // Match a class-like subtype.
   case MouseClick(x, y) {
   },
-  // Match part of a struct's fields.
+  // Match part of a type's fields.
   case Key(code, ...) {
   },
   // Match regular subtypes.
@@ -262,14 +262,14 @@ Interfaces are used to encapsulate related objects with the same interface but d
 
 ```venice
 interface StringLike {
-  as_string() -> string,
+  as_string() -> string
 }
 ```
 
 Interfaces must be implemented explicitly using the `for` keyword in the method definition.
 
 ```venice
-struct Foo {
+class Foo {
   public x: integer
 
   public as_string(self) -> string for StringLike {
@@ -301,7 +301,7 @@ enum Optional<T> {
 Generics may be constrained. In the example below, whatever type substitutes for `C` must implement the interface `StringLike`.
 
 ```venice
-struct Collection<A, B, C: StringLike> {
+class Collection<A, B, C: StringLike> {
   public a: A
   public b: B
   public c: C
@@ -316,7 +316,7 @@ import  := IMPORT SYMBOL
 
 declaration := function_declaration
              | enum_declaration
-             | struct_declaration
+             | class_declaration
              | variable_declaration
 
 function_declaration := FN SYMBOL LPAREN (parameter_list | parameter_list_with_asterisk)? RPAREN (ARROW type)? block
@@ -330,9 +330,9 @@ enum_declaration := ENUM SYMBOL type_parameter_list? LCURLY (enum_case COMMA)* e
 enum_case        := SYMBOL (LPAREN (parameter_list | symbol_list) RPAREN)?
 symbol_list      := (SYMBOL COMMA)* SYMBOL COMMA?
 
-struct_declaration := STRUCT SYMBOL type_parameter_list? LPAREN parameter_list RPAREN struct_body
-struct_body        := LCURLY function_declaration* RCURLY
-struct_method      := SYMBOL LPAREN SELF (COMMA (parameter_list | parameter_list_with_asterisk))? RPAREN (ARROW type)? block
+class_declaration := CLASS SYMBOL type_parameter_list? LPAREN parameter_list RPAREN class_body
+class_body        := LCURLY function_declaration* RCURLY
+class_method      := SYMBOL LPAREN SELF (COMMA (parameter_list | parameter_list_with_asterisk))? RPAREN (ARROW type)? block
 
 variable_declaration := (LET | CONST) SYMBOL (COLON type)? EQ expression
 

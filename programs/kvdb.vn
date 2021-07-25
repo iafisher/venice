@@ -1,32 +1,40 @@
 import io
 
 
+interface Database {
+  get(key: string) -> Optional<string>
+  set(key: string, value: string)
+  has(key: string) -> boolean
+  delete(key: string)
+}
+
+
 class Database {
   private path: string
   private cache: Optional<map<string, string>>
 
-  new(path: string) {
+  constructor(path: string) {
     self.path = path
     self.cache = None
   }
 
-  public get(key: string) -> Optional<string> {
+  public get(key: string) -> Optional<string> for Database {
     let values = self.read()
     return values.get(key)
   }
 
-  public set(key: string, value: string) {
+  public set(key: string, value: string) for Database {
     let values = self.read()
     values[key] = value
     self.write()
   }
 
-  public has(key: string) -> boolean {
+  public has(key: string) -> boolean for Database {
     let values = self.read()
     return key in values
   }
 
-  public delete(key: string) {
+  public delete(key: string) for Database {
     let values = self.read()
     values.delete(key)
     self.write()
