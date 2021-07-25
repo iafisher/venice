@@ -330,9 +330,10 @@ enum_declaration := ENUM SYMBOL type_parameter_list? LCURLY (enum_case COMMA)* e
 enum_case        := SYMBOL (LPAREN (parameter_list | symbol_list) RPAREN)?
 symbol_list      := (SYMBOL COMMA)* SYMBOL COMMA?
 
-class_declaration := CLASS SYMBOL type_parameter_list? LPAREN parameter_list RPAREN class_body
-class_body        := LCURLY function_declaration* RCURLY
-class_method      := SYMBOL LPAREN SELF (COMMA (parameter_list | parameter_list_with_asterisk))? RPAREN (ARROW type)? block
+class_declaration := CLASS SYMBOL type_parameter_list? class_body
+class_body        := LCURLY NEWLINE class_field* class_method* RCURLY
+class_field       := (PUBLIC | PRIVATE) SYMBOL COLON type NEWLINE
+class_method      := SYMBOL LPAREN SELF (COMMA (parameter_list | parameter_list_with_asterisk))? RPAREN (ARROW type)? (FOR SYMBOL)? block
 
 variable_declaration := (LET | CONST) SYMBOL (COLON type)? EQ expression
 
