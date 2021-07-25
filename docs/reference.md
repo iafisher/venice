@@ -13,7 +13,7 @@ Integers can be written in decimal (`42`), hexadecimal (`0x2a`), octal (`0o52`),
 
 Real numbers can be written in standard decimal notation (`3.14`) or in scientific notation (`1e10`).
 
-The `integer` and `real` types in Venice are arbitrary precision. Fixed-width signed and unsigned integer types are also available: `i64`, `i32`, `i16`, `i8`, `u64`, `u32`, `u16`, and `u8`. Standard IEEE 754 single and double precision floating-point number types are available as `float` and `double`.
+The `int`, `uint`, and `real` types in Venice are arbitrary precision. Fixed-width signed and unsigned integer types are also available: `int64`, `int32`, `int16`, `int8`, `uint64`, `uint32`, `uint16`, and `uint8`. Standard IEEE 754 single and double precision floating-point number types are available as `float` and `double`.
 
 <!-- TODO(2021-07-22): Implicit and explicit coercion of integer and real types. -->
 
@@ -90,11 +90,11 @@ x = 9
 Function declarations use the `fn` keyword. Unlike `let` and `var` declarations, function declarations require types to be listed.
 
 ```venice
-fn add(x: integer, y: integer) -> integer {
+fn add(x: int, y: int) -> int {
   return x + y
 }
 
-fn print_plus_two(x: integer) -> void {
+fn print_plus_two(x: int) -> void {
   print(x)
 }
 ```
@@ -153,7 +153,7 @@ Classes in Venice are similar to structs in C and Rust (and unlike classes in ob
 ```venice
 class User {
   public name: string
-  public age: integer
+  public age: uint
 }
 
 let u = User(name = "John Doe", age = 24)
@@ -169,7 +169,7 @@ Methods can be defined on a class.
 ```venice
 class User {
   public name: string
-  public age: integer
+  public age: uint
 
   public as_string(self) -> string {
     return "${self.name}, aged ${self.age}"
@@ -185,7 +185,7 @@ Venice supports algebraic data types (ADTs).
 ```venice
 enum Expression {
   InfixOperation(op: string, left: Expression, right: Expression),
-  Integer(integer),
+  Integer(int),
   String(string),
 }
 
@@ -226,9 +226,9 @@ match e {
 }
 
 enum InputEvent {
-  MouseClick(x: integer, y: integer),
-  Key(code: integer, shift: boolean, ctrl: boolean),
-  Fn(integer),
+  MouseClick(x: int, y: int),
+  Key(code: uint, shift: boolean, ctrl: boolean),
+  Fn(int),
   Esc,
 }
 
@@ -270,7 +270,7 @@ Interfaces must be implemented explicitly using the `for` keyword in the method 
 
 ```venice
 class Foo {
-  public x: integer
+  public x: int
 
   public as_string(self) -> string for StringLike {
     return "Foo(${self.x})"
@@ -312,7 +312,7 @@ class Collection<A, B, C: StringLike> {
 ## Type system
 Every type in a Venice program is one of the following:
 
-- A primitive type, like `integer` or `string`.
+- A primitive type, like `int` or `string`.
 - An algebraic data type declared with `enum`.
 - A class type declared with `class`. This includes class-like types declared inside ADTs.
 - An interface type declared with `interface`.
@@ -321,7 +321,7 @@ The latter two categories of types may be parameterized as generic types, and ea
 
 In many situations during the compilation of a Venice program, the compiler must check that a certain type `A` is compatible with another type `B`, for instance when a value of type `A` is passed to a function expecting type `B`. This is evaluated in the following manner:
 
-- If `B` is a primitive type, then `A` must match `B` exactly, unless `B` is an numeric type and `A` is strictly smaller (e.g., an `i64` can be passed where an `integer` is expected).
+- If `B` is a primitive type, then `A` must match `B` exactly, unless `B` is an numeric type and `A` is strictly smaller (e.g., an `int64` can be passed where an `int` is expected).
 - If `B` is an algebraic data type, then `A` must match `B` exactly.
 - If `B` is a class type, then `A` must match `B` exactly.
 - If `B` is an interface type, then `A` must implement the interface `B`.

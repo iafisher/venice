@@ -11,7 +11,7 @@ if exists("b:current_syntax")
 endif
 let b:current_syntax = "venice"
 
-syn keyword veniceBuiltin  boolean character false input integer list map print string true
+syn keyword veniceBuiltin  boolean character false input int list map print string true uint
 syn keyword veniceKeywords alias and as break case class constructor continue default enum elif else exception fn for from if import in interface let match not or public private return struct throw var while with
 
 syn match veniceLineComment "#.*$"
