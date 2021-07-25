@@ -1,7 +1,7 @@
 # The Venice programming language
 - Author: Ian Fisher (iafisher@fastmail.com)
 - Status: draft
-- Last updated: July 21, 2021
+- Last updated: July 25, 2021
 
 
 **NOTE**: Nothing described in this document has been implemented yet.
@@ -151,7 +151,10 @@ for letter in letters {
 Structs in Venice are similar to structs in C and Rust.
 
 ```venice
-struct User(name: string, age: integer) {}
+struct User {
+  public name: string
+  public age: integer
+}
 
 let u = User(name = "John Doe", age = 24)
 print(u.name)  // John Doe
@@ -164,12 +167,17 @@ A constructor is generated for structs by default, and struct objects can be com
 Methods can be defined on a struct.
 
 ```venice
-struct User(name: string, age: integer) {
-  as_string(self) -> string {
-    return "${self.name}, aged {self.age}"
+struct User {
+  public name: string
+  public age: integer
+
+  public as_string(self) -> string {
+    return "${self.name}, aged ${self.age}"
   }
 }
 ```
+
+Methods and struct fields must be declared as either `public` or `private`.
 
 ### Algebraic data types
 Venice supports algebraic data types (ADTs).
@@ -188,7 +196,7 @@ let e = Expression::InfixOperation(
 }
 ```
 
-Structs declared inside ADTs can also be used as independent types.
+Struct-like types declared inside ADTs can also be used as independent types as if they were regular structs.
 
 ```venice
 fn print_infix(e: Expression::InfixOperation) {
@@ -197,8 +205,14 @@ fn print_infix(e: Expression::InfixOperation) {
 print_infix(e)
 ```
 
+ADTs can also be used as simple C-style enums.
+
+```venice
+enum Direction { Up, Down, Left, Right }
+```
+
 ### Pattern matching
-The `match` statement is used to pattern-match ADTs.
+The `match` statement is used to pattern-match ADTs. Patterns are tested in order from top to bottom. The listed patterns must be exhaustive. If necessary, a catch-all `default` pattern can be added to the bottom.
 
 ```venice
 match e {
@@ -211,32 +225,31 @@ match e {
   },
 }
 
-enum InputEvent(
+enum InputEvent {
   MouseClick(x: integer, y: integer),
   Key(code: integer, shift: boolean, ctrl: boolean),
   Fn(integer),
   Esc,
-)
+}
 
 match x {
-  // Match a struct subtype.
+  // Match a struct-like subtype.
   case MouseClick(x, y) {
   },
   // Match part of a struct's fields.
   case Key(code, ...) {
   },
   // Match regular subtypes.
-  Fn(x) {
+  case Fn(x) {
   },
-  Esc {
+  case Esc {
   },
-  // Match statements must be exhaustive.
 }
 ```
 
 Like in Rust, if the last line of each clause of a match statement is an expression of equivalent types, the match statement overall can be used as an expression.
 
-Pattern matching can also be done in 'if let' statements like in Rust.
+Pattern matching can also be done in `if let` statements like in Rust.
 
 ```venice
 if let Key(code, ...) = event {
@@ -245,7 +258,7 @@ if let Key(code, ...) = event {
 ```
 
 ### Interfaces
-Interfaces are used to encapsulate related objects with the same interface but possibly different implementations.
+Interfaces are used to encapsulate related objects with the same interface but different implementations.
 
 ```venice
 interface StringLike {
@@ -256,12 +269,16 @@ interface StringLike {
 Interfaces must be implemented explicitly using the `for` keyword in the method definition.
 
 ```venice
-struct Foo(x: integer) {
-  as_string(self) -> string for StringLike {
+struct Foo {
+  public x: integer
+
+  public as_string(self) -> string for StringLike {
     return "Foo(${self.x})"
   }
 }
 ```
+
+Methods implementing an interface must be `public`.
 
 Interface types can be used for function parameters (and anywhere else that types are used).
 
@@ -275,16 +292,20 @@ fn print_anything(x: StringLike) {
 Structs and ADTs can be made generic over one or more types.
 
 ```venice
-enum Optional<T>(
+enum Optional<T> {
   Some(T),
   None
-)
+}
 ```
 
 Generics may be constrained. In the example below, whatever type substitutes for `C` must implement the interface `StringLike`.
 
 ```venice
-struct Collection<A, B, C: StringLike>(a: A, b: B, c: C) {}
+struct Collection<A, B, C: StringLike> {
+  public a: A
+  public b: B
+  public c: C
+}
 ```
 
 
@@ -345,7 +366,7 @@ type_paramater_list := LANGLE symbol_list RANGLE
 
 
 ## Implementation
-The Venice implementation comprises two programs: `vnc`, which compiles Venice programs to bytecode, and `vnvm`, which runs bytecode programs.
+The reference implementation of Venice comprises two programs: `vnc`, which compiles Venice programs to bytecode, and `vnvm`, which runs bytecode programs.
 
 ### The Venice bytecode format
 TODO(2021-07-04)
