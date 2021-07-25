@@ -38,14 +38,14 @@ String literals are enclosed in double quotes (`"hello, world"`). Standard backs
 
 String literals may contain backslashes. The following string literal is equal to `"hello\n world"`:
 
-```
+```venice
 "hello
  world"
 ```
 
 If the newline is immediately preceded by a backslash, then leading whitespace is stripped from the next line. The following string literal is equal to `"hello world"`:
 
-```
+```venice
 "hello \
          world"
 ```
@@ -65,47 +65,56 @@ A map associates keys with values, with efficient look-up, insertion and deletio
 A set stores an unordered collection of elements of the same type with no duplicates (`{1, 2, 3}`).
 
 
+## Declarations
+### Variables
+The `let` statement is used to declare a symbol with an initial value.
+
 ```venice
-/**
- * Declarations and assignments
- */
 let x: int = 10
-// The symbol's type can be declared explicitly, or inferred by the compiler.
-let y = "abc"
-// Let bindings are permanent. If you need to reassign to a symbol, use 'var'
-// instead.
+```
+
+The symbol's type can be declared explicitly as above, but it can also be omitted and inferred by the compiler.
+
+```venice
+let y = "abc"  // inferred type of "string"
+```
+
+Bindings with `let` are permanent. If you need to reassign to a symbol later, use `var` for the initial declaration instead.
+
+```venice
 var x = 10
 x = 9
+```
 
+### Functions
+Function declarations use the `fn` keyword. Unlike `let` and `var` declarations, function declarations require types to be listed.
 
-/** * Functions
- *
- * A function declaration must list the types of its parameters and its return
- * value.
- */
+```venice
 fn add(x: integer, y: integer) -> integer {
   return x + y
 }
 
-// A function without an explicit return type has an implicit return type of
-// "void".
-fn print_plus_two(x: integer) {
+fn print_plus_two(x: integer) -> void {
   print(x)
 }
+```
 
-print_plus_two(40)  // 42
+Functions can have named parameters and default parameter values. All parameters after the special `*` symbol must be specified by name when calling the function.
 
-// Functions can have named parameters and default parameter values.
+```venice
 fn pluralize(word: string, *, ending: string = "s") -> string {
   return word + ending;
 }
+
 print(pluralize("match", ending = "es"))  // matches
+```
 
 
-/**
- * Control flow
- */
-let minutes = 30;
+## Control flow
+### `if` statements
+Venice has standard `if`-`else if`-`else` statements.
+
+```venice
 if minutes < 10 {
   print("short wait")
 } else if minutes < 20 {
@@ -113,37 +122,59 @@ if minutes < 10 {
 } else {
   print("long wait")
 }
+```
 
+### `while` loops
+The `while` loop is used to loop while a condition is true.
+
+```venice
 let i = 0;
 while i < 10 {
   print(i)
   i += 1
 }
+```
 
+### `for` loops
+The `for` loop is used to iterate over the elements of a sequence.
+
+```venice
 let letters: list<string> = ["a", "b", "c"];
 for letter in letters {
   print(letter)
 }
+```
 
 
-/**
- * Structs
- */
-struct User(name: string, age: integer) {
-  as_string(self) -> string {
-    return "${self.name}, aged {self.age}"
-  }
-}
+## Advanced data types
+### Structured data
+Structs in Venice are similar to structs in C and Rust.
+
+```venice
+struct User(name: string, age: integer) {}
 
 let u = User(name = "John Doe", age = 24)
 print(u.name)  // John Doe
 u.age += 1
 print(u.age)  // 25
+```
 
+A constructor is generated for structs by default, and struct objects can be compared for equality, hashed, and printed as long as all their constituent types can be.
 
-/**
- * Algebraic data types
- */
+Methods can be defined on a struct.
+
+```venice
+struct User(name: string, age: integer) {
+  as_string(self) -> string {
+    return "${self.name}, aged {self.age}"
+  }
+}
+```
+
+### Algebraic data types
+Venice supports algebraic data types (ADTs).
+
+```venice
 enum Expression {
   InfixOperation(op: string, left: Expression, right: Expression),
   Integer(integer),
@@ -155,7 +186,21 @@ let e = Expression::InfixOperation(
   left = Expression::Integer(20),
   right = Expression::Integer(22),
 }
+```
 
+Structs declared inside ADTs can also be used as independent types.
+
+```venice
+fn print_infix(e: Expression::InfixOperation) {
+  print("${e.left} ${e.op} ${e.right}")
+}
+print_infix(e)
+```
+
+### Pattern matching
+The `match` statement is used to pattern-match ADTs.
+
+```venice
 match e {
   // The 'Expression::' prefix is unnecessary inside a match statement.
   case InfixOperation(op, ... ) {
@@ -166,16 +211,6 @@ match e {
   },
 }
 
-// Structs declared inside ADTs can also be used as independent types.
-fn print_infix(e: Expression::InfixOperation) {
-  print("${e.left} ${e.op} ${e.right}")
-}
-print_infix(e)
-
-
-/**
- * Pattern matching
- */
 enum InputEvent(
   MouseClick(x: integer, y: integer),
   Key(code: integer, shift: boolean, ctrl: boolean),
@@ -197,42 +232,59 @@ match x {
   },
   // Match statements must be exhaustive.
 }
-// Like in Rust, if the last line of each clause of a match statement is an
-// expression of equivalent types, the match statement overall can be used as
-// an expression.
+```
 
-// Pattern matching can also be done in 'if let' statements like in Rust.
+Like in Rust, if the last line of each clause of a match statement is an expression of equivalent types, the match statement overall can be used as an expression.
+
+Pattern matching can also be done in 'if let' statements like in Rust.
+
+```venice
 if let Key(code, ...) = event {
   print(code)
 }
+```
 
-/**
- * Interfaces
- */
+### Interfaces
+Interfaces are used to encapsulate related objects with the same interface but possibly different implementations.
+
+```venice
 interface StringLike {
   as_string() -> string,
 }
+```
 
+Interfaces must be implemented explicitly using the `for` keyword in the method definition.
+
+```venice
 struct Foo(x: integer) {
   as_string(self) -> string for StringLike {
     return "Foo(${self.x})"
   }
 }
+```
 
+Interface types can be used for function parameters (and anywhere else that types are used).
+
+```venice
 fn print_anything(x: StringLike) {
   print(x.as_string())
 }
+```
 
-/**
- * Generics
- */
+### Generics
+Structs and ADTs can be made generic over one or more types.
+
+```venice
 enum Optional<T>(
   Some(T),
   None
 )
+```
 
-// Type C must implement the interface StringLike.
-struct Collection<A, B, C: StringLike>(a: A, b: B, c: C)
+Generics may be constrained. In the example below, whatever type substitutes for `C` must implement the interface `StringLike`.
+
+```venice
+struct Collection<A, B, C: StringLike>(a: A, b: B, c: C) {}
 ```
 
 
@@ -293,7 +345,7 @@ type_paramater_list := LANGLE symbol_list RANGLE
 
 
 ## Implementation
-The Venice implementation comprises two programs: `vnc`, which compiles Venice programs to bytecode, and `vvm`, which runs bytecode programs.
+The Venice implementation comprises two programs: `vnc`, which compiles Venice programs to bytecode, and `vnvm`, which runs bytecode programs.
 
 ### The Venice bytecode format
 TODO(2021-07-04)
