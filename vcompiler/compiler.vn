@@ -1,7 +1,0 @@
-let program = "1 + 1"
-
-fn compile(program: string): string {
-  return program
-}
-
-print(compile(program))

@@ -12,7 +12,7 @@ def init(precommit):
     precommit.check(checks.NoWhitespaceInFilePath())
     precommit.check(checks.DoNotSubmit())
 
-    pyinclude = ["test"]
+    pyinclude = ["pycompiler/test"]
 
     # Check Python format with black.
     precommit.check(checks.PythonFormat(include=pyinclude))
@@ -24,7 +24,7 @@ def init(precommit):
     precommit.check(checks.PythonImportOrder(include=pyinclude))
 
     # Check that requirements.txt matches pip freeze.
-    precommit.check(checks.PipFreeze(venv=".venv"))
+    # precommit.check(checks.PipFreeze(venv=".venv"))
 
     # Check Python static type annotations with mypy.
     # precommit.check(checks.PythonTypes())
@@ -41,6 +41,6 @@ def init(precommit):
     # Run a custom command on each file.
     # precommit.check(checks.Command("FileCheck", ["check_file"], pass_files=True))
 
-    precommit.check(
-        checks.Command("UnitTests", ["./test"], exclude=["*.md", "precommit.py"])
-    )
+    # precommit.check(
+    #     checks.Command("UnitTests", ["./test"], exclude=["*.md", "precommit.py"])
+    # )
