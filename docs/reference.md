@@ -177,7 +177,7 @@ class User {
 }
 ```
 
-Methods and fields must be declared as either `public` or `private`.
+Methods and fields may be declared as either `public` or `private`. If the access specifier is omitted, it defaults to `private`.
 
 ### Algebraic data types
 Venice supports algebraic data types (ADTs).
