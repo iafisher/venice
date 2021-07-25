@@ -309,6 +309,24 @@ class Collection<A, B, C: StringLike> {
 ```
 
 
+## Type system
+Every type in a Venice program is one of the following:
+
+- A primitive type, like `integer` or `string`.
+- An algebraic data type declared with `enum`.
+- A class type declared with `class`. This includes class-like types declared inside ADTs.
+- An interface type declared with `interface`.
+
+The latter two categories of types may be parameterized as generic types, and each parameter type may be constrained by one or more interfaces.
+
+In many situations during the compilation of a Venice program, the compiler must check that a certain type `A` is compatible with another type `B`, for instance when a value of type `A` is passed to a function expecting type `B`. This is evaluated in the following manner:
+
+- If `B` is a primitive type, then `A` must match `B` exactly, unless `B` is an numeric type and `A` is strictly smaller (e.g., an `i64` can be passed where an `integer` is expected).
+- If `B` is an algebraic data type, then `A` must match `B` exactly.
+- If `B` is a class type, then `A` must match `B` exactly.
+- If `B` is an interface type, then `A` must implement the interface `B`.
+
+
 ## Formal syntax
 ```bnf
 program := import* declaration+
