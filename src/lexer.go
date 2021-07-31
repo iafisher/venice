@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Lexer struct {
 	program string
 	index   int
@@ -82,6 +84,10 @@ func (l *Lexer) copyLocation() *Location {
 	return &Location{Line: l.loc.Line, Column: l.loc.Column}
 }
 
+func (token *Token) asString() string {
+	return fmt.Sprintf("%s (%q) at line %d, column %d", token.Type, token.Value, token.Loc.Line, token.Loc.Column)
+}
+
 func isDigit(ch byte) bool {
 	return '0' <= ch && ch <= '9'
 }
@@ -99,8 +105,25 @@ func isWhitespace(ch byte) bool {
 }
 
 const (
+	TOKEN_ELSE    = "TOKEN_ELSE"
+	TOKEN_FN      = "TOKEN_FN"
+	TOKEN_FOR     = "TOKEN_FOR"
+	TOKEN_IF      = "TOKEN_IF"
 	TOKEN_INT     = "TOKEN_INT"
 	TOKEN_EOF     = "TOKEN_EOF"
+	TOKEN_LET     = "TOKEN_LET"
 	TOKEN_SYMBOL  = "TOKEN_SYMBOL"
 	TOKEN_UNKNOWN = "TOKEN_UNKNOWN"
+	TOKEN_VOID    = "TOKEN_VOID"
+	TOKEN_WHILE   = "TOKEN_WHILE"
 )
+
+var keywords = map[string]string{
+	"else":  TOKEN_ELSE,
+	"fn":    TOKEN_FN,
+	"for":   TOKEN_FOR,
+	"if":    TOKEN_IF,
+	"let":   TOKEN_LET,
+	"while": TOKEN_WHILE,
+	"void":  TOKEN_VOID,
+}
