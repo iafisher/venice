@@ -21,7 +21,7 @@ func main() {
 }
 
 func main_lexer_repl() {
-	fmt.Println("The Venice programming language.\n")
+	fmt.Print("The Venice programming language.\n\n")
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {

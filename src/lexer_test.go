@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-func TestNextTokenWithIntegerLiterals(t *testing.T) {
+func TestIntegerLiterals(t *testing.T) {
 	input := "100"
 	lexer := NewLexer(input)
 
@@ -13,7 +13,7 @@ func TestNextTokenWithIntegerLiterals(t *testing.T) {
 	checkToken(t, token, TOKEN_EOF, "", 1, 4)
 }
 
-func TestNextTokenWithSymbols(t *testing.T) {
+func TestSymbols(t *testing.T) {
 	input := "a b c abc a1_0"
 	lexer := NewLexer(input)
 
@@ -34,6 +34,58 @@ func TestNextTokenWithSymbols(t *testing.T) {
 
 	token = lexer.NextToken()
 	checkToken(t, token, TOKEN_EOF, "", 1, 15)
+}
+
+func TestOneCharTokens(t *testing.T) {
+	input := "[{()}]=+-*/"
+	lexer := NewLexer(input)
+
+	token := lexer.NextToken()
+	checkToken(t, token, TOKEN_LEFT_SQUARE, "[", 1, 1)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_LEFT_CURLY, "{", 1, 2)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_LEFT_PAREN, "(", 1, 3)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_RIGHT_PAREN, ")", 1, 4)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_RIGHT_CURLY, "}", 1, 5)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_RIGHT_SQUARE, "]", 1, 6)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_EQ, "=", 1, 7)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_PLUS, "+", 1, 8)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_MINUS, "-", 1, 9)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_ASTERISK, "*", 1, 10)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_SLASH, "/", 1, 11)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_EOF, "", 1, 12)
+}
+
+func TestTwoCharTokens(t *testing.T) {
+	input := "->"
+	lexer := NewLexer(input)
+
+	token := lexer.NextToken()
+	checkToken(t, token, TOKEN_ARROW, "->", 1, 1)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_EOF, "", 1, 3)
 }
 
 func checkToken(t *testing.T, token *Token, ttype string, value string, line int, column int) {

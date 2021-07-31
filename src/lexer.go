@@ -31,7 +31,23 @@ func (l *Lexer) NextToken() *Token {
 		return &Token{Type: TOKEN_EOF, Value: "", Loc: loc}
 	}
 
+	if l.index+1 < len(l.program) {
+		two_prefix := l.program[l.index : l.index+2]
+		token_type, ok := two_char_tokens[two_prefix]
+		if ok {
+			l.advance()
+			l.advance()
+			return &Token{Type: token_type, Value: two_prefix, Loc: loc}
+		}
+	}
+
 	ch := l.program[l.index]
+	token_type, ok := one_char_tokens[ch]
+	if ok {
+		l.advance()
+		return &Token{Type: token_type, Value: string(ch), Loc: loc}
+	}
+
 	switch {
 	case isDigit(ch):
 		value := l.readInteger()
@@ -105,17 +121,29 @@ func isWhitespace(ch byte) bool {
 }
 
 const (
-	TOKEN_ELSE    = "TOKEN_ELSE"
-	TOKEN_FN      = "TOKEN_FN"
-	TOKEN_FOR     = "TOKEN_FOR"
-	TOKEN_IF      = "TOKEN_IF"
-	TOKEN_INT     = "TOKEN_INT"
-	TOKEN_EOF     = "TOKEN_EOF"
-	TOKEN_LET     = "TOKEN_LET"
-	TOKEN_SYMBOL  = "TOKEN_SYMBOL"
-	TOKEN_UNKNOWN = "TOKEN_UNKNOWN"
-	TOKEN_VOID    = "TOKEN_VOID"
-	TOKEN_WHILE   = "TOKEN_WHILE"
+	TOKEN_ARROW        = "TOKEN_ARROW"
+	TOKEN_ASTERISK     = "TOKEN_ASTERISK"
+	TOKEN_ELSE         = "TOKEN_ELSE"
+	TOKEN_EQ           = "TOKEN_EQ"
+	TOKEN_FN           = "TOKEN_FN"
+	TOKEN_FOR          = "TOKEN_FOR"
+	TOKEN_IF           = "TOKEN_IF"
+	TOKEN_INT          = "TOKEN_INT"
+	TOKEN_EOF          = "TOKEN_EOF"
+	TOKEN_LEFT_CURLY   = "TOKEN_LEFT_CURLY"
+	TOKEN_LEFT_PAREN   = "TOKEN_LEFT_PAREN"
+	TOKEN_LEFT_SQUARE  = "TOKEN_LEFT_SQUARE"
+	TOKEN_LET          = "TOKEN_LET"
+	TOKEN_MINUS        = "TOKEN_MINUS"
+	TOKEN_PLUS         = "TOKEN_PLUS"
+	TOKEN_RIGHT_CURLY  = "TOKEN_RIGHT_CURLY"
+	TOKEN_RIGHT_PAREN  = "TOKEN_RIGHT_PAREN"
+	TOKEN_RIGHT_SQUARE = "TOKEN_RIGHT_SQUARE"
+	TOKEN_SLASH        = "TOKEN_SLASH"
+	TOKEN_SYMBOL       = "TOKEN_SYMBOL"
+	TOKEN_UNKNOWN      = "TOKEN_UNKNOWN"
+	TOKEN_VOID         = "TOKEN_VOID"
+	TOKEN_WHILE        = "TOKEN_WHILE"
 )
 
 var keywords = map[string]string{
@@ -126,4 +154,22 @@ var keywords = map[string]string{
 	"let":   TOKEN_LET,
 	"while": TOKEN_WHILE,
 	"void":  TOKEN_VOID,
+}
+
+var one_char_tokens = map[byte]string{
+	'*': TOKEN_ASTERISK,
+	'=': TOKEN_EQ,
+	'{': TOKEN_LEFT_CURLY,
+	'(': TOKEN_LEFT_PAREN,
+	'[': TOKEN_LEFT_SQUARE,
+	'-': TOKEN_MINUS,
+	'+': TOKEN_PLUS,
+	'}': TOKEN_RIGHT_CURLY,
+	')': TOKEN_RIGHT_PAREN,
+	']': TOKEN_RIGHT_SQUARE,
+	'/': TOKEN_SLASH,
+}
+
+var two_char_tokens = map[string]string{
+	"->": TOKEN_ARROW,
 }
