@@ -16,6 +16,7 @@ func TestParseExpressions(t *testing.T) {
 		{"1 + 2", &InfixNode{"+", &IntegerNode{1}, &IntegerNode{2}}},
 		{"1 + 2 * 3", &InfixNode{"+", &IntegerNode{1}, &InfixNode{"*", &IntegerNode{2}, &IntegerNode{3}}}},
 		{"1 * 2 + 3", &InfixNode{"+", &InfixNode{"*", &IntegerNode{1}, &IntegerNode{2}}, &IntegerNode{3}}},
+		{"1 * (2 + 3)", &InfixNode{"*", &IntegerNode{1}, &InfixNode{"+", &IntegerNode{2}, &IntegerNode{3}}}},
 	}
 
 	for i, testCase := range testCases {

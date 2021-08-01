@@ -64,6 +64,7 @@ func (p *Parser) ParseExpression() (Expression, bool) {
 	if !ok {
 		return nil, false
 	}
+	p.lexer.skipWhitespace()
 	if p.currentToken.Type != TOKEN_EOF {
 		return nil, false
 	}
@@ -108,6 +109,17 @@ func (p *Parser) matchPrefix() (Expression, bool) {
 		token := p.currentToken
 		p.nextToken()
 		return &SymbolNode{token.Value}, true
+	case TOKEN_LEFT_PAREN:
+		p.nextToken()
+		expr, ok := p.matchExpression(PRECEDENCE_LOWEST)
+		if !ok {
+			return nil, false
+		}
+		if p.currentToken.Type != TOKEN_RIGHT_PAREN {
+			return nil, false
+		}
+		p.nextToken()
+		return expr, true
 	default:
 		return nil, false
 	}

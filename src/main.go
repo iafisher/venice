@@ -8,13 +8,17 @@ import (
 
 func main() {
 	if len(os.Args) == 1 {
-		repl_parser()
+		repl_vm()
 	} else if len(os.Args) == 2 {
 		switch os.Args[1] {
 		case "lex":
 			repl_lexer()
 		case "parse":
 			repl_parser()
+		case "compile":
+			repl_compiler()
+		case "execute":
+			repl_vm()
 		default:
 			fmt.Printf("Error: unknown subcommand %q", os.Args[1])
 		}
@@ -36,13 +40,62 @@ func repl_lexer() {
 
 func repl_parser() {
 	repl_generic(func(line string) {
-		lexer := NewLexer(line)
-		parser := NewParser(lexer)
-		expression, ok := parser.ParseExpression()
+		expression, ok := NewParser(NewLexer(line)).ParseExpression()
 		if ok {
 			fmt.Printf("%+v\n", expression)
 		} else {
 			fmt.Println("Parse error")
+		}
+	})
+}
+
+func repl_compiler() {
+	repl_generic(func(line string) {
+		expression, ok := NewParser(NewLexer(line)).ParseExpression()
+		if !ok {
+			fmt.Println("Parse error")
+		}
+
+		bytecodes, _, ok := NewCompiler().CompileExpression(expression)
+		if !ok {
+			fmt.Println("Compile error")
+		}
+
+		for _, bytecode := range bytecodes {
+			fmt.Print(bytecode.Name)
+			for _, arg := range bytecode.Args {
+				fmt.Printf(" %+v", arg)
+			}
+			fmt.Print("\n")
+		}
+	})
+}
+
+func repl_vm() {
+	repl_generic(func(line string) {
+		expression, ok := NewParser(NewLexer(line)).ParseExpression()
+		if !ok {
+			fmt.Println("Parse error")
+		}
+
+		bytecodes, _, ok := NewCompiler().CompileExpression(expression)
+		if !ok {
+			fmt.Println("Compile error")
+		}
+
+		vm := NewVirtualMachine()
+		value, ok := vm.Execute(bytecodes)
+		if !ok {
+			fmt.Println("Execution error")
+		}
+
+		if value != nil {
+			switch typedValue := value.(type) {
+			case *VeniceInteger:
+				fmt.Printf("%d\n", typedValue.Value)
+			default:
+				fmt.Printf("%+v\n", value)
+			}
 		}
 	})
 }
