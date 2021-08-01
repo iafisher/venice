@@ -104,9 +104,9 @@ func repl_vm() {
 			return
 		}
 
-		value, ok := vm.Execute(bytecodes)
-		if !ok {
-			fmt.Println("Execution error")
+		value, err := vm.Execute(bytecodes)
+		if err != nil {
+			fmt.Printf("Execution error: %v\n", err)
 			return
 		}
 
@@ -222,8 +222,8 @@ func execute_program(p string) {
 	}
 
 	vm := NewVirtualMachine()
-	_, ok := vm.Execute(bytecodes)
-	if !ok {
-		log.Fatal("Execution error")
+	_, err = vm.Execute(bytecodes)
+	if err != nil {
+		log.Fatalf("Execution error: %s", err)
 	}
 }

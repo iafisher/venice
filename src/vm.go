@@ -16,13 +16,25 @@ func NewVirtualMachine() *VirtualMachine {
 	return &VirtualMachine{[]VeniceValue{}, &Environment{nil, make(map[string]VeniceValue)}}
 }
 
-func (vm *VirtualMachine) Execute(program []*Bytecode) (VeniceValue, bool) {
+type ExecutionError struct {
+	Message string
+}
+
+func (e *ExecutionError) Error() string {
+	return e.Message
+}
+
+func NewEmptyStackError() *ExecutionError {
+	return &ExecutionError{"virtual machine stack is empty"}
+}
+
+func (vm *VirtualMachine) Execute(program []*Bytecode) (VeniceValue, error) {
 	index := 0
 	for index < len(program) {
 		bytecode := program[index]
-		jump, ok := vm.executeOne(bytecode)
-		if !ok {
-			return nil, false
+		jump, err := vm.executeOne(bytecode)
+		if err != nil {
+			return nil, err
 		}
 
 		index += jump
@@ -31,48 +43,52 @@ func (vm *VirtualMachine) Execute(program []*Bytecode) (VeniceValue, bool) {
 	if len(vm.stack) > 0 {
 		ret := vm.stack[len(vm.stack)-1]
 		vm.stack = nil
-		return ret, true
+		return ret, nil
 	} else {
-		return nil, true
+		return nil, nil
 	}
 }
 
-func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, bool) {
+func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 	switch bytecode.Name {
 	case "BINARY_ADD":
-		left, right, ok := vm.popTwoInts()
-		if !ok {
-			return -1, false
+		left, right, err := vm.popTwoInts()
+		if err != nil {
+			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left.Value + right.Value})
 	case "BINARY_DIV":
-		left, right, ok := vm.popTwoInts()
-		if !ok {
-			return -1, false
+		left, right, err := vm.popTwoInts()
+		if err != nil {
+			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left.Value / right.Value})
 	case "BINARY_MUL":
-		left, right, ok := vm.popTwoInts()
-		if !ok {
-			return -1, false
+		left, right, err := vm.popTwoInts()
+		if err != nil {
+			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left.Value * right.Value})
 	case "BINARY_SUB":
-		left, right, ok := vm.popTwoInts()
-		if !ok {
-			return -1, false
+		left, right, err := vm.popTwoInts()
+		if err != nil {
+			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left.Value - right.Value})
 	case "CALL_BUILTIN":
 		if v, ok := bytecode.Args[0].(*VeniceString); ok {
 			switch v.Value {
 			case "print":
-				fmt.Println(vm.popStack().Serialize())
+				topOfStack, ok := vm.popStack()
+				if !ok {
+					return -1, NewEmptyStackError()
+				}
+				fmt.Println(topOfStack.Serialize())
 			default:
-				return -1, false
+				return -1, &ExecutionError{fmt.Sprintf("unknown builtin: %s", v.Value)}
 			}
 		} else {
-			return -1, false
+			return -1, &ExecutionError{"argument to CALL_BUILTIN must be a string"}
 		}
 	case "PUSH_CONST":
 		vm.pushStack(bytecode.Args[0])
@@ -80,32 +96,58 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, bool) {
 		symbol := bytecode.Args[0].(*VeniceString).Value
 		value, ok := vm.env.Get(symbol)
 		if !ok {
-			return -1, false
+			return -1, &ExecutionError{fmt.Sprintf("undefined symbol: %s", symbol)}
 		}
 		vm.pushStack(value)
 	case "STORE_NAME":
 		symbol := bytecode.Args[0].(*VeniceString).Value
-		vm.env.Put(symbol, vm.popStack())
+		topOfStack, ok := vm.popStack()
+		if !ok {
+			return -1, NewEmptyStackError()
+		}
+		vm.env.Put(symbol, topOfStack)
 	default:
-		return -1, false
+		return -1, &ExecutionError{fmt.Sprintf("unknown bytecode instruction: %s", bytecode.Name)}
 	}
-	return 1, true
+	return 1, nil
 }
 
 func (vm *VirtualMachine) pushStack(values ...VeniceValue) {
 	vm.stack = append(vm.stack, values...)
 }
 
-func (vm *VirtualMachine) popStack() VeniceValue {
+func (vm *VirtualMachine) popStack() (VeniceValue, bool) {
+	if len(vm.stack) == 0 {
+		return nil, false
+	}
+
 	ret := vm.stack[len(vm.stack)-1]
 	vm.stack = vm.stack[:len(vm.stack)-1]
-	return ret
+	return ret, true
 }
 
-func (vm *VirtualMachine) popTwoInts() (*VeniceInteger, *VeniceInteger, bool) {
-	right, ok1 := vm.popStack().(*VeniceInteger)
-	left, ok2 := vm.popStack().(*VeniceInteger)
-	return left, right, ok1 && ok2
+func (vm *VirtualMachine) popTwoInts() (*VeniceInteger, *VeniceInteger, error) {
+	right, ok := vm.popStack()
+	if !ok {
+		return nil, nil, NewEmptyStackError()
+	}
+
+	rightAsInteger, ok := right.(*VeniceInteger)
+	if !ok {
+		return nil, nil, &ExecutionError{"expected integer at top of virtual machine stack"}
+	}
+
+	left, ok := vm.popStack()
+	if !ok {
+		return nil, nil, NewEmptyStackError()
+	}
+
+	leftAsInteger, ok := left.(*VeniceInteger)
+	if !ok {
+		return nil, nil, &ExecutionError{"expected integer at top of virtual machine stack"}
+	}
+
+	return leftAsInteger, rightAsInteger, nil
 }
 
 func (env *Environment) Get(symbol string) (VeniceValue, bool) {
