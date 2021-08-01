@@ -2,6 +2,7 @@
 *~
 *.save
 *.DS_Store
+*.vnb
 
 # Python
 __pycache__
