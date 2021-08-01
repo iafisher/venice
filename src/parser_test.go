@@ -1,24 +1,35 @@
 package main
 
-import "testing"
+import (
+	"fmt"
+	"reflect"
+	"testing"
+)
 
-func TestParseInteger(t *testing.T) {
-	expression := parseExpressionHelper(t, "123")
-
-	integerNode, ok := expression.(*IntegerNode)
-	if !ok {
-		t.Fatalf("Wrong AST type: expected *IntegerNode, got %T", expression)
+func TestParseExpressions(t *testing.T) {
+	var testCases = []struct {
+		input    string
+		expected Expression
+	}{
+		{"123", &IntegerNode{123}},
+		{"abc", &SymbolNode{"abc"}},
+		{"1 + 2", &InfixNode{"+", &IntegerNode{1}, &IntegerNode{2}}},
+		{"1 + 2 * 3", &InfixNode{"+", &IntegerNode{1}, &InfixNode{"*", &IntegerNode{2}, &IntegerNode{3}}}},
+		{"1 * 2 + 3", &InfixNode{"+", &InfixNode{"*", &IntegerNode{1}, &IntegerNode{2}}, &IntegerNode{3}}},
 	}
 
-	if integerNode.Value != 123 {
-		t.Fatalf("Expected 123, got %d", integerNode.Value)
-	}
-}
+	for i, testCase := range testCases {
+		testName := fmt.Sprintf("%d", i)
+		t.Run(testName, func(t *testing.T) {
+			answer, ok := NewParser(NewLexer(testCase.input)).ParseExpression()
 
-func parseExpressionHelper(t *testing.T, input string) Expression {
-	expr, ok := NewParser(NewLexer(input)).ParseExpression()
-	if !ok {
-		t.Fatalf("Failed to parse")
+			if !ok {
+				t.Fatalf("Failed to parse %q", testCase.input)
+			}
+
+			if !reflect.DeepEqual(testCase.expected, answer) {
+				t.Fatalf("expected %+[1]v (%[1]T), got %+[2]v (%[2]T) for %[3]q", testCase.expected, answer, testCase.input)
+			}
+		})
 	}
-	return expr
 }
