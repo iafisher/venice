@@ -59,6 +59,9 @@ func (l *Lexer) NextToken() *Token {
 		} else {
 			return &Token{Type: TOKEN_SYMBOL, Value: value, Loc: loc}
 		}
+	case ch == '"':
+		value := l.readString()
+		return &Token{Type: TOKEN_STRING, Value: value, Loc: loc}
 	default:
 		l.advance()
 		return &Token{Type: TOKEN_UNKNOWN, Value: string(ch), Loc: loc}
@@ -86,6 +89,16 @@ func (l *Lexer) readSymbol() string {
 		l.advance()
 	}
 	return l.program[start:l.index]
+}
+
+func (l *Lexer) readString() string {
+	start := l.index
+	l.advance()
+	for l.index < len(l.program) && l.program[l.index] != '"' {
+		l.advance()
+	}
+	l.advance()
+	return l.program[start+1 : l.index-1]
 }
 
 func (l *Lexer) advance() {
@@ -128,6 +141,7 @@ const (
 	TOKEN_ARROW        = "TOKEN_ARROW"
 	TOKEN_ASSIGN       = "TOKEN_ASSIGN"
 	TOKEN_ASTERISK     = "TOKEN_ASTERISK"
+	TOKEN_COMMA        = "TOKEN_COMMA"
 	TOKEN_ELSE         = "TOKEN_ELSE"
 	TOKEN_FN           = "TOKEN_FN"
 	TOKEN_FOR          = "TOKEN_FOR"
@@ -144,6 +158,7 @@ const (
 	TOKEN_RIGHT_PAREN  = "TOKEN_RIGHT_PAREN"
 	TOKEN_RIGHT_SQUARE = "TOKEN_RIGHT_SQUARE"
 	TOKEN_SLASH        = "TOKEN_SLASH"
+	TOKEN_STRING       = "TOKEN_STRING"
 	TOKEN_SYMBOL       = "TOKEN_SYMBOL"
 	TOKEN_UNKNOWN      = "TOKEN_UNKNOWN"
 	TOKEN_VOID         = "TOKEN_VOID"
@@ -163,6 +178,7 @@ var keywords = map[string]string{
 var one_char_tokens = map[byte]string{
 	'=': TOKEN_ASSIGN,
 	'*': TOKEN_ASTERISK,
+	',': TOKEN_COMMA,
 	'{': TOKEN_LEFT_CURLY,
 	'(': TOKEN_LEFT_PAREN,
 	'[': TOKEN_LEFT_SQUARE,

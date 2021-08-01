@@ -54,11 +54,11 @@ func repl_lexer() {
 
 func repl_parser() {
 	repl_generic(func(line string) {
-		tree, ok := NewParser(NewLexer(line)).Parse()
-		if ok {
+		tree, err := NewParser(NewLexer(line)).Parse()
+		if err == nil {
 			fmt.Printf("%+v\n", tree)
 		} else {
-			fmt.Println("Parse error")
+			fmt.Printf("Parse error: %v\n", err)
 		}
 	})
 }
@@ -66,14 +66,16 @@ func repl_parser() {
 func repl_compiler() {
 	compiler := NewCompiler()
 	repl_generic(func(line string) {
-		tree, ok := NewParser(NewLexer(line)).Parse()
-		if !ok {
-			fmt.Println("Parse error")
+		tree, err := NewParser(NewLexer(line)).Parse()
+		if err == nil {
+			fmt.Printf("Parse error: %v\n", err)
+			return
 		}
 
 		bytecodes, ok := compiler.Compile(tree)
 		if !ok {
 			fmt.Println("Compile error")
+			return
 		}
 
 		for _, bytecode := range bytecodes {
@@ -90,19 +92,22 @@ func repl_vm() {
 	vm := NewVirtualMachine()
 	compiler := NewCompiler()
 	repl_generic(func(line string) {
-		tree, ok := NewParser(NewLexer(line)).Parse()
-		if !ok {
-			fmt.Println("Parse error")
+		tree, err := NewParser(NewLexer(line)).Parse()
+		if err != nil {
+			fmt.Printf("Parse error: %v\n", err)
+			return
 		}
 
 		bytecodes, ok := compiler.Compile(tree)
 		if !ok {
 			fmt.Println("Compile error")
+			return
 		}
 
 		value, ok := vm.Execute(bytecodes)
 		if !ok {
 			fmt.Println("Execution error")
+			return
 		}
 
 		if value != nil {
@@ -139,9 +144,9 @@ func compile_program(p string) {
 	}
 
 	program := string(data)
-	tree, ok := NewParser(NewLexer(program)).Parse()
-	if !ok {
-		log.Fatal("Parse error")
+	tree, err := NewParser(NewLexer(program)).Parse()
+	if err != nil {
+		log.Fatalf("Parse error: %v", err)
 	}
 
 	bytecodes, ok := NewCompiler().Compile(tree)
@@ -204,8 +209,10 @@ func execute_program(p string) {
 					log.Fatal("Could not parse integer token")
 				}
 				args = append(args, &VeniceInteger{value})
+			case TOKEN_STRING:
+				args = append(args, &VeniceString{token.Value})
 			default:
-				log.Fatal("Unexpected token: %q", token.Value)
+				log.Fatalf("Unexpected token: %q", token.Value)
 			}
 
 			token = lexer.NextToken()

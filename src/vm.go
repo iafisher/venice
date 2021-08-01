@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Environment struct {
 	parent  *Environment
 	symbols map[string]VeniceValue
@@ -59,6 +61,17 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, bool) {
 			return -1, false
 		}
 		vm.pushStack(&VeniceInteger{left.Value - right.Value})
+	case "CALL_BUILTIN":
+		if v, ok := bytecode.Args[0].(*VeniceString); ok {
+			switch v.Value {
+			case "print":
+				fmt.Println(vm.popStack().Serialize())
+			default:
+				return -1, false
+			}
+		} else {
+			return -1, false
+		}
 	case "PUSH_CONST":
 		vm.pushStack(bytecode.Args[0])
 	case "PUSH_NAME":

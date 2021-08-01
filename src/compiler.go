@@ -22,7 +22,7 @@ type VeniceString struct {
 
 func (v *VeniceString) veniceValue() {}
 func (v *VeniceString) Serialize() string {
-	return v.Value
+	return fmt.Sprintf("%q", v.Value)
 }
 
 type Bytecode struct {
@@ -44,9 +44,21 @@ type VeniceAtomicType struct {
 
 func (t *VeniceAtomicType) veniceType() {}
 
+type VeniceFunctionType struct {
+	ArgTypes   []VeniceType
+	ReturnType VeniceType
+}
+
+func (t *VeniceFunctionType) veniceType() {}
+
 type SymbolTable struct {
 	parent  *SymbolTable
 	symbols map[string]VeniceType
+}
+
+func NewBuiltinSymbolTable() *SymbolTable {
+	symbols := map[string]VeniceType{}
+	return &SymbolTable{nil, symbols}
 }
 
 type Compiler struct {
@@ -54,7 +66,7 @@ type Compiler struct {
 }
 
 func NewCompiler() *Compiler {
-	return &Compiler{&SymbolTable{nil, make(map[string]VeniceType)}}
+	return &Compiler{NewBuiltinSymbolTable()}
 }
 
 func (compiler *Compiler) Compile(tree *ProgramNode) ([]*Bytecode, bool) {
@@ -91,6 +103,8 @@ func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, bool) {
 
 func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, VeniceType, bool) {
 	switch v := tree.(type) {
+	case *CallNode:
+		return compiler.compileCallNode(v)
 	case *InfixNode:
 		return compiler.compileInfixNode(v)
 	case *IntegerNode:
@@ -104,6 +118,30 @@ func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, Venic
 	default:
 		return nil, nil, false
 	}
+}
+
+func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceType, bool) {
+	if v, ok := tree.Function.(*SymbolNode); ok {
+		if v.Value == "print" {
+			if len(tree.Args) != 1 {
+				return nil, nil, false
+			}
+
+			bytecodes, argType, ok := compiler.compileExpression(tree.Args[0])
+			if !ok {
+				return nil, nil, false
+			}
+
+			if argType != VENICE_TYPE_INTEGER && argType != VENICE_TYPE_STRING {
+				return nil, nil, false
+			}
+
+			bytecodes = append(bytecodes, NewBytecode("CALL_BUILTIN", &VeniceString{"print"}))
+			return bytecodes, nil, true
+		}
+	}
+
+	return nil, nil, false
 }
 
 func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, VeniceType, bool) {
