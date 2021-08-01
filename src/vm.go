@@ -35,6 +35,30 @@ func (vm *VirtualMachine) Execute(program []*Bytecode) (VeniceValue, bool) {
 
 func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, bool) {
 	switch bytecode.Name {
+	case "BINARY_ADD":
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return -1, false
+		}
+		vm.pushStack(&VeniceInteger{left.Value + right.Value})
+	case "BINARY_DIV":
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return -1, false
+		}
+		vm.pushStack(&VeniceInteger{left.Value / right.Value})
+	case "BINARY_MUL":
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return -1, false
+		}
+		vm.pushStack(&VeniceInteger{left.Value * right.Value})
+	case "BINARY_SUB":
+		left, right, ok := vm.popTwoInts()
+		if !ok {
+			return -1, false
+		}
+		vm.pushStack(&VeniceInteger{left.Value - right.Value})
 	case "PUSH_CONST":
 		vm.pushStack(bytecode.Args[0])
 	default:
@@ -45,4 +69,16 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, bool) {
 
 func (vm *VirtualMachine) pushStack(values ...VeniceValue) {
 	vm.stack = append(vm.stack, values...)
+}
+
+func (vm *VirtualMachine) popStack() VeniceValue {
+	ret := vm.stack[len(vm.stack)-1]
+	vm.stack = vm.stack[:len(vm.stack)-1]
+	return ret
+}
+
+func (vm *VirtualMachine) popTwoInts() (*VeniceInteger, *VeniceInteger, bool) {
+	right, ok1 := vm.popStack().(*VeniceInteger)
+	left, ok2 := vm.popStack().(*VeniceInteger)
+	return left, right, ok1 && ok2
 }
