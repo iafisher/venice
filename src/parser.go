@@ -47,6 +47,12 @@ type SymbolNode struct {
 
 func (n *SymbolNode) expressionNode() {}
 
+type StringNode struct {
+	Value string
+}
+
+func (n *StringNode) expressionNode() {}
+
 type ProgramNode struct {
 	Statements []Statement
 }
@@ -182,10 +188,6 @@ func (p *Parser) matchPrefix() (Expression, error) {
 			return nil, p.customError("could not convert integer token")
 		}
 		return &IntegerNode{value}, nil
-	case TOKEN_SYMBOL:
-		token := p.currentToken
-		p.nextToken()
-		return &SymbolNode{token.Value}, nil
 	case TOKEN_LEFT_PAREN:
 		p.nextToken()
 		expr, err := p.matchExpression(PRECEDENCE_LOWEST)
@@ -197,6 +199,14 @@ func (p *Parser) matchPrefix() (Expression, error) {
 		}
 		p.nextToken()
 		return expr, nil
+	case TOKEN_STRING:
+		token := p.currentToken
+		p.nextToken()
+		return &StringNode{token.Value}, nil
+	case TOKEN_SYMBOL:
+		token := p.currentToken
+		p.nextToken()
+		return &SymbolNode{token.Value}, nil
 	default:
 		return nil, p.unexpectedToken("start of expression")
 	}

@@ -111,12 +111,7 @@ func repl_vm() {
 		}
 
 		if value != nil {
-			switch typedValue := value.(type) {
-			case *VeniceInteger:
-				fmt.Printf("%d\n", typedValue.Value)
-			default:
-				fmt.Printf("%+v\n", value)
-			}
+			fmt.Println(value.Serialize())
 		}
 	})
 }

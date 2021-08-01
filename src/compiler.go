@@ -117,6 +117,8 @@ func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, Venic
 		return compiler.compileInfixNode(v)
 	case *IntegerNode:
 		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceInteger{v.Value})}, VENICE_TYPE_INTEGER, nil
+	case *StringNode:
+		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceString{v.Value})}, VENICE_TYPE_STRING, nil
 	case *SymbolNode:
 		symbolType, ok := compiler.symbolTable.Get(v.Value)
 		if !ok {
