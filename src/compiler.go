@@ -1,7 +1,10 @@
 package main
 
+import "fmt"
+
 type VeniceValue interface {
 	veniceValue()
+	Serialize() string
 }
 
 type VeniceInteger struct {
@@ -9,12 +12,18 @@ type VeniceInteger struct {
 }
 
 func (v *VeniceInteger) veniceValue() {}
+func (v *VeniceInteger) Serialize() string {
+	return fmt.Sprintf("%d", v.Value)
+}
 
 type VeniceString struct {
 	Value string
 }
 
 func (v *VeniceString) veniceValue() {}
+func (v *VeniceString) Serialize() string {
+	return v.Value
+}
 
 type Bytecode struct {
 	Name string

@@ -3,7 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
+	"path"
+	"strconv"
+	"strings"
 )
 
 func main() {
@@ -19,6 +24,15 @@ func main() {
 			repl_compiler()
 		case "execute":
 			repl_vm()
+		default:
+			fmt.Printf("Error: unknown subcommand %q", os.Args[1])
+		}
+	} else if len(os.Args) == 3 {
+		switch os.Args[1] {
+		case "compile":
+			compile_program(os.Args[2])
+		case "execute":
+			execute_program(os.Args[2])
 		default:
 			fmt.Printf("Error: unknown subcommand %q", os.Args[1])
 		}
@@ -115,5 +129,94 @@ func repl_generic(action func(line string)) {
 
 		line := scanner.Text()
 		action(line)
+	}
+}
+
+func compile_program(p string) {
+	data, err := ioutil.ReadFile(p)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	program := string(data)
+	tree, ok := NewParser(NewLexer(program)).Parse()
+	if !ok {
+		log.Fatal("Parse error")
+	}
+
+	bytecodes, ok := NewCompiler().Compile(tree)
+	if !ok {
+		log.Fatal("Compile error")
+	}
+
+	ext := path.Ext(p)
+	outputPath := p[:len(p)-len(ext)] + ".vnb"
+
+	f, err := os.Create(outputPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	writer := bufio.NewWriter(f)
+
+	for _, bytecode := range bytecodes {
+		writer.WriteString(bytecode.Name)
+		for _, arg := range bytecode.Args {
+			writer.WriteString(" ")
+			writer.WriteString(arg.Serialize())
+		}
+		writer.WriteString("\n")
+	}
+
+	writer.Flush()
+}
+
+func execute_program(p string) {
+	if strings.HasSuffix(p, ".vn") {
+		log.Fatal("Error: can only execute compiled programs.")
+	}
+
+	data, err := ioutil.ReadFile(p)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	program := string(data)
+	bytecodes := []*Bytecode{}
+	for i, line := range strings.Split(program, "\n") {
+		lexer := NewLexer(line)
+		instruction := lexer.NextToken()
+		if instruction.Type == TOKEN_EOF {
+			continue
+		}
+
+		if instruction.Type != TOKEN_SYMBOL {
+			log.Fatalf("Could not parse line %d", i+1)
+		}
+
+		args := []VeniceValue{}
+		token := lexer.NextToken()
+		for token.Type != TOKEN_EOF {
+			switch token.Type {
+			case TOKEN_INT:
+				value, err := strconv.ParseInt(token.Value, 10, 64)
+				if err != nil {
+					log.Fatal("Could not parse integer token")
+				}
+				args = append(args, &VeniceInteger{value})
+			default:
+				log.Fatal("Unexpected token: %q", token.Value)
+			}
+
+			token = lexer.NextToken()
+		}
+
+		bytecodes = append(bytecodes, &Bytecode{instruction.Value, args})
+	}
+
+	vm := NewVirtualMachine()
+	_, ok := vm.Execute(bytecodes)
+	if !ok {
+		log.Fatal("Execution error")
 	}
 }
