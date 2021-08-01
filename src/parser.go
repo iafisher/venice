@@ -20,6 +20,14 @@ type LetStatementNode struct {
 
 func (n *LetStatementNode) statementNode() {}
 
+type IfStatementNode struct {
+	Condition   Expression
+	TrueClause  []Statement
+	FalseClause []Statement
+}
+
+func (n *IfStatementNode) statementNode() {}
+
 type CallNode struct {
 	Function Expression
 	Args     []Expression
@@ -36,7 +44,7 @@ type InfixNode struct {
 func (n *InfixNode) expressionNode() {}
 
 type IntegerNode struct {
-	Value int64
+	Value int
 }
 
 func (n *IntegerNode) expressionNode() {}
@@ -118,6 +126,8 @@ func (p *Parser) Parse() (*ProgramNode, error) {
 
 func (p *Parser) matchStatement() (Statement, error) {
 	switch p.currentToken.Type {
+	case TOKEN_IF:
+		return p.matchIfStatement()
 	case TOKEN_LET:
 		return p.matchLetStatement()
 	default:
@@ -127,6 +137,30 @@ func (p *Parser) matchStatement() (Statement, error) {
 		}
 		return &ExpressionStatementNode{expr}, nil
 	}
+}
+
+func (p *Parser) matchIfStatement() (*IfStatementNode, error) {
+	p.nextToken()
+	condition, err := p.matchExpression(PRECEDENCE_LOWEST)
+	if err != nil {
+		return nil, err
+	}
+
+	trueClauseStatements, err := p.matchBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.currentToken.Type == TOKEN_ELSE {
+		p.nextToken()
+		falseClauseStatements, err := p.matchBlock()
+		if err != nil {
+			return nil, err
+		}
+		return &IfStatementNode{condition, trueClauseStatements, falseClauseStatements}, nil
+	}
+
+	return &IfStatementNode{condition, trueClauseStatements, nil}, nil
 }
 
 func (p *Parser) matchLetStatement() (*LetStatementNode, error) {
@@ -148,6 +182,28 @@ func (p *Parser) matchLetStatement() (*LetStatementNode, error) {
 	}
 
 	return &LetStatementNode{symbol, expr}, nil
+}
+
+func (p *Parser) matchBlock() ([]Statement, error) {
+	if p.currentToken.Type != TOKEN_LEFT_CURLY {
+		return nil, p.unexpectedToken("left curly brace")
+	}
+
+	p.nextToken()
+	statements := []Statement{}
+	for {
+		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
+			p.nextToken()
+			break
+		}
+
+		statement, err := p.matchStatement()
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, statement)
+	}
+	return statements, nil
 }
 
 func (p *Parser) matchExpression(precedence int) (Expression, error) {
@@ -192,11 +248,11 @@ func (p *Parser) matchPrefix() (Expression, error) {
 	case TOKEN_INT:
 		token := p.currentToken
 		p.nextToken()
-		value, err := strconv.ParseInt(token.Value, 10, 64)
+		value, err := strconv.ParseInt(token.Value, 10, 0)
 		if err != nil {
 			return nil, p.customError("could not convert integer token")
 		}
-		return &IntegerNode{value}, nil
+		return &IntegerNode{int(value)}, nil
 	case TOKEN_LEFT_PAREN:
 		p.nextToken()
 		expr, err := p.matchExpression(PRECEDENCE_LOWEST)

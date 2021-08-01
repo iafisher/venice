@@ -83,7 +83,7 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 				if !ok {
 					return -1, NewEmptyStackError()
 				}
-				fmt.Println(topOfStack.Serialize())
+				fmt.Println(topOfStack.SerializePrintable())
 			default:
 				return -1, &ExecutionError{fmt.Sprintf("unknown builtin: %s", v.Value)}
 			}
@@ -99,6 +99,24 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 			return -1, &ExecutionError{fmt.Sprintf("undefined symbol: %s", symbol)}
 		}
 		vm.pushStack(value)
+	case "REL_JUMP":
+		value := bytecode.Args[0].(*VeniceInteger).Value
+		return value, nil
+	case "REL_JUMP_IF_FALSE":
+		topOfStack, ok := vm.popStack()
+		if !ok {
+			return -1, NewEmptyStackError()
+		}
+
+		topOfStackAsBool, ok := topOfStack.(*VeniceBoolean)
+		if !ok {
+			return -1, &ExecutionError{"expected boolean at top of virtual machine stack"}
+		}
+
+		if !topOfStackAsBool.Value {
+			value := bytecode.Args[0].(*VeniceInteger).Value
+			return value, nil
+		}
 	case "STORE_NAME":
 		symbol := bytecode.Args[0].(*VeniceString).Value
 		topOfStack, ok := vm.popStack()

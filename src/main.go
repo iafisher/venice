@@ -201,11 +201,11 @@ func execute_program(p string) {
 			case TOKEN_FALSE:
 				args = append(args, &VeniceBoolean{true})
 			case TOKEN_INT:
-				value, err := strconv.ParseInt(token.Value, 10, 64)
+				value, err := strconv.ParseInt(token.Value, 10, 0)
 				if err != nil {
 					log.Fatal("Could not parse integer token")
 				}
-				args = append(args, &VeniceInteger{value})
+				args = append(args, &VeniceInteger{int(value)})
 			case TOKEN_STRING:
 				args = append(args, &VeniceString{token.Value})
 			case TOKEN_TRUE:

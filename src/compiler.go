@@ -5,15 +5,21 @@ import "fmt"
 type VeniceValue interface {
 	veniceValue()
 	Serialize() string
+	SerializePrintable() string
 }
 
 type VeniceInteger struct {
-	Value int64
+	Value int
 }
 
 func (v *VeniceInteger) veniceValue() {}
+
 func (v *VeniceInteger) Serialize() string {
 	return fmt.Sprintf("%d", v.Value)
+}
+
+func (v *VeniceInteger) SerializePrintable() string {
+	return v.Serialize()
 }
 
 type VeniceString struct {
@@ -21,8 +27,13 @@ type VeniceString struct {
 }
 
 func (v *VeniceString) veniceValue() {}
+
 func (v *VeniceString) Serialize() string {
 	return fmt.Sprintf("%q", v.Value)
+}
+
+func (v *VeniceString) SerializePrintable() string {
+	return v.Value
 }
 
 type VeniceBoolean struct {
@@ -30,12 +41,17 @@ type VeniceBoolean struct {
 }
 
 func (v *VeniceBoolean) veniceValue() {}
+
 func (v *VeniceBoolean) Serialize() string {
 	if v.Value {
 		return "true"
 	} else {
 		return "false"
 	}
+}
+
+func (v *VeniceBoolean) SerializePrintable() string {
+	return v.Serialize()
 }
 
 type Bytecode struct {
@@ -110,6 +126,8 @@ func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) 
 			return nil, err
 		}
 		return bytecodes, nil
+	case *IfStatementNode:
+		return compiler.compileIfStatement(v)
 	case *LetStatementNode:
 		bytecodes, eType, err := compiler.compileExpression(v.Expr)
 		if err != nil {
@@ -120,6 +138,50 @@ func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) 
 	default:
 		return nil, &CompileError{"unknown statement type"}
 	}
+}
+
+func (compiler *Compiler) compileIfStatement(tree *IfStatementNode) ([]*Bytecode, error) {
+	conditionBytecodes, conditionType, err := compiler.compileExpression(tree.Condition)
+	if err != nil {
+		return nil, err
+	}
+
+	if conditionType != VENICE_TYPE_BOOLEAN {
+		return nil, &CompileError{"condition of if statement must be a boolean"}
+	}
+
+	trueClauseBytecodes, err := compiler.compileBlock(tree.TrueClause)
+	if err != nil {
+		return nil, err
+	}
+
+	bytecodes := conditionBytecodes
+	bytecodes = append(bytecodes, NewBytecode("REL_JUMP_IF_FALSE", &VeniceInteger{len(trueClauseBytecodes) + 2}))
+	bytecodes = append(bytecodes, trueClauseBytecodes...)
+
+	if tree.FalseClause != nil {
+		falseClauseBytecodes, err := compiler.compileBlock(tree.FalseClause)
+		if err != nil {
+			return nil, err
+		}
+
+		bytecodes = append(bytecodes, NewBytecode("REL_JUMP", &VeniceInteger{len(falseClauseBytecodes) + 1}))
+		bytecodes = append(bytecodes, falseClauseBytecodes...)
+	}
+
+	return bytecodes, nil
+}
+
+func (compiler *Compiler) compileBlock(block []Statement) ([]*Bytecode, error) {
+	bytecodes := []*Bytecode{}
+	for _, statement := range block {
+		statementBytecodes, err := compiler.compileStatement(statement)
+		if err != nil {
+			return nil, err
+		}
+		bytecodes = append(bytecodes, statementBytecodes...)
+	}
+	return bytecodes, nil
 }
 
 func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, VeniceType, error) {
