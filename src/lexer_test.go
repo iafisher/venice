@@ -59,7 +59,7 @@ func TestOneCharTokens(t *testing.T) {
 	checkToken(t, token, TOKEN_RIGHT_SQUARE, "]", 1, 6)
 
 	token = lexer.NextToken()
-	checkToken(t, token, TOKEN_EQ, "=", 1, 7)
+	checkToken(t, token, TOKEN_ASSIGN, "=", 1, 7)
 
 	token = lexer.NextToken()
 	checkToken(t, token, TOKEN_PLUS, "+", 1, 8)
@@ -86,6 +86,17 @@ func TestTwoCharTokens(t *testing.T) {
 
 	token = lexer.NextToken()
 	checkToken(t, token, TOKEN_EOF, "", 1, 3)
+}
+
+func TestKeywordTokens(t *testing.T) {
+	input := "let"
+	lexer := NewLexer(input)
+
+	token := lexer.NextToken()
+	checkToken(t, token, TOKEN_LET, "let", 1, 1)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_EOF, "", 1, 4)
 }
 
 func checkToken(t *testing.T, token *Token, ttype string, value string, line int, column int) {

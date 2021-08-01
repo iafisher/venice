@@ -40,9 +40,9 @@ func repl_lexer() {
 
 func repl_parser() {
 	repl_generic(func(line string) {
-		expression, ok := NewParser(NewLexer(line)).ParseExpression()
+		tree, ok := NewParser(NewLexer(line)).Parse()
 		if ok {
-			fmt.Printf("%+v\n", expression)
+			fmt.Printf("%+v\n", tree)
 		} else {
 			fmt.Println("Parse error")
 		}
@@ -50,13 +50,14 @@ func repl_parser() {
 }
 
 func repl_compiler() {
+	compiler := NewCompiler()
 	repl_generic(func(line string) {
-		expression, ok := NewParser(NewLexer(line)).ParseExpression()
+		tree, ok := NewParser(NewLexer(line)).Parse()
 		if !ok {
 			fmt.Println("Parse error")
 		}
 
-		bytecodes, _, ok := NewCompiler().CompileExpression(expression)
+		bytecodes, ok := compiler.Compile(tree)
 		if !ok {
 			fmt.Println("Compile error")
 		}
@@ -72,18 +73,19 @@ func repl_compiler() {
 }
 
 func repl_vm() {
+	vm := NewVirtualMachine()
+	compiler := NewCompiler()
 	repl_generic(func(line string) {
-		expression, ok := NewParser(NewLexer(line)).ParseExpression()
+		tree, ok := NewParser(NewLexer(line)).Parse()
 		if !ok {
 			fmt.Println("Parse error")
 		}
 
-		bytecodes, _, ok := NewCompiler().CompileExpression(expression)
+		bytecodes, ok := compiler.Compile(tree)
 		if !ok {
 			fmt.Println("Compile error")
 		}
 
-		vm := NewVirtualMachine()
 		value, ok := vm.Execute(bytecodes)
 		if !ok {
 			fmt.Println("Execution error")

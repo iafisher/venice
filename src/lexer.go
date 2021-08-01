@@ -54,7 +54,11 @@ func (l *Lexer) NextToken() *Token {
 		return &Token{Type: TOKEN_INT, Value: value, Loc: loc}
 	case isSymbolFirstCharacter(ch):
 		value := l.readSymbol()
-		return &Token{Type: TOKEN_SYMBOL, Value: value, Loc: loc}
+		if keywordType, ok := keywords[value]; ok {
+			return &Token{Type: keywordType, Value: value, Loc: loc}
+		} else {
+			return &Token{Type: TOKEN_SYMBOL, Value: value, Loc: loc}
+		}
 	default:
 		l.advance()
 		return &Token{Type: TOKEN_UNKNOWN, Value: string(ch), Loc: loc}
@@ -122,9 +126,9 @@ func isWhitespace(ch byte) bool {
 
 const (
 	TOKEN_ARROW        = "TOKEN_ARROW"
+	TOKEN_ASSIGN       = "TOKEN_ASSIGN"
 	TOKEN_ASTERISK     = "TOKEN_ASTERISK"
 	TOKEN_ELSE         = "TOKEN_ELSE"
-	TOKEN_EQ           = "TOKEN_EQ"
 	TOKEN_FN           = "TOKEN_FN"
 	TOKEN_FOR          = "TOKEN_FOR"
 	TOKEN_IF           = "TOKEN_IF"
@@ -157,8 +161,8 @@ var keywords = map[string]string{
 }
 
 var one_char_tokens = map[byte]string{
+	'=': TOKEN_ASSIGN,
 	'*': TOKEN_ASTERISK,
-	'=': TOKEN_EQ,
 	'{': TOKEN_LEFT_CURLY,
 	'(': TOKEN_LEFT_PAREN,
 	'[': TOKEN_LEFT_SQUARE,

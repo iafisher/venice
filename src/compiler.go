@@ -10,6 +10,12 @@ type VeniceInteger struct {
 
 func (v *VeniceInteger) veniceValue() {}
 
+type VeniceString struct {
+	Value string
+}
+
+func (v *VeniceString) veniceValue() {}
+
 type Bytecode struct {
 	Name string
 	Args []VeniceValue
@@ -44,69 +50,111 @@ func NewCompiler() *Compiler {
 
 func (compiler *Compiler) Compile(tree *ProgramNode) ([]*Bytecode, bool) {
 	program := []*Bytecode{}
-	for _, declaration := range tree.Declarations {
-		declarationCode, ok := compiler.compileDeclaration(declaration)
+	for _, statement := range tree.Statements {
+		statementCode, ok := compiler.compileStatement(statement)
 		if !ok {
 			return nil, false
 		}
-		program = append(program, declarationCode...)
+		program = append(program, statementCode...)
 	}
 	return program, true
 }
 
-func (compiler *Compiler) CompileExpression(tree Expression) ([]*Bytecode, VeniceType, bool) {
+func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, bool) {
 	switch v := tree.(type) {
+	case *ExpressionStatementNode:
+		bytecodes, _, ok := compiler.compileExpression(v.Expression)
+		if !ok {
+			return nil, false
+		}
+		return bytecodes, true
+	case *LetStatementNode:
+		bytecodes, eType, ok := compiler.compileExpression(v.Expr)
+		if !ok {
+			return nil, false
+		}
+		compiler.symbolTable.symbols[v.Symbol] = eType
+		return append(bytecodes, NewBytecode("STORE_NAME", &VeniceString{v.Symbol})), true
+	default:
+		return nil, false
+	}
+}
+
+func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, VeniceType, bool) {
+	switch v := tree.(type) {
+	case *InfixNode:
+		return compiler.compileInfixNode(v)
 	case *IntegerNode:
 		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceInteger{v.Value})}, VENICE_TYPE_INTEGER, true
-	case *InfixNode:
-		leftBytecodes, leftType, ok := compiler.CompileExpression(v.Left)
+	case *SymbolNode:
+		symbolType, ok := compiler.symbolTable.Get(v.Value)
 		if !ok {
 			return nil, nil, false
 		}
-
-		leftAtomicType, ok := leftType.(*VeniceAtomicType)
-		if !ok {
-			return nil, nil, false
-		}
-
-		if leftAtomicType != VENICE_TYPE_INTEGER {
-			return nil, nil, false
-		}
-
-		rightBytecodes, rightType, ok := compiler.CompileExpression(v.Right)
-		if !ok {
-			return nil, nil, false
-		}
-
-		rightAtomicType, ok := rightType.(*VeniceAtomicType)
-		if !ok {
-			return nil, nil, false
-		}
-
-		if rightAtomicType != VENICE_TYPE_INTEGER {
-			return nil, nil, false
-		}
-
-		bytecodes := append(leftBytecodes, rightBytecodes...)
-		switch v.Operator {
-		case "+":
-			return append(bytecodes, NewBytecode("BINARY_ADD")), VENICE_TYPE_INTEGER, true
-		case "-":
-			return append(bytecodes, NewBytecode("BINARY_SUB")), VENICE_TYPE_INTEGER, true
-		case "*":
-			return append(bytecodes, NewBytecode("BINARY_MUL")), VENICE_TYPE_INTEGER, true
-		case "/":
-			return append(bytecodes, NewBytecode("BINARY_DIV")), VENICE_TYPE_INTEGER, true
-		default:
-			return nil, nil, false
-		}
+		return []*Bytecode{NewBytecode("PUSH_NAME", &VeniceString{v.Value})}, symbolType, true
 	default:
 		return nil, nil, false
 	}
 }
 
-func (compiler *Compiler) compileDeclaration(declaration Declaration) ([]*Bytecode, bool) {
-	return nil, false
+func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, VeniceType, bool) {
+	leftBytecodes, leftType, ok := compiler.compileExpression(tree.Left)
+	if !ok {
+		return nil, nil, false
+	}
+
+	leftAtomicType, ok := leftType.(*VeniceAtomicType)
+	if !ok {
+		return nil, nil, false
+	}
+
+	if leftAtomicType != VENICE_TYPE_INTEGER {
+		return nil, nil, false
+	}
+
+	rightBytecodes, rightType, ok := compiler.compileExpression(tree.Right)
+	if !ok {
+		return nil, nil, false
+	}
+
+	rightAtomicType, ok := rightType.(*VeniceAtomicType)
+	if !ok {
+		return nil, nil, false
+	}
+
+	if rightAtomicType != VENICE_TYPE_INTEGER {
+		return nil, nil, false
+	}
+
+	bytecodes := append(leftBytecodes, rightBytecodes...)
+	switch tree.Operator {
+	case "+":
+		return append(bytecodes, NewBytecode("BINARY_ADD")), VENICE_TYPE_INTEGER, true
+	case "-":
+		return append(bytecodes, NewBytecode("BINARY_SUB")), VENICE_TYPE_INTEGER, true
+	case "*":
+		return append(bytecodes, NewBytecode("BINARY_MUL")), VENICE_TYPE_INTEGER, true
+	case "/":
+		return append(bytecodes, NewBytecode("BINARY_DIV")), VENICE_TYPE_INTEGER, true
+	default:
+		return nil, nil, false
+	}
+}
+
+func (symtab *SymbolTable) Get(symbol string) (VeniceType, bool) {
+	value, ok := symtab.symbols[symbol]
+	if !ok {
+		if symtab.parent != nil {
+			return symtab.parent.Get(symbol)
+		} else {
+			return nil, false
+		}
+	}
+	return value, true
+}
+
+func (symtab *SymbolTable) Put(symbol string, value VeniceType) {
+	symtab.symbols[symbol] = value
 }
 
 const (

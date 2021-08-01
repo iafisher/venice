@@ -10,9 +10,12 @@ type Statement interface {
 	statementNode()
 }
 
-type Declaration interface {
-	declarationNode()
+type LetStatementNode struct {
+	Symbol string
+	Expr   Expression
 }
+
+func (n *LetStatementNode) statementNode() {}
 
 type InfixNode struct {
 	Operator string
@@ -35,7 +38,7 @@ type SymbolNode struct {
 func (n *SymbolNode) expressionNode() {}
 
 type ProgramNode struct {
-	Declarations []Declaration
+	Statements []Statement
 }
 
 type ExpressionStatementNode struct {
@@ -55,20 +58,61 @@ func NewParser(l *Lexer) *Parser {
 	return parser
 }
 
-func (p *Parser) Parse() *ProgramNode {
-	return nil
+func (p *Parser) Parse() (*ProgramNode, bool) {
+	statements := []Statement{}
+
+	for {
+		statement, ok := p.matchStatement()
+		if !ok {
+			return nil, false
+		}
+		statements = append(statements, statement)
+		p.lexer.skipWhitespace()
+
+		if p.currentToken.Type == TOKEN_EOF {
+			break
+		}
+	}
+
+	if len(statements) == 0 {
+		return nil, false
+	}
+
+	return &ProgramNode{statements}, true
 }
 
-func (p *Parser) ParseExpression() (Expression, bool) {
+func (p *Parser) matchStatement() (Statement, bool) {
+	switch p.currentToken.Type {
+	case TOKEN_LET:
+		return p.matchLetStatement()
+	default:
+		expr, ok := p.matchExpression(PRECEDENCE_LOWEST)
+		if !ok {
+			return nil, false
+		}
+		return &ExpressionStatementNode{expr}, true
+	}
+}
+
+func (p *Parser) matchLetStatement() (*LetStatementNode, bool) {
+	p.nextToken()
+	if p.currentToken.Type != TOKEN_SYMBOL {
+		return nil, false
+	}
+	symbol := p.currentToken.Value
+
+	p.nextToken()
+	if p.currentToken.Type != TOKEN_ASSIGN {
+		return nil, false
+	}
+
+	p.nextToken()
 	expr, ok := p.matchExpression(PRECEDENCE_LOWEST)
 	if !ok {
 		return nil, false
 	}
-	p.lexer.skipWhitespace()
-	if p.currentToken.Type != TOKEN_EOF {
-		return nil, false
-	}
-	return expr, true
+
+	return &LetStatementNode{symbol, expr}, true
 }
 
 func (p *Parser) matchExpression(precedence int) (Expression, bool) {
@@ -154,7 +198,6 @@ const (
 
 var precedenceMap = map[string]int{
 	TOKEN_ASTERISK: PRECEDENCE_MUL_DIV,
-	TOKEN_EQ:       PRECEDENCE_CMP,
 	TOKEN_MINUS:    PRECEDENCE_ADD_SUB,
 	TOKEN_PLUS:     PRECEDENCE_ADD_SUB,
 	TOKEN_SLASH:    PRECEDENCE_MUL_DIV,

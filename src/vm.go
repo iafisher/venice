@@ -61,6 +61,16 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, bool) {
 		vm.pushStack(&VeniceInteger{left.Value - right.Value})
 	case "PUSH_CONST":
 		vm.pushStack(bytecode.Args[0])
+	case "PUSH_NAME":
+		symbol := bytecode.Args[0].(*VeniceString).Value
+		value, ok := vm.env.Get(symbol)
+		if !ok {
+			return -1, false
+		}
+		vm.pushStack(value)
+	case "STORE_NAME":
+		symbol := bytecode.Args[0].(*VeniceString).Value
+		vm.env.Put(symbol, vm.popStack())
 	default:
 		return -1, false
 	}
@@ -81,4 +91,20 @@ func (vm *VirtualMachine) popTwoInts() (*VeniceInteger, *VeniceInteger, bool) {
 	right, ok1 := vm.popStack().(*VeniceInteger)
 	left, ok2 := vm.popStack().(*VeniceInteger)
 	return left, right, ok1 && ok2
+}
+
+func (env *Environment) Get(symbol string) (VeniceValue, bool) {
+	value, ok := env.symbols[symbol]
+	if !ok {
+		if env.parent != nil {
+			return env.parent.Get(symbol)
+		} else {
+			return nil, false
+		}
+	}
+	return value, true
+}
+
+func (env *Environment) Put(symbol string, value VeniceValue) {
+	env.symbols[symbol] = value
 }

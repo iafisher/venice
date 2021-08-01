@@ -22,12 +22,49 @@ func TestParseExpressions(t *testing.T) {
 	for i, testCase := range testCases {
 		testName := fmt.Sprintf("%d", i)
 		t.Run(testName, func(t *testing.T) {
-			answer, ok := NewParser(NewLexer(testCase.input)).ParseExpression()
-
+			program, ok := NewParser(NewLexer(testCase.input)).Parse()
 			if !ok {
 				t.Fatalf("Failed to parse %q", testCase.input)
 			}
 
+			if len(program.Statements) != 1 {
+				t.Fatalf("Expected exactly 1 statement, got %d", len(program.Statements))
+			}
+
+			expressionStatement, ok := program.Statements[0].(*ExpressionStatementNode)
+			if !ok {
+				t.Fatalf("Expected expression, got %+v for %q", program, testCase.input)
+			}
+
+			answer := expressionStatement.Expression
+			if !reflect.DeepEqual(testCase.expected, answer) {
+				t.Fatalf("expected %+[1]v (%[1]T), got %+[2]v (%[2]T) for %[3]q", testCase.expected, answer, testCase.input)
+			}
+		})
+	}
+}
+
+func TestParseStatements(t *testing.T) {
+	var testCases = []struct {
+		input    string
+		expected Statement
+	}{
+		{"let x = 10", &LetStatementNode{"x", &IntegerNode{10}}},
+	}
+
+	for i, testCase := range testCases {
+		testName := fmt.Sprintf("%d", i)
+		t.Run(testName, func(t *testing.T) {
+			program, ok := NewParser(NewLexer(testCase.input)).Parse()
+			if !ok {
+				t.Fatalf("Failed to parse %q", testCase.input)
+			}
+
+			if len(program.Statements) != 1 {
+				t.Fatalf("Expected exactly 1 statement, got %d", len(program.Statements))
+			}
+
+			answer := program.Statements[0]
 			if !reflect.DeepEqual(testCase.expected, answer) {
 				t.Fatalf("expected %+[1]v (%[1]T), got %+[2]v (%[2]T) for %[3]q", testCase.expected, answer, testCase.input)
 			}
