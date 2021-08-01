@@ -29,7 +29,9 @@ func (vm *VirtualMachine) Execute(program []*Bytecode) (VeniceValue, bool) {
 	}
 
 	if len(vm.stack) > 0 {
-		return vm.stack[len(vm.stack)-1], true
+		ret := vm.stack[len(vm.stack)-1]
+		vm.stack = nil
+		return ret, true
 	} else {
 		return nil, true
 	}

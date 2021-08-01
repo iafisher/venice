@@ -67,7 +67,7 @@ func repl_compiler() {
 	compiler := NewCompiler()
 	repl_generic(func(line string) {
 		tree, err := NewParser(NewLexer(line)).Parse()
-		if err == nil {
+		if err != nil {
 			fmt.Printf("Parse error: %v\n", err)
 			return
 		}
