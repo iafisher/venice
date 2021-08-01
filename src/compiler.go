@@ -25,6 +25,19 @@ func (v *VeniceString) Serialize() string {
 	return fmt.Sprintf("%q", v.Value)
 }
 
+type VeniceBoolean struct {
+	Value bool
+}
+
+func (v *VeniceBoolean) veniceValue() {}
+func (v *VeniceBoolean) Serialize() string {
+	if v.Value {
+		return "true"
+	} else {
+		return "false"
+	}
+}
+
 type Bytecode struct {
 	Name string
 	Args []VeniceValue
@@ -111,6 +124,8 @@ func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) 
 
 func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, VeniceType, error) {
 	switch v := tree.(type) {
+	case *BooleanNode:
+		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceBoolean{v.Value})}, VENICE_TYPE_BOOLEAN, nil
 	case *CallNode:
 		return compiler.compileCallNode(v)
 	case *InfixNode:
@@ -207,11 +222,13 @@ func (symtab *SymbolTable) Put(symbol string, value VeniceType) {
 }
 
 const (
+	VENICE_TYPE_BOOLEAN_LABEL = "bool"
 	VENICE_TYPE_INTEGER_LABEL = "int"
 	VENICE_TYPE_STRING_LABEL  = "string"
 )
 
 var (
+	VENICE_TYPE_BOOLEAN = &VeniceAtomicType{VENICE_TYPE_BOOLEAN_LABEL}
 	VENICE_TYPE_INTEGER = &VeniceAtomicType{VENICE_TYPE_INTEGER_LABEL}
 	VENICE_TYPE_STRING  = &VeniceAtomicType{VENICE_TYPE_STRING_LABEL}
 )

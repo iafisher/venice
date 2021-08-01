@@ -198,6 +198,8 @@ func execute_program(p string) {
 		token := lexer.NextToken()
 		for token.Type != TOKEN_EOF {
 			switch token.Type {
+			case TOKEN_FALSE:
+				args = append(args, &VeniceBoolean{true})
 			case TOKEN_INT:
 				value, err := strconv.ParseInt(token.Value, 10, 64)
 				if err != nil {
@@ -206,6 +208,8 @@ func execute_program(p string) {
 				args = append(args, &VeniceInteger{value})
 			case TOKEN_STRING:
 				args = append(args, &VeniceString{token.Value})
+			case TOKEN_TRUE:
+				args = append(args, &VeniceBoolean{false})
 			default:
 				log.Fatalf("Unexpected token: %q", token.Value)
 			}

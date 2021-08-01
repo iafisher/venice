@@ -143,6 +143,7 @@ const (
 	TOKEN_ASTERISK     = "TOKEN_ASTERISK"
 	TOKEN_COMMA        = "TOKEN_COMMA"
 	TOKEN_ELSE         = "TOKEN_ELSE"
+	TOKEN_FALSE        = "TOKEN_FALSE"
 	TOKEN_FN           = "TOKEN_FN"
 	TOKEN_FOR          = "TOKEN_FOR"
 	TOKEN_IF           = "TOKEN_IF"
@@ -160,6 +161,7 @@ const (
 	TOKEN_SLASH        = "TOKEN_SLASH"
 	TOKEN_STRING       = "TOKEN_STRING"
 	TOKEN_SYMBOL       = "TOKEN_SYMBOL"
+	TOKEN_TRUE         = "TOKEN_TRUE"
 	TOKEN_UNKNOWN      = "TOKEN_UNKNOWN"
 	TOKEN_VOID         = "TOKEN_VOID"
 	TOKEN_WHILE        = "TOKEN_WHILE"
@@ -167,11 +169,13 @@ const (
 
 var keywords = map[string]string{
 	"else":  TOKEN_ELSE,
+	"false": TOKEN_FALSE,
 	"fn":    TOKEN_FN,
 	"for":   TOKEN_FOR,
 	"if":    TOKEN_IF,
 	"let":   TOKEN_LET,
 	"while": TOKEN_WHILE,
+	"true":  TOKEN_TRUE,
 	"void":  TOKEN_VOID,
 }
 

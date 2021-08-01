@@ -53,6 +53,12 @@ type StringNode struct {
 
 func (n *StringNode) expressionNode() {}
 
+type BooleanNode struct {
+	Value bool
+}
+
+func (n *BooleanNode) expressionNode() {}
+
 type ProgramNode struct {
 	Statements []Statement
 }
@@ -180,6 +186,9 @@ func (p *Parser) matchExpression(precedence int) (Expression, error) {
 
 func (p *Parser) matchPrefix() (Expression, error) {
 	switch p.currentToken.Type {
+	case TOKEN_FALSE:
+		p.nextToken()
+		return &BooleanNode{false}, nil
 	case TOKEN_INT:
 		token := p.currentToken
 		p.nextToken()
@@ -207,6 +216,9 @@ func (p *Parser) matchPrefix() (Expression, error) {
 		token := p.currentToken
 		p.nextToken()
 		return &SymbolNode{token.Value}, nil
+	case TOKEN_TRUE:
+		p.nextToken()
+		return &BooleanNode{true}, nil
 	default:
 		return nil, p.unexpectedToken("start of expression")
 	}
