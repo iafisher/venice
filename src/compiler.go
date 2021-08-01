@@ -69,122 +69,122 @@ func NewCompiler() *Compiler {
 	return &Compiler{NewBuiltinSymbolTable()}
 }
 
-func (compiler *Compiler) Compile(tree *ProgramNode) ([]*Bytecode, bool) {
+type CompileError struct {
+	Message string
+}
+
+func (e *CompileError) Error() string {
+	return e.Message
+}
+
+func (compiler *Compiler) Compile(tree *ProgramNode) ([]*Bytecode, error) {
 	program := []*Bytecode{}
 	for _, statement := range tree.Statements {
-		statementCode, ok := compiler.compileStatement(statement)
-		if !ok {
-			return nil, false
+		statementCode, err := compiler.compileStatement(statement)
+		if err != nil {
+			return nil, err
 		}
 		program = append(program, statementCode...)
 	}
-	return program, true
+	return program, nil
 }
 
-func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, bool) {
+func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) {
 	switch v := tree.(type) {
 	case *ExpressionStatementNode:
-		bytecodes, _, ok := compiler.compileExpression(v.Expression)
-		if !ok {
-			return nil, false
+		bytecodes, _, err := compiler.compileExpression(v.Expression)
+		if err != nil {
+			return nil, err
 		}
-		return bytecodes, true
+		return bytecodes, nil
 	case *LetStatementNode:
-		bytecodes, eType, ok := compiler.compileExpression(v.Expr)
-		if !ok {
-			return nil, false
+		bytecodes, eType, err := compiler.compileExpression(v.Expr)
+		if err != nil {
+			return nil, err
 		}
 		compiler.symbolTable.symbols[v.Symbol] = eType
-		return append(bytecodes, NewBytecode("STORE_NAME", &VeniceString{v.Symbol})), true
+		return append(bytecodes, NewBytecode("STORE_NAME", &VeniceString{v.Symbol})), nil
 	default:
-		return nil, false
+		return nil, &CompileError{"unknown statement type"}
 	}
 }
 
-func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, VeniceType, bool) {
+func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, VeniceType, error) {
 	switch v := tree.(type) {
 	case *CallNode:
 		return compiler.compileCallNode(v)
 	case *InfixNode:
 		return compiler.compileInfixNode(v)
 	case *IntegerNode:
-		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceInteger{v.Value})}, VENICE_TYPE_INTEGER, true
+		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceInteger{v.Value})}, VENICE_TYPE_INTEGER, nil
 	case *SymbolNode:
 		symbolType, ok := compiler.symbolTable.Get(v.Value)
 		if !ok {
-			return nil, nil, false
+			return nil, nil, &CompileError{fmt.Sprintf("undefined symbol: %s", v.Value)}
 		}
-		return []*Bytecode{NewBytecode("PUSH_NAME", &VeniceString{v.Value})}, symbolType, true
+		return []*Bytecode{NewBytecode("PUSH_NAME", &VeniceString{v.Value})}, symbolType, nil
 	default:
-		return nil, nil, false
+		return nil, nil, &CompileError{"unknown expression type"}
 	}
 }
 
-func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceType, bool) {
+func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceType, error) {
 	if v, ok := tree.Function.(*SymbolNode); ok {
 		if v.Value == "print" {
 			if len(tree.Args) != 1 {
-				return nil, nil, false
+				return nil, nil, &CompileError{"`print` takes exactly 1 argument"}
 			}
 
-			bytecodes, argType, ok := compiler.compileExpression(tree.Args[0])
-			if !ok {
-				return nil, nil, false
+			bytecodes, argType, err := compiler.compileExpression(tree.Args[0])
+			if err != nil {
+				return nil, nil, err
 			}
 
 			if argType != VENICE_TYPE_INTEGER && argType != VENICE_TYPE_STRING {
-				return nil, nil, false
+				return nil, nil, &CompileError{"`print`'s argument must be an integer or string"}
 			}
 
 			bytecodes = append(bytecodes, NewBytecode("CALL_BUILTIN", &VeniceString{"print"}))
-			return bytecodes, nil, true
+			return bytecodes, nil, nil
 		}
 	}
 
-	return nil, nil, false
+	return nil, nil, &CompileError{"function calls not implemented yet"}
 }
 
-func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, VeniceType, bool) {
-	leftBytecodes, leftType, ok := compiler.compileExpression(tree.Left)
-	if !ok {
-		return nil, nil, false
+func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, VeniceType, error) {
+	leftBytecodes, leftType, err := compiler.compileExpression(tree.Left)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	leftAtomicType, ok := leftType.(*VeniceAtomicType)
-	if !ok {
-		return nil, nil, false
+	if !ok || leftAtomicType != VENICE_TYPE_INTEGER {
+		return nil, nil, &CompileError{fmt.Sprintf("operand of %s must be an integer", tree.Operator)}
 	}
 
-	if leftAtomicType != VENICE_TYPE_INTEGER {
-		return nil, nil, false
-	}
-
-	rightBytecodes, rightType, ok := compiler.compileExpression(tree.Right)
+	rightBytecodes, rightType, err := compiler.compileExpression(tree.Right)
 	if !ok {
-		return nil, nil, false
+		return nil, nil, err
 	}
 
 	rightAtomicType, ok := rightType.(*VeniceAtomicType)
-	if !ok {
-		return nil, nil, false
-	}
-
-	if rightAtomicType != VENICE_TYPE_INTEGER {
-		return nil, nil, false
+	if !ok || rightAtomicType != VENICE_TYPE_INTEGER {
+		return nil, nil, &CompileError{fmt.Sprintf("operand of %s must be an integer", tree.Operator)}
 	}
 
 	bytecodes := append(leftBytecodes, rightBytecodes...)
 	switch tree.Operator {
 	case "+":
-		return append(bytecodes, NewBytecode("BINARY_ADD")), VENICE_TYPE_INTEGER, true
+		return append(bytecodes, NewBytecode("BINARY_ADD")), VENICE_TYPE_INTEGER, nil
 	case "-":
-		return append(bytecodes, NewBytecode("BINARY_SUB")), VENICE_TYPE_INTEGER, true
+		return append(bytecodes, NewBytecode("BINARY_SUB")), VENICE_TYPE_INTEGER, nil
 	case "*":
-		return append(bytecodes, NewBytecode("BINARY_MUL")), VENICE_TYPE_INTEGER, true
+		return append(bytecodes, NewBytecode("BINARY_MUL")), VENICE_TYPE_INTEGER, nil
 	case "/":
-		return append(bytecodes, NewBytecode("BINARY_DIV")), VENICE_TYPE_INTEGER, true
+		return append(bytecodes, NewBytecode("BINARY_DIV")), VENICE_TYPE_INTEGER, nil
 	default:
-		return nil, nil, false
+		return nil, nil, &CompileError{fmt.Sprintf("unknown oeprator: %s", tree.Operator)}
 	}
 }
 

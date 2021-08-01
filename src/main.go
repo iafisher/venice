@@ -72,9 +72,9 @@ func repl_compiler() {
 			return
 		}
 
-		bytecodes, ok := compiler.Compile(tree)
-		if !ok {
-			fmt.Println("Compile error")
+		bytecodes, err := compiler.Compile(tree)
+		if err != nil {
+			fmt.Printf("Compile error: %v\n", err)
 			return
 		}
 
@@ -98,9 +98,9 @@ func repl_vm() {
 			return
 		}
 
-		bytecodes, ok := compiler.Compile(tree)
-		if !ok {
-			fmt.Println("Compile error")
+		bytecodes, err := compiler.Compile(tree)
+		if err != nil {
+			fmt.Printf("Compile error: %v\n", err)
 			return
 		}
 
@@ -149,9 +149,9 @@ func compile_program(p string) {
 		log.Fatalf("Parse error: %v", err)
 	}
 
-	bytecodes, ok := NewCompiler().Compile(tree)
-	if !ok {
-		log.Fatal("Compile error")
+	bytecodes, err := NewCompiler().Compile(tree)
+	if err != nil {
+		log.Fatalf("Compile error: %v", err)
 	}
 
 	ext := path.Ext(p)
