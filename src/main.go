@@ -14,20 +14,7 @@ import (
 
 func main() {
 	if len(os.Args) == 1 {
-		repl_execute()
-	} else if len(os.Args) == 2 {
-		switch os.Args[1] {
-		case "lex":
-			repl_lexer()
-		case "parse":
-			repl_parser()
-		case "compile":
-			repl_compiler()
-		case "execute":
-			repl_execute()
-		default:
-			fmt.Printf("Error: unknown subcommand %q", os.Args[1])
-		}
+		repl()
 	} else if len(os.Args) == 3 {
 		switch os.Args[1] {
 		case "compile":
@@ -42,104 +29,11 @@ func main() {
 	}
 }
 
-func repl_lexer() {
-	repl_generic(func(line string) {
-		lexer := NewLexer(line)
-		token := lexer.NextToken()
-		for token.Type != TOKEN_EOF {
-			fmt.Println(token.asString())
-			token = lexer.NextToken()
-		}
-	})
-}
-
-func repl_parser() {
-	repl_generic(func(line string) {
-		tree, err := NewParser(NewLexer(line)).Parse()
-		if err == nil {
-			goon.Dump(tree)
-		} else {
-			fmt.Printf("Parse error: %v\n", err)
-		}
-	})
-}
-
-func repl_compiler() {
-	compiler := NewCompiler()
-	repl_generic(func(line string) {
-		tree, err := NewParser(NewLexer(line)).Parse()
-		if err != nil {
-			fmt.Printf("Parse error: %v\n", err)
-			return
-		}
-
-		bytecodes, err := compiler.Compile(tree)
-		if err != nil {
-			fmt.Printf("Compile error: %v\n", err)
-			return
-		}
-
-		for _, bytecode := range bytecodes {
-			fmt.Print(bytecode.Name)
-			for _, arg := range bytecode.Args {
-				fmt.Printf(" %s", arg.Serialize())
-			}
-			fmt.Print("\n")
-		}
-	})
-}
-
-func repl_execute() {
-	vm := NewVirtualMachine()
-	compiler := NewCompiler()
-	repl_generic(func(line string) {
-		if line[0] == '!' {
-			switch line {
-			case "!stack":
-				if len(vm.stack) == 0 {
-					fmt.Println("Stack is empty")
-				} else {
-					fmt.Println("Stack (bottom to top)")
-					for _, value := range vm.stack {
-						fmt.Println(value.Serialize())
-					}
-				}
-				return
-			default:
-				fmt.Printf("Error: unknown command %q\n", line)
-				return
-			}
-		}
-		if line == "!stack" {
-		}
-
-		tree, err := NewParser(NewLexer(line)).Parse()
-		if err != nil {
-			fmt.Printf("Parse error: %v\n", err)
-			return
-		}
-
-		bytecodes, err := compiler.Compile(tree)
-		if err != nil {
-			fmt.Printf("Compile error: %v\n", err)
-			return
-		}
-
-		value, err := vm.Execute(bytecodes)
-		if err != nil {
-			fmt.Printf("Execution error: %v\n", err)
-			return
-		}
-
-		if value != nil {
-			fmt.Println(value.Serialize())
-		}
-	})
-}
-
-func repl_generic(action func(line string)) {
+func repl() {
 	fmt.Print("The Venice programming language.\n\n")
 
+	vm := NewVirtualMachine()
+	compiler := NewCompiler()
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print(">>> ")
@@ -150,8 +44,86 @@ func repl_generic(action func(line string)) {
 
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
-		if len(line) > 0 {
-			action(line)
+		if len(line) == 0 {
+			continue
+		}
+
+		operation := "execute"
+		if line[0] == '!' {
+			splitLine := strings.SplitN(line, " ", 2)
+			if len(splitLine) > 0 {
+				cmd := splitLine[0]
+				line = splitLine[1]
+				switch cmd {
+				case "!compile":
+					operation = "compile"
+				case "!lex":
+					operation = "lex"
+				case "!parse":
+					operation = "parse"
+				case "!stack":
+					if len(vm.stack) == 0 {
+						fmt.Println("Stack is empty")
+					} else {
+						fmt.Println("Stack (bottom to top)")
+						for _, value := range vm.stack {
+							fmt.Println(value.Serialize())
+						}
+					}
+					continue
+				default:
+					fmt.Printf("Error: unknown command %q\n", line)
+					continue
+				}
+			}
+		}
+
+		lexer := NewLexer(line)
+		if operation == "lex" {
+			token := lexer.NextToken()
+			for token.Type != TOKEN_EOF {
+				fmt.Println(token.asString())
+				token = lexer.NextToken()
+			}
+			continue
+		}
+
+		tree, err := NewParser(lexer).Parse()
+		if err != nil {
+			fmt.Printf("Parse error: %v\n", err)
+			continue
+		}
+
+		if operation == "parse" {
+			goon.Dump(tree)
+			continue
+		}
+
+		bytecodes, err := compiler.Compile(tree)
+		if err != nil {
+			fmt.Printf("Compile error: %v\n", err)
+			continue
+		}
+
+		if operation == "compile" {
+			for _, bytecode := range bytecodes {
+				fmt.Print(bytecode.Name)
+				for _, arg := range bytecode.Args {
+					fmt.Printf(" %s", arg.Serialize())
+				}
+				fmt.Print("\n")
+			}
+			continue
+		}
+
+		value, err := vm.Execute(bytecodes)
+		if err != nil {
+			fmt.Printf("Execution error: %v\n", err)
+			continue
+		}
+
+		if value != nil {
+			fmt.Println(value.Serialize())
 		}
 	}
 }
