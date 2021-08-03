@@ -298,7 +298,6 @@ func (p *Parser) matchPrefix() (Expression, error) {
 		if err != nil {
 			return nil, err
 		}
-		p.nextToken()
 		return &MapNode{pairs}, nil
 	case TOKEN_LEFT_PAREN:
 		p.nextToken()
@@ -317,7 +316,6 @@ func (p *Parser) matchPrefix() (Expression, error) {
 		if err != nil {
 			return nil, err
 		}
-		p.nextToken()
 		return &ListNode{values}, nil
 	case TOKEN_STRING:
 		token := p.currentToken
