@@ -9,6 +9,7 @@ type VeniceValue interface {
 	veniceValue()
 	Serialize() string
 	SerializePrintable() string
+	Equals(v VeniceValue) bool
 }
 
 type VeniceList struct {
@@ -41,6 +42,25 @@ func (v *VeniceList) SerializePrintable() string {
 	}
 	sb.WriteByte(']')
 	return sb.String()
+}
+
+func (v *VeniceList) Equals(otherUntyped VeniceValue) bool {
+	switch other := otherUntyped.(type) {
+	case *VeniceList:
+		if len(v.Values) != len(other.Values) {
+			return false
+		}
+
+		for i := 0; i < len(v.Values); i++ {
+			if !v.Values[i].Equals(other.Values[i]) {
+				return false
+			}
+		}
+
+		return true
+	default:
+		return false
+	}
 }
 
 type VeniceMap struct {
@@ -79,6 +99,11 @@ func (v *VeniceMap) SerializePrintable() string {
 	return sb.String()
 }
 
+func (v *VeniceMap) Equals(otherUntyped VeniceValue) bool {
+	// TODO(2021-08-31): Implement.
+	return false
+}
+
 type VeniceMapPair struct {
 	Key   VeniceValue
 	Value VeniceValue
@@ -98,6 +123,15 @@ func (v *VeniceInteger) SerializePrintable() string {
 	return v.Serialize()
 }
 
+func (v *VeniceInteger) Equals(otherUntyped VeniceValue) bool {
+	switch other := otherUntyped.(type) {
+	case *VeniceInteger:
+		return v.Value == other.Value
+	default:
+		return false
+	}
+}
+
 type VeniceString struct {
 	Value string
 }
@@ -110,6 +144,15 @@ func (v *VeniceString) Serialize() string {
 
 func (v *VeniceString) SerializePrintable() string {
 	return v.Value
+}
+
+func (v *VeniceString) Equals(otherUntyped VeniceValue) bool {
+	switch other := otherUntyped.(type) {
+	case *VeniceString:
+		return v.Value == other.Value
+	default:
+		return false
+	}
 }
 
 type VeniceBoolean struct {
@@ -128,6 +171,15 @@ func (v *VeniceBoolean) Serialize() string {
 
 func (v *VeniceBoolean) SerializePrintable() string {
 	return v.Serialize()
+}
+
+func (v *VeniceBoolean) Equals(otherUntyped VeniceValue) bool {
+	switch other := otherUntyped.(type) {
+	case *VeniceBoolean:
+		return v.Value == other.Value
+	default:
+		return false
+	}
 }
 
 type Bytecode struct {
@@ -279,6 +331,8 @@ func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, Venic
 		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceBoolean{v.Value})}, VENICE_TYPE_BOOLEAN, nil
 	case *CallNode:
 		return compiler.compileCallNode(v)
+	case *IndexNode:
+		return compiler.compileIndexNode(v)
 	case *InfixNode:
 		return compiler.compileInfixNode(v)
 	case *IntegerNode:
@@ -372,6 +426,39 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 	}
 
 	return nil, nil, &CompileError{"function calls not implemented yet"}
+}
+
+func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, VeniceType, error) {
+	exprBytecodes, exprType, err := compiler.compileExpression(tree.Expr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	indexBytecodes, indexType, err := compiler.compileExpression(tree.Index)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	bytecodes := append(exprBytecodes, indexBytecodes...)
+
+	switch exprConcreteType := exprType.(type) {
+	case *VeniceListType:
+		if !areTypesCompatible(VENICE_TYPE_INTEGER, indexType) {
+			return nil, nil, &CompileError{"list index must be integer"}
+		}
+
+		bytecodes = append(bytecodes, NewBytecode("BINARY_LIST_INDEX"))
+		return bytecodes, exprConcreteType.ItemType, nil
+	case *VeniceMapType:
+		if !areTypesCompatible(exprConcreteType.KeyType, indexType) {
+			return nil, nil, &CompileError{"wrong map key type in index expression"}
+		}
+
+		bytecodes = append(bytecodes, NewBytecode("BINARY_MAP_INDEX"))
+		return bytecodes, exprConcreteType.KeyType, nil
+	default:
+		return nil, nil, &CompileError{"only maps and lists can be indexed"}
+	}
 }
 
 func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, VeniceType, error) {

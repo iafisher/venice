@@ -93,6 +93,26 @@ func repl_execute() {
 	vm := NewVirtualMachine()
 	compiler := NewCompiler()
 	repl_generic(func(line string) {
+		if line[0] == '!' {
+			switch line {
+			case "!stack":
+				if len(vm.stack) == 0 {
+					fmt.Println("Stack is empty")
+				} else {
+					fmt.Println("Stack (bottom to top)")
+					for _, value := range vm.stack {
+						fmt.Println(value.Serialize())
+					}
+				}
+				return
+			default:
+				fmt.Printf("Error: unknown command %q\n", line)
+				return
+			}
+		}
+		if line == "!stack" {
+		}
+
 		tree, err := NewParser(NewLexer(line)).Parse()
 		if err != nil {
 			fmt.Printf("Parse error: %v\n", err)
@@ -129,7 +149,10 @@ func repl_generic(action func(line string)) {
 		}
 
 		line := scanner.Text()
-		action(line)
+		line = strings.TrimSpace(line)
+		if len(line) > 0 {
+			action(line)
+		}
 	}
 }
 

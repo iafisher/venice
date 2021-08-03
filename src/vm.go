@@ -63,6 +63,54 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left.Value / right.Value})
+	case "BINARY_LIST_INDEX":
+		indexUntyped, ok := vm.popStack()
+		if !ok {
+			return -1, NewEmptyStackError()
+		}
+
+		index, ok := indexUntyped.(*VeniceInteger)
+		if !ok {
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires integer on top of stack, got %s (%T)", indexUntyped.Serialize(), indexUntyped)}
+		}
+
+		listUntyped, ok := vm.popStack()
+		if !ok {
+			return -1, NewEmptyStackError()
+		}
+
+		list, ok := listUntyped.(*VeniceList)
+		if !ok {
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires list on top of stack, got %s (%T)", listUntyped.Serialize(), listUntyped)}
+		}
+
+		// TODO(2021-08-03): Handle out-of-bounds index.
+		vm.pushStack(list.Values[index.Value])
+	case "BINARY_MAP_INDEX":
+		index, ok := vm.popStack()
+		if !ok {
+			return -1, NewEmptyStackError()
+		}
+
+		vMapUntyped, ok := vm.popStack()
+		if !ok {
+			return -1, NewEmptyStackError()
+		}
+
+		vMap, ok := vMapUntyped.(*VeniceMap)
+		if !ok {
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_MAP_INDEX requires map on top of stack, got %s (%T)", vMapUntyped.Serialize(), vMapUntyped)}
+		}
+
+		for _, pair := range vMap.Pairs {
+			if pair.Key.Equals(index) {
+				vm.pushStack(pair.Value)
+				return 1, nil
+			}
+		}
+
+		// TODO(2021-08-03): Return a proper error value.
+		vm.pushStack(&VeniceInteger{-1})
 	case "BINARY_MUL":
 		left, right, err := vm.popTwoInts()
 		if err != nil {

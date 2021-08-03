@@ -35,6 +35,13 @@ type CallNode struct {
 
 func (n *CallNode) expressionNode() {}
 
+type IndexNode struct {
+	Expr  Expression
+	Index Expression
+}
+
+func (n *IndexNode) expressionNode() {}
+
 type InfixNode struct {
 	Operator string
 	Left     Expression
@@ -242,6 +249,19 @@ func (p *Parser) matchExpression(precedence int) (Expression, error) {
 					}
 
 					expr = &CallNode{expr, arglist}
+				} else if p.currentToken.Type == TOKEN_LEFT_SQUARE {
+					p.nextToken()
+					indexExpr, err := p.matchExpression(PRECEDENCE_LOWEST)
+					if err != nil {
+						return nil, err
+					}
+
+					if p.currentToken.Type != TOKEN_RIGHT_SQUARE {
+						return nil, p.unexpectedToken("right square bracket")
+					}
+					p.nextToken()
+
+					expr = &IndexNode{expr, indexExpr}
 				} else {
 					expr, err = p.matchInfix(expr, infixPrecedence)
 					if err != nil {
@@ -414,9 +434,10 @@ const (
 )
 
 var precedenceMap = map[string]int{
-	TOKEN_ASTERISK:   PRECEDENCE_MUL_DIV,
-	TOKEN_LEFT_PAREN: PRECEDENCE_CALL_INDEX,
-	TOKEN_MINUS:      PRECEDENCE_ADD_SUB,
-	TOKEN_PLUS:       PRECEDENCE_ADD_SUB,
-	TOKEN_SLASH:      PRECEDENCE_MUL_DIV,
+	TOKEN_ASTERISK:    PRECEDENCE_MUL_DIV,
+	TOKEN_LEFT_PAREN:  PRECEDENCE_CALL_INDEX,
+	TOKEN_LEFT_SQUARE: PRECEDENCE_CALL_INDEX,
+	TOKEN_MINUS:       PRECEDENCE_ADD_SUB,
+	TOKEN_PLUS:        PRECEDENCE_ADD_SUB,
+	TOKEN_SLASH:       PRECEDENCE_MUL_DIV,
 }
