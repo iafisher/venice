@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/shurcooL/go-goon"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,7 +14,7 @@ import (
 
 func main() {
 	if len(os.Args) == 1 {
-		repl_vm()
+		repl_execute()
 	} else if len(os.Args) == 2 {
 		switch os.Args[1] {
 		case "lex":
@@ -23,7 +24,7 @@ func main() {
 		case "compile":
 			repl_compiler()
 		case "execute":
-			repl_vm()
+			repl_execute()
 		default:
 			fmt.Printf("Error: unknown subcommand %q", os.Args[1])
 		}
@@ -56,7 +57,7 @@ func repl_parser() {
 	repl_generic(func(line string) {
 		tree, err := NewParser(NewLexer(line)).Parse()
 		if err == nil {
-			fmt.Printf("%+v\n", tree)
+			goon.Dump(tree)
 		} else {
 			fmt.Printf("Parse error: %v\n", err)
 		}
@@ -81,14 +82,14 @@ func repl_compiler() {
 		for _, bytecode := range bytecodes {
 			fmt.Print(bytecode.Name)
 			for _, arg := range bytecode.Args {
-				fmt.Printf(" %+v", arg)
+				fmt.Printf(" %s", arg.Serialize())
 			}
 			fmt.Print("\n")
 		}
 	})
 }
 
-func repl_vm() {
+func repl_execute() {
 	vm := NewVirtualMachine()
 	compiler := NewCompiler()
 	repl_generic(func(line string) {
