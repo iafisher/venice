@@ -22,9 +22,9 @@ func TestParseExpressions(t *testing.T) {
 	for i, testCase := range testCases {
 		testName := fmt.Sprintf("%d", i)
 		t.Run(testName, func(t *testing.T) {
-			program, ok := NewParser(NewLexer(testCase.input)).Parse()
-			if !ok {
-				t.Fatalf("Failed to parse %q", testCase.input)
+			program, err := NewParser(NewLexer(testCase.input)).Parse()
+			if err != nil {
+				t.Fatalf("Parse error: %s\n\nInput: %q", err, testCase.input)
 			}
 
 			if len(program.Statements) != 1 {
@@ -55,9 +55,9 @@ func TestParseStatements(t *testing.T) {
 	for i, testCase := range testCases {
 		testName := fmt.Sprintf("%d", i)
 		t.Run(testName, func(t *testing.T) {
-			program, ok := NewParser(NewLexer(testCase.input)).Parse()
-			if !ok {
-				t.Fatalf("Failed to parse %q", testCase.input)
+			program, err := NewParser(NewLexer(testCase.input)).Parse()
+			if err != nil {
+				t.Fatalf("Parse error: %s\n\nInput: %q", err, testCase.input)
 			}
 
 			if len(program.Statements) != 1 {
