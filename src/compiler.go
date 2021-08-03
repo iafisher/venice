@@ -43,6 +43,47 @@ func (v *VeniceList) SerializePrintable() string {
 	return sb.String()
 }
 
+type VeniceMap struct {
+	Pairs []*VeniceMapPair
+}
+
+func (v *VeniceMap) veniceValue() {}
+
+func (v *VeniceMap) Serialize() string {
+	var sb strings.Builder
+	sb.WriteByte('{')
+	for i, pair := range v.Pairs {
+		sb.WriteString(pair.Key.Serialize())
+		sb.WriteString(": ")
+		sb.WriteString(pair.Value.Serialize())
+		if i != len(v.Pairs)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte('}')
+	return sb.String()
+}
+
+func (v *VeniceMap) SerializePrintable() string {
+	var sb strings.Builder
+	sb.WriteByte('{')
+	for i, pair := range v.Pairs {
+		sb.WriteString(pair.Key.SerializePrintable())
+		sb.WriteString(": ")
+		sb.WriteString(pair.Value.SerializePrintable())
+		if i != len(v.Pairs)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte('}')
+	return sb.String()
+}
+
+type VeniceMapPair struct {
+	Key   VeniceValue
+	Value VeniceValue
+}
+
 type VeniceInteger struct {
 	Value int
 }
@@ -101,6 +142,13 @@ func NewBytecode(name string, args ...VeniceValue) *Bytecode {
 type VeniceType interface {
 	veniceType()
 }
+
+type VeniceMapType struct {
+	KeyType   VeniceType
+	ValueType VeniceType
+}
+
+func (t *VeniceMapType) veniceType() {}
 
 type VeniceListType struct {
 	ItemType VeniceType
@@ -255,6 +303,40 @@ func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, Venic
 		}
 		bytecodes = append(bytecodes, NewBytecode("BUILD_LIST", &VeniceInteger{len(v.Values)}))
 		return bytecodes, &VeniceListType{itemType}, nil
+	case *MapNode:
+		bytecodes := []*Bytecode{}
+		var keyType VeniceType
+		var valueType VeniceType
+		for i := len(v.Pairs) - 1; i >= 0; i-- {
+			pair := v.Pairs[i]
+			keyBytecodes, thisKeyType, err := compiler.compileExpression(pair.Key)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			if keyType == nil {
+				keyType = thisKeyType
+			} else if !areTypesCompatible(keyType, thisKeyType) {
+				return nil, nil, &CompileError{"map keys must all be of the same type"}
+			}
+
+			bytecodes = append(bytecodes, keyBytecodes...)
+
+			valueBytecodes, thisValueType, err := compiler.compileExpression(pair.Value)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			if valueType == nil {
+				valueType = thisValueType
+			} else if !areTypesCompatible(valueType, thisValueType) {
+				return nil, nil, &CompileError{"map values must all be of the same type"}
+			}
+
+			bytecodes = append(bytecodes, valueBytecodes...)
+		}
+		bytecodes = append(bytecodes, NewBytecode("BUILD_MAP", &VeniceInteger{len(v.Pairs)}))
+		return bytecodes, &VeniceMapType{keyType, valueType}, nil
 	case *StringNode:
 		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceString{v.Value})}, VENICE_TYPE_STRING, nil
 	case *SymbolNode:

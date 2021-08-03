@@ -141,6 +141,7 @@ const (
 	TOKEN_ARROW        = "TOKEN_ARROW"
 	TOKEN_ASSIGN       = "TOKEN_ASSIGN"
 	TOKEN_ASTERISK     = "TOKEN_ASTERISK"
+	TOKEN_COLON        = "TOKEN_COLON"
 	TOKEN_COMMA        = "TOKEN_COMMA"
 	TOKEN_ELSE         = "TOKEN_ELSE"
 	TOKEN_FALSE        = "TOKEN_FALSE"
@@ -182,6 +183,7 @@ var keywords = map[string]string{
 var one_char_tokens = map[byte]string{
 	'=': TOKEN_ASSIGN,
 	'*': TOKEN_ASTERISK,
+	':': TOKEN_COLON,
 	',': TOKEN_COMMA,
 	'{': TOKEN_LEFT_CURLY,
 	'(': TOKEN_LEFT_PAREN,

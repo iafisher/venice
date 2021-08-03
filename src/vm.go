@@ -86,6 +86,21 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 			values = append(values, topOfStack)
 		}
 		vm.pushStack(&VeniceList{values})
+	case "BUILD_MAP":
+		pairs := []*VeniceMapPair{}
+		n := bytecode.Args[0].(*VeniceInteger).Value
+		for i := 0; i < n; i++ {
+			value, ok := vm.popStack()
+			if !ok {
+				return -1, NewEmptyStackError()
+			}
+			key, ok := vm.popStack()
+			if !ok {
+				return -1, NewEmptyStackError()
+			}
+			pairs = append(pairs, &VeniceMapPair{key, value})
+		}
+		vm.pushStack(&VeniceMap{pairs})
 	case "CALL_BUILTIN":
 		if v, ok := bytecode.Args[0].(*VeniceString); ok {
 			switch v.Value {

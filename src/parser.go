@@ -49,6 +49,19 @@ type ListNode struct {
 
 func (n *ListNode) expressionNode() {}
 
+type MapNode struct {
+	Pairs []*MapPairNode
+}
+
+func (n *MapNode) expressionNode() {}
+
+type MapPairNode struct {
+	Key   Expression
+	Value Expression
+}
+
+func (n *MapPairNode) expressionNode() {}
+
 type IntegerNode struct {
 	Value int
 }
@@ -259,6 +272,14 @@ func (p *Parser) matchPrefix() (Expression, error) {
 			return nil, p.customError("could not convert integer token")
 		}
 		return &IntegerNode{int(value)}, nil
+	case TOKEN_LEFT_CURLY:
+		p.nextToken()
+		pairs, err := p.matchMapPairs()
+		if err != nil {
+			return nil, err
+		}
+		p.nextToken()
+		return &MapNode{pairs}, nil
 	case TOKEN_LEFT_PAREN:
 		p.nextToken()
 		expr, err := p.matchExpression(PRECEDENCE_LOWEST)
@@ -292,6 +313,43 @@ func (p *Parser) matchPrefix() (Expression, error) {
 	default:
 		return nil, p.unexpectedToken("start of expression")
 	}
+}
+
+func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
+	pairs := []*MapPairNode{}
+	for {
+		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
+			p.nextToken()
+			break
+		}
+
+		key, err := p.matchExpression(PRECEDENCE_LOWEST)
+		if err != nil {
+			return nil, err
+		}
+
+		if p.currentToken.Type != TOKEN_COLON {
+			return nil, p.unexpectedToken("colon")
+		}
+
+		p.nextToken()
+		value, err := p.matchExpression(PRECEDENCE_LOWEST)
+		if err != nil {
+			return nil, err
+		}
+
+		pairs = append(pairs, &MapPairNode{key, value})
+
+		if p.currentToken.Type == TOKEN_COMMA {
+			p.nextToken()
+		} else if p.currentToken.Type == TOKEN_RIGHT_CURLY {
+			p.nextToken()
+			break
+		} else {
+			return nil, p.unexpectedToken("comma or right curly brace")
+		}
+	}
+	return pairs, nil
 }
 
 func (p *Parser) matchArglist(terminator string) ([]Expression, error) {
