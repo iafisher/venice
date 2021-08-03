@@ -156,7 +156,7 @@ func (compiler *Compiler) compileIfStatement(tree *IfStatementNode) ([]*Bytecode
 	}
 
 	bytecodes := conditionBytecodes
-	bytecodes = append(bytecodes, NewBytecode("REL_JUMP_IF_FALSE", &VeniceInteger{len(trueClauseBytecodes) + 2}))
+	bytecodes = append(bytecodes, NewBytecode("REL_JUMP_IF_FALSE", &VeniceInteger{len(trueClauseBytecodes) + 1}))
 	bytecodes = append(bytecodes, trueClauseBytecodes...)
 
 	if tree.FalseClause != nil {
