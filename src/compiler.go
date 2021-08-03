@@ -467,33 +467,51 @@ func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, Venice
 		return nil, nil, err
 	}
 
-	leftAtomicType, ok := leftType.(*VeniceAtomicType)
-	if !ok || leftAtomicType != VENICE_TYPE_INTEGER {
-		return nil, nil, &CompileError{fmt.Sprintf("operand of %s must be an integer", tree.Operator)}
+	if !checkInfixLeftType(tree.Operator, leftType) {
+		return nil, nil, &CompileError{fmt.Sprintf("invalid type for left operand of %s", tree.Operator)}
 	}
 
 	rightBytecodes, rightType, err := compiler.compileExpression(tree.Right)
-	if !ok {
+	if err != nil {
 		return nil, nil, err
 	}
 
-	rightAtomicType, ok := rightType.(*VeniceAtomicType)
-	if !ok || rightAtomicType != VENICE_TYPE_INTEGER {
-		return nil, nil, &CompileError{fmt.Sprintf("operand of %s must be an integer", tree.Operator)}
+	if !checkInfixRightType(tree.Operator, leftType, rightType) {
+		return nil, nil, &CompileError{fmt.Sprintf("invalid type for right operand of %s", tree.Operator)}
 	}
 
 	bytecodes := append(leftBytecodes, rightBytecodes...)
 	switch tree.Operator {
 	case "+":
 		return append(bytecodes, NewBytecode("BINARY_ADD")), VENICE_TYPE_INTEGER, nil
-	case "-":
-		return append(bytecodes, NewBytecode("BINARY_SUB")), VENICE_TYPE_INTEGER, nil
-	case "*":
-		return append(bytecodes, NewBytecode("BINARY_MUL")), VENICE_TYPE_INTEGER, nil
 	case "/":
 		return append(bytecodes, NewBytecode("BINARY_DIV")), VENICE_TYPE_INTEGER, nil
+	case "==":
+		return append(bytecodes, NewBytecode("BINARY_EQ")), VENICE_TYPE_BOOLEAN, nil
+	case "*":
+		return append(bytecodes, NewBytecode("BINARY_MUL")), VENICE_TYPE_INTEGER, nil
+	case "-":
+		return append(bytecodes, NewBytecode("BINARY_SUB")), VENICE_TYPE_INTEGER, nil
 	default:
 		return nil, nil, &CompileError{fmt.Sprintf("unknown oeprator: %s", tree.Operator)}
+	}
+}
+
+func checkInfixLeftType(operator string, leftType VeniceType) bool {
+	switch operator {
+	case "==":
+		return true
+	default:
+		return areTypesCompatible(VENICE_TYPE_INTEGER, leftType)
+	}
+}
+
+func checkInfixRightType(operator string, leftType VeniceType, rightType VeniceType) bool {
+	switch operator {
+	case "==":
+		return areTypesCompatible(leftType, rightType)
+	default:
+		return areTypesCompatible(VENICE_TYPE_INTEGER, leftType)
 	}
 }
 

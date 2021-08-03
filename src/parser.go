@@ -421,6 +421,7 @@ func (p *Parser) customError(message string) *ParseError {
 	return &ParseError{message, p.currentToken.Loc}
 }
 
+// TODO(2021-08-03): Double-check this order.
 const (
 	_ int = iota
 	PRECEDENCE_LOWEST
@@ -435,6 +436,7 @@ const (
 
 var precedenceMap = map[string]int{
 	TOKEN_ASTERISK:    PRECEDENCE_MUL_DIV,
+	TOKEN_EQ:          PRECEDENCE_CMP,
 	TOKEN_LEFT_PAREN:  PRECEDENCE_CALL_INDEX,
 	TOKEN_LEFT_SQUARE: PRECEDENCE_CALL_INDEX,
 	TOKEN_MINUS:       PRECEDENCE_ADD_SUB,

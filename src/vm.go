@@ -63,6 +63,19 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left.Value / right.Value})
+	case "BINARY_EQ":
+		right, ok := vm.popStack()
+		if !ok {
+			return -1, NewEmptyStackError()
+		}
+
+		left, ok := vm.popStack()
+		if !ok {
+			return -1, NewEmptyStackError()
+		}
+
+		result := left.Equals(right)
+		vm.pushStack(&VeniceBoolean{result})
 	case "BINARY_LIST_INDEX":
 		indexUntyped, ok := vm.popStack()
 		if !ok {

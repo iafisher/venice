@@ -144,6 +144,7 @@ const (
 	TOKEN_COLON        = "TOKEN_COLON"
 	TOKEN_COMMA        = "TOKEN_COMMA"
 	TOKEN_ELSE         = "TOKEN_ELSE"
+	TOKEN_EQ           = "TOKEN_EQ"
 	TOKEN_FALSE        = "TOKEN_FALSE"
 	TOKEN_FN           = "TOKEN_FN"
 	TOKEN_FOR          = "TOKEN_FOR"
@@ -198,4 +199,5 @@ var one_char_tokens = map[byte]string{
 
 var two_char_tokens = map[string]string{
 	"->": TOKEN_ARROW,
+	"==": TOKEN_EQ,
 }
