@@ -75,6 +75,17 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left.Value - right.Value})
+	case "BUILD_LIST":
+		values := []VeniceValue{}
+		n := bytecode.Args[0].(*VeniceInteger).Value
+		for i := 0; i < n; i++ {
+			topOfStack, ok := vm.popStack()
+			if !ok {
+				return -1, NewEmptyStackError()
+			}
+			values = append(values, topOfStack)
+		}
+		vm.pushStack(&VeniceList{values})
 	case "CALL_BUILTIN":
 		if v, ok := bytecode.Args[0].(*VeniceString); ok {
 			switch v.Value {

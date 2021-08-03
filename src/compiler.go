@@ -1,11 +1,46 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type VeniceValue interface {
 	veniceValue()
 	Serialize() string
 	SerializePrintable() string
+}
+
+type VeniceList struct {
+	Values []VeniceValue
+}
+
+func (v *VeniceList) veniceValue() {}
+
+func (v *VeniceList) Serialize() string {
+	var sb strings.Builder
+	sb.WriteByte('[')
+	for i, value := range v.Values {
+		sb.WriteString(value.Serialize())
+		if i != len(v.Values)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte(']')
+	return sb.String()
+}
+
+func (v *VeniceList) SerializePrintable() string {
+	var sb strings.Builder
+	sb.WriteByte('[')
+	for i, value := range v.Values {
+		sb.WriteString(value.SerializePrintable())
+		if i != len(v.Values)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte(']')
+	return sb.String()
 }
 
 type VeniceInteger struct {
@@ -66,6 +101,12 @@ func NewBytecode(name string, args ...VeniceValue) *Bytecode {
 type VeniceType interface {
 	veniceType()
 }
+
+type VeniceListType struct {
+	ItemType VeniceType
+}
+
+func (t *VeniceListType) veniceType() {}
 
 type VeniceAtomicType struct {
 	Type string
@@ -194,6 +235,26 @@ func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, Venic
 		return compiler.compileInfixNode(v)
 	case *IntegerNode:
 		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceInteger{v.Value})}, VENICE_TYPE_INTEGER, nil
+	case *ListNode:
+		bytecodes := []*Bytecode{}
+		var itemType VeniceType
+		for i := len(v.Values) - 1; i >= 0; i-- {
+			value := v.Values[i]
+			valueBytecodes, valueType, err := compiler.compileExpression(value)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			if itemType == nil {
+				itemType = valueType
+			} else if !areTypesCompatible(itemType, valueType) {
+				return nil, nil, &CompileError{"list elements must all be of same type"}
+			}
+
+			bytecodes = append(bytecodes, valueBytecodes...)
+		}
+		bytecodes = append(bytecodes, NewBytecode("BUILD_LIST", &VeniceInteger{len(v.Values)}))
+		return bytecodes, &VeniceListType{itemType}, nil
 	case *StringNode:
 		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceString{v.Value})}, VENICE_TYPE_STRING, nil
 	case *SymbolNode:
@@ -264,6 +325,27 @@ func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, Venice
 		return append(bytecodes, NewBytecode("BINARY_DIV")), VENICE_TYPE_INTEGER, nil
 	default:
 		return nil, nil, &CompileError{fmt.Sprintf("unknown oeprator: %s", tree.Operator)}
+	}
+}
+
+func areTypesCompatible(expectedType VeniceType, actualType VeniceType) bool {
+	switch v1 := expectedType.(type) {
+	case *VeniceAtomicType:
+		switch v2 := actualType.(type) {
+		case *VeniceAtomicType:
+			return v1.Type == v2.Type
+		default:
+			return false
+		}
+	case *VeniceListType:
+		switch v2 := actualType.(type) {
+		case *VeniceListType:
+			return areTypesCompatible(v1.ItemType, v2.ItemType)
+		default:
+			return false
+		}
+	default:
+		return false
 	}
 }
 

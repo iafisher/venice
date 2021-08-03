@@ -43,6 +43,12 @@ type InfixNode struct {
 
 func (n *InfixNode) expressionNode() {}
 
+type ListNode struct {
+	Values []Expression
+}
+
+func (n *ListNode) expressionNode() {}
+
 type IntegerNode struct {
 	Value int
 }
@@ -217,7 +223,7 @@ func (p *Parser) matchExpression(precedence int) (Expression, error) {
 			if precedence < infixPrecedence {
 				if p.currentToken.Type == TOKEN_LEFT_PAREN {
 					p.nextToken()
-					arglist, err := p.matchArglist()
+					arglist, err := p.matchArglist(TOKEN_RIGHT_PAREN)
 					if err != nil {
 						return nil, err
 					}
@@ -264,6 +270,14 @@ func (p *Parser) matchPrefix() (Expression, error) {
 		}
 		p.nextToken()
 		return expr, nil
+	case TOKEN_LEFT_SQUARE:
+		p.nextToken()
+		values, err := p.matchArglist(TOKEN_RIGHT_SQUARE)
+		if err != nil {
+			return nil, err
+		}
+		p.nextToken()
+		return &ListNode{values}, nil
 	case TOKEN_STRING:
 		token := p.currentToken
 		p.nextToken()
@@ -280,10 +294,10 @@ func (p *Parser) matchPrefix() (Expression, error) {
 	}
 }
 
-func (p *Parser) matchArglist() ([]Expression, error) {
+func (p *Parser) matchArglist(terminator string) ([]Expression, error) {
 	arglist := []Expression{}
 	for {
-		if p.currentToken.Type == TOKEN_RIGHT_PAREN {
+		if p.currentToken.Type == terminator {
 			p.nextToken()
 			break
 		}
@@ -296,11 +310,11 @@ func (p *Parser) matchArglist() ([]Expression, error) {
 
 		if p.currentToken.Type == TOKEN_COMMA {
 			p.nextToken()
-		} else if p.currentToken.Type == TOKEN_RIGHT_PAREN {
+		} else if p.currentToken.Type == terminator {
 			p.nextToken()
 			break
 		} else {
-			return nil, p.unexpectedToken("comma or left parenthesis")
+			return nil, p.unexpectedToken(fmt.Sprintf("comma or %s", terminator))
 		}
 	}
 	return arglist, nil
