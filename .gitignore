@@ -3,6 +3,7 @@
 *.save
 *.DS_Store
 *.vnb
+*.wasm
 
 # Python
 __pycache__

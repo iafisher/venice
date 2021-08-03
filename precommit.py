@@ -30,7 +30,7 @@ def init(precommit):
     # precommit.check(checks.PythonTypes())
 
     # Lint JavaScript code with ESLint.
-    precommit.check(checks.JavaScriptLint())
+    # precommit.check(checks.JavaScriptLint())
 
     # Check Rust format with rustfmt.
     precommit.check(checks.RustFormat())
