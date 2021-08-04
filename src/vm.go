@@ -177,6 +177,39 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 		} else {
 			return -1, &ExecutionError{"argument to CALL_BUILTIN must be a string"}
 		}
+	case "CALL_FUNCTION":
+		if v, ok := bytecode.Args[0].(*VeniceInteger); ok {
+			n := v.Value
+
+			topOfStack, ok := vm.popStack()
+			if !ok {
+				return -1, NewEmptyStackError()
+			}
+
+			if function, ok := topOfStack.(*VeniceFunction); ok {
+				fEnv := &Environment{vm.env, map[string]VeniceValue{}}
+				for i := 0; i < n; i++ {
+					topOfStack, ok = vm.popStack()
+					if !ok {
+						return -1, NewEmptyStackError()
+					}
+
+					fEnv.symbols[function.Params[len(function.Params)-(i+1)]] = topOfStack
+				}
+
+				subVm := NewVirtualMachine()
+				subVm.env = fEnv
+				val, err := subVm.Execute(function.Body)
+				if err != nil {
+					return -1, nil
+				}
+				vm.pushStack(val)
+			} else {
+				return -1, &ExecutionError{"CALL_FUNCTION requires function on top of stack"}
+			}
+		} else {
+			return -1, &ExecutionError{"argument to CALL_FUNCTION must be an integer"}
+		}
 	case "PUSH_CONST":
 		vm.pushStack(bytecode.Args[0])
 	case "PUSH_NAME":

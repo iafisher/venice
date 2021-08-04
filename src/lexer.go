@@ -159,6 +159,7 @@ const (
 	TOKEN_LET          = "TOKEN_LET"
 	TOKEN_MINUS        = "TOKEN_MINUS"
 	TOKEN_PLUS         = "TOKEN_PLUS"
+	TOKEN_RETURN       = "TOKEN_RETURN"
 	TOKEN_RIGHT_CURLY  = "TOKEN_RIGHT_CURLY"
 	TOKEN_RIGHT_PAREN  = "TOKEN_RIGHT_PAREN"
 	TOKEN_RIGHT_SQUARE = "TOKEN_RIGHT_SQUARE"
@@ -180,8 +181,9 @@ var keywords = map[string]string{
 	"for":      TOKEN_FOR,
 	"if":       TOKEN_IF,
 	"let":      TOKEN_LET,
-	"while":    TOKEN_WHILE,
+	"return":   TOKEN_RETURN,
 	"true":     TOKEN_TRUE,
+	"while":    TOKEN_WHILE,
 	"void":     TOKEN_VOID,
 }
 

@@ -182,6 +182,25 @@ func (v *VeniceBoolean) Equals(otherUntyped VeniceValue) bool {
 	}
 }
 
+type VeniceFunction struct {
+	Params []string
+	Body   []*Bytecode
+}
+
+func (v *VeniceFunction) veniceValue() {}
+
+func (v *VeniceFunction) Serialize() string {
+	return "<function object>"
+}
+
+func (v *VeniceFunction) SerializePrintable() string {
+	return v.Serialize()
+}
+
+func (v *VeniceFunction) Equals(otherUntyped VeniceValue) bool {
+	return false
+}
+
 type Bytecode struct {
 	Name string
 	Args []VeniceValue
@@ -194,6 +213,13 @@ func NewBytecode(name string, args ...VeniceValue) *Bytecode {
 type VeniceType interface {
 	veniceType()
 }
+
+type VeniceFunctionType struct {
+	ParamTypes []VeniceType
+	ReturnType VeniceType
+}
+
+func (t *VeniceFunctionType) veniceType() {}
 
 type VeniceMapType struct {
 	KeyType   VeniceType
@@ -214,13 +240,6 @@ type VeniceAtomicType struct {
 
 func (t *VeniceAtomicType) veniceType() {}
 
-type VeniceFunctionType struct {
-	ArgTypes   []VeniceType
-	ReturnType VeniceType
-}
-
-func (t *VeniceFunctionType) veniceType() {}
-
 type SymbolTable struct {
 	parent  *SymbolTable
 	symbols map[string]VeniceType
@@ -231,12 +250,19 @@ func NewBuiltinSymbolTable() *SymbolTable {
 	return &SymbolTable{nil, symbols}
 }
 
+func NewBuiltinTypeSymbolTable() map[string]VeniceType {
+	return map[string]VeniceType{
+		"int": VENICE_TYPE_INTEGER,
+	}
+}
+
 type Compiler struct {
-	symbolTable *SymbolTable
+	symbolTable     *SymbolTable
+	typeSymbolTable map[string]VeniceType
 }
 
 func NewCompiler() *Compiler {
-	return &Compiler{NewBuiltinSymbolTable()}
+	return &Compiler{NewBuiltinSymbolTable(), NewBuiltinTypeSymbolTable()}
 }
 
 type CompileError struct {
@@ -271,6 +297,8 @@ func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) 
 			return nil, err
 		}
 		return bytecodes, nil
+	case *FunctionDeclarationNode:
+		return compiler.compileFunctionDeclaration(v)
 	case *IfStatementNode:
 		return compiler.compileIfStatement(v)
 	case *LetStatementNode:
@@ -284,6 +312,72 @@ func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) 
 		return compiler.compileWhileLoop(v)
 	default:
 		return nil, &CompileError{"unknown statement type"}
+	}
+}
+
+func (compiler *Compiler) compileStatementWithReturn(tree Statement) ([]*Bytecode, VeniceType, error) {
+	switch v := tree.(type) {
+	case *ReturnStatementNode:
+		return compiler.compileExpression(v.Expr)
+	default:
+		bytecodes, err := compiler.compileStatement(tree)
+		return bytecodes, nil, err
+	}
+}
+
+func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNode) ([]*Bytecode, error) {
+	params := []string{}
+	paramTypes := []VeniceType{}
+	bodySymbolTableMap := map[string]VeniceType{}
+	for _, param := range tree.Params {
+		paramType, err := compiler.resolveType(param.ParamType)
+		if err != nil {
+			return nil, err
+		}
+
+		params = append(params, param.Name)
+		paramTypes = append(paramTypes, paramType)
+
+		bodySymbolTableMap[param.Name] = paramType
+	}
+	bodySymbolTable := &SymbolTable{compiler.symbolTable, bodySymbolTableMap}
+
+	compiler.symbolTable = bodySymbolTable
+	bodyBytecodes, returnType, err := compiler.compileBlockWithReturn(tree.Body)
+	compiler.symbolTable = bodySymbolTable.parent
+
+	if err != nil {
+		return nil, err
+	}
+
+	declaredReturnType, err := compiler.resolveType(tree.ReturnType)
+	if err != nil {
+		return nil, err
+	}
+
+	if !areTypesCompatible(declaredReturnType, returnType) {
+		return nil, &CompileError{"actual return type does not match declared return type"}
+	}
+
+	bytecodes := []*Bytecode{
+		// TODO(2021-08-03): This is not serializable.
+		NewBytecode("PUSH_CONST", &VeniceFunction{params, bodyBytecodes}),
+		NewBytecode("STORE_NAME", &VeniceString{tree.Name}),
+	}
+	compiler.symbolTable.Put(tree.Name, &VeniceFunctionType{paramTypes, returnType})
+	return bytecodes, nil
+}
+
+func (compiler *Compiler) resolveType(typeNodeUntyped TypeNode) (VeniceType, error) {
+	switch typeNode := typeNodeUntyped.(type) {
+	case *SimpleTypeNode:
+		resolvedType, ok := compiler.typeSymbolTable[typeNode.Symbol]
+		if !ok {
+			return nil, &CompileError{fmt.Sprintf("unknown type: %s", typeNode.Symbol)}
+		}
+		return resolvedType, nil
+	default:
+		return nil, &CompileError{"unknown type node"}
 	}
 }
 
@@ -353,6 +447,28 @@ func (compiler *Compiler) compileBlock(block []Statement) ([]*Bytecode, error) {
 		bytecodes = append(bytecodes, statementBytecodes...)
 	}
 	return bytecodes, nil
+}
+
+func (compiler *Compiler) compileBlockWithReturn(block []Statement) ([]*Bytecode, VeniceType, error) {
+	bytecodes := []*Bytecode{}
+	var returnType VeniceType
+	for _, statement := range block {
+		statementBytecodes, thisReturnType, err := compiler.compileStatementWithReturn(statement)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if thisReturnType != nil {
+			if returnType == nil {
+				returnType = thisReturnType
+			} else if !areTypesCompatible(returnType, thisReturnType) {
+				return nil, nil, &CompileError{"multiple incompatible return statements in function"}
+			}
+		}
+
+		bytecodes = append(bytecodes, statementBytecodes...)
+	}
+	return bytecodes, returnType, nil
 }
 
 func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, VeniceType, error) {
@@ -452,6 +568,37 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 
 			bytecodes = append(bytecodes, NewBytecode("CALL_BUILTIN", &VeniceString{"print"}))
 			return bytecodes, nil, nil
+		} else {
+			fUntyped, ok := compiler.symbolTable.Get(v.Value)
+			if !ok {
+				return nil, nil, &CompileError{fmt.Sprintf("undefined symbol: %s", v.Value)}
+			}
+
+			if f, ok := fUntyped.(*VeniceFunctionType); ok {
+				if len(f.ParamTypes) != len(tree.Args) {
+					return nil, nil, &CompileError{fmt.Sprintf("wrong number of arguments: expected %d, got %d", len(f.ParamTypes), len(tree.Args))}
+				}
+
+				bytecodes := []*Bytecode{}
+				for i := 0; i < len(f.ParamTypes); i++ {
+					argBytecodes, argType, err := compiler.compileExpression(tree.Args[i])
+					if err != nil {
+						return nil, nil, err
+					}
+
+					if !areTypesCompatible(f.ParamTypes[i], argType) {
+						return nil, nil, &CompileError{"wrong function parameter type"}
+					}
+
+					bytecodes = append(bytecodes, argBytecodes...)
+				}
+
+				bytecodes = append(bytecodes, NewBytecode("PUSH_NAME", &VeniceString{v.Value}))
+				bytecodes = append(bytecodes, NewBytecode("CALL_FUNCTION", &VeniceInteger{len(f.ParamTypes)}))
+				return bytecodes, f.ReturnType, nil
+			} else {
+				return nil, nil, &CompileError{"not a function"}
+			}
 		}
 	}
 

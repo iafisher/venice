@@ -13,12 +13,42 @@ type Statement interface {
 	statementNode()
 }
 
+type TypeNode interface {
+	typeNode()
+}
+
+type FunctionDeclarationNode struct {
+	Name       string
+	Params     []*FunctionParamNode
+	ReturnType TypeNode
+	Body       []Statement
+}
+
+func (n *FunctionDeclarationNode) statementNode() {}
+
+type FunctionParamNode struct {
+	Name      string
+	ParamType TypeNode
+}
+
+type SimpleTypeNode struct {
+	Symbol string
+}
+
+func (n *SimpleTypeNode) typeNode() {}
+
 type LetStatementNode struct {
 	Symbol string
 	Expr   Expression
 }
 
 func (n *LetStatementNode) statementNode() {}
+
+type ReturnStatementNode struct {
+	Expr Expression
+}
+
+func (n *ReturnStatementNode) statementNode() {}
 
 type IfStatementNode struct {
 	Condition   Expression
@@ -171,10 +201,14 @@ func (p *Parser) matchStatement() (Statement, error) {
 		return &BreakStatementNode{}, nil
 	case TOKEN_CONTINUE:
 		return &ContinueStatementNode{}, nil
+	case TOKEN_FN:
+		return p.matchFunctionDeclaration()
 	case TOKEN_IF:
 		return p.matchIfStatement()
 	case TOKEN_LET:
 		return p.matchLetStatement()
+	case TOKEN_RETURN:
+		return p.matchReturnStatement()
 	case TOKEN_WHILE:
 		return p.matchWhileLoop()
 	default:
@@ -184,6 +218,98 @@ func (p *Parser) matchStatement() (Statement, error) {
 		}
 		return &ExpressionStatementNode{expr}, nil
 	}
+}
+
+func (p *Parser) matchReturnStatement() (*ReturnStatementNode, error) {
+	p.nextToken()
+	expr, err := p.matchExpression(PRECEDENCE_LOWEST)
+	if err != nil {
+		return nil, err
+	}
+	return &ReturnStatementNode{expr}, nil
+}
+
+func (p *Parser) matchFunctionDeclaration() (*FunctionDeclarationNode, error) {
+	p.nextToken()
+	if p.currentToken.Type != TOKEN_SYMBOL {
+		return nil, p.unexpectedToken("function name")
+	}
+
+	name := p.currentToken.Value
+	p.nextToken()
+
+	if p.currentToken.Type != TOKEN_LEFT_PAREN {
+		return nil, p.unexpectedToken("left parenthesis")
+	}
+
+	p.nextToken()
+	params, err := p.matchFunctionParams()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.currentToken.Type != TOKEN_RIGHT_PAREN {
+		return nil, p.unexpectedToken("right parenthesis")
+	}
+
+	p.nextToken()
+	var returnType TypeNode
+	if p.currentToken.Type == TOKEN_ARROW {
+		p.nextToken()
+		returnType, err = p.matchTypeNode()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	body, err := p.matchBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return &FunctionDeclarationNode{name, params, returnType, body}, nil
+}
+
+func (p *Parser) matchFunctionParams() ([]*FunctionParamNode, error) {
+	params := []*FunctionParamNode{}
+	for p.currentToken.Type != TOKEN_RIGHT_PAREN {
+		if p.currentToken.Type != TOKEN_SYMBOL {
+			return nil, p.unexpectedToken("function parameter name")
+		}
+		name := p.currentToken.Value
+
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_COLON {
+			return nil, p.unexpectedToken("colon")
+		}
+
+		p.nextToken()
+		paramType, err := p.matchTypeNode()
+		if err != nil {
+			return nil, err
+		}
+
+		params = append(params, &FunctionParamNode{name, paramType})
+
+		if p.currentToken.Type == TOKEN_RIGHT_PAREN {
+			break
+		} else if p.currentToken.Type == TOKEN_COMMA {
+			p.nextToken()
+		} else {
+			return nil, p.unexpectedToken("comma or right parenthesis")
+		}
+	}
+	return params, nil
+}
+
+func (p *Parser) matchTypeNode() (TypeNode, error) {
+	if p.currentToken.Type != TOKEN_SYMBOL {
+		return nil, p.unexpectedToken("type name")
+	}
+
+	name := p.currentToken.Value
+	p.nextToken()
+	return &SimpleTypeNode{name}, nil
 }
 
 func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {
