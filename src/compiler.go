@@ -2,6 +2,15 @@ package main
 
 import "fmt"
 
+type Compiler struct {
+	symbolTable     *SymbolTable
+	typeSymbolTable map[string]VeniceType
+}
+
+func NewCompiler() *Compiler {
+	return &Compiler{NewBuiltinSymbolTable(), NewBuiltinTypeSymbolTable()}
+}
+
 type SymbolTable struct {
 	parent  *SymbolTable
 	symbols map[string]VeniceType
@@ -16,23 +25,6 @@ func NewBuiltinTypeSymbolTable() map[string]VeniceType {
 	return map[string]VeniceType{
 		"int": VENICE_TYPE_INTEGER,
 	}
-}
-
-type Compiler struct {
-	symbolTable     *SymbolTable
-	typeSymbolTable map[string]VeniceType
-}
-
-func NewCompiler() *Compiler {
-	return &Compiler{NewBuiltinSymbolTable(), NewBuiltinTypeSymbolTable()}
-}
-
-type CompileError struct {
-	Message string
-}
-
-func (e *CompileError) Error() string {
-	return e.Message
 }
 
 func (compiler *Compiler) Compile(tree *ProgramNode) ([]*Bytecode, error) {
@@ -494,6 +486,14 @@ func (symtab *SymbolTable) Get(symbol string) (VeniceType, bool) {
 
 func (symtab *SymbolTable) Put(symbol string, value VeniceType) {
 	symtab.symbols[symbol] = value
+}
+
+type CompileError struct {
+	Message string
+}
+
+func (e *CompileError) Error() string {
+	return e.Message
 }
 
 const (

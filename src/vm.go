@@ -16,18 +16,6 @@ func NewVirtualMachine() *VirtualMachine {
 	return &VirtualMachine{[]VeniceValue{}, &Environment{nil, make(map[string]VeniceValue)}}
 }
 
-type ExecutionError struct {
-	Message string
-}
-
-func (e *ExecutionError) Error() string {
-	return e.Message
-}
-
-func NewEmptyStackError() *ExecutionError {
-	return &ExecutionError{"virtual machine stack is empty"}
-}
-
 func (vm *VirtualMachine) Execute(program []*Bytecode) (VeniceValue, error) {
 	index := 0
 	for index < len(program) {
@@ -242,4 +230,12 @@ func (env *Environment) Get(symbol string) (VeniceValue, bool) {
 
 func (env *Environment) Put(symbol string, value VeniceValue) {
 	env.symbols[symbol] = value
+}
+
+type ExecutionError struct {
+	Message string
+}
+
+func (e *ExecutionError) Error() string {
+	return e.Message
 }
