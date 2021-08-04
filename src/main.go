@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 )
 
@@ -155,16 +154,7 @@ func compile_program(p string) {
 	defer f.Close()
 	writer := bufio.NewWriter(f)
 
-	for _, bytecode := range bytecodes {
-		writer.WriteString(bytecode.Name)
-		for _, arg := range bytecode.Args {
-			writer.WriteString(" ")
-			writer.WriteString(arg.Serialize())
-		}
-		writer.WriteString("\n")
-	}
-
-	writer.Flush()
+	WriteBytecodeListToFile(writer, bytecodes)
 }
 
 func execute_program(p string) {
@@ -177,47 +167,13 @@ func execute_program(p string) {
 		log.Fatal(err)
 	}
 
-	program := string(data)
-	bytecodes := []*Bytecode{}
-	for i, line := range strings.Split(program, "\n") {
-		lexer := NewLexer(line)
-		instruction := lexer.NextToken()
-		if instruction.Type == TOKEN_EOF {
-			continue
-		}
-
-		if instruction.Type != TOKEN_SYMBOL {
-			log.Fatalf("Could not parse line %d", i+1)
-		}
-
-		args := []VeniceValue{}
-		token := lexer.NextToken()
-		for token.Type != TOKEN_EOF {
-			switch token.Type {
-			case TOKEN_FALSE:
-				args = append(args, &VeniceBoolean{true})
-			case TOKEN_INT:
-				value, err := strconv.ParseInt(token.Value, 10, 0)
-				if err != nil {
-					log.Fatal("Could not parse integer token")
-				}
-				args = append(args, &VeniceInteger{int(value)})
-			case TOKEN_STRING:
-				args = append(args, &VeniceString{token.Value})
-			case TOKEN_TRUE:
-				args = append(args, &VeniceBoolean{false})
-			default:
-				log.Fatalf("Unexpected token: %q", token.Value)
-			}
-
-			token = lexer.NextToken()
-		}
-
-		bytecodes = append(bytecodes, &Bytecode{instruction.Value, args})
+	bytecodeList, err := ReadBytecodeListFromString(string(data))
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	vm := NewVirtualMachine()
-	_, err = vm.Execute(bytecodes)
+	_, err = vm.Execute(bytecodeList)
 	if err != nil {
 		log.Fatalf("Execution error: %s", err)
 	}

@@ -2,15 +2,6 @@ package main
 
 import "fmt"
 
-type Bytecode struct {
-	Name string
-	Args []VeniceValue
-}
-
-func NewBytecode(name string, args ...VeniceValue) *Bytecode {
-	return &Bytecode{name, args}
-}
-
 type SymbolTable struct {
 	parent  *SymbolTable
 	symbols map[string]VeniceType
