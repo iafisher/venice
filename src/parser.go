@@ -30,7 +30,7 @@ func (e *ParseError) Error() string {
 }
 
 func (p *Parser) Parse() (*ProgramNode, error) {
-	statements := []Statement{}
+	statements := []StatementNode{}
 
 	for {
 		statement, err := p.matchStatement()
@@ -52,7 +52,7 @@ func (p *Parser) Parse() (*ProgramNode, error) {
 	return &ProgramNode{statements}, nil
 }
 
-func (p *Parser) matchStatement() (Statement, error) {
+func (p *Parser) matchStatement() (StatementNode, error) {
 	switch p.currentToken.Type {
 	case TOKEN_BREAK:
 		return &BreakStatementNode{}, nil
@@ -229,13 +229,13 @@ func (p *Parser) matchLetStatement() (*LetStatementNode, error) {
 	return &LetStatementNode{symbol, expr}, nil
 }
 
-func (p *Parser) matchBlock() ([]Statement, error) {
+func (p *Parser) matchBlock() ([]StatementNode, error) {
 	if p.currentToken.Type != TOKEN_LEFT_CURLY {
 		return nil, p.unexpectedToken("left curly brace")
 	}
 
 	p.nextToken()
-	statements := []Statement{}
+	statements := []StatementNode{}
 	for {
 		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
 			p.nextToken()
@@ -251,7 +251,7 @@ func (p *Parser) matchBlock() ([]Statement, error) {
 	return statements, nil
 }
 
-func (p *Parser) matchExpression(precedence int) (Expression, error) {
+func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 	expr, err := p.matchPrefix()
 	if err != nil {
 		return nil, err
@@ -298,7 +298,7 @@ func (p *Parser) matchExpression(precedence int) (Expression, error) {
 	return expr, nil
 }
 
-func (p *Parser) matchPrefix() (Expression, error) {
+func (p *Parser) matchPrefix() (ExpressionNode, error) {
 	switch p.currentToken.Type {
 	case TOKEN_FALSE:
 		p.nextToken()
@@ -389,8 +389,8 @@ func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
 	return pairs, nil
 }
 
-func (p *Parser) matchArglist(terminator string) ([]Expression, error) {
-	arglist := []Expression{}
+func (p *Parser) matchArglist(terminator string) ([]ExpressionNode, error) {
+	arglist := []ExpressionNode{}
 	for {
 		if p.currentToken.Type == terminator {
 			p.nextToken()
@@ -415,7 +415,7 @@ func (p *Parser) matchArglist(terminator string) ([]Expression, error) {
 	return arglist, nil
 }
 
-func (p *Parser) matchInfix(left Expression, precedence int) (Expression, error) {
+func (p *Parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode, error) {
 	operator := p.currentToken.Value
 	p.nextToken()
 	right, err := p.matchExpression(precedence)

@@ -1,10 +1,10 @@
 package main
 
-type Expression interface {
+type ExpressionNode interface {
 	expressionNode()
 }
 
-type Statement interface {
+type StatementNode interface {
 	statementNode()
 }
 
@@ -16,7 +16,7 @@ type FunctionDeclarationNode struct {
 	Name       string
 	Params     []*FunctionParamNode
 	ReturnType TypeNode
-	Body       []Statement
+	Body       []StatementNode
 }
 
 func (n *FunctionDeclarationNode) statementNode() {}
@@ -34,28 +34,28 @@ func (n *SimpleTypeNode) typeNode() {}
 
 type LetStatementNode struct {
 	Symbol string
-	Expr   Expression
+	Expr   ExpressionNode
 }
 
 func (n *LetStatementNode) statementNode() {}
 
 type ReturnStatementNode struct {
-	Expr Expression
+	Expr ExpressionNode
 }
 
 func (n *ReturnStatementNode) statementNode() {}
 
 type IfStatementNode struct {
-	Condition   Expression
-	TrueClause  []Statement
-	FalseClause []Statement
+	Condition   ExpressionNode
+	TrueClause  []StatementNode
+	FalseClause []StatementNode
 }
 
 func (n *IfStatementNode) statementNode() {}
 
 type WhileLoopNode struct {
-	Condition Expression
-	Body      []Statement
+	Condition ExpressionNode
+	Body      []StatementNode
 }
 
 func (n *WhileLoopNode) statementNode() {}
@@ -69,29 +69,29 @@ type ContinueStatementNode struct{}
 func (n *ContinueStatementNode) statementNode() {}
 
 type CallNode struct {
-	Function Expression
-	Args     []Expression
+	Function ExpressionNode
+	Args     []ExpressionNode
 }
 
 func (n *CallNode) expressionNode() {}
 
 type IndexNode struct {
-	Expr  Expression
-	Index Expression
+	Expr  ExpressionNode
+	Index ExpressionNode
 }
 
 func (n *IndexNode) expressionNode() {}
 
 type InfixNode struct {
 	Operator string
-	Left     Expression
-	Right    Expression
+	Left     ExpressionNode
+	Right    ExpressionNode
 }
 
 func (n *InfixNode) expressionNode() {}
 
 type ListNode struct {
-	Values []Expression
+	Values []ExpressionNode
 }
 
 func (n *ListNode) expressionNode() {}
@@ -103,8 +103,8 @@ type MapNode struct {
 func (n *MapNode) expressionNode() {}
 
 type MapPairNode struct {
-	Key   Expression
-	Value Expression
+	Key   ExpressionNode
+	Value ExpressionNode
 }
 
 func (n *MapPairNode) expressionNode() {}
@@ -134,11 +134,11 @@ type BooleanNode struct {
 func (n *BooleanNode) expressionNode() {}
 
 type ProgramNode struct {
-	Statements []Statement
+	Statements []StatementNode
 }
 
 type ExpressionStatementNode struct {
-	Expression Expression
+	Expr ExpressionNode
 }
 
 func (n *ExpressionStatementNode) statementNode() {}

@@ -47,14 +47,14 @@ func (compiler *Compiler) Compile(tree *ProgramNode) ([]*Bytecode, error) {
 	return program, nil
 }
 
-func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) {
+func (compiler *Compiler) compileStatement(tree StatementNode) ([]*Bytecode, error) {
 	switch v := tree.(type) {
 	case *BreakStatementNode:
 		return []*Bytecode{NewBytecode("BREAK_LOOP")}, nil
 	case *ContinueStatementNode:
 		return []*Bytecode{NewBytecode("CONTINUE_LOOP")}, nil
 	case *ExpressionStatementNode:
-		bytecodes, _, err := compiler.compileExpression(v.Expression)
+		bytecodes, _, err := compiler.compileExpression(v.Expr)
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +77,7 @@ func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) 
 	}
 }
 
-func (compiler *Compiler) compileStatementWithReturn(tree Statement) ([]*Bytecode, VeniceType, error) {
+func (compiler *Compiler) compileStatementWithReturn(tree StatementNode) ([]*Bytecode, VeniceType, error) {
 	switch v := tree.(type) {
 	case *ReturnStatementNode:
 		bytecodes, exprType, err := compiler.compileExpression(v.Expr)
@@ -204,7 +204,7 @@ func (compiler *Compiler) compileIfStatement(tree *IfStatementNode) ([]*Bytecode
 	return bytecodes, nil
 }
 
-func (compiler *Compiler) compileBlock(block []Statement) ([]*Bytecode, error) {
+func (compiler *Compiler) compileBlock(block []StatementNode) ([]*Bytecode, error) {
 	bytecodes := []*Bytecode{}
 	for _, statement := range block {
 		statementBytecodes, err := compiler.compileStatement(statement)
@@ -216,7 +216,7 @@ func (compiler *Compiler) compileBlock(block []Statement) ([]*Bytecode, error) {
 	return bytecodes, nil
 }
 
-func (compiler *Compiler) compileBlockWithReturn(block []Statement) ([]*Bytecode, VeniceType, error) {
+func (compiler *Compiler) compileBlockWithReturn(block []StatementNode) ([]*Bytecode, VeniceType, error) {
 	bytecodes := []*Bytecode{}
 	var returnType VeniceType
 	for _, statement := range block {
@@ -238,7 +238,7 @@ func (compiler *Compiler) compileBlockWithReturn(block []Statement) ([]*Bytecode
 	return bytecodes, returnType, nil
 }
 
-func (compiler *Compiler) compileExpression(tree Expression) ([]*Bytecode, VeniceType, error) {
+func (compiler *Compiler) compileExpression(tree ExpressionNode) ([]*Bytecode, VeniceType, error) {
 	switch v := tree.(type) {
 	case *BooleanNode:
 		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceBoolean{v.Value})}, VENICE_TYPE_BOOLEAN, nil

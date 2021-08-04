@@ -9,7 +9,7 @@ import (
 func TestParseExpressions(t *testing.T) {
 	var testCases = []struct {
 		input    string
-		expected Expression
+		expected ExpressionNode
 	}{
 		{"123", &IntegerNode{123}},
 		{"abc", &SymbolNode{"abc"}},
@@ -36,7 +36,7 @@ func TestParseExpressions(t *testing.T) {
 				t.Fatalf("Expected expression, got %+v for %q", program, testCase.input)
 			}
 
-			answer := expressionStatement.Expression
+			answer := expressionStatement.Expr
 			if !reflect.DeepEqual(testCase.expected, answer) {
 				t.Fatalf("expected %+[1]v (%[1]T), got %+[2]v (%[2]T) for %[3]q", testCase.expected, answer, testCase.input)
 			}
@@ -47,7 +47,7 @@ func TestParseExpressions(t *testing.T) {
 func TestParseStatements(t *testing.T) {
 	var testCases = []struct {
 		input    string
-		expected Statement
+		expected StatementNode
 	}{
 		{"let x = 10", &LetStatementNode{"x", &IntegerNode{10}}},
 	}
