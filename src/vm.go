@@ -16,11 +16,33 @@ func NewVirtualMachine() *VirtualMachine {
 	return &VirtualMachine{[]VeniceValue{}, &Environment{nil, make(map[string]VeniceValue)}}
 }
 
-func (vm *VirtualMachine) Execute(code []*Bytecode) (VeniceValue, error) {
+func (vm *VirtualMachine) Execute(compiledProgram CompiledProgram, debug bool) (VeniceValue, error) {
+	return vm.executeFunction(compiledProgram, "main", debug)
+}
+
+func (vm *VirtualMachine) executeFunction(compiledProgram CompiledProgram, functionName string, debug bool) (VeniceValue, error) {
+	code, ok := compiledProgram[functionName]
+	if !ok {
+		return nil, &ExecutionError{fmt.Sprintf("function %q not found", functionName)}
+	}
+
 	index := 0
 	for index < len(code) {
 		bytecode := code[index]
-		jump, err := vm.executeOne(bytecode)
+
+		if debug {
+			fmt.Printf("DEBUG: Executing %s\n", bytecode)
+			fmt.Println("DEBUG: Stack (bottom to top)")
+			if len(vm.stack) > 0 {
+				for _, value := range vm.stack {
+					fmt.Printf("DEBUG:   %s\n", value.Serialize())
+				}
+			} else {
+				fmt.Println("DEBUG:   <empty>")
+			}
+		}
+
+		jump, err := vm.executeOne(bytecode, compiledProgram, debug)
 		if err != nil {
 			return nil, err
 		}
@@ -41,7 +63,7 @@ func (vm *VirtualMachine) Execute(code []*Bytecode) (VeniceValue, error) {
 	}
 }
 
-func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
+func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram CompiledProgram, debug bool) (int, error) {
 	switch bytecode.Name {
 	case "BINARY_ADD":
 		left, right, err := vm.popTwoInts()
@@ -134,30 +156,27 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 			return -1, &ExecutionError{"argument to CALL_BUILTIN must be a string"}
 		}
 	case "CALL_FUNCTION":
-		if v, ok := bytecode.Args[0].(*VeniceInteger); ok {
-			n := v.Value
+		argOne := bytecode.Args[0].(*VeniceString)
+		argTwo := bytecode.Args[1].(*VeniceInteger)
 
-			topOfStack := vm.popStack()
-			if function, ok := topOfStack.(*VeniceFunction); ok {
-				fEnv := &Environment{vm.env, map[string]VeniceValue{}}
-				for i := 0; i < n; i++ {
-					topOfStack = vm.popStack()
-					fEnv.symbols[function.Params[len(function.Params)-(i+1)]] = topOfStack
-				}
+		functionName := argOne.Value
+		n := argTwo.Value
 
-				subVm := NewVirtualMachine()
-				subVm.env = fEnv
-				val, err := subVm.Execute(function.Body)
-				if err != nil {
-					return -1, nil
-				}
-				vm.pushStack(val)
-			} else {
-				return -1, &ExecutionError{"CALL_FUNCTION requires function on top of stack"}
-			}
-		} else {
-			return -1, &ExecutionError{"argument to CALL_FUNCTION must be an integer"}
+		functionEnv := &Environment{vm.env, map[string]VeniceValue{}}
+		functionStack := vm.stack[len(vm.stack)-n:]
+		vm.stack = vm.stack[:len(vm.stack)-n]
+
+		if debug {
+			fmt.Println("DEBUG: Calling function in child virtual machine")
 		}
+
+		functionVm := &VirtualMachine{functionStack, functionEnv}
+		value, err := functionVm.executeFunction(compiledProgram, functionName, debug)
+		if err != nil {
+			return -1, err
+		}
+
+		vm.pushStack(value)
 	case "PUSH_CONST":
 		vm.pushStack(bytecode.Args[0])
 	case "PUSH_NAME":

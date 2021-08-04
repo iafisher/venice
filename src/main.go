@@ -17,9 +17,9 @@ func main() {
 	} else if len(os.Args) == 3 {
 		switch os.Args[1] {
 		case "compile":
-			compile_program(os.Args[2])
+			compileProgram(os.Args[2])
 		case "execute":
-			execute_program(os.Args[2])
+			executeProgram(os.Args[2])
 		default:
 			fmt.Printf("Error: unknown subcommand %q", os.Args[1])
 		}
@@ -34,6 +34,7 @@ func repl() {
 	vm := NewVirtualMachine()
 	compiler := NewCompiler()
 	scanner := bufio.NewScanner(os.Stdin)
+	compiledProgram := NewCompiledProgram()
 	for {
 		fmt.Print(">>> ")
 		scanned := scanner.Scan()
@@ -56,6 +57,8 @@ func repl() {
 				switch cmd {
 				case "!compile":
 					operation = "compile"
+				case "!debug":
+					operation = "debug"
 				case "!lex":
 					operation = "lex"
 				case "!parse":
@@ -98,24 +101,28 @@ func repl() {
 			continue
 		}
 
-		code, err := compiler.Compile(tree)
+		thisCompiledProgram, err := compiler.Compile(tree)
 		if err != nil {
 			fmt.Printf("Compile error: %v\n", err)
 			continue
 		}
 
+		for functionName, functionCode := range thisCompiledProgram {
+			compiledProgram[functionName] = functionCode
+		}
+
 		if operation == "compile" {
-			for _, bytecode := range code {
-				fmt.Print(bytecode.Name)
-				for _, arg := range bytecode.Args {
-					fmt.Printf(" %s", arg.Serialize())
+			for functionName, code := range compiledProgram {
+				fmt.Printf("%s:\n", functionName)
+				for _, bytecode := range code {
+					fmt.Printf("  %s\n", bytecode)
 				}
-				fmt.Print("\n")
 			}
 			continue
 		}
 
-		value, err := vm.Execute(code)
+		debug := (operation == "debug")
+		value, err := vm.Execute(compiledProgram, debug)
 		if err != nil {
 			fmt.Printf("Execution error: %v\n", err)
 			continue
@@ -127,7 +134,7 @@ func repl() {
 	}
 }
 
-func compile_program(p string) {
+func compileProgram(p string) {
 	data, err := ioutil.ReadFile(p)
 	if err != nil {
 		log.Fatal(err)
@@ -154,10 +161,10 @@ func compile_program(p string) {
 	defer f.Close()
 	writer := bufio.NewWriter(f)
 
-	WriteBytecodeListToFile(writer, code)
+	WriteCompiledProgramToFile(writer, code)
 }
 
-func execute_program(p string) {
+func executeProgram(p string) {
 	if strings.HasSuffix(p, ".vn") {
 		log.Fatal("Error: can only execute compiled programs.")
 	}
@@ -167,13 +174,13 @@ func execute_program(p string) {
 		log.Fatal(err)
 	}
 
-	bytecodeList, err := ReadBytecodeListFromString(string(data))
+	bytecodeList, err := ReadCompiledProgramFromString(string(data))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	vm := NewVirtualMachine()
-	_, err = vm.Execute(bytecodeList)
+	_, err = vm.Execute(bytecodeList, false)
 	if err != nil {
 		log.Fatalf("Execution error: %s", err)
 	}

@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+type CompiledProgram map[string][]*Bytecode
+
+func NewCompiledProgram() CompiledProgram {
+	return map[string][]*Bytecode{"main": []*Bytecode{}}
+}
+
 type Bytecode struct {
 	Name string
 	Args []VeniceValue
@@ -16,34 +22,55 @@ func NewBytecode(name string, args ...VeniceValue) *Bytecode {
 	return &Bytecode{name, args}
 }
 
-func WriteBytecodeListToFile(writer *bufio.Writer, bytecodeList []*Bytecode) {
-	for _, bytecode := range bytecodeList {
-		writer.WriteString(bytecode.Name)
-		for _, arg := range bytecode.Args {
-			writer.WriteString(" ")
-			writer.WriteString(arg.Serialize())
+func (b *Bytecode) String() string {
+	var sb strings.Builder
+	sb.WriteString(b.Name)
+	for _, arg := range b.Args {
+		sb.WriteString(" ")
+		sb.WriteString(arg.Serialize())
+	}
+	return sb.String()
+}
+
+func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram CompiledProgram) {
+	for functionName, functionCode := range compiledProgram {
+		writer.WriteString(functionName)
+		writer.WriteString(":\n")
+		for _, bytecode := range functionCode {
+			writer.WriteString("  ")
+			writer.WriteString(bytecode.String())
+			writer.WriteByte('\n')
 		}
-		writer.WriteString("\n")
 	}
 
 	writer.Flush()
 }
 
-func ReadBytecodeListFromString(bytecodeListString string) ([]*Bytecode, error) {
-	bytecodeList := []*Bytecode{}
-	for i, line := range strings.Split(bytecodeListString, "\n") {
+func ReadCompiledProgramFromString(programString string) (CompiledProgram, error) {
+	compiledProgram := NewCompiledProgram()
+	var currentFunctionName string
+	for i, line := range strings.Split(programString, "\n") {
 		lexer := NewLexer(line)
-		instruction := lexer.NextToken()
-		if instruction.Type == TOKEN_EOF {
+		firstToken := lexer.NextToken()
+		if firstToken.Type == TOKEN_EOF {
 			continue
 		}
 
-		if instruction.Type != TOKEN_SYMBOL {
+		if firstToken.Type != TOKEN_SYMBOL {
 			return nil, &BytecodeParseError{fmt.Sprintf("could not parse line %d", i+1)}
 		}
 
-		args := []VeniceValue{}
 		token := lexer.NextToken()
+		if token.Type == TOKEN_COLON {
+			currentFunctionName = firstToken.Value
+			continue
+		}
+
+		if currentFunctionName == "" {
+			return nil, &BytecodeParseError{"bytecode instruction outside of function"}
+		}
+
+		args := []VeniceValue{}
 		for token.Type != TOKEN_EOF {
 			switch token.Type {
 			case TOKEN_FALSE:
@@ -65,10 +92,10 @@ func ReadBytecodeListFromString(bytecodeListString string) ([]*Bytecode, error) 
 			token = lexer.NextToken()
 		}
 
-		bytecodeList = append(bytecodeList, &Bytecode{instruction.Value, args})
+		compiledProgram[currentFunctionName] = append(compiledProgram[currentFunctionName], &Bytecode{firstToken.Value, args})
 	}
 
-	return bytecodeList, nil
+	return compiledProgram, nil
 }
 
 type BytecodeParseError struct {

@@ -27,16 +27,25 @@ func NewBuiltinTypeSymbolTable() map[string]VeniceType {
 	}
 }
 
-func (compiler *Compiler) Compile(tree *ProgramNode) ([]*Bytecode, error) {
-	program := []*Bytecode{}
-	for _, statement := range tree.Statements {
-		statementCode, err := compiler.compileStatement(statement)
-		if err != nil {
-			return nil, err
+func (compiler *Compiler) Compile(tree *ProgramNode) (CompiledProgram, error) {
+	compiledProgram := NewCompiledProgram()
+	for _, statementInterface := range tree.Statements {
+		switch statement := statementInterface.(type) {
+		case *FunctionDeclarationNode:
+			code, err := compiler.compileFunctionDeclaration(statement)
+			if err != nil {
+				return nil, err
+			}
+			compiledProgram[statement.Name] = code
+		default:
+			code, err := compiler.compileStatement(statementInterface)
+			if err != nil {
+				return nil, err
+			}
+			compiledProgram["main"] = append(compiledProgram["main"], code...)
 		}
-		program = append(program, statementCode...)
 	}
-	return program, nil
+	return compiledProgram, nil
 }
 
 func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Bytecode, error) {
@@ -51,8 +60,6 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 			return nil, err
 		}
 		return code, nil
-	case *FunctionDeclarationNode:
-		return compiler.compileFunctionDeclaration(tree)
 	case *IfStatementNode:
 		return compiler.compileIfStatement(tree)
 	case *LetStatementNode:
@@ -105,6 +112,12 @@ func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNo
 	bodyCode, returnType, err := compiler.compileBlockWithReturn(tree.Body)
 	compiler.symbolTable = bodySymbolTable.parent
 
+	paramLoadCode := []*Bytecode{}
+	for _, param := range tree.Params {
+		paramLoadCode = append(paramLoadCode, NewBytecode("STORE_NAME", &VeniceString{param.Name}))
+	}
+	bodyCode = append(paramLoadCode, bodyCode...)
+
 	if err != nil {
 		return nil, err
 	}
@@ -118,13 +131,8 @@ func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNo
 		return nil, &CompileError{"actual return type does not match declared return type"}
 	}
 
-	code := []*Bytecode{
-		// TODO(2021-08-03): This is not serializable.
-		NewBytecode("PUSH_CONST", &VeniceFunction{params, bodyCode}),
-		NewBytecode("STORE_NAME", &VeniceString{tree.Name}),
-	}
 	compiler.symbolTable.Put(tree.Name, &VeniceFunctionType{paramTypes, returnType})
-	return code, nil
+	return bodyCode, nil
 }
 
 func (compiler *Compiler) resolveType(typeNodeInterface TypeNode) (VeniceType, error) {
@@ -352,8 +360,7 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 					code = append(code, argCode...)
 				}
 
-				code = append(code, NewBytecode("PUSH_NAME", &VeniceString{v.Value}))
-				code = append(code, NewBytecode("CALL_FUNCTION", &VeniceInteger{len(f.ParamTypes)}))
+				code = append(code, NewBytecode("CALL_FUNCTION", &VeniceString{v.Value}, &VeniceInteger{len(f.ParamTypes)}))
 				return code, f.ReturnType, nil
 			} else {
 				return nil, nil, &CompileError{"not a function"}
