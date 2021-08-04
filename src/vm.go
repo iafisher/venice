@@ -16,10 +16,10 @@ func NewVirtualMachine() *VirtualMachine {
 	return &VirtualMachine{[]VeniceValue{}, &Environment{nil, make(map[string]VeniceValue)}}
 }
 
-func (vm *VirtualMachine) Execute(program []*Bytecode) (VeniceValue, error) {
+func (vm *VirtualMachine) Execute(code []*Bytecode) (VeniceValue, error) {
 	index := 0
-	for index < len(program) {
-		bytecode := program[index]
+	for index < len(code) {
+		bytecode := code[index]
 		jump, err := vm.executeOne(bytecode)
 		if err != nil {
 			return nil, err

@@ -98,14 +98,14 @@ func repl() {
 			continue
 		}
 
-		bytecodes, err := compiler.Compile(tree)
+		code, err := compiler.Compile(tree)
 		if err != nil {
 			fmt.Printf("Compile error: %v\n", err)
 			continue
 		}
 
 		if operation == "compile" {
-			for _, bytecode := range bytecodes {
+			for _, bytecode := range code {
 				fmt.Print(bytecode.Name)
 				for _, arg := range bytecode.Args {
 					fmt.Printf(" %s", arg.Serialize())
@@ -115,7 +115,7 @@ func repl() {
 			continue
 		}
 
-		value, err := vm.Execute(bytecodes)
+		value, err := vm.Execute(code)
 		if err != nil {
 			fmt.Printf("Execution error: %v\n", err)
 			continue
@@ -139,7 +139,7 @@ func compile_program(p string) {
 		log.Fatalf("Parse error: %v", err)
 	}
 
-	bytecodes, err := NewCompiler().Compile(tree)
+	code, err := NewCompiler().Compile(tree)
 	if err != nil {
 		log.Fatalf("Compile error: %v", err)
 	}
@@ -154,7 +154,7 @@ func compile_program(p string) {
 	defer f.Close()
 	writer := bufio.NewWriter(f)
 
-	WriteBytecodeListToFile(writer, bytecodes)
+	WriteBytecodeListToFile(writer, code)
 }
 
 func execute_program(p string) {
