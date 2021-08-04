@@ -261,6 +261,10 @@ func (compiler *Compiler) Compile(tree *ProgramNode) ([]*Bytecode, error) {
 
 func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) {
 	switch v := tree.(type) {
+	case *BreakStatementNode:
+		return []*Bytecode{NewBytecode("BREAK_LOOP")}, nil
+	case *ContinueStatementNode:
+		return []*Bytecode{NewBytecode("CONTINUE_LOOP")}, nil
 	case *ExpressionStatementNode:
 		bytecodes, _, err := compiler.compileExpression(v.Expression)
 		if err != nil {
@@ -276,9 +280,35 @@ func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) 
 		}
 		compiler.symbolTable.symbols[v.Symbol] = eType
 		return append(bytecodes, NewBytecode("STORE_NAME", &VeniceString{v.Symbol})), nil
+	case *WhileLoopNode:
+		return compiler.compileWhileLoop(v)
 	default:
 		return nil, &CompileError{"unknown statement type"}
 	}
+}
+
+func (compiler *Compiler) compileWhileLoop(tree *WhileLoopNode) ([]*Bytecode, error) {
+	conditionBytecodes, conditionType, err := compiler.compileExpression(tree.Condition)
+	if err != nil {
+		return nil, err
+	}
+
+	if !areTypesCompatible(VENICE_TYPE_BOOLEAN, conditionType) {
+		return nil, &CompileError{"condition of while loop must be a boolean"}
+	}
+
+	bodyBytecodes, err := compiler.compileBlock(tree.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	bytecodes := conditionBytecodes
+	jumpForward := len(bodyBytecodes) + 2
+	bytecodes = append(bytecodes, NewBytecode("REL_JUMP_IF_FALSE", &VeniceInteger{jumpForward}))
+	bytecodes = append(bytecodes, bodyBytecodes...)
+	jumpBack := -(len(conditionBytecodes) + len(bodyBytecodes) + 1)
+	bytecodes = append(bytecodes, NewBytecode("REL_JUMP", &VeniceInteger{jumpBack}))
+	return bytecodes, nil
 }
 
 func (compiler *Compiler) compileIfStatement(tree *IfStatementNode) ([]*Bytecode, error) {
@@ -287,7 +317,7 @@ func (compiler *Compiler) compileIfStatement(tree *IfStatementNode) ([]*Bytecode
 		return nil, err
 	}
 
-	if conditionType != VENICE_TYPE_BOOLEAN {
+	if !areTypesCompatible(VENICE_TYPE_BOOLEAN, conditionType) {
 		return nil, &CompileError{"condition of if statement must be a boolean"}
 	}
 

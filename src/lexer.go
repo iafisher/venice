@@ -141,8 +141,10 @@ const (
 	TOKEN_ARROW        = "TOKEN_ARROW"
 	TOKEN_ASSIGN       = "TOKEN_ASSIGN"
 	TOKEN_ASTERISK     = "TOKEN_ASTERISK"
+	TOKEN_BREAK        = "TOKEN_BREAK"
 	TOKEN_COLON        = "TOKEN_COLON"
 	TOKEN_COMMA        = "TOKEN_COMMA"
+	TOKEN_CONTINUE     = "TOKEN_CONTINUE"
 	TOKEN_ELSE         = "TOKEN_ELSE"
 	TOKEN_EQ           = "TOKEN_EQ"
 	TOKEN_FALSE        = "TOKEN_FALSE"
@@ -170,15 +172,17 @@ const (
 )
 
 var keywords = map[string]string{
-	"else":  TOKEN_ELSE,
-	"false": TOKEN_FALSE,
-	"fn":    TOKEN_FN,
-	"for":   TOKEN_FOR,
-	"if":    TOKEN_IF,
-	"let":   TOKEN_LET,
-	"while": TOKEN_WHILE,
-	"true":  TOKEN_TRUE,
-	"void":  TOKEN_VOID,
+	"break":    TOKEN_BREAK,
+	"continue": TOKEN_CONTINUE,
+	"else":     TOKEN_ELSE,
+	"false":    TOKEN_FALSE,
+	"fn":       TOKEN_FN,
+	"for":      TOKEN_FOR,
+	"if":       TOKEN_IF,
+	"let":      TOKEN_LET,
+	"while":    TOKEN_WHILE,
+	"true":     TOKEN_TRUE,
+	"void":     TOKEN_VOID,
 }
 
 var one_char_tokens = map[byte]string{

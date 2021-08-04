@@ -28,6 +28,21 @@ type IfStatementNode struct {
 
 func (n *IfStatementNode) statementNode() {}
 
+type WhileLoopNode struct {
+	Condition Expression
+	Body      []Statement
+}
+
+func (n *WhileLoopNode) statementNode() {}
+
+type BreakStatementNode struct{}
+
+func (n *BreakStatementNode) statementNode() {}
+
+type ContinueStatementNode struct{}
+
+func (n *ContinueStatementNode) statementNode() {}
+
 type CallNode struct {
 	Function Expression
 	Args     []Expression
@@ -152,10 +167,16 @@ func (p *Parser) Parse() (*ProgramNode, error) {
 
 func (p *Parser) matchStatement() (Statement, error) {
 	switch p.currentToken.Type {
+	case TOKEN_BREAK:
+		return &BreakStatementNode{}, nil
+	case TOKEN_CONTINUE:
+		return &ContinueStatementNode{}, nil
 	case TOKEN_IF:
 		return p.matchIfStatement()
 	case TOKEN_LET:
 		return p.matchLetStatement()
+	case TOKEN_WHILE:
+		return p.matchWhileLoop()
 	default:
 		expr, err := p.matchExpression(PRECEDENCE_LOWEST)
 		if err != nil {
@@ -163,6 +184,21 @@ func (p *Parser) matchStatement() (Statement, error) {
 		}
 		return &ExpressionStatementNode{expr}, nil
 	}
+}
+
+func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {
+	p.nextToken()
+	condition, err := p.matchExpression(PRECEDENCE_LOWEST)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := p.matchBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return &WhileLoopNode{condition, body}, nil
 }
 
 func (p *Parser) matchIfStatement() (*IfStatementNode, error) {
