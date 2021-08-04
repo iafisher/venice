@@ -68,34 +68,18 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 		}
 		vm.pushStack(&VeniceInteger{left.Value / right.Value})
 	case "BINARY_EQ":
-		right, ok := vm.popStack()
-		if !ok {
-			return -1, NewEmptyStackError()
-		}
-
-		left, ok := vm.popStack()
-		if !ok {
-			return -1, NewEmptyStackError()
-		}
-
+		right := vm.popStack()
+		left := vm.popStack()
 		result := left.Equals(right)
 		vm.pushStack(&VeniceBoolean{result})
 	case "BINARY_LIST_INDEX":
-		indexUntyped, ok := vm.popStack()
-		if !ok {
-			return -1, NewEmptyStackError()
-		}
-
+		indexUntyped := vm.popStack()
 		index, ok := indexUntyped.(*VeniceInteger)
 		if !ok {
 			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires integer on top of stack, got %s (%T)", indexUntyped.Serialize(), indexUntyped)}
 		}
 
-		listUntyped, ok := vm.popStack()
-		if !ok {
-			return -1, NewEmptyStackError()
-		}
-
+		listUntyped := vm.popStack()
 		list, ok := listUntyped.(*VeniceList)
 		if !ok {
 			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires list on top of stack, got %s (%T)", listUntyped.Serialize(), listUntyped)}
@@ -104,16 +88,8 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 		// TODO(2021-08-03): Handle out-of-bounds index.
 		vm.pushStack(list.Values[index.Value])
 	case "BINARY_MAP_INDEX":
-		index, ok := vm.popStack()
-		if !ok {
-			return -1, NewEmptyStackError()
-		}
-
-		vMapUntyped, ok := vm.popStack()
-		if !ok {
-			return -1, NewEmptyStackError()
-		}
-
+		index := vm.popStack()
+		vMapUntyped := vm.popStack()
 		vMap, ok := vMapUntyped.(*VeniceMap)
 		if !ok {
 			return -1, &ExecutionError{fmt.Sprintf("BINARY_MAP_INDEX requires map on top of stack, got %s (%T)", vMapUntyped.Serialize(), vMapUntyped)}
@@ -144,10 +120,7 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 		values := []VeniceValue{}
 		n := bytecode.Args[0].(*VeniceInteger).Value
 		for i := 0; i < n; i++ {
-			topOfStack, ok := vm.popStack()
-			if !ok {
-				return -1, NewEmptyStackError()
-			}
+			topOfStack := vm.popStack()
 			values = append(values, topOfStack)
 		}
 		vm.pushStack(&VeniceList{values})
@@ -155,14 +128,8 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 		pairs := []*VeniceMapPair{}
 		n := bytecode.Args[0].(*VeniceInteger).Value
 		for i := 0; i < n; i++ {
-			value, ok := vm.popStack()
-			if !ok {
-				return -1, NewEmptyStackError()
-			}
-			key, ok := vm.popStack()
-			if !ok {
-				return -1, NewEmptyStackError()
-			}
+			value := vm.popStack()
+			key := vm.popStack()
 			pairs = append(pairs, &VeniceMapPair{key, value})
 		}
 		vm.pushStack(&VeniceMap{pairs})
@@ -170,10 +137,7 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 		if v, ok := bytecode.Args[0].(*VeniceString); ok {
 			switch v.Value {
 			case "print":
-				topOfStack, ok := vm.popStack()
-				if !ok {
-					return -1, NewEmptyStackError()
-				}
+				topOfStack := vm.popStack()
 				fmt.Println(topOfStack.SerializePrintable())
 			default:
 				return -1, &ExecutionError{fmt.Sprintf("unknown builtin: %s", v.Value)}
@@ -185,19 +149,11 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 		if v, ok := bytecode.Args[0].(*VeniceInteger); ok {
 			n := v.Value
 
-			topOfStack, ok := vm.popStack()
-			if !ok {
-				return -1, NewEmptyStackError()
-			}
-
+			topOfStack := vm.popStack()
 			if function, ok := topOfStack.(*VeniceFunction); ok {
 				fEnv := &Environment{vm.env, map[string]VeniceValue{}}
 				for i := 0; i < n; i++ {
-					topOfStack, ok = vm.popStack()
-					if !ok {
-						return -1, NewEmptyStackError()
-					}
-
+					topOfStack = vm.popStack()
 					fEnv.symbols[function.Params[len(function.Params)-(i+1)]] = topOfStack
 				}
 
@@ -227,17 +183,12 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 		value := bytecode.Args[0].(*VeniceInteger).Value
 		return value, nil
 	case "REL_JUMP_IF_FALSE":
-		topOfStack, ok := vm.popStack()
-		if !ok {
-			return -1, NewEmptyStackError()
-		}
-
-		topOfStackAsBool, ok := topOfStack.(*VeniceBoolean)
+		topOfStack, ok := vm.popStack().(*VeniceBoolean)
 		if !ok {
 			return -1, &ExecutionError{"expected boolean at top of virtual machine stack"}
 		}
 
-		if !topOfStackAsBool.Value {
+		if !topOfStack.Value {
 			value := bytecode.Args[0].(*VeniceInteger).Value
 			return value, nil
 		}
@@ -245,10 +196,7 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 		return 0, nil
 	case "STORE_NAME":
 		symbol := bytecode.Args[0].(*VeniceString).Value
-		topOfStack, ok := vm.popStack()
-		if !ok {
-			return -1, NewEmptyStackError()
-		}
+		topOfStack := vm.popStack()
 		vm.env.Put(symbol, topOfStack)
 	default:
 		return -1, &ExecutionError{fmt.Sprintf("unknown bytecode instruction: %s", bytecode.Name)}
@@ -260,38 +208,24 @@ func (vm *VirtualMachine) pushStack(values ...VeniceValue) {
 	vm.stack = append(vm.stack, values...)
 }
 
-func (vm *VirtualMachine) popStack() (VeniceValue, bool) {
-	if len(vm.stack) == 0 {
-		return nil, false
-	}
-
+func (vm *VirtualMachine) popStack() VeniceValue {
 	ret := vm.stack[len(vm.stack)-1]
 	vm.stack = vm.stack[:len(vm.stack)-1]
-	return ret, true
+	return ret
 }
 
 func (vm *VirtualMachine) popTwoInts() (*VeniceInteger, *VeniceInteger, error) {
-	right, ok := vm.popStack()
-	if !ok {
-		return nil, nil, NewEmptyStackError()
-	}
-
-	rightAsInteger, ok := right.(*VeniceInteger)
+	right, ok := vm.popStack().(*VeniceInteger)
 	if !ok {
 		return nil, nil, &ExecutionError{"expected integer at top of virtual machine stack"}
 	}
 
-	left, ok := vm.popStack()
-	if !ok {
-		return nil, nil, NewEmptyStackError()
-	}
-
-	leftAsInteger, ok := left.(*VeniceInteger)
+	left, ok := vm.popStack().(*VeniceInteger)
 	if !ok {
 		return nil, nil, &ExecutionError{"expected integer at top of virtual machine stack"}
 	}
 
-	return leftAsInteger, rightAsInteger, nil
+	return left, right, nil
 }
 
 func (env *Environment) Get(symbol string) (VeniceValue, bool) {
