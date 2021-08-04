@@ -39,47 +39,47 @@ func (compiler *Compiler) Compile(tree *ProgramNode) ([]*Bytecode, error) {
 	return program, nil
 }
 
-func (compiler *Compiler) compileStatement(tree StatementNode) ([]*Bytecode, error) {
-	switch v := tree.(type) {
+func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Bytecode, error) {
+	switch tree := treeInterface.(type) {
 	case *BreakStatementNode:
 		return []*Bytecode{NewBytecode("BREAK_LOOP")}, nil
 	case *ContinueStatementNode:
 		return []*Bytecode{NewBytecode("CONTINUE_LOOP")}, nil
 	case *ExpressionStatementNode:
-		bytecodes, _, err := compiler.compileExpression(v.Expr)
+		bytecodes, _, err := compiler.compileExpression(tree.Expr)
 		if err != nil {
 			return nil, err
 		}
 		return bytecodes, nil
 	case *FunctionDeclarationNode:
-		return compiler.compileFunctionDeclaration(v)
+		return compiler.compileFunctionDeclaration(tree)
 	case *IfStatementNode:
-		return compiler.compileIfStatement(v)
+		return compiler.compileIfStatement(tree)
 	case *LetStatementNode:
-		bytecodes, eType, err := compiler.compileExpression(v.Expr)
+		bytecodes, eType, err := compiler.compileExpression(tree.Expr)
 		if err != nil {
 			return nil, err
 		}
-		compiler.symbolTable.symbols[v.Symbol] = eType
-		return append(bytecodes, NewBytecode("STORE_NAME", &VeniceString{v.Symbol})), nil
+		compiler.symbolTable.Put(tree.Symbol, eType)
+		return append(bytecodes, NewBytecode("STORE_NAME", &VeniceString{tree.Symbol})), nil
 	case *WhileLoopNode:
-		return compiler.compileWhileLoop(v)
+		return compiler.compileWhileLoop(tree)
 	default:
 		return nil, &CompileError{"unknown statement type"}
 	}
 }
 
-func (compiler *Compiler) compileStatementWithReturn(tree StatementNode) ([]*Bytecode, VeniceType, error) {
-	switch v := tree.(type) {
+func (compiler *Compiler) compileStatementWithReturn(treeInterface StatementNode) ([]*Bytecode, VeniceType, error) {
+	switch tree := treeInterface.(type) {
 	case *ReturnStatementNode:
-		bytecodes, exprType, err := compiler.compileExpression(v.Expr)
+		bytecodes, exprType, err := compiler.compileExpression(tree.Expr)
 		if err != nil {
 			return nil, nil, err
 		}
 		bytecodes = append(bytecodes, NewBytecode("RETURN"))
 		return bytecodes, exprType, err
 	default:
-		bytecodes, err := compiler.compileStatement(tree)
+		bytecodes, err := compiler.compileStatement(treeInterface)
 		return bytecodes, nil, err
 	}
 }
@@ -127,8 +127,8 @@ func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNo
 	return bytecodes, nil
 }
 
-func (compiler *Compiler) resolveType(typeNodeUntyped TypeNode) (VeniceType, error) {
-	switch typeNode := typeNodeUntyped.(type) {
+func (compiler *Compiler) resolveType(typeNodeInterface TypeNode) (VeniceType, error) {
+	switch typeNode := typeNodeInterface.(type) {
 	case *SimpleTypeNode:
 		resolvedType, ok := compiler.typeSymbolTable[typeNode.Symbol]
 		if !ok {
@@ -230,23 +230,23 @@ func (compiler *Compiler) compileBlockWithReturn(block []StatementNode) ([]*Byte
 	return bytecodes, returnType, nil
 }
 
-func (compiler *Compiler) compileExpression(tree ExpressionNode) ([]*Bytecode, VeniceType, error) {
-	switch v := tree.(type) {
+func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*Bytecode, VeniceType, error) {
+	switch tree := treeInterface.(type) {
 	case *BooleanNode:
-		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceBoolean{v.Value})}, VENICE_TYPE_BOOLEAN, nil
+		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceBoolean{tree.Value})}, VENICE_TYPE_BOOLEAN, nil
 	case *CallNode:
-		return compiler.compileCallNode(v)
+		return compiler.compileCallNode(tree)
 	case *IndexNode:
-		return compiler.compileIndexNode(v)
+		return compiler.compileIndexNode(tree)
 	case *InfixNode:
-		return compiler.compileInfixNode(v)
+		return compiler.compileInfixNode(tree)
 	case *IntegerNode:
-		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceInteger{v.Value})}, VENICE_TYPE_INTEGER, nil
+		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceInteger{tree.Value})}, VENICE_TYPE_INTEGER, nil
 	case *ListNode:
 		bytecodes := []*Bytecode{}
 		var itemType VeniceType
-		for i := len(v.Values) - 1; i >= 0; i-- {
-			value := v.Values[i]
+		for i := len(tree.Values) - 1; i >= 0; i-- {
+			value := tree.Values[i]
 			valueBytecodes, valueType, err := compiler.compileExpression(value)
 			if err != nil {
 				return nil, nil, err
@@ -260,14 +260,14 @@ func (compiler *Compiler) compileExpression(tree ExpressionNode) ([]*Bytecode, V
 
 			bytecodes = append(bytecodes, valueBytecodes...)
 		}
-		bytecodes = append(bytecodes, NewBytecode("BUILD_LIST", &VeniceInteger{len(v.Values)}))
+		bytecodes = append(bytecodes, NewBytecode("BUILD_LIST", &VeniceInteger{len(tree.Values)}))
 		return bytecodes, &VeniceListType{itemType}, nil
 	case *MapNode:
 		bytecodes := []*Bytecode{}
 		var keyType VeniceType
 		var valueType VeniceType
-		for i := len(v.Pairs) - 1; i >= 0; i-- {
-			pair := v.Pairs[i]
+		for i := len(tree.Pairs) - 1; i >= 0; i-- {
+			pair := tree.Pairs[i]
 			keyBytecodes, thisKeyType, err := compiler.compileExpression(pair.Key)
 			if err != nil {
 				return nil, nil, err
@@ -294,16 +294,16 @@ func (compiler *Compiler) compileExpression(tree ExpressionNode) ([]*Bytecode, V
 
 			bytecodes = append(bytecodes, valueBytecodes...)
 		}
-		bytecodes = append(bytecodes, NewBytecode("BUILD_MAP", &VeniceInteger{len(v.Pairs)}))
+		bytecodes = append(bytecodes, NewBytecode("BUILD_MAP", &VeniceInteger{len(tree.Pairs)}))
 		return bytecodes, &VeniceMapType{keyType, valueType}, nil
 	case *StringNode:
-		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceString{v.Value})}, VENICE_TYPE_STRING, nil
+		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceString{tree.Value})}, VENICE_TYPE_STRING, nil
 	case *SymbolNode:
-		symbolType, ok := compiler.symbolTable.Get(v.Value)
+		symbolType, ok := compiler.symbolTable.Get(tree.Value)
 		if !ok {
-			return nil, nil, &CompileError{fmt.Sprintf("undefined symbol: %s", v.Value)}
+			return nil, nil, &CompileError{fmt.Sprintf("undefined symbol: %s", tree.Value)}
 		}
-		return []*Bytecode{NewBytecode("PUSH_NAME", &VeniceString{v.Value})}, symbolType, nil
+		return []*Bytecode{NewBytecode("PUSH_NAME", &VeniceString{tree.Value})}, symbolType, nil
 	default:
 		return nil, nil, &CompileError{"unknown expression type"}
 	}
@@ -328,12 +328,12 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 			bytecodes = append(bytecodes, NewBytecode("CALL_BUILTIN", &VeniceString{"print"}))
 			return bytecodes, nil, nil
 		} else {
-			fUntyped, ok := compiler.symbolTable.Get(v.Value)
+			valueInterface, ok := compiler.symbolTable.Get(v.Value)
 			if !ok {
 				return nil, nil, &CompileError{fmt.Sprintf("undefined symbol: %s", v.Value)}
 			}
 
-			if f, ok := fUntyped.(*VeniceFunctionType); ok {
+			if f, ok := valueInterface.(*VeniceFunctionType); ok {
 				if len(f.ParamTypes) != len(tree.Args) {
 					return nil, nil, &CompileError{fmt.Sprintf("wrong number of arguments: expected %d, got %d", len(f.ParamTypes), len(tree.Args))}
 				}
@@ -365,7 +365,7 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 }
 
 func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, VeniceType, error) {
-	exprBytecodes, exprType, err := compiler.compileExpression(tree.Expr)
+	exprBytecodes, exprTypeInterface, err := compiler.compileExpression(tree.Expr)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -377,21 +377,21 @@ func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, Venice
 
 	bytecodes := append(exprBytecodes, indexBytecodes...)
 
-	switch exprConcreteType := exprType.(type) {
+	switch exprType := exprTypeInterface.(type) {
 	case *VeniceListType:
 		if !areTypesCompatible(VENICE_TYPE_INTEGER, indexType) {
 			return nil, nil, &CompileError{"list index must be integer"}
 		}
 
 		bytecodes = append(bytecodes, NewBytecode("BINARY_LIST_INDEX"))
-		return bytecodes, exprConcreteType.ItemType, nil
+		return bytecodes, exprType.ItemType, nil
 	case *VeniceMapType:
-		if !areTypesCompatible(exprConcreteType.KeyType, indexType) {
+		if !areTypesCompatible(exprType.KeyType, indexType) {
 			return nil, nil, &CompileError{"wrong map key type in index expression"}
 		}
 
 		bytecodes = append(bytecodes, NewBytecode("BINARY_MAP_INDEX"))
-		return bytecodes, exprConcreteType.KeyType, nil
+		return bytecodes, exprType.KeyType, nil
 	default:
 		return nil, nil, &CompileError{"only maps and lists can be indexed"}
 	}
@@ -451,19 +451,19 @@ func checkInfixRightType(operator string, leftType VeniceType, rightType VeniceT
 	}
 }
 
-func areTypesCompatible(expectedType VeniceType, actualType VeniceType) bool {
-	switch v1 := expectedType.(type) {
+func areTypesCompatible(expectedTypeInterface VeniceType, actualTypeInterface VeniceType) bool {
+	switch expectedType := expectedTypeInterface.(type) {
 	case *VeniceAtomicType:
-		switch v2 := actualType.(type) {
+		switch actualType := actualTypeInterface.(type) {
 		case *VeniceAtomicType:
-			return v1.Type == v2.Type
+			return expectedType.Type == actualType.Type
 		default:
 			return false
 		}
 	case *VeniceListType:
-		switch v2 := actualType.(type) {
+		switch actualType := actualTypeInterface.(type) {
 		case *VeniceListType:
-			return areTypesCompatible(v1.ItemType, v2.ItemType)
+			return areTypesCompatible(expectedType.ItemType, actualType.ItemType)
 		default:
 			return false
 		}

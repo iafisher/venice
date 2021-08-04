@@ -61,26 +61,26 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 		result := left.Equals(right)
 		vm.pushStack(&VeniceBoolean{result})
 	case "BINARY_LIST_INDEX":
-		indexUntyped := vm.popStack()
-		index, ok := indexUntyped.(*VeniceInteger)
+		indexInterface := vm.popStack()
+		index, ok := indexInterface.(*VeniceInteger)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires integer on top of stack, got %s (%T)", indexUntyped.Serialize(), indexUntyped)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires integer on top of stack, got %s (%T)", indexInterface.Serialize(), indexInterface)}
 		}
 
-		listUntyped := vm.popStack()
-		list, ok := listUntyped.(*VeniceList)
+		listInterface := vm.popStack()
+		list, ok := listInterface.(*VeniceList)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires list on top of stack, got %s (%T)", listUntyped.Serialize(), listUntyped)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires list on top of stack, got %s (%T)", listInterface.Serialize(), listInterface)}
 		}
 
 		// TODO(2021-08-03): Handle out-of-bounds index.
 		vm.pushStack(list.Values[index.Value])
 	case "BINARY_MAP_INDEX":
 		index := vm.popStack()
-		vMapUntyped := vm.popStack()
-		vMap, ok := vMapUntyped.(*VeniceMap)
+		vMapInterface := vm.popStack()
+		vMap, ok := vMapInterface.(*VeniceMap)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_MAP_INDEX requires map on top of stack, got %s (%T)", vMapUntyped.Serialize(), vMapUntyped)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_MAP_INDEX requires map on top of stack, got %s (%T)", vMapInterface.Serialize(), vMapInterface)}
 		}
 
 		for _, pair := range vMap.Pairs {

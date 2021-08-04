@@ -44,8 +44,8 @@ func (v *VeniceList) SerializePrintable() string {
 	return sb.String()
 }
 
-func (v *VeniceList) Equals(otherUntyped VeniceValue) bool {
-	switch other := otherUntyped.(type) {
+func (v *VeniceList) Equals(otherInterface VeniceValue) bool {
+	switch other := otherInterface.(type) {
 	case *VeniceList:
 		if len(v.Values) != len(other.Values) {
 			return false
@@ -99,7 +99,7 @@ func (v *VeniceMap) SerializePrintable() string {
 	return sb.String()
 }
 
-func (v *VeniceMap) Equals(otherUntyped VeniceValue) bool {
+func (v *VeniceMap) Equals(otherInterface VeniceValue) bool {
 	// TODO(2021-08-31): Implement.
 	return false
 }
@@ -123,8 +123,8 @@ func (v *VeniceInteger) SerializePrintable() string {
 	return v.Serialize()
 }
 
-func (v *VeniceInteger) Equals(otherUntyped VeniceValue) bool {
-	switch other := otherUntyped.(type) {
+func (v *VeniceInteger) Equals(otherInterface VeniceValue) bool {
+	switch other := otherInterface.(type) {
 	case *VeniceInteger:
 		return v.Value == other.Value
 	default:
@@ -146,8 +146,8 @@ func (v *VeniceString) SerializePrintable() string {
 	return v.Value
 }
 
-func (v *VeniceString) Equals(otherUntyped VeniceValue) bool {
-	switch other := otherUntyped.(type) {
+func (v *VeniceString) Equals(otherInterface VeniceValue) bool {
+	switch other := otherInterface.(type) {
 	case *VeniceString:
 		return v.Value == other.Value
 	default:
@@ -173,8 +173,8 @@ func (v *VeniceBoolean) SerializePrintable() string {
 	return v.Serialize()
 }
 
-func (v *VeniceBoolean) Equals(otherUntyped VeniceValue) bool {
-	switch other := otherUntyped.(type) {
+func (v *VeniceBoolean) Equals(otherInterface VeniceValue) bool {
+	switch other := otherInterface.(type) {
 	case *VeniceBoolean:
 		return v.Value == other.Value
 	default:
@@ -197,6 +197,6 @@ func (v *VeniceFunction) SerializePrintable() string {
 	return v.Serialize()
 }
 
-func (v *VeniceFunction) Equals(otherUntyped VeniceValue) bool {
+func (v *VeniceFunction) Equals(otherInterface VeniceValue) bool {
 	return false
 }
