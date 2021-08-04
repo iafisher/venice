@@ -89,7 +89,12 @@ func (compiler *Compiler) compileStatement(tree Statement) ([]*Bytecode, error) 
 func (compiler *Compiler) compileStatementWithReturn(tree Statement) ([]*Bytecode, VeniceType, error) {
 	switch v := tree.(type) {
 	case *ReturnStatementNode:
-		return compiler.compileExpression(v.Expr)
+		bytecodes, exprType, err := compiler.compileExpression(v.Expr)
+		if err != nil {
+			return nil, nil, err
+		}
+		bytecodes = append(bytecodes, NewBytecode("RETURN"))
+		return bytecodes, exprType, err
 	default:
 		bytecodes, err := compiler.compileStatement(tree)
 		return bytecodes, nil, err

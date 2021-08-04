@@ -37,6 +37,10 @@ func (vm *VirtualMachine) Execute(program []*Bytecode) (VeniceValue, error) {
 			return nil, err
 		}
 
+		if jump == 0 {
+			break
+		}
+
 		index += jump
 	}
 
@@ -237,6 +241,8 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode) (int, error) {
 			value := bytecode.Args[0].(*VeniceInteger).Value
 			return value, nil
 		}
+	case "RETURN":
+		return 0, nil
 	case "STORE_NAME":
 		symbol := bytecode.Args[0].(*VeniceString).Value
 		topOfStack, ok := vm.popStack()
