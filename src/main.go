@@ -37,8 +37,8 @@ func repl() {
 	compiledProgram := NewCompiledProgram()
 	for {
 		fmt.Print(">>> ")
-		scanned := scanner.Scan()
-		if !scanned {
+		ok := scanner.Scan()
+		if !ok {
 			return
 		}
 
@@ -91,6 +91,29 @@ func repl() {
 		}
 
 		tree, err := NewParser(lexer).Parse()
+		if err != nil && strings.HasPrefix(err.Error(), "premature end of input") {
+			var sb strings.Builder
+			sb.WriteString(line)
+			sb.WriteByte('\n')
+			for {
+				fmt.Print("... ")
+				ok := scanner.Scan()
+				if !ok {
+					return
+				}
+
+				nextLine := scanner.Text()
+				nextLine = strings.TrimSpace(nextLine)
+				sb.WriteString(nextLine)
+				sb.WriteByte('\n')
+				if len(nextLine) == 0 {
+					break
+				}
+			}
+
+			tree, err = NewParser(NewLexer(sb.String())).Parse()
+		}
+
 		if err != nil {
 			fmt.Printf("Parse error: %v\n", err)
 			continue

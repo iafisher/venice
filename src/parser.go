@@ -16,19 +16,6 @@ func NewParser(l *Lexer) *Parser {
 	return parser
 }
 
-type ParseError struct {
-	Message  string
-	Location *Location
-}
-
-func (e *ParseError) Error() string {
-	if e.Location != nil {
-		return fmt.Sprintf("%s at line %d, column %d", e.Message, e.Location.Line, e.Location.Column)
-	} else {
-		return e.Message
-	}
-}
-
 func (p *Parser) Parse() (*ProgramNode, error) {
 	statements := []StatementNode{}
 
@@ -430,8 +417,26 @@ func (p *Parser) nextToken() *Token {
 	return p.currentToken
 }
 
+type ParseError struct {
+	Message  string
+	Location *Location
+}
+
+func (e *ParseError) Error() string {
+	if e.Location != nil {
+		return fmt.Sprintf("%s at line %d, column %d", e.Message, e.Location.Line, e.Location.Column)
+	} else {
+		return e.Message
+	}
+}
+
 func (p *Parser) unexpectedToken(expected string) *ParseError {
-	return p.customError(fmt.Sprintf("expected %s, got %s", expected, p.currentToken.Type))
+	if p.currentToken.Type == TOKEN_EOF {
+		// Don't change the start of this error message or multi-line parsing in the REPL will break.
+		return p.customError(fmt.Sprintf("premature end of input (expected %s)", expected))
+	} else {
+		return p.customError(fmt.Sprintf("expected %s, got %s", expected, p.currentToken.Type))
+	}
 }
 
 func (p *Parser) customError(message string) *ParseError {
