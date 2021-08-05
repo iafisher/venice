@@ -63,7 +63,22 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &ExpressionStatementNode{expr}, nil
+
+		if p.currentToken.Type == TOKEN_ASSIGN {
+			if symbol, ok := expr.(*SymbolNode); ok {
+				p.nextToken()
+				assignExpr, err := p.matchExpression(PRECEDENCE_LOWEST)
+				if err != nil {
+					return nil, err
+				}
+
+				tree = &AssignStatementNode{symbol.Value, assignExpr}
+			} else {
+				return nil, p.customError("cannot assign to non-symbol")
+			}
+		} else {
+			tree = &ExpressionStatementNode{expr}
+		}
 	}
 
 	if err != nil {

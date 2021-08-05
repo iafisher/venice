@@ -39,6 +39,13 @@ type LetStatementNode struct {
 
 func (n *LetStatementNode) statementNode() {}
 
+type AssignStatementNode struct {
+	Symbol string
+	Expr   ExpressionNode
+}
+
+func (n *AssignStatementNode) statementNode() {}
+
 type ReturnStatementNode struct {
 	Expr ExpressionNode
 }

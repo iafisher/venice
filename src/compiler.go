@@ -50,6 +50,21 @@ func (compiler *Compiler) Compile(tree *ProgramNode) (CompiledProgram, error) {
 
 func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Bytecode, error) {
 	switch tree := treeInterface.(type) {
+	case *AssignStatementNode:
+		code, eType, err := compiler.compileExpression(tree.Expr)
+		if err != nil {
+			return nil, err
+		}
+
+		expectedType, ok := compiler.symbolTable.Get(tree.Symbol)
+		if !ok {
+			return nil, &CompileError{fmt.Sprintf("cannot assign to undeclared symbol %q", tree.Symbol)}
+		} else if !areTypesCompatible(expectedType, eType) {
+			return nil, &CompileError{fmt.Sprintf("wrong expression type in assignment to %q", tree.Symbol)}
+		}
+
+		code = append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Symbol}))
+		return code, nil
 	case *BreakStatementNode:
 		return []*Bytecode{NewBytecode("BREAK_LOOP")}, nil
 	case *ContinueStatementNode:
