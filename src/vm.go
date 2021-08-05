@@ -82,6 +82,18 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 		left := vm.popStack()
 		result := left.Equals(right)
 		vm.pushStack(&VeniceBoolean{result})
+	case "BINARY_GT":
+		left, right, err := vm.popTwoInts()
+		if err != nil {
+			return -1, err
+		}
+		vm.pushStack(&VeniceBoolean{left.Value > right.Value})
+	case "BINARY_GT_EQ":
+		left, right, err := vm.popTwoInts()
+		if err != nil {
+			return -1, err
+		}
+		vm.pushStack(&VeniceBoolean{left.Value >= right.Value})
 	case "BINARY_LIST_INDEX":
 		indexInterface := vm.popStack()
 		index, ok := indexInterface.(*VeniceInteger)
@@ -97,6 +109,18 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 
 		// TODO(2021-08-03): Handle out-of-bounds index.
 		vm.pushStack(list.Values[index.Value])
+	case "BINARY_LT":
+		left, right, err := vm.popTwoInts()
+		if err != nil {
+			return -1, err
+		}
+		vm.pushStack(&VeniceBoolean{left.Value < right.Value})
+	case "BINARY_LT_EQ":
+		left, right, err := vm.popTwoInts()
+		if err != nil {
+			return -1, err
+		}
+		vm.pushStack(&VeniceBoolean{left.Value <= right.Value})
 	case "BINARY_MAP_INDEX":
 		index := vm.popStack()
 		vMapInterface := vm.popStack()
@@ -120,6 +144,11 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left.Value * right.Value})
+	case "BINARY_NOT_EQ":
+		right := vm.popStack()
+		left := vm.popStack()
+		result := left.Equals(right)
+		vm.pushStack(&VeniceBoolean{!result})
 	case "BINARY_SUB":
 		left, right, err := vm.popTwoInts()
 		if err != nil {

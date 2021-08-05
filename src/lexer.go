@@ -152,40 +152,45 @@ func isWhitespace(ch byte) bool {
 }
 
 const (
-	TOKEN_ARROW        = "TOKEN_ARROW"
-	TOKEN_ASSIGN       = "TOKEN_ASSIGN"
-	TOKEN_ASTERISK     = "TOKEN_ASTERISK"
-	TOKEN_BREAK        = "TOKEN_BREAK"
-	TOKEN_COLON        = "TOKEN_COLON"
-	TOKEN_COMMA        = "TOKEN_COMMA"
-	TOKEN_CONTINUE     = "TOKEN_CONTINUE"
-	TOKEN_ELSE         = "TOKEN_ELSE"
-	TOKEN_EQ           = "TOKEN_EQ"
-	TOKEN_FALSE        = "TOKEN_FALSE"
-	TOKEN_FN           = "TOKEN_FN"
-	TOKEN_FOR          = "TOKEN_FOR"
-	TOKEN_IF           = "TOKEN_IF"
-	TOKEN_INT          = "TOKEN_INT"
-	TOKEN_EOF          = "TOKEN_EOF"
-	TOKEN_LEFT_CURLY   = "TOKEN_LEFT_CURLY"
-	TOKEN_LEFT_PAREN   = "TOKEN_LEFT_PAREN"
-	TOKEN_LEFT_SQUARE  = "TOKEN_LEFT_SQUARE"
-	TOKEN_LET          = "TOKEN_LET"
-	TOKEN_MINUS        = "TOKEN_MINUS"
-	TOKEN_NEWLINE      = "TOKEN_NEWLINE"
-	TOKEN_PLUS         = "TOKEN_PLUS"
-	TOKEN_RETURN       = "TOKEN_RETURN"
-	TOKEN_RIGHT_CURLY  = "TOKEN_RIGHT_CURLY"
-	TOKEN_RIGHT_PAREN  = "TOKEN_RIGHT_PAREN"
-	TOKEN_RIGHT_SQUARE = "TOKEN_RIGHT_SQUARE"
-	TOKEN_SEMICOLON    = "TOKEN_SEMICOLON"
-	TOKEN_SLASH        = "TOKEN_SLASH"
-	TOKEN_STRING       = "TOKEN_STRING"
-	TOKEN_SYMBOL       = "TOKEN_SYMBOL"
-	TOKEN_TRUE         = "TOKEN_TRUE"
-	TOKEN_UNKNOWN      = "TOKEN_UNKNOWN"
-	TOKEN_VOID         = "TOKEN_VOID"
-	TOKEN_WHILE        = "TOKEN_WHILE"
+	TOKEN_ARROW                  = "TOKEN_ARROW"
+	TOKEN_ASSIGN                 = "TOKEN_ASSIGN"
+	TOKEN_ASTERISK               = "TOKEN_ASTERISK"
+	TOKEN_BREAK                  = "TOKEN_BREAK"
+	TOKEN_COLON                  = "TOKEN_COLON"
+	TOKEN_COMMA                  = "TOKEN_COMMA"
+	TOKEN_CONTINUE               = "TOKEN_CONTINUE"
+	TOKEN_ELSE                   = "TOKEN_ELSE"
+	TOKEN_EQUALS                 = "TOKEN_EQUALS"
+	TOKEN_FALSE                  = "TOKEN_FALSE"
+	TOKEN_FN                     = "TOKEN_FN"
+	TOKEN_FOR                    = "TOKEN_FOR"
+	TOKEN_GREATER_THAN           = "TOKEN_GREATER_THAN"
+	TOKEN_GREATER_THAN_OR_EQUALS = "TOKEN_GREATER_THAN_OR_EQUALS"
+	TOKEN_IF                     = "TOKEN_IF"
+	TOKEN_INT                    = "TOKEN_INT"
+	TOKEN_EOF                    = "TOKEN_EOF"
+	TOKEN_LEFT_CURLY             = "TOKEN_LEFT_CURLY"
+	TOKEN_LEFT_PAREN             = "TOKEN_LEFT_PAREN"
+	TOKEN_LEFT_SQUARE            = "TOKEN_LEFT_SQUARE"
+	TOKEN_LESS_THAN              = "TOKEN_LESS_THAN"
+	TOKEN_LESS_THAN_OR_EQUALS    = "TOKEN_LESS_THAN_OR_EQUALS"
+	TOKEN_LET                    = "TOKEN_LET"
+	TOKEN_MINUS                  = "TOKEN_MINUS"
+	TOKEN_NEWLINE                = "TOKEN_NEWLINE"
+	TOKEN_NOT_EQUALS             = "TOKEN_NOT_EQUALS"
+	TOKEN_PLUS                   = "TOKEN_PLUS"
+	TOKEN_RETURN                 = "TOKEN_RETURN"
+	TOKEN_RIGHT_CURLY            = "TOKEN_RIGHT_CURLY"
+	TOKEN_RIGHT_PAREN            = "TOKEN_RIGHT_PAREN"
+	TOKEN_RIGHT_SQUARE           = "TOKEN_RIGHT_SQUARE"
+	TOKEN_SEMICOLON              = "TOKEN_SEMICOLON"
+	TOKEN_SLASH                  = "TOKEN_SLASH"
+	TOKEN_STRING                 = "TOKEN_STRING"
+	TOKEN_SYMBOL                 = "TOKEN_SYMBOL"
+	TOKEN_TRUE                   = "TOKEN_TRUE"
+	TOKEN_UNKNOWN                = "TOKEN_UNKNOWN"
+	TOKEN_VOID                   = "TOKEN_VOID"
+	TOKEN_WHILE                  = "TOKEN_WHILE"
 )
 
 var keywords = map[string]string{
@@ -208,9 +213,11 @@ var one_char_tokens = map[byte]string{
 	'*':  TOKEN_ASTERISK,
 	':':  TOKEN_COLON,
 	',':  TOKEN_COMMA,
+	'>':  TOKEN_GREATER_THAN,
 	'{':  TOKEN_LEFT_CURLY,
 	'(':  TOKEN_LEFT_PAREN,
 	'[':  TOKEN_LEFT_SQUARE,
+	'<':  TOKEN_LESS_THAN,
 	'-':  TOKEN_MINUS,
 	'\n': TOKEN_NEWLINE,
 	'+':  TOKEN_PLUS,
@@ -223,5 +230,8 @@ var one_char_tokens = map[byte]string{
 
 var two_char_tokens = map[string]string{
 	"->": TOKEN_ARROW,
-	"==": TOKEN_EQ,
+	"==": TOKEN_EQUALS,
+	">=": TOKEN_GREATER_THAN_OR_EQUALS,
+	"<=": TOKEN_LESS_THAN_OR_EQUALS,
+	"!=": TOKEN_NOT_EQUALS,
 }

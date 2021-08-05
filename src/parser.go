@@ -257,7 +257,7 @@ func (p *Parser) matchBlock() ([]StatementNode, error) {
 	statements := []StatementNode{}
 	for {
 		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
-			p.nextToken()
+			p.nextTokenSkipNewlines()
 			break
 		}
 
@@ -504,11 +504,16 @@ const (
 )
 
 var precedenceMap = map[string]int{
-	TOKEN_ASTERISK:    PRECEDENCE_MUL_DIV,
-	TOKEN_EQ:          PRECEDENCE_CMP,
-	TOKEN_LEFT_PAREN:  PRECEDENCE_CALL_INDEX,
-	TOKEN_LEFT_SQUARE: PRECEDENCE_CALL_INDEX,
-	TOKEN_MINUS:       PRECEDENCE_ADD_SUB,
-	TOKEN_PLUS:        PRECEDENCE_ADD_SUB,
-	TOKEN_SLASH:       PRECEDENCE_MUL_DIV,
+	TOKEN_ASTERISK:               PRECEDENCE_MUL_DIV,
+	TOKEN_EQUALS:                 PRECEDENCE_CMP,
+	TOKEN_GREATER_THAN:           PRECEDENCE_CMP,
+	TOKEN_GREATER_THAN_OR_EQUALS: PRECEDENCE_CMP,
+	TOKEN_LEFT_PAREN:             PRECEDENCE_CALL_INDEX,
+	TOKEN_LEFT_SQUARE:            PRECEDENCE_CALL_INDEX,
+	TOKEN_LESS_THAN:              PRECEDENCE_CMP,
+	TOKEN_LESS_THAN_OR_EQUALS:    PRECEDENCE_CMP,
+	TOKEN_MINUS:                  PRECEDENCE_ADD_SUB,
+	TOKEN_NOT_EQUALS:             PRECEDENCE_CMP,
+	TOKEN_PLUS:                   PRECEDENCE_ADD_SUB,
+	TOKEN_SLASH:                  PRECEDENCE_MUL_DIV,
 }

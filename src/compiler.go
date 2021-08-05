@@ -446,8 +446,18 @@ func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, Venice
 		return append(code, NewBytecode("BINARY_DIV")), VENICE_TYPE_INTEGER, nil
 	case "==":
 		return append(code, NewBytecode("BINARY_EQ")), VENICE_TYPE_BOOLEAN, nil
+	case ">":
+		return append(code, NewBytecode("BINARY_GT")), VENICE_TYPE_BOOLEAN, nil
+	case ">=":
+		return append(code, NewBytecode("BINARY_GT_EQ")), VENICE_TYPE_BOOLEAN, nil
+	case "<":
+		return append(code, NewBytecode("BINARY_LT")), VENICE_TYPE_BOOLEAN, nil
+	case "<=":
+		return append(code, NewBytecode("BINARY_LT_EQ")), VENICE_TYPE_BOOLEAN, nil
 	case "*":
 		return append(code, NewBytecode("BINARY_MUL")), VENICE_TYPE_INTEGER, nil
+	case "!=":
+		return append(code, NewBytecode("BINARY_NOT_EQ")), VENICE_TYPE_BOOLEAN, nil
 	case "-":
 		return append(code, NewBytecode("BINARY_SUB")), VENICE_TYPE_INTEGER, nil
 	default:
