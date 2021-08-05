@@ -24,8 +24,16 @@ func NewLexer(program string) *Lexer {
 }
 
 func (l *Lexer) NextToken() *Token {
-	l.skipWhitespace()
+	l.skipWhitespaceExceptNewlines()
+	return l.nextToken()
+}
 
+func (l *Lexer) NextTokenSkipNewlines() *Token {
+	l.skipAllWhitespace()
+	return l.nextToken()
+}
+
+func (l *Lexer) nextToken() *Token {
 	loc := l.copyLocation()
 	if l.index >= len(l.program) {
 		return &Token{Type: TOKEN_EOF, Value: "", Loc: loc}
@@ -68,8 +76,14 @@ func (l *Lexer) NextToken() *Token {
 	}
 }
 
-func (l *Lexer) skipWhitespace() {
+func (l *Lexer) skipAllWhitespace() {
 	for l.index < len(l.program) && isWhitespace(l.program[l.index]) {
+		l.advance()
+	}
+}
+
+func (l *Lexer) skipWhitespaceExceptNewlines() {
+	for l.index < len(l.program) && isWhitespace(l.program[l.index]) && l.program[l.index] != '\n' {
 		l.advance()
 	}
 }
@@ -158,11 +172,13 @@ const (
 	TOKEN_LEFT_SQUARE  = "TOKEN_LEFT_SQUARE"
 	TOKEN_LET          = "TOKEN_LET"
 	TOKEN_MINUS        = "TOKEN_MINUS"
+	TOKEN_NEWLINE      = "TOKEN_NEWLINE"
 	TOKEN_PLUS         = "TOKEN_PLUS"
 	TOKEN_RETURN       = "TOKEN_RETURN"
 	TOKEN_RIGHT_CURLY  = "TOKEN_RIGHT_CURLY"
 	TOKEN_RIGHT_PAREN  = "TOKEN_RIGHT_PAREN"
 	TOKEN_RIGHT_SQUARE = "TOKEN_RIGHT_SQUARE"
+	TOKEN_SEMICOLON    = "TOKEN_SEMICOLON"
 	TOKEN_SLASH        = "TOKEN_SLASH"
 	TOKEN_STRING       = "TOKEN_STRING"
 	TOKEN_SYMBOL       = "TOKEN_SYMBOL"
@@ -188,19 +204,21 @@ var keywords = map[string]string{
 }
 
 var one_char_tokens = map[byte]string{
-	'=': TOKEN_ASSIGN,
-	'*': TOKEN_ASTERISK,
-	':': TOKEN_COLON,
-	',': TOKEN_COMMA,
-	'{': TOKEN_LEFT_CURLY,
-	'(': TOKEN_LEFT_PAREN,
-	'[': TOKEN_LEFT_SQUARE,
-	'-': TOKEN_MINUS,
-	'+': TOKEN_PLUS,
-	'}': TOKEN_RIGHT_CURLY,
-	')': TOKEN_RIGHT_PAREN,
-	']': TOKEN_RIGHT_SQUARE,
-	'/': TOKEN_SLASH,
+	'=':  TOKEN_ASSIGN,
+	'*':  TOKEN_ASTERISK,
+	':':  TOKEN_COLON,
+	',':  TOKEN_COMMA,
+	'{':  TOKEN_LEFT_CURLY,
+	'(':  TOKEN_LEFT_PAREN,
+	'[':  TOKEN_LEFT_SQUARE,
+	'-':  TOKEN_MINUS,
+	'\n': TOKEN_NEWLINE,
+	'+':  TOKEN_PLUS,
+	'}':  TOKEN_RIGHT_CURLY,
+	')':  TOKEN_RIGHT_PAREN,
+	']':  TOKEN_RIGHT_SQUARE,
+	';':  TOKEN_SEMICOLON,
+	'/':  TOKEN_SLASH,
 }
 
 var two_char_tokens = map[string]string{

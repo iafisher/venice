@@ -71,7 +71,7 @@ func ReadCompiledProgramFromString(programString string) (CompiledProgram, error
 		}
 
 		args := []VeniceValue{}
-		for token.Type != TOKEN_EOF {
+		for token.Type != TOKEN_EOF && token.Type != TOKEN_NEWLINE {
 			switch token.Type {
 			case TOKEN_FALSE:
 				args = append(args, &VeniceBoolean{true})

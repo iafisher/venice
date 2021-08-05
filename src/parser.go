@@ -8,10 +8,12 @@ import (
 type Parser struct {
 	lexer        *Lexer
 	currentToken *Token
+	// Number of currently nested brackets (parentheses, curly braces, square brackets).
+	brackets int
 }
 
 func NewParser(l *Lexer) *Parser {
-	parser := &Parser{l, nil}
+	parser := &Parser{l, nil, 0}
 	parser.nextToken()
 	return parser
 }
@@ -25,7 +27,6 @@ func (p *Parser) Parse() (*ProgramNode, error) {
 			return nil, err
 		}
 		statements = append(statements, statement)
-		p.lexer.skipWhitespace()
 
 		if p.currentToken.Type == TOKEN_EOF {
 			break
@@ -40,19 +41,21 @@ func (p *Parser) Parse() (*ProgramNode, error) {
 }
 
 func (p *Parser) matchStatement() (StatementNode, error) {
+	var tree StatementNode
+	var err error
 	switch p.currentToken.Type {
 	case TOKEN_BREAK:
-		return &BreakStatementNode{}, nil
+		tree = &BreakStatementNode{}
 	case TOKEN_CONTINUE:
-		return &ContinueStatementNode{}, nil
+		tree = &ContinueStatementNode{}
 	case TOKEN_FN:
 		return p.matchFunctionDeclaration()
 	case TOKEN_IF:
 		return p.matchIfStatement()
 	case TOKEN_LET:
-		return p.matchLetStatement()
+		tree, err = p.matchLetStatement()
 	case TOKEN_RETURN:
-		return p.matchReturnStatement()
+		tree, err = p.matchReturnStatement()
 	case TOKEN_WHILE:
 		return p.matchWhileLoop()
 	default:
@@ -62,6 +65,20 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 		}
 		return &ExpressionStatementNode{expr}, nil
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if p.currentToken.Type != TOKEN_NEWLINE && p.currentToken.Type != TOKEN_SEMICOLON && p.currentToken.Type != TOKEN_EOF && p.currentToken.Type != TOKEN_RIGHT_CURLY {
+		return nil, p.customError("statement must be followed by newline or semicolon")
+	}
+
+	if p.currentToken.Type == TOKEN_NEWLINE || p.currentToken.Type == TOKEN_SEMICOLON {
+		p.nextTokenSkipNewlines()
+	}
+
+	return tree, nil
 }
 
 func (p *Parser) matchReturnStatement() (*ReturnStatementNode, error) {
@@ -221,7 +238,7 @@ func (p *Parser) matchBlock() ([]StatementNode, error) {
 		return nil, p.unexpectedToken("left curly brace")
 	}
 
-	p.nextToken()
+	p.nextTokenSkipNewlines()
 	statements := []StatementNode{}
 	for {
 		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
@@ -299,15 +316,19 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 		}
 		return &IntegerNode{int(value)}, nil
 	case TOKEN_LEFT_CURLY:
+		p.brackets++
 		p.nextToken()
 		pairs, err := p.matchMapPairs()
+		p.brackets--
 		if err != nil {
 			return nil, err
 		}
 		return &MapNode{pairs}, nil
 	case TOKEN_LEFT_PAREN:
+		p.brackets++
 		p.nextToken()
 		expr, err := p.matchExpression(PRECEDENCE_LOWEST)
+		p.brackets--
 		if err != nil {
 			return nil, err
 		}
@@ -317,8 +338,10 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 		p.nextToken()
 		return expr, nil
 	case TOKEN_LEFT_SQUARE:
+		p.brackets++
 		p.nextToken()
 		values, err := p.matchArglist(TOKEN_RIGHT_SQUARE)
+		p.brackets--
 		if err != nil {
 			return nil, err
 		}
@@ -413,7 +436,16 @@ func (p *Parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode
 }
 
 func (p *Parser) nextToken() *Token {
-	p.currentToken = p.lexer.NextToken()
+	if p.brackets > 0 {
+		p.currentToken = p.lexer.NextTokenSkipNewlines()
+	} else {
+		p.currentToken = p.lexer.NextToken()
+	}
+	return p.currentToken
+}
+
+func (p *Parser) nextTokenSkipNewlines() *Token {
+	p.currentToken = p.lexer.NextTokenSkipNewlines()
 	return p.currentToken
 }
 
