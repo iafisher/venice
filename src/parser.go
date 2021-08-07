@@ -98,6 +98,10 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 
 func (p *Parser) matchReturnStatement() (*ReturnStatementNode, error) {
 	p.nextToken()
+	if p.currentToken.Type == TOKEN_NEWLINE || p.currentToken.Type == TOKEN_SEMICOLON {
+		return &ReturnStatementNode{nil}, nil
+	}
+
 	expr, err := p.matchExpression(PRECEDENCE_LOWEST)
 	if err != nil {
 		return nil, err

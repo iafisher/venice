@@ -19,7 +19,7 @@ def main():
     print("=== Running tests ===")
     total = 0
     failures = 0
-    for path in glob.glob("tests/**/*.vn", recursive=True):
+    for path in sorted(glob.glob("tests/**/*.vn", recursive=True)):
         total += 1
         print(path)
         result = check_path(path)
@@ -67,23 +67,30 @@ def check_path(path):
 
 def get_expected_output(path):
     output_builder = []
+    expect_failure = False
+    in_output = False
     with open(path, "r", encoding="utf8") as f:
         for line in f:
             line = line.strip()
             if line.startswith("#"):
-                line = line[1:].lstrip()
-                output_builder.append(line)
+                if line == "# FAIL":
+                    expect_failure = True
+                elif line == "# OUTPUT":
+                    in_output = True
+                elif line == "# END OUTPUT":
+                    in_output = False
+                else:
+                    if in_output:
+                        line = line[1:].lstrip()
+                        output_builder.append(line)
             else:
                 break
 
+    if not expect_failure and not output_builder:
+        raise Exception(f"could not parse expected output for {path}")
+
     output = "\n".join(output_builder)
-    if output.startswith("FAIL"):
-        if output.startswith("FAIL:"):
-            return output[5:].lstrip(), True
-        else:
-            return "", True
-    else:
-        return output, False
+    return output, expect_failure
 
 
 if __name__ == "__main__":

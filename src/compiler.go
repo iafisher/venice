@@ -3,12 +3,14 @@ package main
 import "fmt"
 
 type Compiler struct {
-	symbolTable     *SymbolTable
-	typeSymbolTable map[string]VeniceType
+	symbolTable           *SymbolTable
+	typeSymbolTable       map[string]VeniceType
+	inFunctionDeclaration bool
+	functionReturnType    VeniceType
 }
 
 func NewCompiler() *Compiler {
-	return &Compiler{NewBuiltinSymbolTable(), NewBuiltinTypeSymbolTable()}
+	return &Compiler{NewBuiltinSymbolTable(), NewBuiltinTypeSymbolTable(), false, nil}
 }
 
 type SymbolTable struct {
@@ -84,25 +86,34 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 		}
 		compiler.symbolTable.Put(tree.Symbol, eType)
 		return append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Symbol})), nil
+	case *ReturnStatementNode:
+		if !compiler.inFunctionDeclaration {
+			return nil, &CompileError{"return statement outside of function definition"}
+		}
+
+		if tree.Expr != nil {
+			code, exprType, err := compiler.compileExpression(tree.Expr)
+			if err != nil {
+				return nil, err
+			}
+
+			if !areTypesCompatible(compiler.functionReturnType, exprType) {
+				return nil, &CompileError{"conflicting function return types"}
+			}
+
+			code = append(code, NewBytecode("RETURN"))
+			return code, err
+		} else {
+			if !areTypesCompatible(compiler.functionReturnType, nil) {
+				return nil, &CompileError{"function cannot return void"}
+			}
+
+			return []*Bytecode{NewBytecode("RETURN")}, nil
+		}
 	case *WhileLoopNode:
 		return compiler.compileWhileLoop(tree)
 	default:
-		return nil, &CompileError{"unknown statement type"}
-	}
-}
-
-func (compiler *Compiler) compileStatementWithReturn(treeInterface StatementNode) ([]*Bytecode, VeniceType, error) {
-	switch tree := treeInterface.(type) {
-	case *ReturnStatementNode:
-		code, exprType, err := compiler.compileExpression(tree.Expr)
-		if err != nil {
-			return nil, nil, err
-		}
-		code = append(code, NewBytecode("RETURN"))
-		return code, exprType, err
-	default:
-		code, err := compiler.compileStatement(treeInterface)
-		return code, nil, err
+		return nil, &CompileError{fmt.Sprintf("unknown statement type: %T", treeInterface)}
 	}
 }
 
@@ -123,9 +134,24 @@ func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNo
 	}
 	bodySymbolTable := &SymbolTable{compiler.symbolTable, bodySymbolTableMap}
 
+	declaredReturnType, err := compiler.resolveType(tree.ReturnType)
+	if err != nil {
+		return nil, err
+	}
+
+	// Put the function's entry in the symbol table before compiling the body so that
+	// recursive functions can call themselves.
+	compiler.symbolTable.Put(tree.Name, &VeniceFunctionType{paramTypes, declaredReturnType})
+
 	compiler.symbolTable = bodySymbolTable
-	bodyCode, returnType, err := compiler.compileBlockWithReturn(tree.Body)
+	compiler.inFunctionDeclaration = true
+	compiler.functionReturnType = declaredReturnType
+	bodyCode, err := compiler.compileBlock(tree.Body)
+	compiler.inFunctionDeclaration = false
+	compiler.functionReturnType = nil
 	compiler.symbolTable = bodySymbolTable.parent
+
+	// TODO(2021-08-07): Detect non-void functions which lack a return statement.
 
 	paramLoadCode := []*Bytecode{}
 	for _, param := range tree.Params {
@@ -137,20 +163,14 @@ func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNo
 		return nil, err
 	}
 
-	declaredReturnType, err := compiler.resolveType(tree.ReturnType)
-	if err != nil {
-		return nil, err
-	}
-
-	if !areTypesCompatible(declaredReturnType, returnType) {
-		return nil, &CompileError{"actual return type does not match declared return type"}
-	}
-
-	compiler.symbolTable.Put(tree.Name, &VeniceFunctionType{paramTypes, returnType})
 	return bodyCode, nil
 }
 
 func (compiler *Compiler) resolveType(typeNodeInterface TypeNode) (VeniceType, error) {
+	if typeNodeInterface == nil {
+		return nil, nil
+	}
+
 	switch typeNode := typeNodeInterface.(type) {
 	case *SimpleTypeNode:
 		resolvedType, ok := compiler.typeSymbolTable[typeNode.Symbol]
@@ -159,7 +179,7 @@ func (compiler *Compiler) resolveType(typeNodeInterface TypeNode) (VeniceType, e
 		}
 		return resolvedType, nil
 	default:
-		return nil, &CompileError{"unknown type node"}
+		return nil, &CompileError{fmt.Sprintf("unknown type node: %T", typeNodeInterface)}
 	}
 }
 
@@ -226,31 +246,10 @@ func (compiler *Compiler) compileBlock(block []StatementNode) ([]*Bytecode, erro
 		if err != nil {
 			return nil, err
 		}
+
 		code = append(code, statementCode...)
 	}
 	return code, nil
-}
-
-func (compiler *Compiler) compileBlockWithReturn(block []StatementNode) ([]*Bytecode, VeniceType, error) {
-	code := []*Bytecode{}
-	var returnType VeniceType
-	for _, statement := range block {
-		statementCode, thisReturnType, err := compiler.compileStatementWithReturn(statement)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		if thisReturnType != nil {
-			if returnType == nil {
-				returnType = thisReturnType
-			} else if !areTypesCompatible(returnType, thisReturnType) {
-				return nil, nil, &CompileError{"multiple incompatible return statements in function"}
-			}
-		}
-
-		code = append(code, statementCode...)
-	}
-	return code, returnType, nil
 }
 
 func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*Bytecode, VeniceType, error) {
@@ -484,6 +483,10 @@ func checkInfixRightType(operator string, leftType VeniceType, rightType VeniceT
 }
 
 func areTypesCompatible(expectedTypeInterface VeniceType, actualTypeInterface VeniceType) bool {
+	if expectedTypeInterface == nil && actualTypeInterface == nil {
+		return true
+	}
+
 	switch expectedType := expectedTypeInterface.(type) {
 	case *VeniceAtomicType:
 		switch actualType := actualTypeInterface.(type) {

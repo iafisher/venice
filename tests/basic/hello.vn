@@ -1,3 +1,5 @@
+# OUTPUT
 # Hello, world!
+# END OUTPUT
 
 print("Hello, world!")
