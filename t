@@ -5,6 +5,13 @@ import sys
 
 
 def main():
+    print("=== BUILDING VENICE ===")
+    subprocess.run(["go", "build"], cwd="src")
+
+
+    print()
+    print()
+    print("=== RUNNING TESTS ===")
     total = 0
     failures = 0
     for path in glob.glob("tests/**/*.vn", recursive=True):
@@ -28,7 +35,7 @@ def main():
         sys.exit(0)
 
 
-def check_path(path, *, expect_failure=False):
+def check_path(path):
     result = subprocess.run(
         ["./src/venice", "execute", path],
         stdout=subprocess.PIPE,
@@ -36,7 +43,7 @@ def check_path(path, *, expect_failure=False):
         encoding="utf8",
     )
 
-    expected_output = get_expected_output(path)
+    expected_output, expect_failure = get_expected_output(path)
     if expect_failure:
         if expected_output and expected_output != result.stderr.rstrip("\n"):
             return False
@@ -50,17 +57,24 @@ def check_path(path, *, expect_failure=False):
 
 
 def get_expected_output(path):
-    output = []
+    output_builder = []
     with open(path, "r", encoding="utf8") as f:
         for line in f:
             line = line.strip()
-            if line.startswith("//"):
-                line = line[2:].lstrip()
-                output.append(line)
+            if line.startswith("#"):
+                line = line[1:].lstrip()
+                output_builder.append(line)
             else:
                 break
 
-    return "\n".join(output)
+    output = "\n".join(output_builder)
+    if output.startswith("FAIL"):
+        if output.startswith("FAIL:"):
+            return output[5:].lstrip(), True
+        else:
+            return "", True
+    else:
+        return output, False
 
 
 if __name__ == "__main__":
