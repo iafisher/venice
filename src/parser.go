@@ -46,8 +46,10 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 	switch p.currentToken.Type {
 	case TOKEN_BREAK:
 		tree = &BreakStatementNode{}
+		p.nextToken()
 	case TOKEN_CONTINUE:
 		tree = &ContinueStatementNode{}
+		p.nextToken()
 	case TOKEN_FN:
 		return p.matchFunctionDeclaration()
 	case TOKEN_IF:
@@ -508,6 +510,7 @@ const (
 )
 
 var precedenceMap = map[string]int{
+	TOKEN_AND:                    PRECEDENCE_AND,
 	TOKEN_ASTERISK:               PRECEDENCE_MUL_DIV,
 	TOKEN_EQUALS:                 PRECEDENCE_CMP,
 	TOKEN_GREATER_THAN:           PRECEDENCE_CMP,
@@ -518,6 +521,7 @@ var precedenceMap = map[string]int{
 	TOKEN_LESS_THAN_OR_EQUALS:    PRECEDENCE_CMP,
 	TOKEN_MINUS:                  PRECEDENCE_ADD_SUB,
 	TOKEN_NOT_EQUALS:             PRECEDENCE_CMP,
+	TOKEN_OR:                     PRECEDENCE_OR,
 	TOKEN_PLUS:                   PRECEDENCE_ADD_SUB,
 	TOKEN_SLASH:                  PRECEDENCE_MUL_DIV,
 }

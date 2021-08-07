@@ -71,6 +71,12 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left.Value + right.Value})
+	case "BINARY_AND":
+		left, right, err := vm.popTwoBools()
+		if err != nil {
+			return -1, err
+		}
+		vm.pushStack(&VeniceBoolean{left.Value && right.Value})
 	case "BINARY_DIV":
 		left, right, err := vm.popTwoInts()
 		if err != nil {
@@ -149,6 +155,12 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 		left := vm.popStack()
 		result := left.Equals(right)
 		vm.pushStack(&VeniceBoolean{!result})
+	case "BINARY_OR":
+		left, right, err := vm.popTwoBools()
+		if err != nil {
+			return -1, err
+		}
+		vm.pushStack(&VeniceBoolean{left.Value || right.Value})
 	case "BINARY_SUB":
 		left, right, err := vm.popTwoInts()
 		if err != nil {
@@ -259,6 +271,20 @@ func (vm *VirtualMachine) popTwoInts() (*VeniceInteger, *VeniceInteger, error) {
 	left, ok := vm.popStack().(*VeniceInteger)
 	if !ok {
 		return nil, nil, &ExecutionError{"expected integer at top of virtual machine stack"}
+	}
+
+	return left, right, nil
+}
+
+func (vm *VirtualMachine) popTwoBools() (*VeniceBoolean, *VeniceBoolean, error) {
+	right, ok := vm.popStack().(*VeniceBoolean)
+	if !ok {
+		return nil, nil, &ExecutionError{"expected boolean at top of virtual machine stack"}
+	}
+
+	left, ok := vm.popStack().(*VeniceBoolean)
+	if !ok {
+		return nil, nil, &ExecutionError{"expected boolean at top of virtual machine stack"}
 	}
 
 	return left, right, nil

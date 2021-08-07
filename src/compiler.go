@@ -68,8 +68,12 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 		code = append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Symbol}))
 		return code, nil
 	case *BreakStatementNode:
+		// BREAK_LOOP is a temporary bytecode instruction that the compiler will later
+		// convert to a REL_JUMP instruction.
 		return []*Bytecode{NewBytecode("BREAK_LOOP")}, nil
 	case *ContinueStatementNode:
+		// CONTINUE_LOOP is a temporary bytecode instruction that the compiler will later
+		// convert to a REL_JUMP instruction.
 		return []*Bytecode{NewBytecode("CONTINUE_LOOP")}, nil
 	case *ExpressionStatementNode:
 		code, _, err := compiler.compileExpression(tree.Expr)
@@ -204,6 +208,17 @@ func (compiler *Compiler) compileWhileLoop(tree *WhileLoopNode) ([]*Bytecode, er
 	code = append(code, bodyCode...)
 	jumpBack := -(len(conditionCode) + len(bodyCode) + 1)
 	code = append(code, NewBytecode("REL_JUMP", &VeniceInteger{jumpBack}))
+
+	for i, bytecode := range code {
+		if bytecode.Name == "BREAK_LOOP" {
+			bytecode.Name = "REL_JUMP"
+			bytecode.Args = append(bytecode.Args, &VeniceInteger{len(code) - i})
+		} else if bytecode.Name == "CONTINUE_LOOP" {
+			bytecode.Name = "REL_JUMP"
+			bytecode.Args = append(bytecode.Args, &VeniceInteger{-i})
+		}
+	}
+
 	return code, nil
 }
 
@@ -438,9 +453,12 @@ func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, Venice
 	}
 
 	code := append(leftCode, rightCode...)
+	// TODO(2021-08-07): Boolean operators should short-circuit.
 	switch tree.Operator {
 	case "+":
 		return append(code, NewBytecode("BINARY_ADD")), VENICE_TYPE_INTEGER, nil
+	case "and":
+		return append(code, NewBytecode("BINARY_AND")), VENICE_TYPE_BOOLEAN, nil
 	case "/":
 		return append(code, NewBytecode("BINARY_DIV")), VENICE_TYPE_INTEGER, nil
 	case "==":
@@ -457,10 +475,12 @@ func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, Venice
 		return append(code, NewBytecode("BINARY_MUL")), VENICE_TYPE_INTEGER, nil
 	case "!=":
 		return append(code, NewBytecode("BINARY_NOT_EQ")), VENICE_TYPE_BOOLEAN, nil
+	case "or":
+		return append(code, NewBytecode("BINARY_OR")), VENICE_TYPE_BOOLEAN, nil
 	case "-":
 		return append(code, NewBytecode("BINARY_SUB")), VENICE_TYPE_INTEGER, nil
 	default:
-		return nil, nil, &CompileError{fmt.Sprintf("unknown oeprator: %s", tree.Operator)}
+		return nil, nil, &CompileError{fmt.Sprintf("unknown operator: %s", tree.Operator)}
 	}
 }
 
@@ -468,6 +488,8 @@ func checkInfixLeftType(operator string, leftType VeniceType) bool {
 	switch operator {
 	case "==":
 		return true
+	case "and", "or":
+		return areTypesCompatible(VENICE_TYPE_BOOLEAN, leftType)
 	default:
 		return areTypesCompatible(VENICE_TYPE_INTEGER, leftType)
 	}
@@ -477,8 +499,10 @@ func checkInfixRightType(operator string, leftType VeniceType, rightType VeniceT
 	switch operator {
 	case "==":
 		return areTypesCompatible(leftType, rightType)
+	case "and", "or":
+		return areTypesCompatible(VENICE_TYPE_BOOLEAN, rightType)
 	default:
-		return areTypesCompatible(VENICE_TYPE_INTEGER, leftType)
+		return areTypesCompatible(VENICE_TYPE_INTEGER, rightType)
 	}
 }
 

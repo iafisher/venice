@@ -192,6 +192,7 @@ func isWhitespace(ch byte) bool {
 }
 
 const (
+	TOKEN_AND                    = "TOKEN_AND"
 	TOKEN_ARROW                  = "TOKEN_ARROW"
 	TOKEN_ASSIGN                 = "TOKEN_ASSIGN"
 	TOKEN_ASTERISK               = "TOKEN_ASTERISK"
@@ -218,6 +219,7 @@ const (
 	TOKEN_MINUS                  = "TOKEN_MINUS"
 	TOKEN_NEWLINE                = "TOKEN_NEWLINE"
 	TOKEN_NOT_EQUALS             = "TOKEN_NOT_EQUALS"
+	TOKEN_OR                     = "TOKEN_OR"
 	TOKEN_PLUS                   = "TOKEN_PLUS"
 	TOKEN_RETURN                 = "TOKEN_RETURN"
 	TOKEN_RIGHT_CURLY            = "TOKEN_RIGHT_CURLY"
@@ -234,6 +236,7 @@ const (
 )
 
 var keywords = map[string]string{
+	"and":      TOKEN_AND,
 	"break":    TOKEN_BREAK,
 	"continue": TOKEN_CONTINUE,
 	"else":     TOKEN_ELSE,
@@ -242,6 +245,7 @@ var keywords = map[string]string{
 	"for":      TOKEN_FOR,
 	"if":       TOKEN_IF,
 	"let":      TOKEN_LET,
+	"or":       TOKEN_OR,
 	"return":   TOKEN_RETURN,
 	"true":     TOKEN_TRUE,
 	"while":    TOKEN_WHILE,
