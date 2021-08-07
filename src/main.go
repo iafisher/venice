@@ -189,7 +189,8 @@ func compileProgram(p string) {
 
 func executeProgram(p string) {
 	if strings.HasSuffix(p, ".vn") {
-		log.Fatal("Error: can only execute compiled programs.")
+		compileProgram(p)
+		p = p + "b"
 	}
 
 	data, err := ioutil.ReadFile(p)

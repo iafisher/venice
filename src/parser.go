@@ -14,7 +14,7 @@ type Parser struct {
 
 func NewParser(l *Lexer) *Parser {
 	parser := &Parser{l, nil, 0}
-	parser.nextToken()
+	parser.nextTokenSkipNewlines()
 	return parser
 }
 

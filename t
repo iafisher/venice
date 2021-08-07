@@ -5,23 +5,19 @@ import sys
 
 
 def main():
+    total = 0
     failures = 0
-
-    # Expected to pass.
-    for path in glob.glob("samples/*.vn") + glob.glob("samples/typecheck/good/*.vn"):
+    for path in glob.glob("tests/**/*.vn", recursive=True):
+        total += 1
         print(path)
         result = check_path(path)
         if not result:
             failures += 1
             print("  FAILURE!")
 
-    # Expected to fail.
-    for path in glob.iglob("samples/typecheck/bad/*.vn"):
-        print(path)
-        result = check_path(path, expect_failure=True)
-        if not result:
-            failures += 1
-            print("  FAILURE! Expected the program not to type-check.")
+    if total == 0:
+        print("No tests found.")
+        sys.exit(2)
 
     print()
     if failures > 0:
@@ -34,7 +30,7 @@ def main():
 
 def check_path(path, *, expect_failure=False):
     result = subprocess.run(
-        ["./v", "run", path, "--quiet"],
+        ["./src/venice", "execute", path],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         encoding="utf8",

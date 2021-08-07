@@ -24,12 +24,12 @@ func NewLexer(program string) *Lexer {
 }
 
 func (l *Lexer) NextToken() *Token {
-	l.skipWhitespaceExceptNewlines()
+	l.skipCommentsAndWhitespaceExceptNewlines()
 	return l.nextToken()
 }
 
 func (l *Lexer) NextTokenSkipNewlines() *Token {
-	l.skipAllWhitespace()
+	l.skipCommentsAndAllWhitespace()
 	return l.nextToken()
 }
 
@@ -76,14 +76,44 @@ func (l *Lexer) nextToken() *Token {
 	}
 }
 
-func (l *Lexer) skipAllWhitespace() {
-	for l.index < len(l.program) && isWhitespace(l.program[l.index]) {
+func (l *Lexer) skipCommentsAndAllWhitespace() {
+	inComment := false
+	for l.index < len(l.program) {
+		ch := l.program[l.index]
+
+		if inComment {
+			if ch == '\n' {
+				inComment = false
+			}
+		} else {
+			if ch == '#' {
+				inComment = true
+			} else if !isWhitespace(ch) {
+				break
+			}
+		}
+
 		l.advance()
 	}
 }
 
-func (l *Lexer) skipWhitespaceExceptNewlines() {
-	for l.index < len(l.program) && isWhitespace(l.program[l.index]) && l.program[l.index] != '\n' {
+func (l *Lexer) skipCommentsAndWhitespaceExceptNewlines() {
+	inComment := false
+	for l.index < len(l.program) {
+		ch := l.program[l.index]
+
+		if inComment {
+			if ch == '\n' {
+				inComment = false
+			}
+		} else {
+			if ch == '#' {
+				inComment = true
+			} else if !isWhitespace(ch) || ch == '\n' {
+				break
+			}
+		}
+
 		l.advance()
 	}
 }
