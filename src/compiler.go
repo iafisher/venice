@@ -7,10 +7,17 @@ type Compiler struct {
 	typeSymbolTable       map[string]VeniceType
 	inFunctionDeclaration bool
 	functionReturnType    VeniceType
+	nestedLoopCount       int
 }
 
 func NewCompiler() *Compiler {
-	return &Compiler{NewBuiltinSymbolTable(), NewBuiltinTypeSymbolTable(), false, nil}
+	return &Compiler{
+		symbolTable:           NewBuiltinSymbolTable(),
+		typeSymbolTable:       NewBuiltinTypeSymbolTable(),
+		inFunctionDeclaration: false,
+		functionReturnType:    nil,
+		nestedLoopCount:       0,
+	}
 }
 
 type SymbolTable struct {
@@ -68,10 +75,18 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 		code = append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Symbol}))
 		return code, nil
 	case *BreakStatementNode:
+		if compiler.nestedLoopCount == 0 {
+			return nil, &CompileError{"break statement outside of loop"}
+		}
+
 		// BREAK_LOOP is a temporary bytecode instruction that the compiler will later
 		// convert to a REL_JUMP instruction.
 		return []*Bytecode{NewBytecode("BREAK_LOOP")}, nil
 	case *ContinueStatementNode:
+		if compiler.nestedLoopCount == 0 {
+			return nil, &CompileError{"break statement outside of loop"}
+		}
+
 		// CONTINUE_LOOP is a temporary bytecode instruction that the compiler will later
 		// convert to a REL_JUMP instruction.
 		return []*Bytecode{NewBytecode("CONTINUE_LOOP")}, nil
@@ -197,7 +212,9 @@ func (compiler *Compiler) compileWhileLoop(tree *WhileLoopNode) ([]*Bytecode, er
 		return nil, &CompileError{"condition of while loop must be a boolean"}
 	}
 
+	compiler.nestedLoopCount += 1
 	bodyCode, err := compiler.compileBlock(tree.Body)
+	compiler.nestedLoopCount -= 1
 	if err != nil {
 		return nil, err
 	}

@@ -25,7 +25,7 @@ def main():
         result = check_path(path)
         if not result:
             failures += 1
-            print("  FAILURE!")
+            print("FAILURE!")
             print()
 
         # Remove the bytecode file when done.
@@ -46,14 +46,15 @@ def main():
 
 
 def check_path(path):
+    expected_output, expect_failure = get_expected_output(path)
+    subcommand = "compile" if expect_failure else "execute"
     result = subprocess.run(
-        ["./src/venice", "execute", path],
+        ["./src/venice", subcommand, path],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         encoding="utf8",
     )
 
-    expected_output, expect_failure = get_expected_output(path)
     if expect_failure:
         if expected_output and expected_output != result.stderr.rstrip("\n"):
             passed = False
