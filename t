@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
+import contextlib
 import glob
+import os
 import subprocess
 import sys
 
 
 def main():
-    print("=== BUILDING VENICE ===")
-    subprocess.run(["go", "build"], cwd="src")
-
+    print("=== Building Venice binaries ===")
+    result = subprocess.run(["go", "build"], cwd="src")
+    if result.returncode != 0:
+        sys.exit(1)
+    else:
+        print("Build succeeded.")
 
     print()
     print()
-    print("=== RUNNING TESTS ===")
+    print("=== Running tests ===")
     total = 0
     failures = 0
     for path in glob.glob("tests/**/*.vn", recursive=True):
@@ -22,6 +27,10 @@ def main():
             failures += 1
             print("  FAILURE!")
 
+        # Remove the bytecode file when done.
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(path + "b")
+
     if total == 0:
         print("No tests found.")
         sys.exit(2)
@@ -29,7 +38,7 @@ def main():
     print()
     if failures > 0:
         print(f"Tests FAILED: {failures} failure(s)!")
-        sys.exit(1)
+        sys.exit(3)
     else:
         print("Tests passed.")
         sys.exit(0)

@@ -30,6 +30,7 @@ func main() {
 
 func repl() {
 	fmt.Print("The Venice programming language.\n\n")
+	fmt.Print("Type !help to view available commands.\n\n\n")
 
 	vm := NewVirtualMachine()
 	compiler := NewCompiler()
@@ -53,12 +54,18 @@ func repl() {
 			splitLine := strings.SplitN(line, " ", 2)
 			if len(splitLine) > 0 {
 				cmd := splitLine[0]
-				line = splitLine[1]
+				if len(splitLine) > 1 {
+					line = splitLine[1]
+				}
+
 				switch cmd {
 				case "!compile":
 					operation = "compile"
 				case "!debug":
 					operation = "debug"
+				case "!help":
+					fmt.Println(helpString)
+					continue
 				case "!lex":
 					operation = "lex"
 				case "!parse":
@@ -156,6 +163,14 @@ func repl() {
 		}
 	}
 }
+
+const helpString = `!compile <code>   Compile the Venice code into bytecode.
+!debug <code>     Execute the Venice code with debugging messages turned on.
+!help             Print this help message.
+!lex <code>       Lex the Venice code and print the resulting tokens.
+!parse <code>     Parse the Venice code and print the resulting syntax tree.
+!stack            Print the current state of the virtual machine stack.
+`
 
 func compileProgram(p string) {
 	data, err := ioutil.ReadFile(p)
