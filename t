@@ -26,6 +26,7 @@ def main():
         if not result:
             failures += 1
             print("  FAILURE!")
+            print()
 
         # Remove the bytecode file when done.
         with contextlib.suppress(FileNotFoundError):
@@ -55,14 +56,22 @@ def check_path(path):
     expected_output, expect_failure = get_expected_output(path)
     if expect_failure:
         if expected_output and expected_output != result.stderr.rstrip("\n"):
-            return False
-
-        return result.returncode != 0
+            passed = False
+        else:
+            passed =  result.returncode != 0
     else:
         if expected_output and expected_output != result.stdout.rstrip("\n"):
-            return False
+            passed = False
+        else:
+            passed = result.returncode == 0
 
-        return result.returncode == 0
+    if not passed:
+        print("--- STDERR ---")
+        print(result.stderr, end="")
+        print("---  END   ---")
+        print()
+
+    return passed
 
 
 def get_expected_output(path):

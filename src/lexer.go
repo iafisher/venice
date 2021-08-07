@@ -50,6 +50,15 @@ func (l *Lexer) nextToken() *Token {
 	}
 
 	ch := l.program[l.index]
+
+	// To simplify parsing, integer literals beginning with a minus sign are lexed as a
+	// single TOKEN_INT instead of a TOKEN_MINUS followed by a TOKEN_INT, so we have to
+	// check this case before we look at the one-character tokens in the next block.
+	if ch == '-' && l.index+1 < len(l.program) && isDigit(l.program[l.index+1]) {
+		value := l.readInteger()
+		return &Token{Type: TOKEN_INT, Value: value, Loc: loc}
+	}
+
 	token_type, ok := one_char_tokens[ch]
 	if ok {
 		l.advance()
@@ -120,6 +129,7 @@ func (l *Lexer) skipCommentsAndWhitespaceExceptNewlines() {
 
 func (l *Lexer) readInteger() string {
 	start := l.index
+	l.advance()
 	for l.index < len(l.program) && isDigit(l.program[l.index]) {
 		l.advance()
 	}

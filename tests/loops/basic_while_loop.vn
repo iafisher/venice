@@ -1,0 +1,13 @@
+# OUTPUT
+# 1
+# 2
+# 3
+# 4
+# 5
+# END OUTPUT
+
+let i = 1
+while i <= 5 {
+  print(i)
+  i = i + 1
+}

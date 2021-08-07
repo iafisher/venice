@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"github.com/shurcooL/go-goon"
 	"io/ioutil"
@@ -12,19 +13,24 @@ import (
 )
 
 func main() {
+	compileCommand := flag.NewFlagSet("compile", flag.ExitOnError)
+	executeCommand := flag.NewFlagSet("execute", flag.ExitOnError)
+
+	stdoutFlagPtr := compileCommand.Bool("stdout", false, "Output bytecode to stdout instead of to disk.")
+
 	if len(os.Args) == 1 {
 		repl()
-	} else if len(os.Args) == 3 {
+	} else {
 		switch os.Args[1] {
 		case "compile":
-			compileProgram(os.Args[2])
+			compileCommand.Parse(os.Args[2:])
+			compileProgram(compileCommand.Arg(0), *stdoutFlagPtr)
 		case "execute":
-			executeProgram(os.Args[2])
+			executeCommand.Parse(os.Args[2:])
+			executeProgram(executeCommand.Arg(0))
 		default:
 			fmt.Printf("Error: unknown subcommand %q", os.Args[1])
 		}
-	} else {
-		fmt.Println("Error: too many command-line arguments.")
 	}
 }
 
@@ -172,14 +178,14 @@ const helpString = `!compile <code>   Compile the Venice code into bytecode.
 !stack            Print the current state of the virtual machine stack.
 `
 
-func compileProgram(p string) {
-	data, err := ioutil.ReadFile(p)
+func compileProgram(filePath string, toStdout bool) {
+	fileContentsBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	program := string(data)
-	tree, err := NewParser(NewLexer(program)).Parse()
+	fileContents := string(fileContentsBytes)
+	tree, err := NewParser(NewLexer(fileContents)).Parse()
 	if err != nil {
 		log.Fatalf("Parse error: %v", err)
 	}
@@ -189,31 +195,37 @@ func compileProgram(p string) {
 		log.Fatalf("Compile error: %v", err)
 	}
 
-	ext := path.Ext(p)
-	outputPath := p[:len(p)-len(ext)] + ".vnb"
+	fileExt := path.Ext(filePath)
+	outputPath := filePath[:len(filePath)-len(fileExt)] + ".vnb"
 
-	f, err := os.Create(outputPath)
-	if err != nil {
-		log.Fatal(err)
+	var writer *bufio.Writer
+	if toStdout {
+		writer = bufio.NewWriter(os.Stdout)
+	} else {
+		f, err := os.Create(outputPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		writer = bufio.NewWriter(f)
 	}
-	defer f.Close()
-	writer := bufio.NewWriter(f)
 
 	WriteCompiledProgramToFile(writer, code)
 }
 
-func executeProgram(p string) {
-	if strings.HasSuffix(p, ".vn") {
-		compileProgram(p)
-		p = p + "b"
+func executeProgram(filePath string) {
+	if strings.HasSuffix(filePath, ".vn") {
+		compileProgram(filePath, false)
+		filePath = filePath + "b"
 	}
 
-	data, err := ioutil.ReadFile(p)
+	fileContentsBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	bytecodeList, err := ReadCompiledProgramFromString(string(data))
+	fileContents := string(fileContentsBytes)
+	bytecodeList, err := ReadCompiledProgramFromString(fileContents)
 	if err != nil {
 		log.Fatal(err)
 	}

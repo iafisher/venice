@@ -3,14 +3,17 @@ package main
 import "testing"
 
 func TestIntegerLiterals(t *testing.T) {
-	input := "100"
+	input := "100 -12"
 	lexer := NewLexer(input)
 
 	token := lexer.NextToken()
 	checkToken(t, token, TOKEN_INT, "100", 1, 1)
 
 	token = lexer.NextToken()
-	checkToken(t, token, TOKEN_EOF, "", 1, 4)
+	checkToken(t, token, TOKEN_INT, "-12", 1, 5)
+
+	token = lexer.NextToken()
+	checkToken(t, token, TOKEN_EOF, "", 1, 8)
 }
 
 func TestSymbols(t *testing.T) {
