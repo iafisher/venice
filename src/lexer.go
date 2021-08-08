@@ -197,9 +197,11 @@ const (
 	TOKEN_ASSIGN                 = "TOKEN_ASSIGN"
 	TOKEN_ASTERISK               = "TOKEN_ASTERISK"
 	TOKEN_BREAK                  = "TOKEN_BREAK"
+	TOKEN_CLASS                  = "TOKEN_CLASS"
 	TOKEN_COLON                  = "TOKEN_COLON"
 	TOKEN_COMMA                  = "TOKEN_COMMA"
 	TOKEN_CONTINUE               = "TOKEN_CONTINUE"
+	TOKEN_DOT                    = "TOKEN_DOT"
 	TOKEN_ELSE                   = "TOKEN_ELSE"
 	TOKEN_EQUALS                 = "TOKEN_EQUALS"
 	TOKEN_FALSE                  = "TOKEN_FALSE"
@@ -220,7 +222,9 @@ const (
 	TOKEN_NEWLINE                = "TOKEN_NEWLINE"
 	TOKEN_NOT_EQUALS             = "TOKEN_NOT_EQUALS"
 	TOKEN_OR                     = "TOKEN_OR"
+	TOKEN_PRIVATE                = "TOKEN_PRIVATE"
 	TOKEN_PLUS                   = "TOKEN_PLUS"
+	TOKEN_PUBLIC                 = "TOKEN_PUBLIC"
 	TOKEN_RETURN                 = "TOKEN_RETURN"
 	TOKEN_RIGHT_CURLY            = "TOKEN_RIGHT_CURLY"
 	TOKEN_RIGHT_PAREN            = "TOKEN_RIGHT_PAREN"
@@ -238,6 +242,7 @@ const (
 var keywords = map[string]string{
 	"and":      TOKEN_AND,
 	"break":    TOKEN_BREAK,
+	"class":    TOKEN_CLASS,
 	"continue": TOKEN_CONTINUE,
 	"else":     TOKEN_ELSE,
 	"false":    TOKEN_FALSE,
@@ -246,6 +251,8 @@ var keywords = map[string]string{
 	"if":       TOKEN_IF,
 	"let":      TOKEN_LET,
 	"or":       TOKEN_OR,
+	"private":  TOKEN_PRIVATE,
+	"public":   TOKEN_PUBLIC,
 	"return":   TOKEN_RETURN,
 	"true":     TOKEN_TRUE,
 	"while":    TOKEN_WHILE,
@@ -257,6 +264,7 @@ var one_char_tokens = map[byte]string{
 	'*':  TOKEN_ASTERISK,
 	':':  TOKEN_COLON,
 	',':  TOKEN_COMMA,
+	'.':  TOKEN_DOT,
 	'>':  TOKEN_GREATER_THAN,
 	'{':  TOKEN_LEFT_CURLY,
 	'(':  TOKEN_LEFT_PAREN,

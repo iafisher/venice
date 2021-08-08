@@ -4,6 +4,18 @@ type VeniceType interface {
 	veniceType()
 }
 
+type VeniceClassType struct {
+	Fields []*VeniceClassField
+}
+
+func (t *VeniceClassType) veniceType() {}
+
+type VeniceClassField struct {
+	Name      string
+	Public    bool
+	FieldType VeniceType
+}
+
 type VeniceFunctionType struct {
 	ParamTypes []VeniceType
 	ReturnType VeniceType

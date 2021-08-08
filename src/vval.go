@@ -12,6 +12,43 @@ type VeniceValue interface {
 	Equals(v VeniceValue) bool
 }
 
+type VeniceClassObject struct {
+	Values []VeniceValue
+}
+
+func (v *VeniceClassObject) veniceValue() {}
+
+func (v *VeniceClassObject) Serialize() string {
+	var sb strings.Builder
+	sb.WriteString("<object ")
+	for i, value := range v.Values {
+		sb.WriteString(value.Serialize())
+		if i != len(v.Values)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte('>')
+	return sb.String()
+}
+
+func (v *VeniceClassObject) SerializePrintable() string {
+	var sb strings.Builder
+	sb.WriteString("<object ")
+	for i, value := range v.Values {
+		sb.WriteString(value.SerializePrintable())
+		if i != len(v.Values)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte('>')
+	return sb.String()
+}
+
+func (v *VeniceClassObject) Equals(otherInterface VeniceValue) bool {
+	// TODO(2021-08-08): Implement.
+	return false
+}
+
 type VeniceList struct {
 	Values []VeniceValue
 }

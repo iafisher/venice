@@ -47,6 +47,8 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 	case TOKEN_BREAK:
 		tree = &BreakStatementNode{}
 		p.nextToken()
+	case TOKEN_CLASS:
+		return p.matchClassDeclaration()
 	case TOKEN_CONTINUE:
 		tree = &ContinueStatementNode{}
 		p.nextToken()
@@ -109,6 +111,64 @@ func (p *Parser) matchReturnStatement() (*ReturnStatementNode, error) {
 		return nil, err
 	}
 	return &ReturnStatementNode{expr}, nil
+}
+
+func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
+	p.nextToken()
+	if p.currentToken.Type != TOKEN_SYMBOL {
+		return nil, p.unexpectedToken("class name")
+	}
+
+	name := p.currentToken.Value
+	p.nextToken()
+
+	if p.currentToken.Type != TOKEN_LEFT_CURLY {
+		return nil, p.unexpectedToken("left curly brace")
+	}
+	p.nextTokenSkipNewlines()
+
+	fieldNodes := []*ClassFieldNode{}
+	for {
+		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
+			p.nextTokenSkipNewlines()
+			break
+		}
+
+		var public bool
+		if p.currentToken.Type == TOKEN_PUBLIC {
+			public = true
+		} else if p.currentToken.Type == TOKEN_PRIVATE {
+			public = false
+		} else {
+			return nil, p.unexpectedToken("field access identifier (public or private)")
+		}
+
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_SYMBOL {
+			return nil, p.unexpectedToken("symbol")
+		}
+
+		name := p.currentToken.Value
+
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_COLON {
+			return nil, p.unexpectedToken("colon")
+		}
+
+		p.nextToken()
+		fieldType, err := p.matchTypeNode()
+		if err != nil {
+			return nil, err
+		}
+
+		if p.currentToken.Type == TOKEN_NEWLINE {
+			p.nextTokenSkipNewlines()
+		}
+
+		fieldNodes = append(fieldNodes, &ClassFieldNode{name, public, fieldType})
+	}
+
+	return &ClassDeclarationNode{name, fieldNodes}, nil
 }
 
 func (p *Parser) matchFunctionDeclaration() (*FunctionDeclarationNode, error) {
@@ -306,6 +366,14 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 					p.nextToken()
 
 					expr = &IndexNode{expr, indexExpr}
+				} else if p.currentToken.Type == TOKEN_DOT {
+					p.nextToken()
+					if p.currentToken.Type != TOKEN_SYMBOL {
+						return nil, p.customError("right-hand side of dot must be a symbol")
+					}
+
+					expr = &FieldAccessNode{expr, p.currentToken.Value}
+					p.nextToken()
 				} else {
 					expr, err = p.matchInfix(expr, infixPrecedence)
 					if err != nil {
@@ -507,11 +575,13 @@ const (
 	PRECEDENCE_MUL_DIV
 	PRECEDENCE_PREFIX
 	PRECEDENCE_CALL_INDEX
+	PRECEDENCE_DOT
 )
 
 var precedenceMap = map[string]int{
 	TOKEN_AND:                    PRECEDENCE_AND,
 	TOKEN_ASTERISK:               PRECEDENCE_MUL_DIV,
+	TOKEN_DOT:                    PRECEDENCE_DOT,
 	TOKEN_EQUALS:                 PRECEDENCE_CMP,
 	TOKEN_GREATER_THAN:           PRECEDENCE_CMP,
 	TOKEN_GREATER_THAN_OR_EQUALS: PRECEDENCE_CMP,

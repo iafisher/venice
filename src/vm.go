@@ -167,6 +167,20 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left.Value - right.Value})
+	case "BUILD_CLASS":
+		values := []VeniceValue{}
+		n := bytecode.Args[0].(*VeniceInteger).Value
+		for i := 0; i < n; i++ {
+			topOfStack := vm.popStack()
+			values = append(values, topOfStack)
+		}
+
+		// Reverse the array since the values are popped off the stack in reverse order.
+		for i, j := 0, len(values)-1; i < j; i, j = i+1, j-1 {
+			values[i], values[j] = values[j], values[i]
+		}
+
+		vm.pushStack(&VeniceClassObject{values})
 	case "BUILD_LIST":
 		values := []VeniceValue{}
 		n := bytecode.Args[0].(*VeniceInteger).Value
@@ -220,6 +234,14 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 		vm.pushStack(value)
 	case "PUSH_CONST":
 		vm.pushStack(bytecode.Args[0])
+	case "PUSH_FIELD":
+		fieldIndex := bytecode.Args[0].(*VeniceInteger).Value
+		topOfStack, ok := vm.popStack().(*VeniceClassObject)
+		if !ok {
+			return -1, &ExecutionError{"expected class object at top of virtual machine stack"}
+		}
+
+		vm.pushStack(topOfStack.Values[fieldIndex])
 	case "PUSH_NAME":
 		symbol := bytecode.Args[0].(*VeniceString).Value
 		value, ok := vm.env.Get(symbol)

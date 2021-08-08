@@ -1,0 +1,11 @@
+# OUTPUT
+# 0
+# END OUTPUT
+
+class Point {
+  public x: int
+  public y: int
+}
+
+let p = Point(0, 1)
+print(p.x)

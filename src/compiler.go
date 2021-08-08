@@ -40,6 +40,12 @@ func (compiler *Compiler) Compile(tree *ProgramNode) (CompiledProgram, error) {
 	compiledProgram := NewCompiledProgram()
 	for _, statementInterface := range tree.Statements {
 		switch statement := statementInterface.(type) {
+		case *ClassDeclarationNode:
+			code, err := compiler.compileClassDeclaration(statement)
+			if err != nil {
+				return nil, err
+			}
+			compiledProgram[statement.Name] = code
 		case *FunctionDeclarationNode:
 			code, err := compiler.compileFunctionDeclaration(statement)
 			if err != nil {
@@ -134,6 +140,28 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 	default:
 		return nil, &CompileError{fmt.Sprintf("unknown statement type: %T", treeInterface)}
 	}
+}
+
+func (compiler *Compiler) compileClassDeclaration(tree *ClassDeclarationNode) ([]*Bytecode, error) {
+	fields := []*VeniceClassField{}
+	paramTypes := []VeniceType{}
+	for _, field := range tree.Fields {
+		paramType, err := compiler.resolveType(field.FieldType)
+		if err != nil {
+			return nil, err
+		}
+		paramTypes = append(paramTypes, paramType)
+		fields = append(fields, &VeniceClassField{field.Name, field.Public, paramType})
+	}
+
+	classType := &VeniceClassType{fields}
+	compiler.typeSymbolTable[tree.Name] = classType
+
+	constructorType := &VeniceFunctionType{paramTypes, classType}
+	compiler.symbolTable.Put(tree.Name, constructorType)
+
+	constructorBytecode := []*Bytecode{NewBytecode("BUILD_CLASS", &VeniceInteger{len(fields)})}
+	return constructorBytecode, nil
 }
 
 func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNode) ([]*Bytecode, error) {
@@ -290,6 +318,8 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceBoolean{tree.Value})}, VENICE_TYPE_BOOLEAN, nil
 	case *CallNode:
 		return compiler.compileCallNode(tree)
+	case *FieldAccessNode:
+		return compiler.compileFieldAccessNode(tree)
 	case *IndexNode:
 		return compiler.compileIndexNode(tree)
 	case *InfixNode:
@@ -360,6 +390,26 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 		return []*Bytecode{NewBytecode("PUSH_NAME", &VeniceString{tree.Value})}, symbolType, nil
 	default:
 		return nil, nil, &CompileError{"unknown expression type"}
+	}
+}
+
+func (compiler *Compiler) compileFieldAccessNode(tree *FieldAccessNode) ([]*Bytecode, VeniceType, error) {
+	code, typeInterface, err := compiler.compileExpression(tree.Expr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if classType, ok := typeInterface.(*VeniceClassType); ok {
+		for i, field := range classType.Fields {
+			if field.Name == tree.Name {
+				code = append(code, NewBytecode("PUSH_FIELD", &VeniceInteger{i}))
+				return code, field.FieldType, nil
+			}
+		}
+
+		return nil, nil, &CompileError{fmt.Sprintf("no such field: %s", tree.Name)}
+	} else {
+		return nil, nil, &CompileError{"left-hand side of dot must be a class object"}
 	}
 }
 

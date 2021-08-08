@@ -26,6 +26,19 @@ type FunctionParamNode struct {
 	ParamType TypeNode
 }
 
+type ClassDeclarationNode struct {
+	Name   string
+	Fields []*ClassFieldNode
+}
+
+func (n *ClassDeclarationNode) statementNode() {}
+
+type ClassFieldNode struct {
+	Name      string
+	Public    bool
+	FieldType TypeNode
+}
+
 type SimpleTypeNode struct {
 	Symbol string
 }
@@ -115,6 +128,13 @@ type MapPairNode struct {
 }
 
 func (n *MapPairNode) expressionNode() {}
+
+type FieldAccessNode struct {
+	Expr ExpressionNode
+	Name string
+}
+
+func (n *FieldAccessNode) expressionNode() {}
 
 type IntegerNode struct {
 	Value int
