@@ -32,7 +32,9 @@ func NewBuiltinSymbolTable() *SymbolTable {
 
 func NewBuiltinTypeSymbolTable() map[string]VeniceType {
 	return map[string]VeniceType{
-		"int": VENICE_TYPE_INTEGER,
+		"bool":   VENICE_TYPE_BOOLEAN,
+		"int":    VENICE_TYPE_INTEGER,
+		"string": VENICE_TYPE_STRING,
 	}
 }
 
@@ -402,6 +404,11 @@ func (compiler *Compiler) compileFieldAccessNode(tree *FieldAccessNode) ([]*Byte
 	if classType, ok := typeInterface.(*VeniceClassType); ok {
 		for i, field := range classType.Fields {
 			if field.Name == tree.Name {
+				// TODO(2021-08-09): Allow this when inside the class itself.
+				if !field.Public {
+					return nil, nil, &CompileError{"use of private field"}
+				}
+
 				code = append(code, NewBytecode("PUSH_FIELD", &VeniceInteger{i}))
 				return code, field.FieldType, nil
 			}
