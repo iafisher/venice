@@ -113,7 +113,10 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires list on top of stack, got %s (%T)", listInterface.Serialize(), listInterface)}
 		}
 
-		// TODO(2021-08-03): Handle out-of-bounds index.
+		if index.Value < 0 || index.Value >= len(list.Values) {
+			return -1, &ExecutionError{"index out of bounds"}
+		}
+
 		vm.pushStack(list.Values[index.Value])
 	case "BINARY_LT":
 		left, right, err := vm.popTwoInts()
