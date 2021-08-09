@@ -3,20 +3,23 @@ package main
 import "fmt"
 
 type Compiler struct {
-	symbolTable           *SymbolTable
-	typeSymbolTable       map[string]VeniceType
-	inFunctionDeclaration bool
-	functionReturnType    VeniceType
-	nestedLoopCount       int
+	symbolTable     *SymbolTable
+	typeSymbolTable map[string]VeniceType
+	functionInfo    *FunctionInfo
+	nestedLoopCount int
+}
+
+type FunctionInfo struct {
+	declaredReturnType  VeniceType
+	seenReturnStatement bool
 }
 
 func NewCompiler() *Compiler {
 	return &Compiler{
-		symbolTable:           NewBuiltinSymbolTable(),
-		typeSymbolTable:       NewBuiltinTypeSymbolTable(),
-		inFunctionDeclaration: false,
-		functionReturnType:    nil,
-		nestedLoopCount:       0,
+		symbolTable:     NewBuiltinSymbolTable(),
+		typeSymbolTable: NewBuiltinTypeSymbolTable(),
+		functionInfo:    nil,
+		nestedLoopCount: 0,
 	}
 }
 
@@ -118,7 +121,7 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 		compiler.symbolTable.Put(tree.Symbol, eType)
 		return append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Symbol})), nil
 	case *ReturnStatementNode:
-		if !compiler.inFunctionDeclaration {
+		if compiler.functionInfo == nil {
 			return nil, compiler.customError(treeInterface, "return statement outside of function definition")
 		}
 
@@ -128,14 +131,15 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 				return nil, err
 			}
 
-			if !areTypesCompatible(compiler.functionReturnType, exprType) {
+			if !areTypesCompatible(compiler.functionInfo.declaredReturnType, exprType) {
 				return nil, compiler.customError(treeInterface, "conflicting function return types")
 			}
 
+			compiler.functionInfo.seenReturnStatement = true
 			code = append(code, NewBytecode("RETURN"))
 			return code, err
 		} else {
-			if !areTypesCompatible(compiler.functionReturnType, nil) {
+			if !areTypesCompatible(compiler.functionInfo.declaredReturnType, nil) {
 				return nil, compiler.customError(treeInterface, "function cannot return void")
 			}
 
@@ -197,14 +201,18 @@ func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNo
 	compiler.symbolTable.Put(tree.Name, &VeniceFunctionType{paramTypes, declaredReturnType})
 
 	compiler.symbolTable = bodySymbolTable
-	compiler.inFunctionDeclaration = true
-	compiler.functionReturnType = declaredReturnType
+	compiler.functionInfo = &FunctionInfo{
+		declaredReturnType:  declaredReturnType,
+		seenReturnStatement: false,
+	}
 	bodyCode, err := compiler.compileBlock(tree.Body)
-	compiler.inFunctionDeclaration = false
-	compiler.functionReturnType = nil
-	compiler.symbolTable = bodySymbolTable.parent
 
-	// TODO(2021-08-07): Detect non-void functions which lack a return statement.
+	if declaredReturnType != nil && !compiler.functionInfo.seenReturnStatement {
+		return nil, compiler.customError(tree, "non-void function has no return statement")
+	}
+
+	compiler.functionInfo = nil
+	compiler.symbolTable = bodySymbolTable.parent
 
 	paramLoadCode := []*Bytecode{}
 	for _, param := range tree.Params {
