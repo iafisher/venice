@@ -202,7 +202,9 @@ const (
 	TOKEN_COMMA                  = "TOKEN_COMMA"
 	TOKEN_CONTINUE               = "TOKEN_CONTINUE"
 	TOKEN_DOT                    = "TOKEN_DOT"
+	TOKEN_DOUBLE_COLON           = "TOKEN_DOUBLE_COLON"
 	TOKEN_ELSE                   = "TOKEN_ELSE"
+	TOKEN_ENUM                   = "TOKEN_ENUM"
 	TOKEN_EQUALS                 = "TOKEN_EQUALS"
 	TOKEN_FALSE                  = "TOKEN_FALSE"
 	TOKEN_FN                     = "TOKEN_FN"
@@ -245,6 +247,7 @@ var keywords = map[string]string{
 	"class":    TOKEN_CLASS,
 	"continue": TOKEN_CONTINUE,
 	"else":     TOKEN_ELSE,
+	"enum":     TOKEN_ENUM,
 	"false":    TOKEN_FALSE,
 	"fn":       TOKEN_FN,
 	"for":      TOKEN_FOR,
@@ -282,6 +285,7 @@ var one_char_tokens = map[byte]string{
 
 var two_char_tokens = map[string]string{
 	"->": TOKEN_ARROW,
+	"::": TOKEN_DOUBLE_COLON,
 	"==": TOKEN_EQUALS,
 	">=": TOKEN_GREATER_THAN_OR_EQUALS,
 	"<=": TOKEN_LESS_THAN_OR_EQUALS,

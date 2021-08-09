@@ -51,6 +51,8 @@ func (compiler *Compiler) Compile(tree *ProgramNode) (CompiledProgram, error) {
 				return nil, err
 			}
 			compiledProgram[statement.Name] = code
+		case *EnumDeclarationNode:
+			compiler.compileEnumDeclaration(statement)
 		case *FunctionDeclarationNode:
 			code, err := compiler.compileFunctionDeclaration(statement)
 			if err != nil {
@@ -150,6 +152,10 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 	default:
 		return nil, compiler.customError(treeInterface, fmt.Sprintf("unknown statement type: %T", treeInterface))
 	}
+}
+
+func (compiler *Compiler) compileEnumDeclaration(tree *EnumDeclarationNode) {
+	compiler.typeSymbolTable[tree.Name] = &VeniceEnumType{tree.Cases}
 }
 
 func (compiler *Compiler) compileClassDeclaration(tree *ClassDeclarationNode) ([]*Bytecode, error) {
@@ -332,6 +338,8 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceBoolean{tree.Value})}, VENICE_TYPE_BOOLEAN, nil
 	case *CallNode:
 		return compiler.compileCallNode(tree)
+	case *EnumSymbolNode:
+		return compiler.compileEnumSymbolNode(tree)
 	case *FieldAccessNode:
 		return compiler.compileFieldAccessNode(tree)
 	case *IndexNode:
@@ -407,6 +415,26 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 	}
 }
 
+func (compiler *Compiler) compileEnumSymbolNode(tree *EnumSymbolNode) ([]*Bytecode, VeniceType, error) {
+	enumTypeInterface, err := compiler.resolveType(&SimpleTypeNode{tree.Enum, nil})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	switch enumType := enumTypeInterface.(type) {
+	case *VeniceEnumType:
+		for _, enumCase := range enumType.Cases {
+			if enumCase == tree.Case {
+				return []*Bytecode{NewBytecode("PUSH_ENUM", &VeniceString{tree.Case})}, enumType, nil
+			}
+		}
+
+		return nil, nil, compiler.customError(tree, fmt.Sprintf("enum %s does not have case %s", tree.Enum, tree.Case))
+	default:
+		return nil, nil, compiler.customError(tree, "cannot use double colon after non-enum type")
+	}
+}
+
 func (compiler *Compiler) compileFieldAccessNode(tree *FieldAccessNode) ([]*Bytecode, VeniceType, error) {
 	code, typeInterface, err := compiler.compileExpression(tree.Expr)
 	if err != nil {
@@ -445,7 +473,9 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 			}
 
 			if argType != VENICE_TYPE_INTEGER && argType != VENICE_TYPE_STRING {
-				return nil, nil, compiler.customError(tree, "`print`'s argument must be an integer or string")
+				if _, ok := argType.(*VeniceEnumType); !ok {
+					return nil, nil, compiler.customError(tree, "`print`'s argument must be an integer or string")
+				}
 			}
 
 			code = append(code, NewBytecode("CALL_BUILTIN", &VeniceString{"print"}))

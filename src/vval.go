@@ -49,6 +49,25 @@ func (v *VeniceClassObject) Equals(otherInterface VeniceValue) bool {
 	return false
 }
 
+type VeniceEnumObject struct {
+	Name string
+}
+
+func (v *VeniceEnumObject) veniceValue() {}
+
+func (v *VeniceEnumObject) Serialize() string {
+	return v.Name
+}
+
+func (v *VeniceEnumObject) SerializePrintable() string {
+	return v.Name
+}
+
+func (v *VeniceEnumObject) Equals(otherInterface VeniceValue) bool {
+	// TODO(2021-08-09): Implement.
+	return false
+}
+
 type VeniceList struct {
 	Values []VeniceValue
 }

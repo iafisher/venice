@@ -53,6 +53,8 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 	case TOKEN_CONTINUE:
 		tree = &ContinueStatementNode{location}
 		p.nextToken()
+	case TOKEN_ENUM:
+		return p.matchEnumDeclaration()
 	case TOKEN_FN:
 		return p.matchFunctionDeclaration()
 	case TOKEN_IF:
@@ -115,6 +117,43 @@ func (p *Parser) matchReturnStatement() (*ReturnStatementNode, error) {
 	return &ReturnStatementNode{expr, location}, nil
 }
 
+func (p *Parser) matchEnumDeclaration() (*EnumDeclarationNode, error) {
+	location := p.currentToken.Location
+	p.nextToken()
+	if p.currentToken.Type != TOKEN_SYMBOL {
+		return nil, p.unexpectedToken("symbol")
+	}
+
+	name := p.currentToken.Value
+
+	p.nextToken()
+	if p.currentToken.Type != TOKEN_LEFT_CURLY {
+		return nil, p.unexpectedToken("left curly brace")
+	}
+	p.nextTokenSkipNewlines()
+
+	cases := []string{}
+	for {
+		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
+			p.nextTokenSkipNewlines()
+			break
+		}
+
+		if p.currentToken.Type != TOKEN_SYMBOL {
+			return nil, p.unexpectedToken("symbol or right curly brace")
+		}
+
+		cases = append(cases, p.currentToken.Value)
+		p.nextTokenSkipNewlines()
+
+		if p.currentToken.Type == TOKEN_COMMA {
+			p.nextTokenSkipNewlines()
+		}
+	}
+
+	return &EnumDeclarationNode{name, cases, location}, nil
+}
+
 func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
@@ -123,8 +162,8 @@ func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
 	}
 
 	name := p.currentToken.Value
-	p.nextToken()
 
+	p.nextToken()
 	if p.currentToken.Type != TOKEN_LEFT_CURLY {
 		return nil, p.unexpectedToken("left curly brace")
 	}
@@ -447,13 +486,24 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 		}
 		return &ListNode{values, location}, nil
 	case TOKEN_STRING:
-		token := p.currentToken
+		value := p.currentToken.Value
 		p.nextToken()
-		return &StringNode{token.Value, location}, nil
+		return &StringNode{value, location}, nil
 	case TOKEN_SYMBOL:
-		token := p.currentToken
+		value := p.currentToken.Value
 		p.nextToken()
-		return &SymbolNode{token.Value, location}, nil
+
+		if p.currentToken.Type == TOKEN_DOUBLE_COLON {
+			p.nextToken()
+			if p.currentToken.Type != TOKEN_SYMBOL {
+				return nil, p.unexpectedToken("symbol")
+			}
+			secondValue := p.currentToken.Value
+			p.nextToken()
+			return &EnumSymbolNode{value, secondValue, location}, nil
+		} else {
+			return &SymbolNode{value, location}, nil
+		}
 	case TOKEN_TRUE:
 		p.nextToken()
 		return &BooleanNode{true, location}, nil

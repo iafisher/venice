@@ -51,6 +51,18 @@ func (n *ClassDeclarationNode) getLocation() *Location {
 	return n.Location
 }
 
+type EnumDeclarationNode struct {
+	Name     string
+	Cases    []string
+	Location *Location
+}
+
+func (n *EnumDeclarationNode) statementNode() {}
+
+func (n *EnumDeclarationNode) getLocation() *Location {
+	return n.Location
+}
+
 type ClassFieldNode struct {
 	Name      string
 	Public    bool
@@ -244,6 +256,18 @@ type SymbolNode struct {
 func (n *SymbolNode) expressionNode() {}
 
 func (n *SymbolNode) getLocation() *Location {
+	return n.Location
+}
+
+type EnumSymbolNode struct {
+	Enum     string
+	Case     string
+	Location *Location
+}
+
+func (n *EnumSymbolNode) expressionNode() {}
+
+func (n *EnumSymbolNode) getLocation() *Location {
 	return n.Location
 }
 

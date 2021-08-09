@@ -1,0 +1,5 @@
+# FAIL
+
+enum MyBoolean { True, False }
+
+print(MyBoolean::Maybe)

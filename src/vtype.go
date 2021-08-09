@@ -16,6 +16,12 @@ type VeniceClassField struct {
 	FieldType VeniceType
 }
 
+type VeniceEnumType struct {
+	Cases []string
+}
+
+func (t *VeniceEnumType) veniceType() {}
+
 type VeniceFunctionType struct {
 	ParamTypes []VeniceType
 	ReturnType VeniceType

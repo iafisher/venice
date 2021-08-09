@@ -237,6 +237,8 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 		vm.pushStack(value)
 	case "PUSH_CONST":
 		vm.pushStack(bytecode.Args[0])
+	case "PUSH_ENUM":
+		vm.pushStack(&VeniceEnumObject{bytecode.Args[0].(*VeniceString).Value})
 	case "PUSH_FIELD":
 		fieldIndex := bytecode.Args[0].(*VeniceInteger).Value
 		topOfStack, ok := vm.popStack().(*VeniceClassObject)

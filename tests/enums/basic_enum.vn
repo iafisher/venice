@@ -1,0 +1,8 @@
+# OUTPUT
+# True
+# END OUTPUT
+
+enum MyBoolean { True, False }
+
+let x = MyBoolean::True
+print(x)
