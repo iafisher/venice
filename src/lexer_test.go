@@ -104,15 +104,15 @@ func TestKeywordTokens(t *testing.T) {
 
 func checkToken(t *testing.T, token *Token, ttype string, value string, line int, column int) {
 	if token.Type != ttype {
-		t.Fatalf("Wrong token type (line %d, col %d): got %q, expected %q", token.Loc.Line, token.Loc.Column, token.Type, ttype)
+		t.Fatalf("Wrong token type (line %d, col %d): got %q, expected %q", token.Location.Line, token.Location.Column, token.Type, ttype)
 	}
 	if token.Value != value {
-		t.Fatalf("Wrong token value (line %d, col %d): got %q, expected %q", token.Loc.Line, token.Loc.Column, token.Value, value)
+		t.Fatalf("Wrong token value (line %d, col %d): got %q, expected %q", token.Location.Line, token.Location.Column, token.Value, value)
 	}
-	if token.Loc.Line != line {
-		t.Fatalf("Wrong line: got %d, expected %d", token.Loc.Line, line)
+	if token.Location.Line != line {
+		t.Fatalf("Wrong line: got %d, expected %d", token.Location.Line, line)
 	}
-	if token.Loc.Column != column {
-		t.Fatalf("Wrong column: got %d, expected %d", token.Loc.Column, column)
+	if token.Location.Column != column {
+		t.Fatalf("Wrong column: got %d, expected %d", token.Location.Column, column)
 	}
 }

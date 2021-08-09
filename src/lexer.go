@@ -3,15 +3,15 @@ package main
 import "fmt"
 
 type Lexer struct {
-	program string
-	index   int
-	loc     Location
+	program  string
+	index    int
+	location Location
 }
 
 type Token struct {
-	Type  string
-	Value string
-	Loc   *Location
+	Type     string
+	Value    string
+	Location *Location
 }
 
 type Location struct {
@@ -20,7 +20,7 @@ type Location struct {
 }
 
 func NewLexer(program string) *Lexer {
-	return &Lexer{program: program, index: 0, loc: Location{Line: 1, Column: 1}}
+	return &Lexer{program: program, index: 0, location: Location{Line: 1, Column: 1}}
 }
 
 func (l *Lexer) NextToken() *Token {
@@ -34,9 +34,9 @@ func (l *Lexer) NextTokenSkipNewlines() *Token {
 }
 
 func (l *Lexer) nextToken() *Token {
-	loc := l.copyLocation()
+	location := l.copyLocation()
 	if l.index >= len(l.program) {
-		return &Token{Type: TOKEN_EOF, Value: "", Loc: loc}
+		return &Token{Type: TOKEN_EOF, Value: "", Location: location}
 	}
 
 	if l.index+1 < len(l.program) {
@@ -45,7 +45,7 @@ func (l *Lexer) nextToken() *Token {
 		if ok {
 			l.advance()
 			l.advance()
-			return &Token{Type: token_type, Value: two_prefix, Loc: loc}
+			return &Token{Type: token_type, Value: two_prefix, Location: location}
 		}
 	}
 
@@ -56,32 +56,32 @@ func (l *Lexer) nextToken() *Token {
 	// check this case before we look at the one-character tokens in the next block.
 	if ch == '-' && l.index+1 < len(l.program) && isDigit(l.program[l.index+1]) {
 		value := l.readInteger()
-		return &Token{Type: TOKEN_INT, Value: value, Loc: loc}
+		return &Token{Type: TOKEN_INT, Value: value, Location: location}
 	}
 
 	token_type, ok := one_char_tokens[ch]
 	if ok {
 		l.advance()
-		return &Token{Type: token_type, Value: string(ch), Loc: loc}
+		return &Token{Type: token_type, Value: string(ch), Location: location}
 	}
 
 	switch {
 	case isDigit(ch):
 		value := l.readInteger()
-		return &Token{Type: TOKEN_INT, Value: value, Loc: loc}
+		return &Token{Type: TOKEN_INT, Value: value, Location: location}
 	case isSymbolFirstCharacter(ch):
 		value := l.readSymbol()
 		if keywordType, ok := keywords[value]; ok {
-			return &Token{Type: keywordType, Value: value, Loc: loc}
+			return &Token{Type: keywordType, Value: value, Location: location}
 		} else {
-			return &Token{Type: TOKEN_SYMBOL, Value: value, Loc: loc}
+			return &Token{Type: TOKEN_SYMBOL, Value: value, Location: location}
 		}
 	case ch == '"':
 		value := l.readString()
-		return &Token{Type: TOKEN_STRING, Value: value, Loc: loc}
+		return &Token{Type: TOKEN_STRING, Value: value, Location: location}
 	default:
 		l.advance()
-		return &Token{Type: TOKEN_UNKNOWN, Value: string(ch), Loc: loc}
+		return &Token{Type: TOKEN_UNKNOWN, Value: string(ch), Location: location}
 	}
 }
 
@@ -158,21 +158,21 @@ func (l *Lexer) readString() string {
 func (l *Lexer) advance() {
 	if l.index < len(l.program) {
 		if l.program[l.index] == '\n' {
-			l.loc.Line += 1
-			l.loc.Column = 1
+			l.location.Line += 1
+			l.location.Column = 1
 		} else {
-			l.loc.Column += 1
+			l.location.Column += 1
 		}
 		l.index += 1
 	}
 }
 
 func (l *Lexer) copyLocation() *Location {
-	return &Location{Line: l.loc.Line, Column: l.loc.Column}
+	return &Location{Line: l.location.Line, Column: l.location.Column}
 }
 
 func (token *Token) asString() string {
-	return fmt.Sprintf("%s (%q) at line %d, column %d", token.Type, token.Value, token.Loc.Line, token.Loc.Column)
+	return fmt.Sprintf("%s (%q) at line %d, column %d", token.Type, token.Value, token.Location.Line, token.Location.Column)
 }
 
 func isDigit(ch byte) bool {
