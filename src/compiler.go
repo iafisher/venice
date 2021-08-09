@@ -107,6 +107,10 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 	case *IfStatementNode:
 		return compiler.compileIfStatement(tree)
 	case *LetStatementNode:
+		if _, ok := compiler.symbolTable.Get(tree.Symbol); ok {
+			return nil, compiler.customError(treeInterface, fmt.Sprintf("re-declaration of symbol %q", tree.Symbol))
+		}
+
 		code, eType, err := compiler.compileExpression(tree.Expr)
 		if err != nil {
 			return nil, err
