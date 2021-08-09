@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/shurcooL/go-goon"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -181,18 +180,18 @@ const helpString = `!compile <code>   Compile the Venice code into bytecode.
 func compileProgram(filePath string, toStdout bool) {
 	fileContentsBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		log.Fatal(err)
+		fatalError("Error while opening %s: %v", filePath, err)
 	}
 
 	fileContents := string(fileContentsBytes)
 	tree, err := NewParser(NewLexer(fileContents)).Parse()
 	if err != nil {
-		log.Fatalf("Parse error: %v", err)
+		fatalError("Parse error: %v", err)
 	}
 
 	code, err := NewCompiler().Compile(tree)
 	if err != nil {
-		log.Fatalf("Compile error: %v", err)
+		fatalError("Compile error: %v", err)
 	}
 
 	fileExt := path.Ext(filePath)
@@ -204,7 +203,7 @@ func compileProgram(filePath string, toStdout bool) {
 	} else {
 		f, err := os.Create(outputPath)
 		if err != nil {
-			log.Fatal(err)
+			fatalError("Error while creating %s: %v", outputPath, err)
 		}
 		defer f.Close()
 		writer = bufio.NewWriter(f)
@@ -221,18 +220,23 @@ func executeProgram(filePath string) {
 
 	fileContentsBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		log.Fatal(err)
+		fatalError("Error while opening %s: %v", filePath, err)
 	}
 
 	fileContents := string(fileContentsBytes)
 	bytecodeList, err := ReadCompiledProgramFromString(fileContents)
 	if err != nil {
-		log.Fatal(err)
+		fatalError("Error while reading %s: %v", filePath, err)
 	}
 
 	vm := NewVirtualMachine()
 	_, err = vm.Execute(bytecodeList, false)
 	if err != nil {
-		log.Fatalf("Execution error: %s", err)
+		fatalError("Execution error: %s", err)
 	}
+}
+
+func fatalError(formatString string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, formatString+"\n", a...)
+	os.Exit(1)
 }
