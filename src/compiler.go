@@ -75,16 +75,16 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 
 		expectedType, ok := compiler.symbolTable.Get(tree.Symbol)
 		if !ok {
-			return nil, &CompileError{fmt.Sprintf("cannot assign to undeclared symbol %q", tree.Symbol)}
+			return nil, compiler.customError(treeInterface, fmt.Sprintf("cannot assign to undeclared symbol %q", tree.Symbol))
 		} else if !areTypesCompatible(expectedType, eType) {
-			return nil, &CompileError{fmt.Sprintf("wrong expression type in assignment to %q", tree.Symbol)}
+			return nil, compiler.customError(treeInterface, fmt.Sprintf("wrong expression type in assignment to %q", tree.Symbol))
 		}
 
 		code = append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Symbol}))
 		return code, nil
 	case *BreakStatementNode:
 		if compiler.nestedLoopCount == 0 {
-			return nil, &CompileError{"break statement outside of loop"}
+			return nil, compiler.customError(treeInterface, "break statement outside of loop")
 		}
 
 		// BREAK_LOOP is a temporary bytecode instruction that the compiler will later
@@ -92,7 +92,7 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 		return []*Bytecode{NewBytecode("BREAK_LOOP")}, nil
 	case *ContinueStatementNode:
 		if compiler.nestedLoopCount == 0 {
-			return nil, &CompileError{"break statement outside of loop"}
+			return nil, compiler.customError(treeInterface, "break statement outside of loop")
 		}
 
 		// CONTINUE_LOOP is a temporary bytecode instruction that the compiler will later
@@ -115,7 +115,7 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 		return append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Symbol})), nil
 	case *ReturnStatementNode:
 		if !compiler.inFunctionDeclaration {
-			return nil, &CompileError{"return statement outside of function definition"}
+			return nil, compiler.customError(treeInterface, "return statement outside of function definition")
 		}
 
 		if tree.Expr != nil {
@@ -125,14 +125,14 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 			}
 
 			if !areTypesCompatible(compiler.functionReturnType, exprType) {
-				return nil, &CompileError{"conflicting function return types"}
+				return nil, compiler.customError(treeInterface, "conflicting function return types")
 			}
 
 			code = append(code, NewBytecode("RETURN"))
 			return code, err
 		} else {
 			if !areTypesCompatible(compiler.functionReturnType, nil) {
-				return nil, &CompileError{"function cannot return void"}
+				return nil, compiler.customError(treeInterface, "function cannot return void")
 			}
 
 			return []*Bytecode{NewBytecode("RETURN")}, nil
@@ -140,7 +140,7 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 	case *WhileLoopNode:
 		return compiler.compileWhileLoop(tree)
 	default:
-		return nil, &CompileError{fmt.Sprintf("unknown statement type: %T", treeInterface)}
+		return nil, compiler.customError(treeInterface, fmt.Sprintf("unknown statement type: %T", treeInterface))
 	}
 }
 
@@ -224,11 +224,11 @@ func (compiler *Compiler) resolveType(typeNodeInterface TypeNode) (VeniceType, e
 	case *SimpleTypeNode:
 		resolvedType, ok := compiler.typeSymbolTable[typeNode.Symbol]
 		if !ok {
-			return nil, &CompileError{fmt.Sprintf("unknown type: %s", typeNode.Symbol)}
+			return nil, compiler.customError(typeNodeInterface, fmt.Sprintf("unknown type: %s", typeNode.Symbol))
 		}
 		return resolvedType, nil
 	default:
-		return nil, &CompileError{fmt.Sprintf("unknown type node: %T", typeNodeInterface)}
+		return nil, compiler.customError(typeNodeInterface, fmt.Sprintf("unknown type node: %T", typeNodeInterface))
 	}
 }
 
@@ -239,7 +239,7 @@ func (compiler *Compiler) compileWhileLoop(tree *WhileLoopNode) ([]*Bytecode, er
 	}
 
 	if !areTypesCompatible(VENICE_TYPE_BOOLEAN, conditionType) {
-		return nil, &CompileError{"condition of while loop must be a boolean"}
+		return nil, compiler.customError(tree.Condition, "condition of while loop must be a boolean")
 	}
 
 	compiler.nestedLoopCount += 1
@@ -276,7 +276,7 @@ func (compiler *Compiler) compileIfStatement(tree *IfStatementNode) ([]*Bytecode
 	}
 
 	if !areTypesCompatible(VENICE_TYPE_BOOLEAN, conditionType) {
-		return nil, &CompileError{"condition of if statement must be a boolean"}
+		return nil, compiler.customError(tree.Condition, "condition of if statement must be a boolean")
 	}
 
 	trueClauseCode, err := compiler.compileBlock(tree.TrueClause)
@@ -341,7 +341,7 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 			if itemType == nil {
 				itemType = valueType
 			} else if !areTypesCompatible(itemType, valueType) {
-				return nil, nil, &CompileError{"list elements must all be of same type"}
+				return nil, nil, compiler.customError(value, "list elements must all be of same type")
 			}
 
 			code = append(code, valueCode...)
@@ -362,7 +362,7 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 			if keyType == nil {
 				keyType = thisKeyType
 			} else if !areTypesCompatible(keyType, thisKeyType) {
-				return nil, nil, &CompileError{"map keys must all be of the same type"}
+				return nil, nil, compiler.customError(pair.Key, "map keys must all be of the same type")
 			}
 
 			code = append(code, keyCode...)
@@ -375,7 +375,7 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 			if valueType == nil {
 				valueType = thisValueType
 			} else if !areTypesCompatible(valueType, thisValueType) {
-				return nil, nil, &CompileError{"map values must all be of the same type"}
+				return nil, nil, compiler.customError(pair.Value, "map values must all be of the same type")
 			}
 
 			code = append(code, valueCode...)
@@ -387,11 +387,11 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 	case *SymbolNode:
 		symbolType, ok := compiler.symbolTable.Get(tree.Value)
 		if !ok {
-			return nil, nil, &CompileError{fmt.Sprintf("undefined symbol: %s", tree.Value)}
+			return nil, nil, compiler.customError(treeInterface, fmt.Sprintf("undefined symbol: %s", tree.Value))
 		}
 		return []*Bytecode{NewBytecode("PUSH_NAME", &VeniceString{tree.Value})}, symbolType, nil
 	default:
-		return nil, nil, &CompileError{"unknown expression type"}
+		return nil, nil, compiler.customError(treeInterface, fmt.Sprintf("unknown expression type: %T", treeInterface))
 	}
 }
 
@@ -406,7 +406,7 @@ func (compiler *Compiler) compileFieldAccessNode(tree *FieldAccessNode) ([]*Byte
 			if field.Name == tree.Name {
 				// TODO(2021-08-09): Allow this when inside the class itself.
 				if !field.Public {
-					return nil, nil, &CompileError{"use of private field"}
+					return nil, nil, compiler.customError(tree, "use of private field")
 				}
 
 				code = append(code, NewBytecode("PUSH_FIELD", &VeniceInteger{i}))
@@ -414,9 +414,9 @@ func (compiler *Compiler) compileFieldAccessNode(tree *FieldAccessNode) ([]*Byte
 			}
 		}
 
-		return nil, nil, &CompileError{fmt.Sprintf("no such field: %s", tree.Name)}
+		return nil, nil, compiler.customError(tree, fmt.Sprintf("no such field: %s", tree.Name))
 	} else {
-		return nil, nil, &CompileError{"left-hand side of dot must be a class object"}
+		return nil, nil, compiler.customError(tree, "left-hand side of dot must be a class object")
 	}
 }
 
@@ -424,7 +424,7 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 	if v, ok := tree.Function.(*SymbolNode); ok {
 		if v.Value == "print" {
 			if len(tree.Args) != 1 {
-				return nil, nil, &CompileError{"`print` takes exactly 1 argument"}
+				return nil, nil, compiler.customError(tree, "`print` takes exactly 1 argument")
 			}
 
 			code, argType, err := compiler.compileExpression(tree.Args[0])
@@ -433,7 +433,7 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 			}
 
 			if argType != VENICE_TYPE_INTEGER && argType != VENICE_TYPE_STRING {
-				return nil, nil, &CompileError{"`print`'s argument must be an integer or string"}
+				return nil, nil, compiler.customError(tree, "`print`'s argument must be an integer or string")
 			}
 
 			code = append(code, NewBytecode("CALL_BUILTIN", &VeniceString{"print"}))
@@ -441,12 +441,12 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 		} else {
 			valueInterface, ok := compiler.symbolTable.Get(v.Value)
 			if !ok {
-				return nil, nil, &CompileError{fmt.Sprintf("undefined symbol: %s", v.Value)}
+				return nil, nil, compiler.customError(tree, fmt.Sprintf("undefined symbol: %s", v.Value))
 			}
 
 			if f, ok := valueInterface.(*VeniceFunctionType); ok {
 				if len(f.ParamTypes) != len(tree.Args) {
-					return nil, nil, &CompileError{fmt.Sprintf("wrong number of arguments: expected %d, got %d", len(f.ParamTypes), len(tree.Args))}
+					return nil, nil, compiler.customError(tree, fmt.Sprintf("wrong number of arguments: expected %d, got %d", len(f.ParamTypes), len(tree.Args)))
 				}
 
 				code := []*Bytecode{}
@@ -457,7 +457,7 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 					}
 
 					if !areTypesCompatible(f.ParamTypes[i], argType) {
-						return nil, nil, &CompileError{"wrong function parameter type"}
+						return nil, nil, compiler.customError(tree.Args[i], "wrong function parameter type")
 					}
 
 					code = append(code, argCode...)
@@ -466,12 +466,12 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 				code = append(code, NewBytecode("CALL_FUNCTION", &VeniceString{v.Value}, &VeniceInteger{len(f.ParamTypes)}))
 				return code, f.ReturnType, nil
 			} else {
-				return nil, nil, &CompileError{"not a function"}
+				return nil, nil, compiler.customError(tree, "not a function")
 			}
 		}
 	}
 
-	return nil, nil, &CompileError{"function calls not implemented yet"}
+	return nil, nil, compiler.customError(tree, "function calls for non-symbols not implemented yet")
 }
 
 func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, VeniceType, error) {
@@ -490,20 +490,20 @@ func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, Venice
 	switch exprType := exprTypeInterface.(type) {
 	case *VeniceListType:
 		if !areTypesCompatible(VENICE_TYPE_INTEGER, indexType) {
-			return nil, nil, &CompileError{"list index must be integer"}
+			return nil, nil, compiler.customError(tree.Expr, "list index must be integer")
 		}
 
 		code = append(code, NewBytecode("BINARY_LIST_INDEX"))
 		return code, exprType.ItemType, nil
 	case *VeniceMapType:
 		if !areTypesCompatible(exprType.KeyType, indexType) {
-			return nil, nil, &CompileError{"wrong map key type in index expression"}
+			return nil, nil, compiler.customError(tree.Expr, "wrong map key type in index expression")
 		}
 
 		code = append(code, NewBytecode("BINARY_MAP_INDEX"))
 		return code, exprType.KeyType, nil
 	default:
-		return nil, nil, &CompileError{"only maps and lists can be indexed"}
+		return nil, nil, compiler.customError(tree, "only maps and lists can be indexed")
 	}
 }
 
@@ -514,7 +514,7 @@ func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, Venice
 	}
 
 	if !checkInfixLeftType(tree.Operator, leftType) {
-		return nil, nil, &CompileError{fmt.Sprintf("invalid type for left operand of %s", tree.Operator)}
+		return nil, nil, compiler.customError(tree.Left, fmt.Sprintf("invalid type for left operand of %s", tree.Operator))
 	}
 
 	rightCode, rightType, err := compiler.compileExpression(tree.Right)
@@ -523,7 +523,7 @@ func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, Venice
 	}
 
 	if !checkInfixRightType(tree.Operator, leftType, rightType) {
-		return nil, nil, &CompileError{fmt.Sprintf("invalid type for right operand of %s", tree.Operator)}
+		return nil, nil, compiler.customError(tree.Right, fmt.Sprintf("invalid type for right operand of %s", tree.Operator))
 	}
 
 	code := append(leftCode, rightCode...)
@@ -554,7 +554,7 @@ func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, Venice
 	case "-":
 		return append(code, NewBytecode("BINARY_SUB")), VENICE_TYPE_INTEGER, nil
 	default:
-		return nil, nil, &CompileError{fmt.Sprintf("unknown operator: %s", tree.Operator)}
+		return nil, nil, compiler.customError(tree, fmt.Sprintf("unknown operator: %s", tree.Operator))
 	}
 }
 
@@ -622,11 +622,20 @@ func (symtab *SymbolTable) Put(symbol string, value VeniceType) {
 }
 
 type CompileError struct {
-	Message string
+	Message  string
+	Location *Location
 }
 
 func (e *CompileError) Error() string {
-	return e.Message
+	if e.Location != nil {
+		return fmt.Sprintf("%s at line %d, column %d", e.Message, e.Location.Line, e.Location.Column)
+	} else {
+		return e.Message
+	}
+}
+
+func (compiler *Compiler) customError(node Node, message string) *CompileError {
+	return &CompileError{message, node.getLocation()}
 }
 
 const (

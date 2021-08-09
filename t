@@ -7,6 +7,8 @@ import sys
 
 
 def main():
+    os.chdir(os.path.abspath(os.path.dirname(__file__)))
+
     print("=== Building Venice binaries ===")
     result = subprocess.run(["go", "build"], cwd="src")
     if result.returncode != 0:

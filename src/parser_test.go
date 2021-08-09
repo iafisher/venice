@@ -11,12 +11,59 @@ func TestParseExpressions(t *testing.T) {
 		input    string
 		expected ExpressionNode
 	}{
-		{"123", &IntegerNode{123}},
-		{"abc", &SymbolNode{"abc"}},
-		{"1 + 2", &InfixNode{"+", &IntegerNode{1}, &IntegerNode{2}}},
-		{"1 + 2 * 3", &InfixNode{"+", &IntegerNode{1}, &InfixNode{"*", &IntegerNode{2}, &IntegerNode{3}}}},
-		{"1 * 2 + 3", &InfixNode{"+", &InfixNode{"*", &IntegerNode{1}, &IntegerNode{2}}, &IntegerNode{3}}},
-		{"1 * (2 + 3)", &InfixNode{"*", &IntegerNode{1}, &InfixNode{"+", &IntegerNode{2}, &IntegerNode{3}}}},
+		{"123", &IntegerNode{123, &Location{1, 1}}},
+		{"abc", &SymbolNode{"abc", &Location{1, 1}}},
+		{
+			"1 + 2",
+			&InfixNode{
+				"+",
+				&IntegerNode{1, &Location{1, 1}},
+				&IntegerNode{2, &Location{1, 5}},
+				&Location{1, 1},
+			},
+		},
+		{
+			"1 + 2 * 3",
+			&InfixNode{
+				"+",
+				&IntegerNode{1, &Location{1, 1}},
+				&InfixNode{
+					"*",
+					&IntegerNode{2, &Location{1, 5}},
+					&IntegerNode{3, &Location{1, 9}},
+					&Location{1, 5},
+				},
+				&Location{1, 1},
+			},
+		},
+		{
+			"1 * 2 + 3",
+			&InfixNode{
+				"+",
+				&InfixNode{
+					"*",
+					&IntegerNode{1, &Location{1, 1}},
+					&IntegerNode{2, &Location{1, 5}},
+					&Location{1, 1},
+				},
+				&IntegerNode{3, &Location{1, 9}},
+				&Location{1, 1},
+			},
+		},
+		{
+			"1 * (2 + 3)",
+			&InfixNode{
+				"*",
+				&IntegerNode{1, &Location{1, 1}},
+				&InfixNode{
+					"+",
+					&IntegerNode{2, &Location{1, 6}},
+					&IntegerNode{3, &Location{1, 10}},
+					&Location{1, 6},
+				},
+				&Location{1, 1},
+			},
+		},
 	}
 
 	for i, testCase := range testCases {
@@ -49,7 +96,7 @@ func TestParseStatements(t *testing.T) {
 		input    string
 		expected StatementNode
 	}{
-		{"let x = 10", &LetStatementNode{"x", &IntegerNode{10}}},
+		{"let x = 10", &LetStatementNode{"x", &IntegerNode{10, &Location{1, 9}}, &Location{1, 1}}},
 	}
 
 	for i, testCase := range testCases {

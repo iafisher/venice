@@ -41,16 +41,17 @@ func (p *Parser) Parse() (*ProgramNode, error) {
 }
 
 func (p *Parser) matchStatement() (StatementNode, error) {
+	loc := p.currentToken.Loc
 	var tree StatementNode
 	var err error
 	switch p.currentToken.Type {
 	case TOKEN_BREAK:
-		tree = &BreakStatementNode{}
+		tree = &BreakStatementNode{loc}
 		p.nextToken()
 	case TOKEN_CLASS:
 		return p.matchClassDeclaration()
 	case TOKEN_CONTINUE:
-		tree = &ContinueStatementNode{}
+		tree = &ContinueStatementNode{loc}
 		p.nextToken()
 	case TOKEN_FN:
 		return p.matchFunctionDeclaration()
@@ -76,12 +77,12 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 					return nil, err
 				}
 
-				tree = &AssignStatementNode{symbol.Value, assignExpr}
+				tree = &AssignStatementNode{symbol.Value, assignExpr, loc}
 			} else {
 				return nil, p.customError("cannot assign to non-symbol")
 			}
 		} else {
-			tree = &ExpressionStatementNode{expr}
+			tree = &ExpressionStatementNode{expr, expr.getLocation()}
 		}
 	}
 
@@ -101,19 +102,21 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 }
 
 func (p *Parser) matchReturnStatement() (*ReturnStatementNode, error) {
+	loc := p.currentToken.Loc
 	p.nextToken()
 	if p.currentToken.Type == TOKEN_NEWLINE || p.currentToken.Type == TOKEN_SEMICOLON {
-		return &ReturnStatementNode{nil}, nil
+		return &ReturnStatementNode{nil, loc}, nil
 	}
 
 	expr, err := p.matchExpression(PRECEDENCE_LOWEST)
 	if err != nil {
 		return nil, err
 	}
-	return &ReturnStatementNode{expr}, nil
+	return &ReturnStatementNode{expr, loc}, nil
 }
 
 func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
+	loc := p.currentToken.Loc
 	p.nextToken()
 	if p.currentToken.Type != TOKEN_SYMBOL {
 		return nil, p.unexpectedToken("class name")
@@ -168,10 +171,11 @@ func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
 		fieldNodes = append(fieldNodes, &ClassFieldNode{name, public, fieldType})
 	}
 
-	return &ClassDeclarationNode{name, fieldNodes}, nil
+	return &ClassDeclarationNode{name, fieldNodes, loc}, nil
 }
 
 func (p *Parser) matchFunctionDeclaration() (*FunctionDeclarationNode, error) {
+	loc := p.currentToken.Loc
 	p.nextToken()
 	if p.currentToken.Type != TOKEN_SYMBOL {
 		return nil, p.unexpectedToken("function name")
@@ -209,7 +213,7 @@ func (p *Parser) matchFunctionDeclaration() (*FunctionDeclarationNode, error) {
 		return nil, err
 	}
 
-	return &FunctionDeclarationNode{name, params, returnType, body}, nil
+	return &FunctionDeclarationNode{name, params, returnType, body, loc}, nil
 }
 
 func (p *Parser) matchFunctionParams() ([]*FunctionParamNode, error) {
@@ -219,6 +223,7 @@ func (p *Parser) matchFunctionParams() ([]*FunctionParamNode, error) {
 			return nil, p.unexpectedToken("function parameter name")
 		}
 		name := p.currentToken.Value
+		loc := p.currentToken.Loc
 
 		p.nextToken()
 		if p.currentToken.Type != TOKEN_COLON {
@@ -231,7 +236,7 @@ func (p *Parser) matchFunctionParams() ([]*FunctionParamNode, error) {
 			return nil, err
 		}
 
-		params = append(params, &FunctionParamNode{name, paramType})
+		params = append(params, &FunctionParamNode{name, paramType, loc})
 
 		if p.currentToken.Type == TOKEN_RIGHT_PAREN {
 			break
@@ -250,11 +255,13 @@ func (p *Parser) matchTypeNode() (TypeNode, error) {
 	}
 
 	name := p.currentToken.Value
+	loc := p.currentToken.Loc
 	p.nextToken()
-	return &SimpleTypeNode{name}, nil
+	return &SimpleTypeNode{name, loc}, nil
 }
 
 func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {
+	loc := p.currentToken.Loc
 	p.nextToken()
 	condition, err := p.matchExpression(PRECEDENCE_LOWEST)
 	if err != nil {
@@ -266,10 +273,11 @@ func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {
 		return nil, err
 	}
 
-	return &WhileLoopNode{condition, body}, nil
+	return &WhileLoopNode{condition, body, loc}, nil
 }
 
 func (p *Parser) matchIfStatement() (*IfStatementNode, error) {
+	loc := p.currentToken.Loc
 	p.nextToken()
 	condition, err := p.matchExpression(PRECEDENCE_LOWEST)
 	if err != nil {
@@ -287,13 +295,14 @@ func (p *Parser) matchIfStatement() (*IfStatementNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &IfStatementNode{condition, trueClauseStatements, falseClauseStatements}, nil
+		return &IfStatementNode{condition, trueClauseStatements, falseClauseStatements, loc}, nil
 	}
 
-	return &IfStatementNode{condition, trueClauseStatements, nil}, nil
+	return &IfStatementNode{condition, trueClauseStatements, nil, loc}, nil
 }
 
 func (p *Parser) matchLetStatement() (*LetStatementNode, error) {
+	loc := p.currentToken.Loc
 	p.nextToken()
 	if p.currentToken.Type != TOKEN_SYMBOL {
 		return nil, p.unexpectedToken("symbol")
@@ -311,7 +320,7 @@ func (p *Parser) matchLetStatement() (*LetStatementNode, error) {
 		return nil, err
 	}
 
-	return &LetStatementNode{symbol, expr}, nil
+	return &LetStatementNode{symbol, expr, loc}, nil
 }
 
 func (p *Parser) matchBlock() ([]StatementNode, error) {
@@ -337,6 +346,7 @@ func (p *Parser) matchBlock() ([]StatementNode, error) {
 }
 
 func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
+	loc := p.currentToken.Loc
 	expr, err := p.matchPrefix()
 	if err != nil {
 		return nil, err
@@ -352,7 +362,7 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 						return nil, err
 					}
 
-					expr = &CallNode{expr, arglist}
+					expr = &CallNode{expr, arglist, loc}
 				} else if p.currentToken.Type == TOKEN_LEFT_SQUARE {
 					p.nextToken()
 					indexExpr, err := p.matchExpression(PRECEDENCE_LOWEST)
@@ -365,14 +375,14 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 					}
 					p.nextToken()
 
-					expr = &IndexNode{expr, indexExpr}
+					expr = &IndexNode{expr, indexExpr, loc}
 				} else if p.currentToken.Type == TOKEN_DOT {
 					p.nextToken()
 					if p.currentToken.Type != TOKEN_SYMBOL {
 						return nil, p.customError("right-hand side of dot must be a symbol")
 					}
 
-					expr = &FieldAccessNode{expr, p.currentToken.Value}
+					expr = &FieldAccessNode{expr, p.currentToken.Value, loc}
 					p.nextToken()
 				} else {
 					expr, err = p.matchInfix(expr, infixPrecedence)
@@ -392,10 +402,11 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 }
 
 func (p *Parser) matchPrefix() (ExpressionNode, error) {
+	loc := p.currentToken.Loc
 	switch p.currentToken.Type {
 	case TOKEN_FALSE:
 		p.nextToken()
-		return &BooleanNode{false}, nil
+		return &BooleanNode{false, loc}, nil
 	case TOKEN_INT:
 		token := p.currentToken
 		p.nextToken()
@@ -403,7 +414,7 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 		if err != nil {
 			return nil, p.customError("could not convert integer token")
 		}
-		return &IntegerNode{int(value)}, nil
+		return &IntegerNode{int(value), loc}, nil
 	case TOKEN_LEFT_CURLY:
 		p.brackets++
 		p.nextToken()
@@ -412,7 +423,7 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &MapNode{pairs}, nil
+		return &MapNode{pairs, loc}, nil
 	case TOKEN_LEFT_PAREN:
 		p.brackets++
 		p.nextToken()
@@ -434,18 +445,18 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &ListNode{values}, nil
+		return &ListNode{values, loc}, nil
 	case TOKEN_STRING:
 		token := p.currentToken
 		p.nextToken()
-		return &StringNode{token.Value}, nil
+		return &StringNode{token.Value, loc}, nil
 	case TOKEN_SYMBOL:
 		token := p.currentToken
 		p.nextToken()
-		return &SymbolNode{token.Value}, nil
+		return &SymbolNode{token.Value, loc}, nil
 	case TOKEN_TRUE:
 		p.nextToken()
-		return &BooleanNode{true}, nil
+		return &BooleanNode{true, loc}, nil
 	default:
 		return nil, p.unexpectedToken("start of expression")
 	}
@@ -454,6 +465,7 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
 	pairs := []*MapPairNode{}
 	for {
+		loc := p.currentToken.Loc
 		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
 			p.nextToken()
 			break
@@ -474,7 +486,7 @@ func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
 			return nil, err
 		}
 
-		pairs = append(pairs, &MapPairNode{key, value})
+		pairs = append(pairs, &MapPairNode{key, value, loc})
 
 		if p.currentToken.Type == TOKEN_COMMA {
 			p.nextToken()
@@ -521,7 +533,7 @@ func (p *Parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode
 	if err != nil {
 		return nil, err
 	}
-	return &InfixNode{operator, left, right}, nil
+	return &InfixNode{operator, left, right, left.getLocation()}, nil
 }
 
 func (p *Parser) nextToken() *Token {
