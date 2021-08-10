@@ -204,7 +204,22 @@ func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
 
 	name := p.currentToken.Value
 
+	var genericTypeParameter string
 	p.nextToken()
+	if p.currentToken.Type == TOKEN_LESS_THAN {
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_SYMBOL {
+			return nil, p.unexpectedToken("type parameter")
+		}
+		genericTypeParameter = p.currentToken.Value
+
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_GREATER_THAN {
+			return nil, p.unexpectedToken("right angle bracket")
+		}
+		p.nextToken()
+	}
+
 	if p.currentToken.Type != TOKEN_LEFT_CURLY {
 		return nil, p.unexpectedToken("left curly brace")
 	}
@@ -251,7 +266,7 @@ func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
 		fieldNodes = append(fieldNodes, &ClassFieldNode{name, public, fieldType})
 	}
 
-	return &ClassDeclarationNode{name, fieldNodes, location}, nil
+	return &ClassDeclarationNode{name, genericTypeParameter, fieldNodes, location}, nil
 }
 
 func (p *Parser) matchFunctionDeclaration() (*FunctionDeclarationNode, error) {

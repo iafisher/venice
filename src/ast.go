@@ -40,9 +40,10 @@ type FunctionParamNode struct {
 }
 
 type ClassDeclarationNode struct {
-	Name     string
-	Fields   []*ClassFieldNode
-	Location *Location
+	Name                 string
+	GenericTypeParameter string
+	Fields               []*ClassFieldNode
+	Location             *Location
 }
 
 func (n *ClassDeclarationNode) statementNode() {}

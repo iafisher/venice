@@ -85,6 +85,21 @@ func repl() {
 						}
 					}
 					continue
+				case "!symbols":
+					for key, value := range vm.env.symbols {
+						fmt.Printf("%s: %s\n", key, value.SerializePrintable())
+					}
+					continue
+				case "!symbolTypes":
+					for key, value := range compiler.symbolTable.symbols {
+						fmt.Printf("%s: %s\n", key, value.String())
+					}
+					continue
+				case "!types":
+					for key, value := range compiler.typeSymbolTable.symbols {
+						fmt.Printf("%s: %s\n", key, value.String())
+					}
+					continue
 				default:
 					fmt.Printf("Error: unknown command %q\n", line)
 					continue
@@ -175,7 +190,9 @@ const helpString = `!compile <code>   Compile the Venice code into bytecode.
 !lex <code>       Lex the Venice code and print the resulting tokens.
 !parse <code>     Parse the Venice code and print the resulting syntax tree.
 !stack            Print the current state of the virtual machine stack.
-`
+!symbols          Print all symbols in the current environment and their values.
+!symbolTypes      Print all symbols in the current environment and their types.
+!types            Print all types in the current environment.`
 
 func compileProgram(filePath string, toStdout bool) {
 	fileContentsBytes, err := ioutil.ReadFile(filePath)

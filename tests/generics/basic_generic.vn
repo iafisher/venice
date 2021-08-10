@@ -1,0 +1,10 @@
+# OUTPUT
+# 42
+# END OUTPUT
+
+class Box<T> {
+  public object: T
+}
+
+let box = Box(41)
+print(box.object + 1)

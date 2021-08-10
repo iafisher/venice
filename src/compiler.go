@@ -4,7 +4,7 @@ import "fmt"
 
 type Compiler struct {
 	symbolTable     *SymbolTable
-	typeSymbolTable map[string]VeniceType
+	typeSymbolTable *SymbolTable
 	functionInfo    *FunctionInfo
 	nestedLoopCount int
 }
@@ -33,12 +33,13 @@ func NewBuiltinSymbolTable() *SymbolTable {
 	return &SymbolTable{nil, symbols}
 }
 
-func NewBuiltinTypeSymbolTable() map[string]VeniceType {
-	return map[string]VeniceType{
+func NewBuiltinTypeSymbolTable() *SymbolTable {
+	symbols := map[string]VeniceType{
 		"bool":   VENICE_TYPE_BOOLEAN,
 		"int":    VENICE_TYPE_INTEGER,
 		"string": VENICE_TYPE_STRING,
 	}
+	return &SymbolTable{nil, symbols}
 }
 
 func (compiler *Compiler) Compile(tree *ProgramNode) (CompiledProgram, error) {
@@ -170,11 +171,21 @@ func (compiler *Compiler) compileEnumDeclaration(tree *EnumDeclarationNode) erro
 		}
 		caseTypes = append(caseTypes, &VeniceCaseType{caseNode.Label, types})
 	}
-	compiler.typeSymbolTable[tree.Name] = &VeniceEnumType{caseTypes}
+	compiler.typeSymbolTable.Put(tree.Name, &VeniceEnumType{caseTypes})
 	return nil
 }
 
 func (compiler *Compiler) compileClassDeclaration(tree *ClassDeclarationNode) ([]*Bytecode, error) {
+	if tree.GenericTypeParameter != "" {
+		subTypeSymbolTable := &SymbolTable{
+			compiler.typeSymbolTable,
+			map[string]VeniceType{
+				tree.GenericTypeParameter: &VeniceGenericParameterType{tree.GenericTypeParameter},
+			},
+		}
+		compiler.typeSymbolTable = subTypeSymbolTable
+	}
+
 	fields := []*VeniceClassField{}
 	paramTypes := []VeniceType{}
 	for _, field := range tree.Fields {
@@ -186,8 +197,14 @@ func (compiler *Compiler) compileClassDeclaration(tree *ClassDeclarationNode) ([
 		fields = append(fields, &VeniceClassField{field.Name, field.Public, paramType})
 	}
 
-	classType := &VeniceClassType{fields}
-	compiler.typeSymbolTable[tree.Name] = classType
+	var classType VeniceType
+	if tree.GenericTypeParameter == "" {
+		classType = &VeniceClassType{fields}
+	} else {
+		classType = &VeniceGenericType{[]string{tree.GenericTypeParameter}, &VeniceClassType{fields}}
+		compiler.typeSymbolTable = compiler.typeSymbolTable.parent
+	}
+	compiler.typeSymbolTable.Put(tree.Name, classType)
 
 	constructorType := &VeniceFunctionType{paramTypes, classType}
 	compiler.symbolTable.Put(tree.Name, constructorType)
@@ -256,7 +273,7 @@ func (compiler *Compiler) resolveType(typeNodeInterface TypeNode) (VeniceType, e
 
 	switch typeNode := typeNodeInterface.(type) {
 	case *SimpleTypeNode:
-		resolvedType, ok := compiler.typeSymbolTable[typeNode.Symbol]
+		resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Symbol)
 		if !ok {
 			return nil, compiler.customError(typeNodeInterface, fmt.Sprintf("unknown type: %s", typeNode.Symbol))
 		}
@@ -512,21 +529,33 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 				}
 
 				code := []*Bytecode{}
+				genericParameters := []string{}
+				concreteTypes := []VeniceType{}
 				for i := 0; i < len(f.ParamTypes); i++ {
 					argCode, argType, err := compiler.compileExpression(tree.Args[i])
 					if err != nil {
 						return nil, nil, err
 					}
 
-					if !areTypesCompatible(f.ParamTypes[i], argType) {
-						return nil, nil, compiler.customError(tree.Args[i], "wrong function parameter type")
+					if genericParamType, ok := f.ParamTypes[i].(*VeniceGenericParameterType); ok {
+						genericParameters = append(genericParameters, genericParamType.Label)
+						concreteTypes = append(concreteTypes, argType)
+					} else {
+						if !areTypesCompatible(f.ParamTypes[i], argType) {
+							return nil, nil, compiler.customError(tree.Args[i], "wrong function parameter type")
+						}
 					}
 
 					code = append(code, argCode...)
 				}
 
 				code = append(code, NewBytecode("CALL_FUNCTION", &VeniceString{v.Value}, &VeniceInteger{len(f.ParamTypes)}))
-				return code, f.ReturnType, nil
+
+				if len(genericParameters) > 0 {
+					return code, f.ReturnType.SubstituteGenerics(genericParameters, concreteTypes), nil
+				} else {
+					return code, f.ReturnType, nil
+				}
 			} else {
 				return nil, nil, compiler.customError(tree, "not a function")
 			}

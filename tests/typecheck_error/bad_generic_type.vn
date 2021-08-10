@@ -1,0 +1,8 @@
+# FAIL
+
+class Box<T> {
+  public object: T
+}
+
+let x = Box("41")
+print(x + 1)
