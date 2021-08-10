@@ -1,0 +1,11 @@
+# OUTPUT
+# Some(10)
+# END OUTPUT
+
+enum MyOptional {
+  Some(int),
+  None,
+}
+
+let x = MyOptional::Some(10)
+print(x)

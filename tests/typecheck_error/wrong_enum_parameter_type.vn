@@ -1,0 +1,8 @@
+# FAIL
+
+enum IntResult {
+  Some(int),
+  None,
+}
+
+IntResult("hello")

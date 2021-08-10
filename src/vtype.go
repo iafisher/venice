@@ -17,10 +17,15 @@ type VeniceClassField struct {
 }
 
 type VeniceEnumType struct {
-	Cases []string
+	Cases []*VeniceCaseType
 }
 
 func (t *VeniceEnumType) veniceType() {}
+
+type VeniceCaseType struct {
+	Label string
+	Types []VeniceType
+}
 
 type VeniceFunctionType struct {
 	ParamTypes []VeniceType

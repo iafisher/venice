@@ -1,0 +1,16 @@
+# OUTPUT
+# Some(42)
+# None
+# END OUTPUT
+
+enum MyResult {
+  Some(int),
+  None,
+}
+
+fn print_enum(r: MyResult) {
+  print(r)
+}
+
+print_enum(MyResult::Some(42))
+print_enum(MyResult::None)

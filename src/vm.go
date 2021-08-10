@@ -238,7 +238,19 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 	case "PUSH_CONST":
 		vm.pushStack(bytecode.Args[0])
 	case "PUSH_ENUM":
-		vm.pushStack(&VeniceEnumObject{bytecode.Args[0].(*VeniceString).Value})
+		values := []VeniceValue{}
+		n := bytecode.Args[1].(*VeniceInteger).Value
+		for i := 0; i < n; i++ {
+			topOfStack := vm.popStack()
+			values = append(values, topOfStack)
+		}
+
+		// Reverse the array since the values are popped off the stack in reverse order.
+		for i, j := 0, len(values)-1; i < j; i, j = i+1, j-1 {
+			values[i], values[j] = values[j], values[i]
+		}
+
+		vm.pushStack(&VeniceEnumObject{bytecode.Args[0].(*VeniceString).Value, values})
 	case "PUSH_FIELD":
 		fieldIndex := bytecode.Args[0].(*VeniceInteger).Value
 		topOfStack, ok := vm.popStack().(*VeniceClassObject)

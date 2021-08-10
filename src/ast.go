@@ -53,13 +53,25 @@ func (n *ClassDeclarationNode) getLocation() *Location {
 
 type EnumDeclarationNode struct {
 	Name     string
-	Cases    []string
+	Cases    []*EnumCaseNode
 	Location *Location
 }
 
 func (n *EnumDeclarationNode) statementNode() {}
 
 func (n *EnumDeclarationNode) getLocation() *Location {
+	return n.Location
+}
+
+type EnumCaseNode struct {
+	Label    string
+	Types    []TypeNode
+	Location *Location
+}
+
+func (n *EnumCaseNode) typeNode() {}
+
+func (n *EnumCaseNode) getLocation() *Location {
 	return n.Location
 }
 

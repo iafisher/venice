@@ -50,17 +50,46 @@ func (v *VeniceClassObject) Equals(otherInterface VeniceValue) bool {
 }
 
 type VeniceEnumObject struct {
-	Name string
+	Label  string
+	Values []VeniceValue
 }
 
 func (v *VeniceEnumObject) veniceValue() {}
 
 func (v *VeniceEnumObject) Serialize() string {
-	return v.Name
+	if len(v.Values) == 0 {
+		return v.Label
+	}
+
+	var sb strings.Builder
+	sb.WriteString(v.Label)
+	sb.WriteByte('(')
+	for i, value := range v.Values {
+		sb.WriteString(value.Serialize())
+		if i != len(v.Values)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte(')')
+	return sb.String()
 }
 
 func (v *VeniceEnumObject) SerializePrintable() string {
-	return v.Name
+	if len(v.Values) == 0 {
+		return v.Label
+	}
+
+	var sb strings.Builder
+	sb.WriteString(v.Label)
+	sb.WriteByte('(')
+	for i, value := range v.Values {
+		sb.WriteString(value.SerializePrintable())
+		if i != len(v.Values)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte(')')
+	return sb.String()
 }
 
 func (v *VeniceEnumObject) Equals(otherInterface VeniceValue) bool {

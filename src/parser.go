@@ -132,22 +132,63 @@ func (p *Parser) matchEnumDeclaration() (*EnumDeclarationNode, error) {
 	}
 	p.nextTokenSkipNewlines()
 
-	cases := []string{}
+	cases := []*EnumCaseNode{}
 	for {
 		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
 			p.nextTokenSkipNewlines()
 			break
 		}
 
+		location := p.currentToken.Location
 		if p.currentToken.Type != TOKEN_SYMBOL {
 			return nil, p.unexpectedToken("symbol or right curly brace")
 		}
 
-		cases = append(cases, p.currentToken.Value)
+		label := p.currentToken.Value
 		p.nextTokenSkipNewlines()
+
+		if p.currentToken.Type == TOKEN_LEFT_PAREN {
+			p.nextTokenSkipNewlines()
+			types := []TypeNode{}
+			for {
+				if p.currentToken.Type == TOKEN_RIGHT_PAREN {
+					p.nextTokenSkipNewlines()
+					break
+				}
+
+				typeNode, err := p.matchTypeNode()
+				if err != nil {
+					return nil, err
+				}
+
+				types = append(types, typeNode)
+
+				if p.currentToken.Type == TOKEN_COMMA {
+					p.nextTokenSkipNewlines()
+				} else if p.currentToken.Type == TOKEN_RIGHT_PAREN {
+					p.nextTokenSkipNewlines()
+					break
+				} else {
+					return nil, p.unexpectedToken("comma or right parenthesis")
+				}
+			}
+
+			if len(types) == 0 {
+				return nil, p.customError("enum case with parentheses must include at least one type")
+			}
+
+			cases = append(cases, &EnumCaseNode{label, types, location})
+		} else {
+			cases = append(cases, &EnumCaseNode{label, []TypeNode{}, location})
+		}
 
 		if p.currentToken.Type == TOKEN_COMMA {
 			p.nextTokenSkipNewlines()
+		} else if p.currentToken.Type == TOKEN_RIGHT_CURLY {
+			p.nextTokenSkipNewlines()
+			break
+		} else {
+			return nil, p.unexpectedToken("comma or right curly brace")
 		}
 	}
 

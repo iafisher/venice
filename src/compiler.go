@@ -52,7 +52,10 @@ func (compiler *Compiler) Compile(tree *ProgramNode) (CompiledProgram, error) {
 			}
 			compiledProgram[statement.Name] = code
 		case *EnumDeclarationNode:
-			compiler.compileEnumDeclaration(statement)
+			err := compiler.compileEnumDeclaration(statement)
+			if err != nil {
+				return nil, err
+			}
 		case *FunctionDeclarationNode:
 			code, err := compiler.compileFunctionDeclaration(statement)
 			if err != nil {
@@ -154,8 +157,21 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 	}
 }
 
-func (compiler *Compiler) compileEnumDeclaration(tree *EnumDeclarationNode) {
-	compiler.typeSymbolTable[tree.Name] = &VeniceEnumType{tree.Cases}
+func (compiler *Compiler) compileEnumDeclaration(tree *EnumDeclarationNode) error {
+	caseTypes := []*VeniceCaseType{}
+	for _, caseNode := range tree.Cases {
+		types := []VeniceType{}
+		for _, typeNode := range caseNode.Types {
+			veniceType, err := compiler.resolveType(typeNode)
+			if err != nil {
+				return err
+			}
+			types = append(types, veniceType)
+		}
+		caseTypes = append(caseTypes, &VeniceCaseType{caseNode.Label, types})
+	}
+	compiler.typeSymbolTable[tree.Name] = &VeniceEnumType{caseTypes}
+	return nil
 }
 
 func (compiler *Compiler) compileClassDeclaration(tree *ClassDeclarationNode) ([]*Bytecode, error) {
@@ -424,8 +440,12 @@ func (compiler *Compiler) compileEnumSymbolNode(tree *EnumSymbolNode) ([]*Byteco
 	switch enumType := enumTypeInterface.(type) {
 	case *VeniceEnumType:
 		for _, enumCase := range enumType.Cases {
-			if enumCase == tree.Case {
-				return []*Bytecode{NewBytecode("PUSH_ENUM", &VeniceString{tree.Case})}, enumType, nil
+			if enumCase.Label == tree.Case {
+				if len(enumCase.Types) != 0 {
+					return nil, nil, compiler.customError(tree, fmt.Sprintf("%s takes %d argument(s)", enumCase.Label, len(enumCase.Types)))
+				}
+
+				return []*Bytecode{NewBytecode("PUSH_ENUM", &VeniceString{tree.Case}, &VeniceInteger{0})}, enumType, nil
 			}
 		}
 
@@ -510,6 +530,45 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 			} else {
 				return nil, nil, compiler.customError(tree, "not a function")
 			}
+		}
+	}
+
+	if v, ok := tree.Function.(*EnumSymbolNode); ok {
+		enumTypeInterface, err := compiler.resolveType(&SimpleTypeNode{v.Enum, nil})
+		if err != nil {
+			return nil, nil, err
+		}
+
+		switch enumType := enumTypeInterface.(type) {
+		case *VeniceEnumType:
+			for _, enumCase := range enumType.Cases {
+				if enumCase.Label == v.Case {
+					if len(enumCase.Types) != len(tree.Args) {
+						return nil, nil, compiler.customError(tree, fmt.Sprintf("%s takes %d argument(s)", enumCase.Label, len(enumCase.Types)))
+					}
+
+					code := []*Bytecode{}
+					for i := 0; i < len(tree.Args); i++ {
+						argCode, argType, err := compiler.compileExpression(tree.Args[i])
+						if err != nil {
+							return nil, nil, err
+						}
+
+						if !areTypesCompatible(enumCase.Types[i], argType) {
+							return nil, nil, compiler.customError(tree.Args[i], "wrong enum parameter type")
+						}
+
+						code = append(code, argCode...)
+					}
+					code = append(code, NewBytecode("PUSH_ENUM", &VeniceString{v.Case}, &VeniceInteger{len(tree.Args)}))
+
+					return code, enumType, nil
+				}
+			}
+
+			return nil, nil, compiler.customError(tree, fmt.Sprintf("enum %s does not have case %s", v.Enum, v.Case))
+		default:
+			return nil, nil, compiler.customError(tree, "cannot use double colon after non-enum type")
 		}
 	}
 
@@ -632,6 +691,13 @@ func areTypesCompatible(expectedTypeInterface VeniceType, actualTypeInterface Ve
 		switch actualType := actualTypeInterface.(type) {
 		case *VeniceAtomicType:
 			return expectedType.Type == actualType.Type
+		default:
+			return false
+		}
+	case *VeniceEnumType:
+		switch actualType := actualTypeInterface.(type) {
+		case *VeniceEnumType:
+			return expectedType == actualType
 		default:
 			return false
 		}
