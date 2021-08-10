@@ -1,0 +1,11 @@
+# OUTPUT
+# Some(42)
+# END OUTPUT
+
+enum MyOptional<T> {
+  Some(T),
+  None,
+}
+
+let x = MyOptional::Some(42)
+print(x)

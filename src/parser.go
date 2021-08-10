@@ -126,7 +126,22 @@ func (p *Parser) matchEnumDeclaration() (*EnumDeclarationNode, error) {
 
 	name := p.currentToken.Value
 
+	var genericTypeParameter string
 	p.nextToken()
+	if p.currentToken.Type == TOKEN_LESS_THAN {
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_SYMBOL {
+			return nil, p.unexpectedToken("type parameter")
+		}
+		genericTypeParameter = p.currentToken.Value
+
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_GREATER_THAN {
+			return nil, p.unexpectedToken("right angle bracket")
+		}
+		p.nextToken()
+	}
+
 	if p.currentToken.Type != TOKEN_LEFT_CURLY {
 		return nil, p.unexpectedToken("left curly brace")
 	}
@@ -192,7 +207,7 @@ func (p *Parser) matchEnumDeclaration() (*EnumDeclarationNode, error) {
 		}
 	}
 
-	return &EnumDeclarationNode{name, cases, location}, nil
+	return &EnumDeclarationNode{name, genericTypeParameter, cases, location}, nil
 }
 
 func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
