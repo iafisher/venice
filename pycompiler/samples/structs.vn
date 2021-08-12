@@ -1,9 +1,0 @@
-// User(name: 'John Doe', email: 'john@example.com', age: 34)
-// John Doe
-
-// Declare a struct.
-struct User { name: string, email: string, age: integer }
-
-let u = User(name: "John Doe", email: "john@example.com", age: 34)
-print(u)
-print(u.name)

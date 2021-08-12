@@ -1,5 +1,0 @@
-// ERROR: expected return type of integer, got string
-
-fn identity(x: integer): integer {
-  return "a string"
-}

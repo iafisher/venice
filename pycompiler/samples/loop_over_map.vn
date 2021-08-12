@@ -1,9 +1,0 @@
-// one
-// 1
-// two
-// 2
-
-for k, v in {"one": 1, "two": 2} {
-  print(k)
-  print(v)
-}
