@@ -235,6 +235,17 @@ func (n *ListNode) getLocation() *Location {
 	return n.Location
 }
 
+type TupleNode struct {
+	Values   []ExpressionNode
+	Location *Location
+}
+
+func (n *TupleNode) expressionNode() {}
+
+func (n *TupleNode) getLocation() *Location {
+	return n.Location
+}
+
 type MapNode struct {
 	Pairs    []*MapPairNode
 	Location *Location
@@ -261,6 +272,18 @@ type FieldAccessNode struct {
 func (n *FieldAccessNode) expressionNode() {}
 
 func (n *FieldAccessNode) getLocation() *Location {
+	return n.Location
+}
+
+type TupleFieldAccessNode struct {
+	Expr     ExpressionNode
+	Index    int
+	Location *Location
+}
+
+func (n *TupleFieldAccessNode) expressionNode() {}
+
+func (n *TupleFieldAccessNode) getLocation() *Location {
 	return n.Location
 }
 

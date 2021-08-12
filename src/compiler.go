@@ -536,6 +536,28 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 			return nil, nil, compiler.customError(treeInterface, fmt.Sprintf("undefined symbol: %s", tree.Value))
 		}
 		return []*Bytecode{NewBytecode("PUSH_NAME", &VeniceString{tree.Value})}, symbolType, nil
+	case *TupleFieldAccessNode:
+		return compiler.compileTupleFieldAccessNode(tree)
+	case *TupleNode:
+		code := []*Bytecode{}
+		itemTypes := []VeniceType{}
+		for i := len(tree.Values) - 1; i >= 0; i-- {
+			value := tree.Values[i]
+			valueCode, valueType, err := compiler.compileExpression(value)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			itemTypes = append(itemTypes, valueType)
+			code = append(code, valueCode...)
+		}
+
+		for i, j := 0, len(itemTypes)-1; i < j; i, j = i+1, j-1 {
+			itemTypes[i], itemTypes[j] = itemTypes[j], itemTypes[i]
+		}
+
+		code = append(code, NewBytecode("BUILD_TUPLE", &VeniceInteger{len(tree.Values)}))
+		return code, &VeniceTupleType{itemTypes}, nil
 	default:
 		return nil, nil, compiler.customError(treeInterface, fmt.Sprintf("unknown expression type: %T", treeInterface))
 	}
@@ -578,29 +600,49 @@ func (compiler *Compiler) compileEnumSymbolNode(tree *EnumSymbolNode) ([]*Byteco
 	return nil, nil, compiler.customError(tree, fmt.Sprintf("enum %s does not have case %s", tree.Enum, tree.Case))
 }
 
+func (compiler *Compiler) compileTupleFieldAccessNode(tree *TupleFieldAccessNode) ([]*Bytecode, VeniceType, error) {
+	code, typeInterface, err := compiler.compileExpression(tree.Expr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	tupleType, ok := typeInterface.(*VeniceTupleType)
+	if !ok {
+		return nil, nil, compiler.customError(tree, "left-hand side of dot must be a tuple object")
+	}
+
+	if tree.Index < 0 || tree.Index >= len(tupleType.ItemTypes) {
+		return nil, nil, compiler.customError(tree, "tuple index out of bounds")
+	}
+
+	code = append(code, NewBytecode("PUSH_TUPLE_FIELD", &VeniceInteger{tree.Index}))
+	return code, tupleType.ItemTypes[tree.Index], nil
+}
+
 func (compiler *Compiler) compileFieldAccessNode(tree *FieldAccessNode) ([]*Bytecode, VeniceType, error) {
 	code, typeInterface, err := compiler.compileExpression(tree.Expr)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if classType, ok := typeInterface.(*VeniceClassType); ok {
-		for i, field := range classType.Fields {
-			if field.Name == tree.Name {
-				// TODO(2021-08-09): Allow this when inside the class itself.
-				if !field.Public {
-					return nil, nil, compiler.customError(tree, "use of private field")
-				}
-
-				code = append(code, NewBytecode("PUSH_FIELD", &VeniceInteger{i}))
-				return code, field.FieldType, nil
-			}
-		}
-
-		return nil, nil, compiler.customError(tree, fmt.Sprintf("no such field: %s", tree.Name))
-	} else {
+	classType, ok := typeInterface.(*VeniceClassType)
+	if !ok {
 		return nil, nil, compiler.customError(tree, "left-hand side of dot must be a class object")
 	}
+
+	for i, field := range classType.Fields {
+		if field.Name == tree.Name {
+			// TODO(2021-08-09): Allow this when inside the class itself.
+			if !field.Public {
+				return nil, nil, compiler.customError(tree, "use of private field")
+			}
+
+			code = append(code, NewBytecode("PUSH_FIELD", &VeniceInteger{i}))
+			return code, field.FieldType, nil
+		}
+	}
+
+	return nil, nil, compiler.customError(tree, fmt.Sprintf("no such field: %s", tree.Name))
 }
 
 func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceType, error) {
@@ -744,7 +786,7 @@ func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, Venice
 	switch exprType := exprTypeInterface.(type) {
 	case *VeniceAtomicType:
 		if exprType != VENICE_TYPE_STRING {
-			return nil, nil, compiler.customError(tree, "only maps, strings, and lists can be indexed")
+			return nil, nil, compiler.customError(tree, fmt.Sprintf("%s cannot be indexed", exprType.String()))
 		}
 		if !areTypesCompatible(VENICE_TYPE_INTEGER, indexType) {
 			return nil, nil, compiler.customError(tree.Expr, "string index must be integer")
@@ -767,7 +809,7 @@ func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, Venice
 		code = append(code, NewBytecode("BINARY_MAP_INDEX"))
 		return code, exprType.KeyType, nil
 	default:
-		return nil, nil, compiler.customError(tree, "only maps, strings, and lists can be indexed")
+		return nil, nil, compiler.customError(tree, fmt.Sprintf("%s cannot be indexed", exprTypeInterface))
 	}
 }
 

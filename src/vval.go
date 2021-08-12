@@ -117,21 +117,54 @@ func (v *VeniceList) Serialize() string {
 }
 
 func (v *VeniceList) SerializePrintable() string {
-	var sb strings.Builder
-	sb.WriteByte('[')
-	for i, value := range v.Values {
-		sb.WriteString(value.SerializePrintable())
-		if i != len(v.Values)-1 {
-			sb.WriteString(", ")
-		}
-	}
-	sb.WriteByte(']')
-	return sb.String()
+	return v.Serialize()
 }
 
 func (v *VeniceList) Equals(otherInterface VeniceValue) bool {
 	switch other := otherInterface.(type) {
 	case *VeniceList:
+		if len(v.Values) != len(other.Values) {
+			return false
+		}
+
+		for i := 0; i < len(v.Values); i++ {
+			if !v.Values[i].Equals(other.Values[i]) {
+				return false
+			}
+		}
+
+		return true
+	default:
+		return false
+	}
+}
+
+type VeniceTuple struct {
+	Values []VeniceValue
+}
+
+func (v *VeniceTuple) veniceValue() {}
+
+func (v *VeniceTuple) Serialize() string {
+	var sb strings.Builder
+	sb.WriteByte('(')
+	for i, value := range v.Values {
+		sb.WriteString(value.Serialize())
+		if i != len(v.Values)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte(')')
+	return sb.String()
+}
+
+func (v *VeniceTuple) SerializePrintable() string {
+	return v.Serialize()
+}
+
+func (v *VeniceTuple) Equals(otherInterface VeniceValue) bool {
+	switch other := otherInterface.(type) {
+	case *VeniceTuple:
 		if len(v.Values) != len(other.Values) {
 			return false
 		}

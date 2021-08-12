@@ -222,6 +222,33 @@ func (t *VeniceListType) SubstituteGenerics(labels []string, concreteTypes []Ven
 	}
 }
 
+type VeniceTupleType struct {
+	ItemTypes []VeniceType
+}
+
+func (t *VeniceTupleType) veniceType() {}
+
+func (t *VeniceTupleType) String() string {
+	var sb strings.Builder
+	sb.WriteString("tuple<")
+	for i, itemType := range t.ItemTypes {
+		sb.WriteString(itemType.String())
+		if i != len(t.ItemTypes)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte('>')
+	return sb.String()
+}
+
+func (t *VeniceTupleType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+	newItemTypes := []VeniceType{}
+	for _, itemType := range t.ItemTypes {
+		newItemTypes = append(newItemTypes, itemType.SubstituteGenerics(labels, concreteTypes))
+	}
+	return &VeniceTupleType{newItemTypes}
+}
+
 type VeniceAtomicType struct {
 	Type string
 }

@@ -526,11 +526,18 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 					expr = &IndexNode{expr, indexExpr, location}
 				} else if p.currentToken.Type == TOKEN_DOT {
 					p.nextToken()
-					if p.currentToken.Type != TOKEN_SYMBOL {
+					if p.currentToken.Type == TOKEN_SYMBOL {
+						expr = &FieldAccessNode{expr, p.currentToken.Value, location}
+					} else if p.currentToken.Type == TOKEN_INT {
+						index, err := strconv.ParseInt(p.currentToken.Value, 10, 0)
+						if err != nil {
+							return nil, p.customError("could not convert integer token")
+						}
+						expr = &TupleFieldAccessNode{expr, int(index), location}
+					} else {
 						return nil, p.customError("right-hand side of dot must be a symbol")
 					}
 
-					expr = &FieldAccessNode{expr, p.currentToken.Value, location}
 					p.nextToken()
 				} else {
 					expr, err = p.matchInfix(expr, infixPrecedence)
@@ -578,16 +585,16 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 	case TOKEN_LEFT_PAREN:
 		p.brackets++
 		p.nextToken()
-		expr, err := p.matchExpression(PRECEDENCE_LOWEST)
-		p.brackets--
+		values, err := p.matchArglist(TOKEN_RIGHT_PAREN)
 		if err != nil {
 			return nil, err
 		}
-		if p.currentToken.Type != TOKEN_RIGHT_PAREN {
-			return nil, p.unexpectedToken("right parenthesis")
+
+		if len(values) == 1 {
+			return values[0], nil
+		} else {
+			return &TupleNode{values, location}, nil
 		}
-		p.nextToken()
-		return expr, nil
 	case TOKEN_LEFT_SQUARE:
 		p.brackets++
 		p.nextToken()

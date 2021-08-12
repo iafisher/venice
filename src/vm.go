@@ -233,6 +233,14 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 			pairs = append(pairs, &VeniceMapPair{key, value})
 		}
 		vm.pushStack(&VeniceMap{pairs})
+	case "BUILD_TUPLE":
+		values := []VeniceValue{}
+		n := bytecode.Args[0].(*VeniceInteger).Value
+		for i := 0; i < n; i++ {
+			topOfStack := vm.popStack()
+			values = append(values, topOfStack)
+		}
+		vm.pushStack(&VeniceTuple{values})
 	case "CALL_BUILTIN":
 		if v, ok := bytecode.Args[0].(*VeniceString); ok {
 			switch v.Value {
@@ -319,6 +327,14 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 			return -1, &ExecutionError{fmt.Sprintf("undefined symbol: %s", symbol)}
 		}
 		vm.pushStack(value)
+	case "PUSH_TUPLE_FIELD":
+		fieldIndex := bytecode.Args[0].(*VeniceInteger).Value
+		topOfStack, ok := vm.popStack().(*VeniceTuple)
+		if !ok {
+			return -1, &ExecutionError{"expected tuple at top of virtual machine stack"}
+		}
+
+		vm.pushStack(topOfStack.Values[fieldIndex])
 	case "REL_JUMP":
 		value := bytecode.Args[0].(*VeniceInteger).Value
 		return value, nil
