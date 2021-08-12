@@ -268,20 +268,26 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 
 		vm.pushStack(value)
 	case "FOR_ITER":
-		iter := vm.stack[len(vm.stack)-1].(*VeniceIterator)
+		iter := vm.stack[len(vm.stack)-1].(VeniceIterator)
 
-		if iter.Index < len(iter.List.Values) {
-			value := iter.List.Values[iter.Index]
-			iter.Index++
-			vm.pushStack(value)
-		} else {
+		next := iter.Next()
+		if next == nil {
 			vm.popStack()
 			n := bytecode.Args[0].(*VeniceInteger).Value
 			return n, nil
+		} else {
+			for _, v := range next {
+				vm.pushStack(v)
+			}
 		}
 	case "GET_ITER":
-		topOfStack := vm.popStack().(*VeniceList)
-		vm.pushStack(&VeniceIterator{List: topOfStack, Index: 0})
+		topOfStackAny := vm.popStack()
+		switch topOfStack := topOfStackAny.(type) {
+		case *VeniceList:
+			vm.pushStack(&VeniceListIterator{List: topOfStack, Index: 0})
+		case *VeniceMap:
+			vm.pushStack(&VeniceMapIterator{Map: topOfStack, Index: 0})
+		}
 	case "PUSH_CONST":
 		vm.pushStack(bytecode.Args[0])
 	case "PUSH_ENUM":

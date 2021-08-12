@@ -375,14 +375,22 @@ func (p *Parser) matchTypeNode() (TypeNode, error) {
 func (p *Parser) matchForLoop() (*ForLoopNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
-	if p.currentToken.Type != TOKEN_SYMBOL {
-		return nil, p.unexpectedToken("symbol")
-	}
-	variable := p.currentToken.Value
 
-	p.nextToken()
-	if p.currentToken.Type != TOKEN_IN {
-		return nil, p.unexpectedToken("keyword 'in'")
+	variables := []string{}
+	for {
+		if p.currentToken.Type != TOKEN_SYMBOL {
+			return nil, p.unexpectedToken("symbol")
+		}
+		variables = append(variables, p.currentToken.Value)
+
+		p.nextToken()
+		if p.currentToken.Type == TOKEN_COMMA {
+			p.nextToken()
+		} else if p.currentToken.Type == TOKEN_IN {
+			break
+		} else {
+			return nil, p.unexpectedToken("comma or keyword 'in'")
+		}
 	}
 
 	p.nextToken()
@@ -396,7 +404,7 @@ func (p *Parser) matchForLoop() (*ForLoopNode, error) {
 		return nil, err
 	}
 
-	return &ForLoopNode{variable, iterable, body, location}, nil
+	return &ForLoopNode{variables, iterable, body, location}, nil
 }
 
 func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {

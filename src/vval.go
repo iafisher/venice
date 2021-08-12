@@ -148,25 +148,6 @@ func (v *VeniceList) Equals(otherInterface VeniceValue) bool {
 	}
 }
 
-type VeniceIterator struct {
-	List  *VeniceList
-	Index int
-}
-
-func (v *VeniceIterator) veniceValue() {}
-
-func (v *VeniceIterator) Serialize() string {
-	return "<iter>"
-}
-
-func (v *VeniceIterator) SerializePrintable() string {
-	return v.Serialize()
-}
-
-func (v *VeniceIterator) Equals(otherInterface VeniceValue) bool {
-	return false
-}
-
 type VeniceMap struct {
 	Pairs []*VeniceMapPair
 }
@@ -326,4 +307,67 @@ func (v *VeniceFunction) SerializePrintable() string {
 
 func (v *VeniceFunction) Equals(otherInterface VeniceValue) bool {
 	return false
+}
+
+type VeniceIterator interface {
+	VeniceValue
+	Next() []VeniceValue
+}
+
+type VeniceListIterator struct {
+	List  *VeniceList
+	Index int
+}
+
+func (v *VeniceListIterator) veniceValue() {}
+
+func (v *VeniceListIterator) Serialize() string {
+	return "<list iterator>"
+}
+
+func (v *VeniceListIterator) SerializePrintable() string {
+	return v.Serialize()
+}
+
+func (v *VeniceListIterator) Equals(otherInterface VeniceValue) bool {
+	return false
+}
+
+func (v *VeniceListIterator) Next() []VeniceValue {
+	if v.Index == len(v.List.Values) {
+		return nil
+	} else {
+		r := v.List.Values[v.Index]
+		v.Index++
+		return []VeniceValue{r}
+	}
+}
+
+type VeniceMapIterator struct {
+	Map   *VeniceMap
+	Index int
+}
+
+func (v *VeniceMapIterator) veniceValue() {}
+
+func (v *VeniceMapIterator) Serialize() string {
+	return "<map iterator>"
+}
+
+func (v *VeniceMapIterator) SerializePrintable() string {
+	return v.Serialize()
+}
+
+func (v *VeniceMapIterator) Equals(otherInterface VeniceValue) bool {
+	return false
+}
+
+func (v *VeniceMapIterator) Next() []VeniceValue {
+	if v.Index == len(v.Map.Pairs) {
+		return nil
+	} else {
+		r := v.Map.Pairs[v.Index]
+		v.Index++
+		return []VeniceValue{r.Key, r.Value}
+	}
 }

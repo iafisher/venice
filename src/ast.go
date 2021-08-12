@@ -143,10 +143,10 @@ func (n *IfStatementNode) getLocation() *Location {
 }
 
 type ForLoopNode struct {
-	Variable string
-	Iterable ExpressionNode
-	Body     []StatementNode
-	Location *Location
+	Variables []string
+	Iterable  ExpressionNode
+	Body      []StatementNode
+	Location  *Location
 }
 
 func (n *ForLoopNode) statementNode() {}

@@ -326,14 +326,31 @@ func (compiler *Compiler) compileForLoop(tree *ForLoopNode) ([]*Bytecode, error)
 		return nil, err
 	}
 
-	iterableType, ok := iterableTypeAny.(*VeniceListType)
-	if !ok {
-		return nil, compiler.customError(tree.Iterable, "for loop must be of list")
-	}
+	var symbolTable *SymbolTable
+	switch iterableType := iterableTypeAny.(type) {
+	case *VeniceListType:
+		if len(tree.Variables) != 1 {
+			return nil, compiler.customError(tree, "too many for loop variables")
+		}
 
-	symbolTable := &SymbolTable{
-		parent:  compiler.symbolTable,
-		symbols: map[string]VeniceType{tree.Variable: iterableType.ItemType},
+		symbolTable = &SymbolTable{
+			parent:  compiler.symbolTable,
+			symbols: map[string]VeniceType{tree.Variables[0]: iterableType.ItemType},
+		}
+	case *VeniceMapType:
+		if len(tree.Variables) != 2 {
+			return nil, compiler.customError(tree, "too many for loop variables")
+		}
+
+		symbolTable = &SymbolTable{
+			parent: compiler.symbolTable,
+			symbols: map[string]VeniceType{
+				tree.Variables[0]: iterableType.KeyType,
+				tree.Variables[1]: iterableType.ValueType,
+			},
+		}
+	default:
+		return nil, compiler.customError(tree.Iterable, "for loop must be of list")
 	}
 
 	compiler.symbolTable = symbolTable
@@ -348,10 +365,12 @@ func (compiler *Compiler) compileForLoop(tree *ForLoopNode) ([]*Bytecode, error)
 
 	code := iterableCode
 	code = append(code, NewBytecode("GET_ITER"))
-	code = append(code, NewBytecode("FOR_ITER", &VeniceInteger{len(bodyCode) + 3}))
-	code = append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Variable}))
+	code = append(code, NewBytecode("FOR_ITER", &VeniceInteger{len(bodyCode) + len(tree.Variables) + 2}))
+	for i := len(tree.Variables) - 1; i >= 0; i-- {
+		code = append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Variables[i]}))
+	}
 	code = append(code, bodyCode...)
-	code = append(code, NewBytecode("REL_JUMP", &VeniceInteger{-(len(bodyCode) + 2)}))
+	code = append(code, NewBytecode("REL_JUMP", &VeniceInteger{-(len(bodyCode) + len(tree.Variables) + 1)}))
 	return code, nil
 }
 
