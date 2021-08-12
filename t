@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import contextlib
 import glob
 import os
@@ -7,6 +8,15 @@ import sys
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "pattern",
+        default="",
+        nargs="?",
+        help="Only run tests whose name contains the given substring",
+    )
+    args = parser.parse_args()
+
     os.chdir(os.path.abspath(os.path.dirname(__file__)))
 
     print("=== Building Venice binaries ===")
@@ -21,7 +31,12 @@ def main():
     print("=== Running tests ===")
     total = 0
     failures = 0
+    skipped = 0
     for path in sorted(glob.glob("tests/**/*.vn", recursive=True)):
+        if args.pattern and args.pattern not in path:
+            skipped += 1
+            continue
+
         total += 1
         print(path)
         result = check_path(path)
@@ -43,7 +58,7 @@ def main():
         print(f"Tests FAILED: {failures} failure(s)!")
         sys.exit(3)
     else:
-        print("Tests passed.")
+        print(f"Tests passed. Ran {total} test(s). Skipped {skipped}.")
         sys.exit(0)
 
 
@@ -61,7 +76,7 @@ def check_path(path):
         if expected_output and expected_output != result.stderr.rstrip("\n"):
             passed = False
         else:
-            passed =  result.returncode != 0
+            passed = result.returncode != 0
     else:
         if expected_output and expected_output != result.stdout.rstrip("\n"):
             passed = False

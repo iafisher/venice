@@ -1,0 +1,7 @@
+# OUTPUT
+# hello world
+# [1, 2, 3, 4]
+# END OUTPUT
+
+print("hello " ++ "world")
+print([1, 2] ++ [3, 4])

@@ -77,6 +77,20 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 			return -1, err
 		}
 		vm.pushStack(&VeniceBoolean{left.Value && right.Value})
+	case "BINARY_CONCAT":
+		rightInterface := vm.popStack()
+		leftInterface := vm.popStack()
+
+		switch right := rightInterface.(type) {
+		case *VeniceList:
+			left := leftInterface.(*VeniceList)
+			vm.pushStack(&VeniceList{append(left.Values, right.Values...)})
+		case *VeniceString:
+			left := leftInterface.(*VeniceString)
+			vm.pushStack(&VeniceString{left.Value + right.Value})
+		default:
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_CONCAT requires list or string on top of stack, got %s (%T)", rightInterface.Serialize(), rightInterface)}
+		}
 	case "BINARY_DIV":
 		left, right, err := vm.popTwoInts()
 		if err != nil {

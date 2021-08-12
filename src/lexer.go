@@ -215,6 +215,7 @@ const (
 	TOKEN_CONTINUE               = "TOKEN_CONTINUE"
 	TOKEN_DOT                    = "TOKEN_DOT"
 	TOKEN_DOUBLE_COLON           = "TOKEN_DOUBLE_COLON"
+	TOKEN_DOUBLE_PLUS            = "TOKEN_DOUBLE_PLUS"
 	TOKEN_ELSE                   = "TOKEN_ELSE"
 	TOKEN_ENUM                   = "TOKEN_ENUM"
 	TOKEN_EQUALS                 = "TOKEN_EQUALS"
@@ -298,6 +299,7 @@ var one_char_tokens = map[byte]string{
 var two_char_tokens = map[string]string{
 	"->": TOKEN_ARROW,
 	"::": TOKEN_DOUBLE_COLON,
+	"++": TOKEN_DOUBLE_PLUS,
 	"==": TOKEN_EQUALS,
 	">=": TOKEN_GREATER_THAN_OR_EQUALS,
 	"<=": TOKEN_LESS_THAN_OR_EQUALS,

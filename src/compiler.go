@@ -716,6 +716,12 @@ func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, Venice
 }
 
 func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, VeniceType, error) {
+	// TODO(2021-08-07): Boolean operators should short-circuit.
+	bytecodeName, ok := opsToBytecodeNames[tree.Operator]
+	if !ok {
+		return nil, nil, compiler.customError(tree, fmt.Sprintf("unknown operator: %s", tree.Operator))
+	}
+
 	leftCode, leftType, err := compiler.compileExpression(tree.Left)
 	if err != nil {
 		return nil, nil, err
@@ -730,40 +736,30 @@ func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, Venice
 		return nil, nil, err
 	}
 
-	if !checkInfixRightType(tree.Operator, leftType, rightType) {
+	resultType, ok := checkInfixRightType(tree.Operator, leftType, rightType)
+	if !ok {
 		return nil, nil, compiler.customError(tree.Right, fmt.Sprintf("invalid type for right operand of %s", tree.Operator))
 	}
 
 	code := append(leftCode, rightCode...)
-	// TODO(2021-08-07): Boolean operators should short-circuit.
-	switch tree.Operator {
-	case "+":
-		return append(code, NewBytecode("BINARY_ADD")), VENICE_TYPE_INTEGER, nil
-	case "and":
-		return append(code, NewBytecode("BINARY_AND")), VENICE_TYPE_BOOLEAN, nil
-	case "/":
-		return append(code, NewBytecode("BINARY_DIV")), VENICE_TYPE_INTEGER, nil
-	case "==":
-		return append(code, NewBytecode("BINARY_EQ")), VENICE_TYPE_BOOLEAN, nil
-	case ">":
-		return append(code, NewBytecode("BINARY_GT")), VENICE_TYPE_BOOLEAN, nil
-	case ">=":
-		return append(code, NewBytecode("BINARY_GT_EQ")), VENICE_TYPE_BOOLEAN, nil
-	case "<":
-		return append(code, NewBytecode("BINARY_LT")), VENICE_TYPE_BOOLEAN, nil
-	case "<=":
-		return append(code, NewBytecode("BINARY_LT_EQ")), VENICE_TYPE_BOOLEAN, nil
-	case "*":
-		return append(code, NewBytecode("BINARY_MUL")), VENICE_TYPE_INTEGER, nil
-	case "!=":
-		return append(code, NewBytecode("BINARY_NOT_EQ")), VENICE_TYPE_BOOLEAN, nil
-	case "or":
-		return append(code, NewBytecode("BINARY_OR")), VENICE_TYPE_BOOLEAN, nil
-	case "-":
-		return append(code, NewBytecode("BINARY_SUB")), VENICE_TYPE_INTEGER, nil
-	default:
-		return nil, nil, compiler.customError(tree, fmt.Sprintf("unknown operator: %s", tree.Operator))
-	}
+	code = append(code, NewBytecode(bytecodeName))
+	return code, resultType, nil
+}
+
+var opsToBytecodeNames = map[string]string{
+	"+":   "BINARY_ADD",
+	"and": "BINARY_AND",
+	"++":  "BINARY_CONCAT",
+	"/":   "BINARY_DIV",
+	"==":  "BINARY_EQ",
+	">":   "BINARY_GT",
+	">=":  "BINARY_GT_EQ",
+	"<":   "BINARY_LT",
+	"<=":  "BINARY_LT_EQ",
+	"*":   "BINARY_MUL",
+	"!=":  "BINARY_NOT_EQ",
+	"or":  "BINARY_OR",
+	"-":   "BINARY_SUB",
 }
 
 func checkInfixLeftType(operator string, leftType VeniceType) bool {
@@ -772,19 +768,33 @@ func checkInfixLeftType(operator string, leftType VeniceType) bool {
 		return true
 	case "and", "or":
 		return areTypesCompatible(VENICE_TYPE_BOOLEAN, leftType)
+	case "++":
+		if _, ok := leftType.(*VeniceListType); ok {
+			return true
+		} else {
+			return areTypesCompatible(VENICE_TYPE_STRING, leftType)
+		}
 	default:
 		return areTypesCompatible(VENICE_TYPE_INTEGER, leftType)
 	}
 }
 
-func checkInfixRightType(operator string, leftType VeniceType, rightType VeniceType) bool {
+func checkInfixRightType(operator string, leftType VeniceType, rightType VeniceType) (VeniceType, bool) {
 	switch operator {
-	case "==":
-		return areTypesCompatible(leftType, rightType)
+	case "==", "!=":
+		return VENICE_TYPE_BOOLEAN, areTypesCompatible(leftType, rightType)
 	case "and", "or":
-		return areTypesCompatible(VENICE_TYPE_BOOLEAN, rightType)
+		return VENICE_TYPE_BOOLEAN, areTypesCompatible(VENICE_TYPE_BOOLEAN, rightType)
+	case ">", ">=", "<", "<=":
+		return VENICE_TYPE_BOOLEAN, areTypesCompatible(VENICE_TYPE_INTEGER, rightType)
+	case "++":
+		if areTypesCompatible(VENICE_TYPE_STRING, leftType) {
+			return VENICE_TYPE_STRING, areTypesCompatible(VENICE_TYPE_STRING, rightType)
+		} else {
+			return leftType, areTypesCompatible(leftType, rightType)
+		}
 	default:
-		return areTypesCompatible(VENICE_TYPE_INTEGER, rightType)
+		return VENICE_TYPE_INTEGER, areTypesCompatible(VENICE_TYPE_INTEGER, rightType)
 	}
 }
 
