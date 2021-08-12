@@ -57,6 +57,8 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 		return p.matchEnumDeclaration()
 	case TOKEN_FN:
 		return p.matchFunctionDeclaration()
+	case TOKEN_FOR:
+		return p.matchForLoop()
 	case TOKEN_IF:
 		return p.matchIfStatement()
 	case TOKEN_LET:
@@ -368,6 +370,33 @@ func (p *Parser) matchTypeNode() (TypeNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	return &SimpleTypeNode{name, location}, nil
+}
+
+func (p *Parser) matchForLoop() (*ForLoopNode, error) {
+	location := p.currentToken.Location
+	p.nextToken()
+	if p.currentToken.Type != TOKEN_SYMBOL {
+		return nil, p.unexpectedToken("symbol")
+	}
+	variable := p.currentToken.Value
+
+	p.nextToken()
+	if p.currentToken.Type != TOKEN_IN {
+		return nil, p.unexpectedToken("keyword 'in'")
+	}
+
+	p.nextToken()
+	iterable, err := p.matchExpression(PRECEDENCE_LOWEST)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := p.matchBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ForLoopNode{variable, iterable, body, location}, nil
 }
 
 func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {

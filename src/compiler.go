@@ -125,6 +125,8 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 			return nil, err
 		}
 		return code, nil
+	case *ForLoopNode:
+		return compiler.compileForLoop(tree)
 	case *IfStatementNode:
 		return compiler.compileIfStatement(tree)
 	case *LetStatementNode:
@@ -316,6 +318,41 @@ func (compiler *Compiler) resolveType(typeNodeInterface TypeNode) (VeniceType, e
 	default:
 		return nil, compiler.customError(typeNodeInterface, fmt.Sprintf("unknown type node: %T", typeNodeInterface))
 	}
+}
+
+func (compiler *Compiler) compileForLoop(tree *ForLoopNode) ([]*Bytecode, error) {
+	iterableCode, iterableTypeAny, err := compiler.compileExpression(tree.Iterable)
+	if err != nil {
+		return nil, err
+	}
+
+	iterableType, ok := iterableTypeAny.(*VeniceListType)
+	if !ok {
+		return nil, compiler.customError(tree.Iterable, "for loop must be of list")
+	}
+
+	symbolTable := &SymbolTable{
+		parent:  compiler.symbolTable,
+		symbols: map[string]VeniceType{tree.Variable: iterableType.ItemType},
+	}
+
+	compiler.symbolTable = symbolTable
+	compiler.nestedLoopCount += 1
+	bodyCode, err := compiler.compileBlock(tree.Body)
+	compiler.nestedLoopCount -= 1
+	compiler.symbolTable = compiler.symbolTable.parent
+
+	if err != nil {
+		return nil, err
+	}
+
+	code := iterableCode
+	code = append(code, NewBytecode("GET_ITER"))
+	code = append(code, NewBytecode("FOR_ITER", &VeniceInteger{len(bodyCode) + 3}))
+	code = append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Variable}))
+	code = append(code, bodyCode...)
+	code = append(code, NewBytecode("REL_JUMP", &VeniceInteger{-(len(bodyCode) + 2)}))
+	return code, nil
 }
 
 func (compiler *Compiler) compileWhileLoop(tree *WhileLoopNode) ([]*Bytecode, error) {

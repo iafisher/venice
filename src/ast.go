@@ -142,6 +142,19 @@ func (n *IfStatementNode) getLocation() *Location {
 	return n.Location
 }
 
+type ForLoopNode struct {
+	Variable string
+	Iterable ExpressionNode
+	Body     []StatementNode
+	Location *Location
+}
+
+func (n *ForLoopNode) statementNode() {}
+
+func (n *ForLoopNode) getLocation() *Location {
+	return n.Location
+}
+
 type WhileLoopNode struct {
 	Condition ExpressionNode
 	Body      []StatementNode

@@ -148,6 +148,25 @@ func (v *VeniceList) Equals(otherInterface VeniceValue) bool {
 	}
 }
 
+type VeniceIterator struct {
+	List  *VeniceList
+	Index int
+}
+
+func (v *VeniceIterator) veniceValue() {}
+
+func (v *VeniceIterator) Serialize() string {
+	return "<iter>"
+}
+
+func (v *VeniceIterator) SerializePrintable() string {
+	return v.Serialize()
+}
+
+func (v *VeniceIterator) Equals(otherInterface VeniceValue) bool {
+	return false
+}
+
 type VeniceMap struct {
 	Pairs []*VeniceMapPair
 }

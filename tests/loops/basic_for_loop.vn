@@ -1,0 +1,9 @@
+# OUTPUT
+# 1
+# 2
+# 3
+# END OUTPUT
+
+for x in [1, 2, 3] {
+  print(x)
+}
