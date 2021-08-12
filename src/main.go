@@ -103,13 +103,13 @@ func repl() {
 					} else {
 						fmt.Println("Stack (bottom to top)")
 						for _, value := range vm.stack {
-							fmt.Println(value.Serialize())
+							fmt.Println(value.String())
 						}
 					}
 					continue
 				case "!symbols":
 					for key, value := range vm.env.symbols {
-						fmt.Printf("%s: %s\n", key, value.Serialize())
+						fmt.Printf("%s: %s\n", key, value.String())
 					}
 					continue
 				case "!symbolTypes":
@@ -201,7 +201,7 @@ func repl() {
 		}
 
 		if value != nil {
-			fmt.Println(value.Serialize())
+			fmt.Println(value.String())
 		}
 	}
 }

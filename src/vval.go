@@ -6,8 +6,8 @@ import (
 )
 
 type VeniceValue interface {
+	fmt.Stringer
 	veniceValue()
-	Serialize() string
 	Equals(v VeniceValue) bool
 }
 
@@ -17,11 +17,11 @@ type VeniceClassObject struct {
 
 func (v *VeniceClassObject) veniceValue() {}
 
-func (v *VeniceClassObject) Serialize() string {
+func (v *VeniceClassObject) String() string {
 	var sb strings.Builder
 	sb.WriteString("<object ")
 	for i, value := range v.Values {
-		sb.WriteString(value.Serialize())
+		sb.WriteString(value.String())
 		if i != len(v.Values)-1 {
 			sb.WriteString(", ")
 		}
@@ -42,7 +42,7 @@ type VeniceEnumObject struct {
 
 func (v *VeniceEnumObject) veniceValue() {}
 
-func (v *VeniceEnumObject) Serialize() string {
+func (v *VeniceEnumObject) String() string {
 	if len(v.Values) == 0 {
 		return v.Label
 	}
@@ -51,7 +51,7 @@ func (v *VeniceEnumObject) Serialize() string {
 	sb.WriteString(v.Label)
 	sb.WriteByte('(')
 	for i, value := range v.Values {
-		sb.WriteString(value.Serialize())
+		sb.WriteString(value.String())
 		if i != len(v.Values)-1 {
 			sb.WriteString(", ")
 		}
@@ -71,11 +71,11 @@ type VeniceList struct {
 
 func (v *VeniceList) veniceValue() {}
 
-func (v *VeniceList) Serialize() string {
+func (v *VeniceList) String() string {
 	var sb strings.Builder
 	sb.WriteByte('[')
 	for i, value := range v.Values {
-		sb.WriteString(value.Serialize())
+		sb.WriteString(value.String())
 		if i != len(v.Values)-1 {
 			sb.WriteString(", ")
 		}
@@ -109,11 +109,11 @@ type VeniceTuple struct {
 
 func (v *VeniceTuple) veniceValue() {}
 
-func (v *VeniceTuple) Serialize() string {
+func (v *VeniceTuple) String() string {
 	var sb strings.Builder
 	sb.WriteByte('(')
 	for i, value := range v.Values {
-		sb.WriteString(value.Serialize())
+		sb.WriteString(value.String())
 		if i != len(v.Values)-1 {
 			sb.WriteString(", ")
 		}
@@ -147,13 +147,13 @@ type VeniceMap struct {
 
 func (v *VeniceMap) veniceValue() {}
 
-func (v *VeniceMap) Serialize() string {
+func (v *VeniceMap) String() string {
 	var sb strings.Builder
 	sb.WriteByte('{')
 	for i, pair := range v.Pairs {
-		sb.WriteString(pair.Key.Serialize())
+		sb.WriteString(pair.Key.String())
 		sb.WriteString(": ")
-		sb.WriteString(pair.Value.Serialize())
+		sb.WriteString(pair.Value.String())
 		if i != len(v.Pairs)-1 {
 			sb.WriteString(", ")
 		}
@@ -178,7 +178,7 @@ type VeniceInteger struct {
 
 func (v *VeniceInteger) veniceValue() {}
 
-func (v *VeniceInteger) Serialize() string {
+func (v *VeniceInteger) String() string {
 	return fmt.Sprintf("%d", v.Value)
 }
 
@@ -197,7 +197,7 @@ type VeniceString struct {
 
 func (v *VeniceString) veniceValue() {}
 
-func (v *VeniceString) Serialize() string {
+func (v *VeniceString) String() string {
 	return fmt.Sprintf("%q", v.Value)
 }
 
@@ -216,7 +216,7 @@ type VeniceBoolean struct {
 
 func (v *VeniceBoolean) veniceValue() {}
 
-func (v *VeniceBoolean) Serialize() string {
+func (v *VeniceBoolean) String() string {
 	if v.Value {
 		return "true"
 	} else {
@@ -239,7 +239,7 @@ type VeniceCharacter struct {
 
 func (v *VeniceCharacter) veniceValue() {}
 
-func (v *VeniceCharacter) Serialize() string {
+func (v *VeniceCharacter) String() string {
 	return fmt.Sprintf("'%c'", v.Value)
 }
 
@@ -259,7 +259,7 @@ type VeniceFunction struct {
 
 func (v *VeniceFunction) veniceValue() {}
 
-func (v *VeniceFunction) Serialize() string {
+func (v *VeniceFunction) String() string {
 	return "<function object>"
 }
 
@@ -279,7 +279,7 @@ type VeniceListIterator struct {
 
 func (v *VeniceListIterator) veniceValue() {}
 
-func (v *VeniceListIterator) Serialize() string {
+func (v *VeniceListIterator) String() string {
 	return "<list iterator>"
 }
 
@@ -304,7 +304,7 @@ type VeniceMapIterator struct {
 
 func (v *VeniceMapIterator) veniceValue() {}
 
-func (v *VeniceMapIterator) Serialize() string {
+func (v *VeniceMapIterator) String() string {
 	return "<map iterator>"
 }
 

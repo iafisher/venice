@@ -35,7 +35,7 @@ func (vm *VirtualMachine) executeFunction(compiledProgram CompiledProgram, funct
 			fmt.Println("DEBUG: Stack (bottom to top)")
 			if len(vm.stack) > 0 {
 				for _, value := range vm.stack {
-					fmt.Printf("DEBUG:   %s\n", value.Serialize())
+					fmt.Printf("DEBUG:   %s\n", value.String())
 				}
 			} else {
 				fmt.Println("DEBUG:   <empty>")
@@ -89,7 +89,7 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 			left := leftInterface.(*VeniceString)
 			vm.pushStack(&VeniceString{left.Value + right.Value})
 		default:
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_CONCAT requires list or string on top of stack, got %s (%T)", rightInterface.Serialize(), rightInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_CONCAT requires list or string on top of stack, got %s (%T)", rightInterface.String(), rightInterface)}
 		}
 	case "BINARY_DIV":
 		left, right, err := vm.popTwoInts()
@@ -118,13 +118,13 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 		indexInterface := vm.popStack()
 		index, ok := indexInterface.(*VeniceInteger)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires integer on top of stack, got %s (%T)", indexInterface.Serialize(), indexInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires integer on top of stack, got %s (%T)", indexInterface.String(), indexInterface)}
 		}
 
 		listInterface := vm.popStack()
 		list, ok := listInterface.(*VeniceList)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires list on top of stack, got %s (%T)", listInterface.Serialize(), listInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires list on top of stack, got %s (%T)", listInterface.String(), listInterface)}
 		}
 
 		if index.Value < 0 || index.Value >= len(list.Values) {
@@ -149,7 +149,7 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 		vMapInterface := vm.popStack()
 		vMap, ok := vMapInterface.(*VeniceMap)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_MAP_INDEX requires map on top of stack, got %s (%T)", vMapInterface.Serialize(), vMapInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_MAP_INDEX requires map on top of stack, got %s (%T)", vMapInterface.String(), vMapInterface)}
 		}
 
 		for _, pair := range vMap.Pairs {
@@ -182,13 +182,13 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 		indexInterface := vm.popStack()
 		index, ok := indexInterface.(*VeniceInteger)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_STRING_INDEX requires integer on top of stack, got %s (%T)", indexInterface.Serialize(), indexInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_STRING_INDEX requires integer on top of stack, got %s (%T)", indexInterface.String(), indexInterface)}
 		}
 
 		stringInterface := vm.popStack()
 		str, ok := stringInterface.(*VeniceString)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_STRING_INDEX requires string on top of stack, got %s (%T)", stringInterface.Serialize(), stringInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_STRING_INDEX requires string on top of stack, got %s (%T)", stringInterface.String(), stringInterface)}
 		}
 
 		if index.Value < 0 || index.Value >= len(str.Value) {
@@ -252,7 +252,7 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 				case *VeniceString:
 					fmt.Println(topOfStack.Value)
 				default:
-					fmt.Println(topOfStackAny.Serialize())
+					fmt.Println(topOfStackAny.String())
 				}
 			default:
 				return -1, &ExecutionError{fmt.Sprintf("unknown builtin: %s", v.Value)}

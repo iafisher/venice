@@ -25,7 +25,7 @@ func main() {
 		}
 
 		if value != nil {
-			return js.ValueOf(value.Serialize())
+			return js.ValueOf(value.String())
 		} else {
 			return js.ValueOf(nil)
 		}

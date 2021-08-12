@@ -27,7 +27,7 @@ func (b *Bytecode) String() string {
 	sb.WriteString(b.Name)
 	for _, arg := range b.Args {
 		sb.WriteString(" ")
-		sb.WriteString(arg.Serialize())
+		sb.WriteString(arg.String())
 	}
 	return sb.String()
 }
