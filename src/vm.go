@@ -245,8 +245,15 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 		if v, ok := bytecode.Args[0].(*VeniceString); ok {
 			switch v.Value {
 			case "print":
-				topOfStack := vm.popStack()
-				fmt.Println(topOfStack.SerializePrintable())
+				topOfStackAny := vm.popStack()
+				switch topOfStack := topOfStackAny.(type) {
+				case *VeniceCharacter:
+					fmt.Println(string(topOfStack.Value))
+				case *VeniceString:
+					fmt.Println(topOfStack.Value)
+				default:
+					fmt.Println(topOfStackAny.Serialize())
+				}
 			default:
 				return -1, &ExecutionError{fmt.Sprintf("unknown builtin: %s", v.Value)}
 			}

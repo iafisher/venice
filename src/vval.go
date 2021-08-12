@@ -8,7 +8,6 @@ import (
 type VeniceValue interface {
 	veniceValue()
 	Serialize() string
-	SerializePrintable() string
 	Equals(v VeniceValue) bool
 }
 
@@ -23,19 +22,6 @@ func (v *VeniceClassObject) Serialize() string {
 	sb.WriteString("<object ")
 	for i, value := range v.Values {
 		sb.WriteString(value.Serialize())
-		if i != len(v.Values)-1 {
-			sb.WriteString(", ")
-		}
-	}
-	sb.WriteByte('>')
-	return sb.String()
-}
-
-func (v *VeniceClassObject) SerializePrintable() string {
-	var sb strings.Builder
-	sb.WriteString("<object ")
-	for i, value := range v.Values {
-		sb.WriteString(value.SerializePrintable())
 		if i != len(v.Values)-1 {
 			sb.WriteString(", ")
 		}
@@ -74,24 +60,6 @@ func (v *VeniceEnumObject) Serialize() string {
 	return sb.String()
 }
 
-func (v *VeniceEnumObject) SerializePrintable() string {
-	if len(v.Values) == 0 {
-		return v.Label
-	}
-
-	var sb strings.Builder
-	sb.WriteString(v.Label)
-	sb.WriteByte('(')
-	for i, value := range v.Values {
-		sb.WriteString(value.SerializePrintable())
-		if i != len(v.Values)-1 {
-			sb.WriteString(", ")
-		}
-	}
-	sb.WriteByte(')')
-	return sb.String()
-}
-
 func (v *VeniceEnumObject) Equals(otherInterface VeniceValue) bool {
 	// TODO(2021-08-09): Implement.
 	return false
@@ -114,10 +82,6 @@ func (v *VeniceList) Serialize() string {
 	}
 	sb.WriteByte(']')
 	return sb.String()
-}
-
-func (v *VeniceList) SerializePrintable() string {
-	return v.Serialize()
 }
 
 func (v *VeniceList) Equals(otherInterface VeniceValue) bool {
@@ -156,10 +120,6 @@ func (v *VeniceTuple) Serialize() string {
 	}
 	sb.WriteByte(')')
 	return sb.String()
-}
-
-func (v *VeniceTuple) SerializePrintable() string {
-	return v.Serialize()
 }
 
 func (v *VeniceTuple) Equals(otherInterface VeniceValue) bool {
@@ -202,21 +162,6 @@ func (v *VeniceMap) Serialize() string {
 	return sb.String()
 }
 
-func (v *VeniceMap) SerializePrintable() string {
-	var sb strings.Builder
-	sb.WriteByte('{')
-	for i, pair := range v.Pairs {
-		sb.WriteString(pair.Key.SerializePrintable())
-		sb.WriteString(": ")
-		sb.WriteString(pair.Value.SerializePrintable())
-		if i != len(v.Pairs)-1 {
-			sb.WriteString(", ")
-		}
-	}
-	sb.WriteByte('}')
-	return sb.String()
-}
-
 func (v *VeniceMap) Equals(otherInterface VeniceValue) bool {
 	// TODO(2021-08-31): Implement.
 	return false
@@ -237,10 +182,6 @@ func (v *VeniceInteger) Serialize() string {
 	return fmt.Sprintf("%d", v.Value)
 }
 
-func (v *VeniceInteger) SerializePrintable() string {
-	return v.Serialize()
-}
-
 func (v *VeniceInteger) Equals(otherInterface VeniceValue) bool {
 	switch other := otherInterface.(type) {
 	case *VeniceInteger:
@@ -258,10 +199,6 @@ func (v *VeniceString) veniceValue() {}
 
 func (v *VeniceString) Serialize() string {
 	return fmt.Sprintf("%q", v.Value)
-}
-
-func (v *VeniceString) SerializePrintable() string {
-	return v.Value
 }
 
 func (v *VeniceString) Equals(otherInterface VeniceValue) bool {
@@ -287,10 +224,6 @@ func (v *VeniceBoolean) Serialize() string {
 	}
 }
 
-func (v *VeniceBoolean) SerializePrintable() string {
-	return v.Serialize()
-}
-
 func (v *VeniceBoolean) Equals(otherInterface VeniceValue) bool {
 	switch other := otherInterface.(type) {
 	case *VeniceBoolean:
@@ -308,10 +241,6 @@ func (v *VeniceCharacter) veniceValue() {}
 
 func (v *VeniceCharacter) Serialize() string {
 	return fmt.Sprintf("'%c'", v.Value)
-}
-
-func (v *VeniceCharacter) SerializePrintable() string {
-	return string(v.Value)
 }
 
 func (v *VeniceCharacter) Equals(otherInterface VeniceValue) bool {
@@ -334,10 +263,6 @@ func (v *VeniceFunction) Serialize() string {
 	return "<function object>"
 }
 
-func (v *VeniceFunction) SerializePrintable() string {
-	return v.Serialize()
-}
-
 func (v *VeniceFunction) Equals(otherInterface VeniceValue) bool {
 	return false
 }
@@ -356,10 +281,6 @@ func (v *VeniceListIterator) veniceValue() {}
 
 func (v *VeniceListIterator) Serialize() string {
 	return "<list iterator>"
-}
-
-func (v *VeniceListIterator) SerializePrintable() string {
-	return v.Serialize()
 }
 
 func (v *VeniceListIterator) Equals(otherInterface VeniceValue) bool {
@@ -385,10 +306,6 @@ func (v *VeniceMapIterator) veniceValue() {}
 
 func (v *VeniceMapIterator) Serialize() string {
 	return "<map iterator>"
-}
-
-func (v *VeniceMapIterator) SerializePrintable() string {
-	return v.Serialize()
 }
 
 func (v *VeniceMapIterator) Equals(otherInterface VeniceValue) bool {

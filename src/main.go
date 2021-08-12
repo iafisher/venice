@@ -109,7 +109,7 @@ func repl() {
 					continue
 				case "!symbols":
 					for key, value := range vm.env.symbols {
-						fmt.Printf("%s: %s\n", key, value.SerializePrintable())
+						fmt.Printf("%s: %s\n", key, value.Serialize())
 					}
 					continue
 				case "!symbolTypes":
