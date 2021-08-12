@@ -598,7 +598,7 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 	case TOKEN_INT:
 		token := p.currentToken
 		p.nextToken()
-		value, err := strconv.ParseInt(token.Value, 10, 0)
+		value, err := strconv.ParseInt(token.Value, 0, 0)
 		if err != nil {
 			return nil, p.customError("could not convert integer token")
 		}
@@ -798,6 +798,8 @@ func (p *Parser) unexpectedToken(expected string) *ParseError {
 	if p.currentToken.Type == TOKEN_EOF {
 		// Don't change the start of this error message or multi-line parsing in the REPL will break.
 		return p.customError(fmt.Sprintf("premature end of input (expected %s)", expected))
+	} else if p.currentToken.Type == TOKEN_ERROR {
+		return p.customError(p.currentToken.Value)
 	} else {
 		return p.customError(fmt.Sprintf("expected %s, got %s", expected, p.currentToken.Type))
 	}

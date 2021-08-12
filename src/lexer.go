@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Lexer struct {
 	program  string
@@ -55,7 +58,10 @@ func (l *Lexer) nextToken() *Token {
 	// single TOKEN_INT instead of a TOKEN_MINUS followed by a TOKEN_INT, so we have to
 	// check this case before we look at the one-character tokens in the next block.
 	if ch == '-' && l.index+1 < len(l.program) && isDigit(l.program[l.index+1]) {
-		value := l.readInteger()
+		value, err := l.readInteger()
+		if err != nil {
+			return &Token{Type: TOKEN_ERROR, Value: err.Error(), Location: location}
+		}
 		return &Token{Type: TOKEN_INT, Value: value, Location: location}
 	}
 
@@ -67,7 +73,10 @@ func (l *Lexer) nextToken() *Token {
 
 	switch {
 	case isDigit(ch):
-		value := l.readInteger()
+		value, err := l.readInteger()
+		if err != nil {
+			return &Token{Type: TOKEN_ERROR, Value: err.Error(), Location: location}
+		}
 		return &Token{Type: TOKEN_INT, Value: value, Location: location}
 	case isSymbolFirstCharacter(ch):
 		value := l.readSymbol()
@@ -138,13 +147,73 @@ func (l *Lexer) skipCommentsAndWhitespaceExceptNewlines() {
 	}
 }
 
-func (l *Lexer) readInteger() string {
+const binaryDigits = "01"
+const octalDigits = "01234567"
+const decimalDigits = "0123456789"
+const hexadecimalDigits = "0123456789abcdefABCDEF"
+
+func (l *Lexer) readInteger() (string, error) {
 	start := l.index
-	l.advance()
-	for l.index < len(l.program) && isDigit(l.program[l.index]) {
+
+	if l.program[l.index] == '-' {
 		l.advance()
 	}
-	return l.program[start:l.index]
+
+	if l.startsWith("0b") {
+		l.advance()
+		l.advance()
+		for l.index < len(l.program) && isSymbolCharacter(l.program[l.index]) {
+			ch := l.program[l.index]
+			if strings.IndexByte(binaryDigits, ch) == -1 {
+				l.advance()
+				return "", &LexerError{fmt.Sprintf("invalid character in binary integer literal: '%c'", ch)}
+			}
+			l.advance()
+		}
+		return l.program[start:l.index], nil
+	} else if l.startsWith("0o") {
+		l.advance()
+		l.advance()
+		for l.index < len(l.program) && isSymbolCharacter(l.program[l.index]) {
+			ch := l.program[l.index]
+			if strings.IndexByte(octalDigits, ch) == -1 {
+				l.advance()
+				return "", &LexerError{fmt.Sprintf("invalid character in octal integer literal: '%c'", ch)}
+			}
+			l.advance()
+		}
+		return l.program[start:l.index], nil
+	} else if l.startsWith("0x") {
+		l.advance()
+		l.advance()
+		for l.index < len(l.program) && isSymbolCharacter(l.program[l.index]) {
+			ch := l.program[l.index]
+			if strings.IndexByte(hexadecimalDigits, ch) == -1 {
+				l.advance()
+				return "", &LexerError{fmt.Sprintf("invalid character in hexadecimal integer literal: '%c'", ch)}
+			}
+			l.advance()
+		}
+		return l.program[start:l.index], nil
+	} else {
+		l.advance()
+		for l.index < len(l.program) && isSymbolCharacter(l.program[l.index]) {
+			ch := l.program[l.index]
+			if strings.IndexByte(decimalDigits, ch) == -1 {
+				l.advance()
+				return "", &LexerError{fmt.Sprintf("invalid character in integer literal: '%c'", ch)}
+			}
+			l.advance()
+		}
+
+		// Check the first character afterwards so that the whole literal is read as a
+		// single token.
+		if l.index-start > 1 && (l.program[start] == '0' || (l.program[start] == '-' && l.program[start+1] == '0')) {
+			return "", &LexerError{"integer literal cannot start with '0'"}
+		}
+
+		return l.program[start:l.index], nil
+	}
 }
 
 func (l *Lexer) readSymbol() string {
@@ -176,6 +245,10 @@ func (l *Lexer) advance() {
 		}
 		l.index += 1
 	}
+}
+
+func (l *Lexer) startsWith(prefix string) bool {
+	return strings.HasPrefix(l.program[l.index:], prefix)
 }
 
 func (l *Lexer) copyLocation() *Location {
@@ -219,6 +292,7 @@ const (
 	TOKEN_ELSE                   = "TOKEN_ELSE"
 	TOKEN_ENUM                   = "TOKEN_ENUM"
 	TOKEN_EQUALS                 = "TOKEN_EQUALS"
+	TOKEN_ERROR                  = "TOKEN_ERROR"
 	TOKEN_FALSE                  = "TOKEN_FALSE"
 	TOKEN_FN                     = "TOKEN_FN"
 	TOKEN_FOR                    = "TOKEN_FOR"
@@ -306,4 +380,12 @@ var two_char_tokens = map[string]string{
 	">=": TOKEN_GREATER_THAN_OR_EQUALS,
 	"<=": TOKEN_LESS_THAN_OR_EQUALS,
 	"!=": TOKEN_NOT_EQUALS,
+}
+
+type LexerError struct {
+	Message string
+}
+
+func (e *LexerError) Error() string {
+	return e.Message
 }
