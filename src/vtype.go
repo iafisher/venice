@@ -254,3 +254,17 @@ func (t *VeniceGenericParameterType) SubstituteGenerics(labels []string, concret
 	}
 	return &VeniceGenericParameterType{t.Label}
 }
+
+const (
+	VENICE_TYPE_BOOLEAN_LABEL   = "bool"
+	VENICE_TYPE_CHARACTER_LABEL = "char"
+	VENICE_TYPE_INTEGER_LABEL   = "int"
+	VENICE_TYPE_STRING_LABEL    = "string"
+)
+
+var (
+	VENICE_TYPE_BOOLEAN   = &VeniceAtomicType{VENICE_TYPE_BOOLEAN_LABEL}
+	VENICE_TYPE_CHARACTER = &VeniceAtomicType{VENICE_TYPE_CHARACTER_LABEL}
+	VENICE_TYPE_INTEGER   = &VeniceAtomicType{VENICE_TYPE_INTEGER_LABEL}
+	VENICE_TYPE_STRING    = &VeniceAtomicType{VENICE_TYPE_STRING_LABEL}
+)

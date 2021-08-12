@@ -1,0 +1,30 @@
+Pattern matching
+
+parser:
+  match: MATCH expr {
+    (pattern { } )*
+  }
+
+  pattern: SYMBOL | enum_symbol | enum_symbol(pattern+)
+
+compiler:
+  make sure that match patterns are exhaustive
+
+
+
+match x {
+  Some(value) {
+     <block1>
+  },
+  None {
+     <block2>
+  },
+}
+
+
+if x.label == "Some" {
+  let value = x.values[0]
+  <block1>
+} else {
+  <block2>
+}

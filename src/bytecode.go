@@ -73,8 +73,10 @@ func ReadCompiledProgramFromString(programString string) (CompiledProgram, error
 		args := []VeniceValue{}
 		for token.Type != TOKEN_EOF && token.Type != TOKEN_NEWLINE {
 			switch token.Type {
+			case TOKEN_CHARACTER:
+				args = append(args, &VeniceCharacter{token.Value[0]})
 			case TOKEN_FALSE:
-				args = append(args, &VeniceBoolean{true})
+				args = append(args, &VeniceBoolean{false})
 			case TOKEN_INT:
 				value, err := strconv.ParseInt(token.Value, 10, 0)
 				if err != nil {
@@ -84,7 +86,7 @@ func ReadCompiledProgramFromString(programString string) (CompiledProgram, error
 			case TOKEN_STRING:
 				args = append(args, &VeniceString{token.Value})
 			case TOKEN_TRUE:
-				args = append(args, &VeniceBoolean{false})
+				args = append(args, &VeniceBoolean{true})
 			default:
 				return nil, &BytecodeParseError{fmt.Sprintf("unexpected token: %q", token.Value)}
 			}

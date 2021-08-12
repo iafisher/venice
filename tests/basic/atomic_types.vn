@@ -1,0 +1,18 @@
+# OUTPUT
+# hello
+# 42
+# true
+# c
+# END OUTPUT
+
+let s = "hello"
+print(s)
+
+let n = 42
+print(n)
+
+let b = true
+print(b)
+
+let c = 'c'
+print(c)

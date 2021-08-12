@@ -307,6 +307,17 @@ func (n *BooleanNode) getLocation() *Location {
 	return n.Location
 }
 
+type CharacterNode struct {
+	Value    byte
+	Location *Location
+}
+
+func (n *CharacterNode) expressionNode() {}
+
+func (n *CharacterNode) getLocation() *Location {
+	return n.Location
+}
+
 type ProgramNode struct {
 	Statements []StatementNode
 }

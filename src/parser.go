@@ -514,6 +514,10 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 func (p *Parser) matchPrefix() (ExpressionNode, error) {
 	location := p.currentToken.Location
 	switch p.currentToken.Type {
+	case TOKEN_CHARACTER:
+		value := p.currentToken.Value
+		p.nextToken()
+		return &CharacterNode{value[0], location}, nil
 	case TOKEN_FALSE:
 		p.nextToken()
 		return &BooleanNode{false, location}, nil

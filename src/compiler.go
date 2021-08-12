@@ -406,6 +406,8 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceBoolean{tree.Value})}, VENICE_TYPE_BOOLEAN, nil
 	case *CallNode:
 		return compiler.compileCallNode(tree)
+	case *CharacterNode:
+		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceCharacter{tree.Value})}, VENICE_TYPE_CHARACTER, nil
 	case *EnumSymbolNode:
 		return compiler.compileEnumSymbolNode(tree)
 	case *FieldAccessNode:
@@ -552,15 +554,9 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 				return nil, nil, compiler.customError(tree, "`print` takes exactly 1 argument")
 			}
 
-			code, argType, err := compiler.compileExpression(tree.Args[0])
+			code, _, err := compiler.compileExpression(tree.Args[0])
 			if err != nil {
 				return nil, nil, err
-			}
-
-			if argType != VENICE_TYPE_INTEGER && argType != VENICE_TYPE_STRING {
-				if _, ok := argType.(*VeniceEnumType); !ok {
-					return nil, nil, compiler.customError(tree, "`print`'s argument must be an integer or string")
-				}
 			}
 
 			code = append(code, NewBytecode("CALL_BUILTIN", &VeniceString{"print"}))
@@ -846,15 +842,3 @@ func (e *CompileError) Error() string {
 func (compiler *Compiler) customError(node Node, message string) *CompileError {
 	return &CompileError{message, node.getLocation()}
 }
-
-const (
-	VENICE_TYPE_BOOLEAN_LABEL = "bool"
-	VENICE_TYPE_INTEGER_LABEL = "int"
-	VENICE_TYPE_STRING_LABEL  = "string"
-)
-
-var (
-	VENICE_TYPE_BOOLEAN = &VeniceAtomicType{VENICE_TYPE_BOOLEAN_LABEL}
-	VENICE_TYPE_INTEGER = &VeniceAtomicType{VENICE_TYPE_INTEGER_LABEL}
-	VENICE_TYPE_STRING  = &VeniceAtomicType{VENICE_TYPE_STRING_LABEL}
-)

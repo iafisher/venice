@@ -267,6 +267,29 @@ func (v *VeniceBoolean) Equals(otherInterface VeniceValue) bool {
 	}
 }
 
+type VeniceCharacter struct {
+	Value byte
+}
+
+func (v *VeniceCharacter) veniceValue() {}
+
+func (v *VeniceCharacter) Serialize() string {
+	return fmt.Sprintf("'%c'", v.Value)
+}
+
+func (v *VeniceCharacter) SerializePrintable() string {
+	return string(v.Value)
+}
+
+func (v *VeniceCharacter) Equals(otherInterface VeniceValue) bool {
+	switch other := otherInterface.(type) {
+	case *VeniceCharacter:
+		return v.Value == other.Value
+	default:
+		return false
+	}
+}
+
 type VeniceFunction struct {
 	Params []string
 	Body   []*Bytecode
