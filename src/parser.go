@@ -93,7 +93,7 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 	}
 
 	if p.currentToken.Type != TOKEN_NEWLINE && p.currentToken.Type != TOKEN_SEMICOLON && p.currentToken.Type != TOKEN_EOF && p.currentToken.Type != TOKEN_RIGHT_CURLY {
-		return nil, p.customError("statement must be followed by newline or semicolon")
+		return nil, p.customError(fmt.Sprintf("statement must be followed by newline or semicolon (got %s)", p.currentToken.Type))
 	}
 
 	if p.currentToken.Type == TOKEN_NEWLINE || p.currentToken.Type == TOKEN_SEMICOLON {
@@ -466,6 +466,7 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 		if infixPrecedence, ok := precedenceMap[p.currentToken.Type]; ok {
 			if precedence < infixPrecedence {
 				if p.currentToken.Type == TOKEN_LEFT_PAREN {
+					p.brackets++
 					p.nextToken()
 					arglist, err := p.matchArglist(TOKEN_RIGHT_PAREN)
 					if err != nil {
@@ -533,7 +534,6 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 		p.brackets++
 		p.nextToken()
 		pairs, err := p.matchMapPairs()
-		p.brackets--
 		if err != nil {
 			return nil, err
 		}
@@ -555,7 +555,6 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 		p.brackets++
 		p.nextToken()
 		values, err := p.matchArglist(TOKEN_RIGHT_SQUARE)
-		p.brackets--
 		if err != nil {
 			return nil, err
 		}
@@ -616,6 +615,7 @@ func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
 		if p.currentToken.Type == TOKEN_COMMA {
 			p.nextToken()
 		} else if p.currentToken.Type == TOKEN_RIGHT_CURLY {
+			p.brackets--
 			p.nextToken()
 			break
 		} else {
@@ -642,6 +642,7 @@ func (p *Parser) matchArglist(terminator string) ([]ExpressionNode, error) {
 		if p.currentToken.Type == TOKEN_COMMA {
 			p.nextToken()
 		} else if p.currentToken.Type == terminator {
+			p.brackets--
 			p.nextToken()
 			break
 		} else {

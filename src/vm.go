@@ -164,6 +164,24 @@ func (vm *VirtualMachine) executeOne(bytecode *Bytecode, compiledProgram Compile
 			return -1, err
 		}
 		vm.pushStack(&VeniceBoolean{left.Value || right.Value})
+	case "BINARY_STRING_INDEX":
+		indexInterface := vm.popStack()
+		index, ok := indexInterface.(*VeniceInteger)
+		if !ok {
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_STRING_INDEX requires integer on top of stack, got %s (%T)", indexInterface.Serialize(), indexInterface)}
+		}
+
+		stringInterface := vm.popStack()
+		str, ok := stringInterface.(*VeniceString)
+		if !ok {
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_STRING_INDEX requires string on top of stack, got %s (%T)", stringInterface.Serialize(), stringInterface)}
+		}
+
+		if index.Value < 0 || index.Value >= len(str.Value) {
+			return -1, &ExecutionError{"index out of bounds"}
+		}
+
+		vm.pushStack(&VeniceCharacter{str.Value[index.Value]})
 	case "BINARY_SUB":
 		left, right, err := vm.popTwoInts()
 		if err != nil {

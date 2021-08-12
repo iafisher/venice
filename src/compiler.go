@@ -686,6 +686,16 @@ func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, Venice
 	code := append(exprCode, indexCode...)
 
 	switch exprType := exprTypeInterface.(type) {
+	case *VeniceAtomicType:
+		if exprType != VENICE_TYPE_STRING {
+			return nil, nil, compiler.customError(tree, "only maps, strings, and lists can be indexed")
+		}
+		if !areTypesCompatible(VENICE_TYPE_INTEGER, indexType) {
+			return nil, nil, compiler.customError(tree.Expr, "string index must be integer")
+		}
+
+		code = append(code, NewBytecode("BINARY_STRING_INDEX"))
+		return code, VENICE_TYPE_CHARACTER, nil
 	case *VeniceListType:
 		if !areTypesCompatible(VENICE_TYPE_INTEGER, indexType) {
 			return nil, nil, compiler.customError(tree.Expr, "list index must be integer")
@@ -701,7 +711,7 @@ func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, Venice
 		code = append(code, NewBytecode("BINARY_MAP_INDEX"))
 		return code, exprType.KeyType, nil
 	default:
-		return nil, nil, compiler.customError(tree, "only maps and lists can be indexed")
+		return nil, nil, compiler.customError(tree, "only maps, strings, and lists can be indexed")
 	}
 }
 

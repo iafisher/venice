@@ -54,6 +54,28 @@ func repl() {
 			continue
 		}
 
+		if line[len(line)-1] == '\\' {
+			var sb strings.Builder
+			sb.WriteString(line[:len(line)-1])
+			sb.WriteByte('\n')
+			for {
+				fmt.Print("... ")
+				ok := scanner.Scan()
+				if !ok {
+					return
+				}
+
+				nextLine := scanner.Text()
+				nextLine = strings.TrimSpace(nextLine)
+				if len(nextLine) == 0 {
+					break
+				}
+				sb.WriteString(nextLine)
+				sb.WriteByte('\n')
+			}
+			line = sb.String()
+		}
+
 		operation := "execute"
 		if line[0] == '!' {
 			splitLine := strings.SplitN(line, " ", 2)

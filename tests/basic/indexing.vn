@@ -1,0 +1,14 @@
+# OUTPUT
+# 2
+# two
+# 2
+# END OUTPUT
+
+let l = [1, 2, 3]
+print(l[1])
+
+let m = {1: "one", 2: "two"}
+print(m[2])
+
+let s = "123"
+print(s[1])
