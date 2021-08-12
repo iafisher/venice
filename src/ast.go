@@ -1,5 +1,9 @@
 package main
 
+/**
+ * AST interface declarations
+ */
+
 type Node interface {
 	getLocation() *Location
 }
@@ -19,24 +23,23 @@ type TypeNode interface {
 	typeNode()
 }
 
-type FunctionDeclarationNode struct {
-	Name       string
-	Params     []*FunctionParamNode
-	ReturnType TypeNode
-	Body       []StatementNode
-	Location   *Location
+// Root node - does not implement Node
+type ProgramNode struct {
+	Statements []StatementNode
 }
 
-func (n *FunctionDeclarationNode) statementNode() {}
+/**
+ * Statement nodes
+ */
 
-func (n *FunctionDeclarationNode) getLocation() *Location {
-	return n.Location
+type AssignStatementNode struct {
+	Symbol   string
+	Expr     ExpressionNode
+	Location *Location
 }
 
-type FunctionParamNode struct {
-	Name      string
-	ParamType TypeNode
-	Location  *Location
+type BreakStatementNode struct {
+	Location *Location
 }
 
 type ClassDeclarationNode struct {
@@ -46,10 +49,15 @@ type ClassDeclarationNode struct {
 	Location             *Location
 }
 
-func (n *ClassDeclarationNode) statementNode() {}
+// Helper struct - does not implement Node
+type ClassFieldNode struct {
+	Name      string
+	Public    bool
+	FieldType TypeNode
+}
 
-func (n *ClassDeclarationNode) getLocation() *Location {
-	return n.Location
+type ContinueStatementNode struct {
+	Location *Location
 }
 
 type EnumDeclarationNode struct {
@@ -59,87 +67,16 @@ type EnumDeclarationNode struct {
 	Location             *Location
 }
 
-func (n *EnumDeclarationNode) statementNode() {}
-
-func (n *EnumDeclarationNode) getLocation() *Location {
-	return n.Location
-}
-
+// Helper struct - does not implement Node
 type EnumCaseNode struct {
 	Label    string
 	Types    []TypeNode
 	Location *Location
 }
 
-func (n *EnumCaseNode) typeNode() {}
-
-func (n *EnumCaseNode) getLocation() *Location {
-	return n.Location
-}
-
-type ClassFieldNode struct {
-	Name      string
-	Public    bool
-	FieldType TypeNode
-}
-
-type SimpleTypeNode struct {
-	Symbol   string
-	Location *Location
-}
-
-func (n *SimpleTypeNode) typeNode() {}
-
-func (n *SimpleTypeNode) getLocation() *Location {
-	return n.Location
-}
-
-type LetStatementNode struct {
-	Symbol   string
+type ExpressionStatementNode struct {
 	Expr     ExpressionNode
 	Location *Location
-}
-
-func (n *LetStatementNode) statementNode() {}
-
-func (n *LetStatementNode) getLocation() *Location {
-	return n.Location
-}
-
-type AssignStatementNode struct {
-	Symbol   string
-	Expr     ExpressionNode
-	Location *Location
-}
-
-func (n *AssignStatementNode) statementNode() {}
-
-func (n *AssignStatementNode) getLocation() *Location {
-	return n.Location
-}
-
-type ReturnStatementNode struct {
-	Expr     ExpressionNode
-	Location *Location
-}
-
-func (n *ReturnStatementNode) statementNode() {}
-
-func (n *ReturnStatementNode) getLocation() *Location {
-	return n.Location
-}
-
-type IfStatementNode struct {
-	Condition   ExpressionNode
-	TrueClause  []StatementNode
-	FalseClause []StatementNode
-	Location    *Location
-}
-
-func (n *IfStatementNode) statementNode() {}
-
-func (n *IfStatementNode) getLocation() *Location {
-	return n.Location
 }
 
 type ForLoopNode struct {
@@ -149,10 +86,37 @@ type ForLoopNode struct {
 	Location  *Location
 }
 
-func (n *ForLoopNode) statementNode() {}
+type FunctionDeclarationNode struct {
+	Name       string
+	Params     []*FunctionParamNode
+	ReturnType TypeNode
+	Body       []StatementNode
+	Location   *Location
+}
 
-func (n *ForLoopNode) getLocation() *Location {
-	return n.Location
+// Helper struct - does not implement Node
+type FunctionParamNode struct {
+	Name      string
+	ParamType TypeNode
+	Location  *Location
+}
+
+type IfStatementNode struct {
+	Condition   ExpressionNode
+	TrueClause  []StatementNode
+	FalseClause []StatementNode
+	Location    *Location
+}
+
+type LetStatementNode struct {
+	Symbol   string
+	Expr     ExpressionNode
+	Location *Location
+}
+
+type ReturnStatementNode struct {
+	Expr     ExpressionNode
+	Location *Location
 }
 
 type WhileLoopNode struct {
@@ -161,30 +125,13 @@ type WhileLoopNode struct {
 	Location  *Location
 }
 
-func (n *WhileLoopNode) statementNode() {}
+/**
+ * Expression nodes
+ */
 
-func (n *WhileLoopNode) getLocation() *Location {
-	return n.Location
-}
-
-type BreakStatementNode struct {
+type BooleanNode struct {
+	Value    bool
 	Location *Location
-}
-
-func (n *BreakStatementNode) statementNode() {}
-
-func (n *BreakStatementNode) getLocation() *Location {
-	return n.Location
-}
-
-type ContinueStatementNode struct {
-	Location *Location
-}
-
-func (n *ContinueStatementNode) statementNode() {}
-
-func (n *ContinueStatementNode) getLocation() *Location {
-	return n.Location
 }
 
 type CallNode struct {
@@ -193,73 +140,14 @@ type CallNode struct {
 	Location *Location
 }
 
-func (n *CallNode) expressionNode() {}
-
-func (n *CallNode) getLocation() *Location {
-	return n.Location
-}
-
-type IndexNode struct {
-	Expr     ExpressionNode
-	Index    ExpressionNode
+type CharacterNode struct {
+	Value    byte
 	Location *Location
 }
 
-func (n *IndexNode) expressionNode() {}
-
-func (n *IndexNode) getLocation() *Location {
-	return n.Location
-}
-
-type InfixNode struct {
-	Operator string
-	Left     ExpressionNode
-	Right    ExpressionNode
-	Location *Location
-}
-
-func (n *InfixNode) expressionNode() {}
-
-func (n *InfixNode) getLocation() *Location {
-	return n.Location
-}
-
-type ListNode struct {
-	Values   []ExpressionNode
-	Location *Location
-}
-
-func (n *ListNode) expressionNode() {}
-
-func (n *ListNode) getLocation() *Location {
-	return n.Location
-}
-
-type TupleNode struct {
-	Values   []ExpressionNode
-	Location *Location
-}
-
-func (n *TupleNode) expressionNode() {}
-
-func (n *TupleNode) getLocation() *Location {
-	return n.Location
-}
-
-type MapNode struct {
-	Pairs    []*MapPairNode
-	Location *Location
-}
-
-func (n *MapNode) expressionNode() {}
-
-func (n *MapNode) getLocation() *Location {
-	return n.Location
-}
-
-type MapPairNode struct {
-	Key      ExpressionNode
-	Value    ExpressionNode
+type EnumSymbolNode struct {
+	Enum     string
+	Case     string
 	Location *Location
 }
 
@@ -269,10 +157,37 @@ type FieldAccessNode struct {
 	Location *Location
 }
 
-func (n *FieldAccessNode) expressionNode() {}
+type IndexNode struct {
+	Expr     ExpressionNode
+	Index    ExpressionNode
+	Location *Location
+}
 
-func (n *FieldAccessNode) getLocation() *Location {
-	return n.Location
+type InfixNode struct {
+	Operator string
+	Left     ExpressionNode
+	Right    ExpressionNode
+	Location *Location
+}
+
+type IntegerNode struct {
+	Value    int
+	Location *Location
+}
+
+type ListNode struct {
+	Values   []ExpressionNode
+	Location *Location
+}
+
+type StringNode struct {
+	Value    string
+	Location *Location
+}
+
+type TupleNode struct {
+	Values   []ExpressionNode
+	Location *Location
 }
 
 type TupleFieldAccessNode struct {
@@ -281,21 +196,16 @@ type TupleFieldAccessNode struct {
 	Location *Location
 }
 
-func (n *TupleFieldAccessNode) expressionNode() {}
-
-func (n *TupleFieldAccessNode) getLocation() *Location {
-	return n.Location
-}
-
-type IntegerNode struct {
-	Value    int
+type MapNode struct {
+	Pairs    []*MapPairNode
 	Location *Location
 }
 
-func (n *IntegerNode) expressionNode() {}
-
-func (n *IntegerNode) getLocation() *Location {
-	return n.Location
+// Helper struct - does not implement Node
+type MapPairNode struct {
+	Key      ExpressionNode
+	Value    ExpressionNode
+	Location *Location
 }
 
 type SymbolNode struct {
@@ -303,68 +213,153 @@ type SymbolNode struct {
 	Location *Location
 }
 
-func (n *SymbolNode) expressionNode() {}
+/**
+ * Type nodes
+ */
 
-func (n *SymbolNode) getLocation() *Location {
-	return n.Location
-}
-
-type EnumSymbolNode struct {
-	Enum     string
-	Case     string
+type SimpleTypeNode struct {
+	Symbol   string
 	Location *Location
 }
 
-func (n *EnumSymbolNode) expressionNode() {}
+/**
+ * getLocation() implementations
+ */
 
-func (n *EnumSymbolNode) getLocation() *Location {
+func (n *AssignStatementNode) getLocation() *Location {
 	return n.Location
 }
-
-type StringNode struct {
-	Value    string
-	Location *Location
-}
-
-func (n *StringNode) expressionNode() {}
-
-func (n *StringNode) getLocation() *Location {
-	return n.Location
-}
-
-type BooleanNode struct {
-	Value    bool
-	Location *Location
-}
-
-func (n *BooleanNode) expressionNode() {}
 
 func (n *BooleanNode) getLocation() *Location {
 	return n.Location
 }
 
-type CharacterNode struct {
-	Value    byte
-	Location *Location
+func (n *BreakStatementNode) getLocation() *Location {
+	return n.Location
 }
 
-func (n *CharacterNode) expressionNode() {}
+func (n *CallNode) getLocation() *Location {
+	return n.Location
+}
 
 func (n *CharacterNode) getLocation() *Location {
 	return n.Location
 }
 
-type ProgramNode struct {
-	Statements []StatementNode
+func (n *ClassDeclarationNode) getLocation() *Location {
+	return n.Location
 }
 
-type ExpressionStatementNode struct {
-	Expr     ExpressionNode
-	Location *Location
+func (n *ContinueStatementNode) getLocation() *Location {
+	return n.Location
 }
 
-func (n *ExpressionStatementNode) statementNode() {}
+func (n *EnumDeclarationNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *EnumSymbolNode) getLocation() *Location {
+	return n.Location
+}
 
 func (n *ExpressionStatementNode) getLocation() *Location {
 	return n.Location
 }
+
+func (n *FieldAccessNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *ForLoopNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *FunctionDeclarationNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *IfStatementNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *IndexNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *InfixNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *IntegerNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *LetStatementNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *ListNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *MapNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *ReturnStatementNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *SimpleTypeNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *StringNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *SymbolNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *TupleFieldAccessNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *TupleNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *WhileLoopNode) getLocation() *Location {
+	return n.Location
+}
+
+func (n *AssignStatementNode) statementNode()     {}
+func (n *BreakStatementNode) statementNode()      {}
+func (n *ClassDeclarationNode) statementNode()    {}
+func (n *ContinueStatementNode) statementNode()   {}
+func (n *EnumDeclarationNode) statementNode()     {}
+func (n *ExpressionStatementNode) statementNode() {}
+func (n *ForLoopNode) statementNode()             {}
+func (n *FunctionDeclarationNode) statementNode() {}
+func (n *IfStatementNode) statementNode()         {}
+func (n *LetStatementNode) statementNode()        {}
+func (n *ReturnStatementNode) statementNode()     {}
+func (n *WhileLoopNode) statementNode()           {}
+
+func (n *BooleanNode) expressionNode()          {}
+func (n *CallNode) expressionNode()             {}
+func (n *CharacterNode) expressionNode()        {}
+func (n *EnumSymbolNode) expressionNode()       {}
+func (n *FieldAccessNode) expressionNode()      {}
+func (n *IndexNode) expressionNode()            {}
+func (n *InfixNode) expressionNode()            {}
+func (n *IntegerNode) expressionNode()          {}
+func (n *ListNode) expressionNode()             {}
+func (n *MapNode) expressionNode()              {}
+func (n *StringNode) expressionNode()           {}
+func (n *SymbolNode) expressionNode()           {}
+func (n *TupleFieldAccessNode) expressionNode() {}
+func (n *TupleNode) expressionNode()            {}
+
+func (n *SimpleTypeNode) typeNode() {}

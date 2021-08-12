@@ -1,3 +1,10 @@
+/**
+ * Parse a Venice program into an abstract syntax tree (defined in src/ast.go).
+ *
+ * Each `matchXYZ` function expects that `parser.currentToken` is set to the first token
+ * of the node to be matched, and after it returns `parser.currentToken` is set to one
+ * past the last token of the node.
+ */
 package main
 
 import (
@@ -12,8 +19,8 @@ type Parser struct {
 	brackets int
 }
 
-func NewParser(l *Lexer) *Parser {
-	parser := &Parser{l, nil, 0}
+func NewParser(lexer *Lexer) *Parser {
+	parser := &Parser{lexer: lexer, currentToken: nil, brackets: 0}
 	parser.nextTokenSkipNewlines()
 	return parser
 }
@@ -39,6 +46,10 @@ func (p *Parser) Parse() (*ProgramNode, error) {
 
 	return &ProgramNode{statements}, nil
 }
+
+/**
+ * Match statements
+ */
 
 func (p *Parser) matchStatement() (StatementNode, error) {
 	location := p.currentToken.Location
@@ -105,18 +116,78 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 	return tree, nil
 }
 
-func (p *Parser) matchReturnStatement() (*ReturnStatementNode, error) {
+func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
-	if p.currentToken.Type == TOKEN_NEWLINE || p.currentToken.Type == TOKEN_SEMICOLON {
-		return &ReturnStatementNode{nil, location}, nil
+	if p.currentToken.Type != TOKEN_SYMBOL {
+		return nil, p.unexpectedToken("class name")
 	}
 
-	expr, err := p.matchExpression(PRECEDENCE_LOWEST)
-	if err != nil {
-		return nil, err
+	name := p.currentToken.Value
+
+	var genericTypeParameter string
+	p.nextToken()
+	if p.currentToken.Type == TOKEN_LESS_THAN {
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_SYMBOL {
+			return nil, p.unexpectedToken("type parameter")
+		}
+		genericTypeParameter = p.currentToken.Value
+
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_GREATER_THAN {
+			return nil, p.unexpectedToken("right angle bracket")
+		}
+		p.nextToken()
 	}
-	return &ReturnStatementNode{expr, location}, nil
+
+	if p.currentToken.Type != TOKEN_LEFT_CURLY {
+		return nil, p.unexpectedToken("left curly brace")
+	}
+	p.nextTokenSkipNewlines()
+
+	fieldNodes := []*ClassFieldNode{}
+	for {
+		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
+			p.nextTokenSkipNewlines()
+			break
+		}
+
+		var public bool
+		if p.currentToken.Type == TOKEN_PUBLIC {
+			public = true
+		} else if p.currentToken.Type == TOKEN_PRIVATE {
+			public = false
+		} else {
+			return nil, p.unexpectedToken("field access identifier (public or private)")
+		}
+
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_SYMBOL {
+			return nil, p.unexpectedToken("symbol")
+		}
+
+		name := p.currentToken.Value
+
+		p.nextToken()
+		if p.currentToken.Type != TOKEN_COLON {
+			return nil, p.unexpectedToken("colon")
+		}
+
+		p.nextToken()
+		fieldType, err := p.matchTypeNode()
+		if err != nil {
+			return nil, err
+		}
+
+		if p.currentToken.Type == TOKEN_NEWLINE {
+			p.nextTokenSkipNewlines()
+		}
+
+		fieldNodes = append(fieldNodes, &ClassFieldNode{name, public, fieldType})
+	}
+
+	return &ClassDeclarationNode{name, genericTypeParameter, fieldNodes, location}, nil
 }
 
 func (p *Parser) matchEnumDeclaration() (*EnumDeclarationNode, error) {
@@ -212,78 +283,39 @@ func (p *Parser) matchEnumDeclaration() (*EnumDeclarationNode, error) {
 	return &EnumDeclarationNode{name, genericTypeParameter, cases, location}, nil
 }
 
-func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
+func (p *Parser) matchForLoop() (*ForLoopNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
-	if p.currentToken.Type != TOKEN_SYMBOL {
-		return nil, p.unexpectedToken("class name")
-	}
 
-	name := p.currentToken.Value
-
-	var genericTypeParameter string
-	p.nextToken()
-	if p.currentToken.Type == TOKEN_LESS_THAN {
-		p.nextToken()
-		if p.currentToken.Type != TOKEN_SYMBOL {
-			return nil, p.unexpectedToken("type parameter")
-		}
-		genericTypeParameter = p.currentToken.Value
-
-		p.nextToken()
-		if p.currentToken.Type != TOKEN_GREATER_THAN {
-			return nil, p.unexpectedToken("right angle bracket")
-		}
-		p.nextToken()
-	}
-
-	if p.currentToken.Type != TOKEN_LEFT_CURLY {
-		return nil, p.unexpectedToken("left curly brace")
-	}
-	p.nextTokenSkipNewlines()
-
-	fieldNodes := []*ClassFieldNode{}
+	variables := []string{}
 	for {
-		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
-			p.nextTokenSkipNewlines()
-			break
-		}
-
-		var public bool
-		if p.currentToken.Type == TOKEN_PUBLIC {
-			public = true
-		} else if p.currentToken.Type == TOKEN_PRIVATE {
-			public = false
-		} else {
-			return nil, p.unexpectedToken("field access identifier (public or private)")
-		}
-
-		p.nextToken()
 		if p.currentToken.Type != TOKEN_SYMBOL {
 			return nil, p.unexpectedToken("symbol")
 		}
-
-		name := p.currentToken.Value
-
-		p.nextToken()
-		if p.currentToken.Type != TOKEN_COLON {
-			return nil, p.unexpectedToken("colon")
-		}
+		variables = append(variables, p.currentToken.Value)
 
 		p.nextToken()
-		fieldType, err := p.matchTypeNode()
-		if err != nil {
-			return nil, err
+		if p.currentToken.Type == TOKEN_COMMA {
+			p.nextToken()
+		} else if p.currentToken.Type == TOKEN_IN {
+			break
+		} else {
+			return nil, p.unexpectedToken("comma or keyword 'in'")
 		}
-
-		if p.currentToken.Type == TOKEN_NEWLINE {
-			p.nextTokenSkipNewlines()
-		}
-
-		fieldNodes = append(fieldNodes, &ClassFieldNode{name, public, fieldType})
 	}
 
-	return &ClassDeclarationNode{name, genericTypeParameter, fieldNodes, location}, nil
+	p.nextToken()
+	iterable, err := p.matchExpression(PRECEDENCE_LOWEST)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := p.matchBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ForLoopNode{variables, iterable, body, location}, nil
 }
 
 func (p *Parser) matchFunctionDeclaration() (*FunctionDeclarationNode, error) {
@@ -361,68 +393,6 @@ func (p *Parser) matchFunctionParams() ([]*FunctionParamNode, error) {
 	return params, nil
 }
 
-func (p *Parser) matchTypeNode() (TypeNode, error) {
-	if p.currentToken.Type != TOKEN_SYMBOL {
-		return nil, p.unexpectedToken("type name")
-	}
-
-	name := p.currentToken.Value
-	location := p.currentToken.Location
-	p.nextToken()
-	return &SimpleTypeNode{name, location}, nil
-}
-
-func (p *Parser) matchForLoop() (*ForLoopNode, error) {
-	location := p.currentToken.Location
-	p.nextToken()
-
-	variables := []string{}
-	for {
-		if p.currentToken.Type != TOKEN_SYMBOL {
-			return nil, p.unexpectedToken("symbol")
-		}
-		variables = append(variables, p.currentToken.Value)
-
-		p.nextToken()
-		if p.currentToken.Type == TOKEN_COMMA {
-			p.nextToken()
-		} else if p.currentToken.Type == TOKEN_IN {
-			break
-		} else {
-			return nil, p.unexpectedToken("comma or keyword 'in'")
-		}
-	}
-
-	p.nextToken()
-	iterable, err := p.matchExpression(PRECEDENCE_LOWEST)
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := p.matchBlock()
-	if err != nil {
-		return nil, err
-	}
-
-	return &ForLoopNode{variables, iterable, body, location}, nil
-}
-
-func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {
-	location := p.currentToken.Location
-	p.nextToken()
-	condition, err := p.matchExpression(PRECEDENCE_LOWEST)
-	if err != nil {
-		return nil, err
-	}
-
-	body, err := p.matchBlock()
-	if err != nil {
-		return nil, err
-	}
-
-	return &WhileLoopNode{condition, body, location}, nil
-}
-
 func (p *Parser) matchIfStatement() (*IfStatementNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
@@ -470,27 +440,39 @@ func (p *Parser) matchLetStatement() (*LetStatementNode, error) {
 	return &LetStatementNode{symbol, expr, location}, nil
 }
 
-func (p *Parser) matchBlock() ([]StatementNode, error) {
-	if p.currentToken.Type != TOKEN_LEFT_CURLY {
-		return nil, p.unexpectedToken("left curly brace")
+func (p *Parser) matchReturnStatement() (*ReturnStatementNode, error) {
+	location := p.currentToken.Location
+	p.nextToken()
+	if p.currentToken.Type == TOKEN_NEWLINE || p.currentToken.Type == TOKEN_SEMICOLON {
+		return &ReturnStatementNode{nil, location}, nil
 	}
 
-	p.nextTokenSkipNewlines()
-	statements := []StatementNode{}
-	for {
-		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
-			p.nextTokenSkipNewlines()
-			break
-		}
-
-		statement, err := p.matchStatement()
-		if err != nil {
-			return nil, err
-		}
-		statements = append(statements, statement)
+	expr, err := p.matchExpression(PRECEDENCE_LOWEST)
+	if err != nil {
+		return nil, err
 	}
-	return statements, nil
+	return &ReturnStatementNode{expr, location}, nil
 }
+
+func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {
+	location := p.currentToken.Location
+	p.nextToken()
+	condition, err := p.matchExpression(PRECEDENCE_LOWEST)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := p.matchBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return &WhileLoopNode{condition, body, location}, nil
+}
+
+/**
+ * Match expressions
+ */
 
 func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 	location := p.currentToken.Location
@@ -503,8 +485,6 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 		if infixPrecedence, ok := precedenceMap[p.currentToken.Type]; ok {
 			if precedence < infixPrecedence {
 				if p.currentToken.Type == TOKEN_LEFT_PAREN {
-					p.brackets++
-					p.nextToken()
 					arglist, err := p.matchArglist(TOKEN_RIGHT_PAREN)
 					if err != nil {
 						return nil, err
@@ -556,78 +536,14 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 	return expr, nil
 }
 
-func (p *Parser) matchPrefix() (ExpressionNode, error) {
-	location := p.currentToken.Location
-	switch p.currentToken.Type {
-	case TOKEN_CHARACTER:
-		value := p.currentToken.Value
-		p.nextToken()
-		return &CharacterNode{value[0], location}, nil
-	case TOKEN_FALSE:
-		p.nextToken()
-		return &BooleanNode{false, location}, nil
-	case TOKEN_INT:
-		token := p.currentToken
-		p.nextToken()
-		value, err := strconv.ParseInt(token.Value, 10, 0)
-		if err != nil {
-			return nil, p.customError("could not convert integer token")
-		}
-		return &IntegerNode{int(value), location}, nil
-	case TOKEN_LEFT_CURLY:
-		p.brackets++
-		p.nextToken()
-		pairs, err := p.matchMapPairs()
-		if err != nil {
-			return nil, err
-		}
-		return &MapNode{pairs, location}, nil
-	case TOKEN_LEFT_PAREN:
-		p.brackets++
-		p.nextToken()
-		values, err := p.matchArglist(TOKEN_RIGHT_PAREN)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(values) == 1 {
-			return values[0], nil
-		} else {
-			return &TupleNode{values, location}, nil
-		}
-	case TOKEN_LEFT_SQUARE:
-		p.brackets++
-		p.nextToken()
-		values, err := p.matchArglist(TOKEN_RIGHT_SQUARE)
-		if err != nil {
-			return nil, err
-		}
-		return &ListNode{values, location}, nil
-	case TOKEN_STRING:
-		value := p.currentToken.Value
-		p.nextToken()
-		return &StringNode{value, location}, nil
-	case TOKEN_SYMBOL:
-		value := p.currentToken.Value
-		p.nextToken()
-
-		if p.currentToken.Type == TOKEN_DOUBLE_COLON {
-			p.nextToken()
-			if p.currentToken.Type != TOKEN_SYMBOL {
-				return nil, p.unexpectedToken("symbol")
-			}
-			secondValue := p.currentToken.Value
-			p.nextToken()
-			return &EnumSymbolNode{value, secondValue, location}, nil
-		} else {
-			return &SymbolNode{value, location}, nil
-		}
-	case TOKEN_TRUE:
-		p.nextToken()
-		return &BooleanNode{true, location}, nil
-	default:
-		return nil, p.unexpectedToken("start of expression")
+func (p *Parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode, error) {
+	operator := p.currentToken.Value
+	p.nextToken()
+	right, err := p.matchExpression(precedence)
+	if err != nil {
+		return nil, err
 	}
+	return &InfixNode{operator, left, right, left.getLocation()}, nil
 }
 
 func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
@@ -669,7 +585,99 @@ func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
 	return pairs, nil
 }
 
+func (p *Parser) matchPrefix() (ExpressionNode, error) {
+	location := p.currentToken.Location
+	switch p.currentToken.Type {
+	case TOKEN_CHARACTER:
+		value := p.currentToken.Value
+		p.nextToken()
+		return &CharacterNode{value[0], location}, nil
+	case TOKEN_FALSE:
+		p.nextToken()
+		return &BooleanNode{false, location}, nil
+	case TOKEN_INT:
+		token := p.currentToken
+		p.nextToken()
+		value, err := strconv.ParseInt(token.Value, 10, 0)
+		if err != nil {
+			return nil, p.customError("could not convert integer token")
+		}
+		return &IntegerNode{int(value), location}, nil
+	case TOKEN_LEFT_CURLY:
+		p.brackets++
+		p.nextToken()
+		pairs, err := p.matchMapPairs()
+		if err != nil {
+			return nil, err
+		}
+		return &MapNode{pairs, location}, nil
+	case TOKEN_LEFT_PAREN:
+		values, err := p.matchArglist(TOKEN_RIGHT_PAREN)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(values) == 1 {
+			return values[0], nil
+		} else {
+			return &TupleNode{values, location}, nil
+		}
+	case TOKEN_LEFT_SQUARE:
+		values, err := p.matchArglist(TOKEN_RIGHT_SQUARE)
+		if err != nil {
+			return nil, err
+		}
+		return &ListNode{values, location}, nil
+	case TOKEN_STRING:
+		value := p.currentToken.Value
+		p.nextToken()
+		return &StringNode{value, location}, nil
+	case TOKEN_SYMBOL:
+		value := p.currentToken.Value
+		p.nextToken()
+
+		if p.currentToken.Type == TOKEN_DOUBLE_COLON {
+			p.nextToken()
+			if p.currentToken.Type != TOKEN_SYMBOL {
+				return nil, p.unexpectedToken("symbol")
+			}
+			secondValue := p.currentToken.Value
+			p.nextToken()
+			return &EnumSymbolNode{value, secondValue, location}, nil
+		} else {
+			return &SymbolNode{value, location}, nil
+		}
+	case TOKEN_TRUE:
+		p.nextToken()
+		return &BooleanNode{true, location}, nil
+	default:
+		return nil, p.unexpectedToken("start of expression")
+	}
+}
+
+/**
+ * Match types
+ */
+
+func (p *Parser) matchTypeNode() (TypeNode, error) {
+	if p.currentToken.Type != TOKEN_SYMBOL {
+		return nil, p.unexpectedToken("type name")
+	}
+
+	name := p.currentToken.Value
+	location := p.currentToken.Location
+	p.nextToken()
+	return &SimpleTypeNode{name, location}, nil
+}
+
+/**
+ * Helper functions
+ */
+
 func (p *Parser) matchArglist(terminator string) ([]ExpressionNode, error) {
+	p.brackets++
+	p.nextToken()
+
 	arglist := []ExpressionNode{}
 	for {
 		if p.currentToken.Type == terminator {
@@ -696,15 +704,31 @@ func (p *Parser) matchArglist(terminator string) ([]ExpressionNode, error) {
 	return arglist, nil
 }
 
-func (p *Parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode, error) {
-	operator := p.currentToken.Value
-	p.nextToken()
-	right, err := p.matchExpression(precedence)
-	if err != nil {
-		return nil, err
+func (p *Parser) matchBlock() ([]StatementNode, error) {
+	if p.currentToken.Type != TOKEN_LEFT_CURLY {
+		return nil, p.unexpectedToken("left curly brace")
 	}
-	return &InfixNode{operator, left, right, left.getLocation()}, nil
+
+	p.nextTokenSkipNewlines()
+	statements := []StatementNode{}
+	for {
+		if p.currentToken.Type == TOKEN_RIGHT_CURLY {
+			p.nextTokenSkipNewlines()
+			break
+		}
+
+		statement, err := p.matchStatement()
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, statement)
+	}
+	return statements, nil
 }
+
+/**
+ * Parser methods
+ */
 
 func (p *Parser) nextToken() *Token {
 	if p.brackets > 0 {
@@ -720,31 +744,9 @@ func (p *Parser) nextTokenSkipNewlines() *Token {
 	return p.currentToken
 }
 
-type ParseError struct {
-	Message  string
-	Location *Location
-}
-
-func (e *ParseError) Error() string {
-	if e.Location != nil {
-		return fmt.Sprintf("%s at line %d, column %d", e.Message, e.Location.Line, e.Location.Column)
-	} else {
-		return e.Message
-	}
-}
-
-func (p *Parser) unexpectedToken(expected string) *ParseError {
-	if p.currentToken.Type == TOKEN_EOF {
-		// Don't change the start of this error message or multi-line parsing in the REPL will break.
-		return p.customError(fmt.Sprintf("premature end of input (expected %s)", expected))
-	} else {
-		return p.customError(fmt.Sprintf("expected %s, got %s", expected, p.currentToken.Type))
-	}
-}
-
-func (p *Parser) customError(message string) *ParseError {
-	return &ParseError{message, p.currentToken.Location}
-}
+/**
+ * Precedence table
+ */
 
 // TODO(2021-08-03): Double-check this order.
 const (
@@ -777,4 +779,30 @@ var precedenceMap = map[string]int{
 	TOKEN_OR:                     PRECEDENCE_OR,
 	TOKEN_PLUS:                   PRECEDENCE_ADD_SUB,
 	TOKEN_SLASH:                  PRECEDENCE_MUL_DIV,
+}
+
+type ParseError struct {
+	Message  string
+	Location *Location
+}
+
+func (e *ParseError) Error() string {
+	if e.Location != nil {
+		return fmt.Sprintf("%s at line %d, column %d", e.Message, e.Location.Line, e.Location.Column)
+	} else {
+		return e.Message
+	}
+}
+
+func (p *Parser) unexpectedToken(expected string) *ParseError {
+	if p.currentToken.Type == TOKEN_EOF {
+		// Don't change the start of this error message or multi-line parsing in the REPL will break.
+		return p.customError(fmt.Sprintf("premature end of input (expected %s)", expected))
+	} else {
+		return p.customError(fmt.Sprintf("expected %s, got %s", expected, p.currentToken.Type))
+	}
+}
+
+func (p *Parser) customError(message string) *ParseError {
+	return &ParseError{message, p.currentToken.Location}
 }
