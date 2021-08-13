@@ -102,6 +102,7 @@ func (v *VeniceBoolean) String() string {
 }
 
 func (v *VeniceCharacter) String() string {
+	// TODO(2021-08-13): Does this handle backslash escapes correctly?
 	return fmt.Sprintf("'%c'", v.Value)
 }
 

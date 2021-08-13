@@ -1,120 +1,88 @@
 package main
 
-import (
-	"fmt"
-	"reflect"
-	"testing"
-)
+import "testing"
 
-func TestParseExpressions(t *testing.T) {
-	var testCases = []struct {
-		input    string
-		expected ExpressionNode
-	}{
-		{"123", &IntegerNode{123, &Location{1, 1}}},
-		{"abc", &SymbolNode{"abc", &Location{1, 1}}},
-		{
-			"1 + 2",
-			&InfixNode{
-				"+",
-				&IntegerNode{1, &Location{1, 1}},
-				&IntegerNode{2, &Location{1, 5}},
-				&Location{1, 1},
-			},
-		},
-		{
-			"1 + 2 * 3",
-			&InfixNode{
-				"+",
-				&IntegerNode{1, &Location{1, 1}},
-				&InfixNode{
-					"*",
-					&IntegerNode{2, &Location{1, 5}},
-					&IntegerNode{3, &Location{1, 9}},
-					&Location{1, 5},
-				},
-				&Location{1, 1},
-			},
-		},
-		{
-			"1 * 2 + 3",
-			&InfixNode{
-				"+",
-				&InfixNode{
-					"*",
-					&IntegerNode{1, &Location{1, 1}},
-					&IntegerNode{2, &Location{1, 5}},
-					&Location{1, 1},
-				},
-				&IntegerNode{3, &Location{1, 9}},
-				&Location{1, 1},
-			},
-		},
-		{
-			"1 * (2 + 3)",
-			&InfixNode{
-				"*",
-				&IntegerNode{1, &Location{1, 1}},
-				&InfixNode{
-					"+",
-					&IntegerNode{2, &Location{1, 6}},
-					&IntegerNode{3, &Location{1, 10}},
-					&Location{1, 6},
-				},
-				&Location{1, 1},
-			},
-		},
+func TestParseAssignStatements(t *testing.T) {
+	checkParseStatement(t, "x = 21 * 2", "(assign x (infix * 21 2))")
+}
+
+func TestParseBreakStatements(t *testing.T) {
+	checkParseStatement(t, "break", "(break)")
+}
+
+func TestParseClassDeclarationStatements(t *testing.T) {
+	checkParseStatement(t, "class Point {\n  public x: int\n  public y: int\n}", "(class-declaration Point ((class-field public x int) (class-field public y int)))")
+}
+
+func TestParseContinueStatements(t *testing.T) {
+	checkParseStatement(t, "continue", "(continue)")
+}
+
+func TestParseEnumDeclarationStatements(t *testing.T) {
+	checkParseStatement(t, "enum Operator { Plus, Minus }", "(enum-declaration Operator ((enum-case Plus) (enum-case Minus)))")
+	checkParseStatement(t, "enum Optional { Some(int), None }", "(enum-declaration Optional ((enum-case Some int) (enum-case None)))")
+}
+
+func TestParseLetStatements(t *testing.T) {
+	checkParseStatement(t, "let x = 10", "(let x 10)")
+}
+
+func TestParseInfixExpressions(t *testing.T) {
+	checkParseExpression(t, "1 + 2 * 3", "(infix + 1 (infix * 2 3))")
+	checkParseExpression(t, "1 * 2 + 3", "(infix + (infix * 1 2) 3)")
+	checkParseExpression(t, "1 * (2 + 3)", "(infix * 1 (infix + 2 3))")
+}
+
+func TestParseSimpleExpressions(t *testing.T) {
+	checkParseExpression(t, "123", "123")
+	checkParseExpression(t, "abc", "abc")
+}
+
+func checkParseExpression(t *testing.T, input string, expectedOutput string) {
+	tree, err := NewParser(NewLexer(input)).Parse()
+	if err != nil {
+		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
 
-	for i, testCase := range testCases {
-		testName := fmt.Sprintf("%d", i)
-		t.Run(testName, func(t *testing.T) {
-			program, err := NewParser(NewLexer(testCase.input)).Parse()
-			if err != nil {
-				t.Fatalf("Parse error: %s\n\nInput: %q", err, testCase.input)
-			}
+	if len(tree.Statements) != 1 {
+		t.Fatalf("Expected exactly 1 statement, got %d", len(tree.Statements))
+	}
 
-			if len(program.Statements) != 1 {
-				t.Fatalf("Expected exactly 1 statement, got %d", len(program.Statements))
-			}
+	expressionStatement, ok := tree.Statements[0].(*ExpressionStatementNode)
+	if !ok {
+		t.Fatalf("Expected expression, got %s", tree.Statements[0].String())
+	}
 
-			expressionStatement, ok := program.Statements[0].(*ExpressionStatementNode)
-			if !ok {
-				t.Fatalf("Expected expression, got %+v for %q", program, testCase.input)
-			}
-
-			answer := expressionStatement.Expr
-			if !reflect.DeepEqual(testCase.expected, answer) {
-				t.Fatalf("expected %+[1]v (%[1]T), got %+[2]v (%[2]T) for %[3]q", testCase.expected, answer, testCase.input)
-			}
-		})
+	actualOutput := expressionStatement.Expr.String()
+	if actualOutput != expectedOutput {
+		t.Fatalf("Expected %q, got %q", expectedOutput, actualOutput)
 	}
 }
 
-func TestParseStatements(t *testing.T) {
-	var testCases = []struct {
-		input    string
-		expected StatementNode
-	}{
-		{"let x = 10", &LetStatementNode{"x", &IntegerNode{10, &Location{1, 9}}, &Location{1, 1}}},
+func checkParseStatement(t *testing.T, input string, expectedOutput string) {
+	tree, err := NewParser(NewLexer(input)).Parse()
+	if err != nil {
+		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
 
-	for i, testCase := range testCases {
-		testName := fmt.Sprintf("%d", i)
-		t.Run(testName, func(t *testing.T) {
-			program, err := NewParser(NewLexer(testCase.input)).Parse()
-			if err != nil {
-				t.Fatalf("Parse error: %s\n\nInput: %q", err, testCase.input)
-			}
+	if len(tree.Statements) != 1 {
+		t.Fatalf("Expected exactly 1 statement, got %d", len(tree.Statements))
+	}
 
-			if len(program.Statements) != 1 {
-				t.Fatalf("Expected exactly 1 statement, got %d", len(program.Statements))
-			}
+	actualOutput := tree.Statements[0].String()
+	if actualOutput != expectedOutput {
+		t.Fatalf("Expected %q, got %q", expectedOutput, actualOutput)
+	}
+}
 
-			answer := program.Statements[0]
-			if !reflect.DeepEqual(testCase.expected, answer) {
-				t.Fatalf("expected %+[1]v (%[1]T), got %+[2]v (%[2]T) for %[3]q", testCase.expected, answer, testCase.input)
-			}
-		})
+func checkParseStatements(t *testing.T, input string, expectedOutput string) {
+	tree, err := NewParser(NewLexer(input)).Parse()
+	if err != nil {
+		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
+	}
+
+	actualOutput := tree.String()
+	if actualOutput != expectedOutput {
+		t.Fatalf("Expected %q, got %q", expectedOutput, actualOutput)
 	}
 }
