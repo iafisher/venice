@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -eu
+
+main() {
+  go test github.com/iafisher/venice/src/lexer
+  go test github.com/iafisher/venice/src/parser
+}
+
+main "$@"

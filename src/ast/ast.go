@@ -1,7 +1,8 @@
-package main
+package ast
 
 import (
 	"fmt"
+	"github.com/iafisher/venice/src/lexer"
 	"strconv"
 	"strings"
 )
@@ -12,7 +13,7 @@ import (
 
 type Node interface {
 	fmt.Stringer
-	getLocation() *Location
+	GetLocation() *lexer.Location
 }
 
 type ExpressionNode interface {
@@ -37,18 +38,18 @@ type TypeNode interface {
 type AssignStatementNode struct {
 	Symbol   string
 	Expr     ExpressionNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type BreakStatementNode struct {
-	Location *Location
+	Location *lexer.Location
 }
 
 type ClassDeclarationNode struct {
 	Name                 string
 	GenericTypeParameter string
 	Fields               []*ClassFieldNode
-	Location             *Location
+	Location             *lexer.Location
 }
 
 // Helper struct - does not implement Node
@@ -59,33 +60,33 @@ type ClassFieldNode struct {
 }
 
 type ContinueStatementNode struct {
-	Location *Location
+	Location *lexer.Location
 }
 
 type EnumDeclarationNode struct {
 	Name                 string
 	GenericTypeParameter string
 	Cases                []*EnumCaseNode
-	Location             *Location
+	Location             *lexer.Location
 }
 
 // Helper struct - does not implement Node
 type EnumCaseNode struct {
 	Label    string
 	Types    []TypeNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type ExpressionStatementNode struct {
 	Expr     ExpressionNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type ForLoopNode struct {
 	Variables []string
 	Iterable  ExpressionNode
 	Body      []StatementNode
-	Location  *Location
+	Location  *lexer.Location
 }
 
 type FunctionDeclarationNode struct {
@@ -93,27 +94,27 @@ type FunctionDeclarationNode struct {
 	Params     []*FunctionParamNode
 	ReturnType TypeNode
 	Body       []StatementNode
-	Location   *Location
+	Location   *lexer.Location
 }
 
 // Helper struct - does not implement Node
 type FunctionParamNode struct {
 	Name      string
 	ParamType TypeNode
-	Location  *Location
+	Location  *lexer.Location
 }
 
 type IfStatementNode struct {
 	Condition   ExpressionNode
 	TrueClause  []StatementNode
 	FalseClause []StatementNode
-	Location    *Location
+	Location    *lexer.Location
 }
 
 type LetStatementNode struct {
 	Symbol   string
 	Expr     ExpressionNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type ProgramNode struct {
@@ -122,13 +123,13 @@ type ProgramNode struct {
 
 type ReturnStatementNode struct {
 	Expr     ExpressionNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type WhileLoopNode struct {
 	Condition ExpressionNode
 	Body      []StatementNode
-	Location  *Location
+	Location  *lexer.Location
 }
 
 /**
@@ -137,86 +138,86 @@ type WhileLoopNode struct {
 
 type BooleanNode struct {
 	Value    bool
-	Location *Location
+	Location *lexer.Location
 }
 
 type CallNode struct {
 	Function ExpressionNode
 	Args     []ExpressionNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type CharacterNode struct {
 	Value    byte
-	Location *Location
+	Location *lexer.Location
 }
 
 type EnumSymbolNode struct {
 	Enum     string
 	Case     string
-	Location *Location
+	Location *lexer.Location
 }
 
 type FieldAccessNode struct {
 	Expr     ExpressionNode
 	Name     string
-	Location *Location
+	Location *lexer.Location
 }
 
 type IndexNode struct {
 	Expr     ExpressionNode
 	Index    ExpressionNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type InfixNode struct {
 	Operator string
 	Left     ExpressionNode
 	Right    ExpressionNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type IntegerNode struct {
 	Value    int
-	Location *Location
+	Location *lexer.Location
 }
 
 type ListNode struct {
 	Values   []ExpressionNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type MapNode struct {
 	Pairs    []*MapPairNode
-	Location *Location
+	Location *lexer.Location
 }
 
 // Helper struct - does not implement Node
 type MapPairNode struct {
 	Key      ExpressionNode
 	Value    ExpressionNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type StringNode struct {
 	Value    string
-	Location *Location
+	Location *lexer.Location
 }
 
 type SymbolNode struct {
 	Value    string
-	Location *Location
+	Location *lexer.Location
 }
 
 type TupleNode struct {
 	Values   []ExpressionNode
-	Location *Location
+	Location *lexer.Location
 }
 
 type TupleFieldAccessNode struct {
 	Expr     ExpressionNode
 	Index    int
-	Location *Location
+	Location *lexer.Location
 }
 
 /**
@@ -225,122 +226,122 @@ type TupleFieldAccessNode struct {
 
 type SimpleTypeNode struct {
 	Symbol   string
-	Location *Location
+	Location *lexer.Location
 }
 
 /**
- * getLocation() implementations
+ * GetLocation() implementations
  */
 
-func (n *AssignStatementNode) getLocation() *Location {
+func (n *AssignStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *BooleanNode) getLocation() *Location {
+func (n *BooleanNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *BreakStatementNode) getLocation() *Location {
+func (n *BreakStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *CallNode) getLocation() *Location {
+func (n *CallNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *CharacterNode) getLocation() *Location {
+func (n *CharacterNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *ClassDeclarationNode) getLocation() *Location {
+func (n *ClassDeclarationNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *ContinueStatementNode) getLocation() *Location {
+func (n *ContinueStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *EnumDeclarationNode) getLocation() *Location {
+func (n *EnumDeclarationNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *EnumSymbolNode) getLocation() *Location {
+func (n *EnumSymbolNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *ExpressionStatementNode) getLocation() *Location {
+func (n *ExpressionStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *FieldAccessNode) getLocation() *Location {
+func (n *FieldAccessNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *ForLoopNode) getLocation() *Location {
+func (n *ForLoopNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *FunctionDeclarationNode) getLocation() *Location {
+func (n *FunctionDeclarationNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *IfStatementNode) getLocation() *Location {
+func (n *IfStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *IndexNode) getLocation() *Location {
+func (n *IndexNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *InfixNode) getLocation() *Location {
+func (n *InfixNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *IntegerNode) getLocation() *Location {
+func (n *IntegerNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *LetStatementNode) getLocation() *Location {
+func (n *LetStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *ListNode) getLocation() *Location {
+func (n *ListNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *MapNode) getLocation() *Location {
+func (n *MapNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *ProgramNode) getLocation() *Location {
-	return &Location{Line: 1, Column: 1}
+func (n *ProgramNode) GetLocation() *lexer.Location {
+	return &lexer.Location{Line: 1, Column: 1}
 }
 
-func (n *ReturnStatementNode) getLocation() *Location {
+func (n *ReturnStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *SimpleTypeNode) getLocation() *Location {
+func (n *SimpleTypeNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *StringNode) getLocation() *Location {
+func (n *StringNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *SymbolNode) getLocation() *Location {
+func (n *SymbolNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *TupleFieldAccessNode) getLocation() *Location {
+func (n *TupleFieldAccessNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *TupleNode) getLocation() *Location {
+func (n *TupleNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *WhileLoopNode) getLocation() *Location {
+func (n *WhileLoopNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 

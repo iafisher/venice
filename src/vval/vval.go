@@ -1,7 +1,7 @@
 /**
  * Data structures for the representation of Venice values by the virtual machine.
  */
-package main
+package vval
 
 import (
 	"fmt"

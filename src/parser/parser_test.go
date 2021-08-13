@@ -1,6 +1,10 @@
-package main
+package parser
 
-import "testing"
+import (
+	"github.com/iafisher/venice/src/ast"
+	lexer_mod "github.com/iafisher/venice/src/lexer"
+	"testing"
+)
 
 func TestParseAssignStatements(t *testing.T) {
 	checkParseStatement(t, "x = 21 * 2", "(assign x (infix * 21 2))")
@@ -39,7 +43,7 @@ func TestParseSimpleExpressions(t *testing.T) {
 }
 
 func checkParseExpression(t *testing.T, input string, expectedOutput string) {
-	tree, err := NewParser(NewLexer(input)).Parse()
+	tree, err := NewParser(lexer_mod.NewLexer(input)).Parse()
 	if err != nil {
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
@@ -48,7 +52,7 @@ func checkParseExpression(t *testing.T, input string, expectedOutput string) {
 		t.Fatalf("Expected exactly 1 statement, got %d", len(tree.Statements))
 	}
 
-	expressionStatement, ok := tree.Statements[0].(*ExpressionStatementNode)
+	expressionStatement, ok := tree.Statements[0].(*ast.ExpressionStatementNode)
 	if !ok {
 		t.Fatalf("Expected expression, got %s", tree.Statements[0].String())
 	}
@@ -60,7 +64,7 @@ func checkParseExpression(t *testing.T, input string, expectedOutput string) {
 }
 
 func checkParseStatement(t *testing.T, input string, expectedOutput string) {
-	tree, err := NewParser(NewLexer(input)).Parse()
+	tree, err := NewParser(lexer_mod.NewLexer(input)).Parse()
 	if err != nil {
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
@@ -76,7 +80,7 @@ func checkParseStatement(t *testing.T, input string, expectedOutput string) {
 }
 
 func checkParseStatements(t *testing.T, input string, expectedOutput string) {
-	tree, err := NewParser(NewLexer(input)).Parse()
+	tree, err := NewParser(lexer_mod.NewLexer(input)).Parse()
 	if err != nil {
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}

@@ -1,4 +1,4 @@
-package main
+package lexer
 
 import (
 	"fmt"
@@ -255,7 +255,7 @@ func (l *Lexer) copyLocation() *Location {
 	return &Location{Line: l.location.Line, Column: l.location.Column}
 }
 
-func (token *Token) asString() string {
+func (token *Token) String() string {
 	return fmt.Sprintf("%s (%q) at line %d, column %d", token.Type, token.Value, token.Location.Line, token.Location.Column)
 }
 

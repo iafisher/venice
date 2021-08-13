@@ -1,8 +1,9 @@
-package main
+package vval
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/iafisher/venice/src/lexer"
 	"strconv"
 	"strings"
 )
@@ -50,18 +51,18 @@ func ReadCompiledProgramFromString(programString string) (CompiledProgram, error
 	compiledProgram := NewCompiledProgram()
 	var currentFunctionName string
 	for i, line := range strings.Split(programString, "\n") {
-		lexer := NewLexer(line)
-		firstToken := lexer.NextToken()
-		if firstToken.Type == TOKEN_EOF {
+		lxr := lexer.NewLexer(line)
+		firstToken := lxr.NextToken()
+		if firstToken.Type == lexer.TOKEN_EOF {
 			continue
 		}
 
-		if firstToken.Type != TOKEN_SYMBOL {
+		if firstToken.Type != lexer.TOKEN_SYMBOL {
 			return nil, &BytecodeParseError{fmt.Sprintf("could not parse line %d", i+1)}
 		}
 
-		token := lexer.NextToken()
-		if token.Type == TOKEN_COLON {
+		token := lxr.NextToken()
+		if token.Type == lexer.TOKEN_COLON {
 			currentFunctionName = firstToken.Value
 			continue
 		}
@@ -71,27 +72,27 @@ func ReadCompiledProgramFromString(programString string) (CompiledProgram, error
 		}
 
 		args := []VeniceValue{}
-		for token.Type != TOKEN_EOF && token.Type != TOKEN_NEWLINE {
+		for token.Type != lexer.TOKEN_EOF && token.Type != lexer.TOKEN_NEWLINE {
 			switch token.Type {
-			case TOKEN_CHARACTER:
+			case lexer.TOKEN_CHARACTER:
 				args = append(args, &VeniceCharacter{token.Value[0]})
-			case TOKEN_FALSE:
+			case lexer.TOKEN_FALSE:
 				args = append(args, &VeniceBoolean{false})
-			case TOKEN_INT:
+			case lexer.TOKEN_INT:
 				value, err := strconv.ParseInt(token.Value, 10, 0)
 				if err != nil {
 					return nil, &BytecodeParseError{"could not parse integer token"}
 				}
 				args = append(args, &VeniceInteger{int(value)})
-			case TOKEN_STRING:
+			case lexer.TOKEN_STRING:
 				args = append(args, &VeniceString{token.Value})
-			case TOKEN_TRUE:
+			case lexer.TOKEN_TRUE:
 				args = append(args, &VeniceBoolean{true})
 			default:
 				return nil, &BytecodeParseError{fmt.Sprintf("unexpected token: %q", token.Value)}
 			}
 
-			token = lexer.NextToken()
+			token = lxr.NextToken()
 		}
 
 		compiledProgram[currentFunctionName] = append(compiledProgram[currentFunctionName], &Bytecode{firstToken.Value, args})

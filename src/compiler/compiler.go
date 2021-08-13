@@ -5,55 +5,61 @@
  * output of src/parser.go) into bytecode instructions. It also checks the static types
  * of the programs and reports any errors.
  */
-package main
+package compiler
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/iafisher/venice/src/ast"
+	"github.com/iafisher/venice/src/lexer"
+	"github.com/iafisher/venice/src/vtype"
+	"github.com/iafisher/venice/src/vval"
+)
 
 type Compiler struct {
-	symbolTable     *SymbolTable
-	typeSymbolTable *SymbolTable
+	SymbolTable     *SymbolTable
+	TypeSymbolTable *SymbolTable
 	functionInfo    *FunctionInfo
 	nestedLoopCount int
 }
 
 func NewCompiler() *Compiler {
 	return &Compiler{
-		symbolTable:     NewBuiltinSymbolTable(),
-		typeSymbolTable: NewBuiltinTypeSymbolTable(),
+		SymbolTable:     NewBuiltinSymbolTable(),
+		TypeSymbolTable: NewBuiltinTypeSymbolTable(),
 		functionInfo:    nil,
 		nestedLoopCount: 0,
 	}
 }
 
 type FunctionInfo struct {
-	declaredReturnType  VeniceType
+	declaredReturnType  vtype.VeniceType
 	seenReturnStatement bool
 }
 
 type SymbolTable struct {
-	parent  *SymbolTable
-	symbols map[string]VeniceType
+	Parent  *SymbolTable
+	Symbols map[string]vtype.VeniceType
 }
 
 func NewBuiltinSymbolTable() *SymbolTable {
-	symbols := map[string]VeniceType{}
+	symbols := map[string]vtype.VeniceType{}
 	return &SymbolTable{nil, symbols}
 }
 
 func NewBuiltinTypeSymbolTable() *SymbolTable {
-	symbols := map[string]VeniceType{
-		"bool":   VENICE_TYPE_BOOLEAN,
-		"int":    VENICE_TYPE_INTEGER,
-		"string": VENICE_TYPE_STRING,
-		"Optional": &VeniceGenericType{
+	symbols := map[string]vtype.VeniceType{
+		"bool":   vtype.VENICE_TYPE_BOOLEAN,
+		"int":    vtype.VENICE_TYPE_INTEGER,
+		"string": vtype.VENICE_TYPE_STRING,
+		"Optional": &vtype.VeniceGenericType{
 			[]string{"T"},
-			&VeniceEnumType{
-				[]*VeniceCaseType{
-					&VeniceCaseType{
+			&vtype.VeniceEnumType{
+				[]*vtype.VeniceCaseType{
+					&vtype.VeniceCaseType{
 						"Some",
-						[]VeniceType{&VeniceGenericParameterType{"T"}},
+						[]vtype.VeniceType{&vtype.VeniceGenericParameterType{"T"}},
 					},
-					&VeniceCaseType{"None", nil},
+					&vtype.VeniceCaseType{"None", nil},
 				},
 			},
 		},
@@ -61,22 +67,22 @@ func NewBuiltinTypeSymbolTable() *SymbolTable {
 	return &SymbolTable{nil, symbols}
 }
 
-func (compiler *Compiler) Compile(tree *ProgramNode) (CompiledProgram, error) {
-	compiledProgram := NewCompiledProgram()
+func (compiler *Compiler) Compile(tree *ast.ProgramNode) (vval.CompiledProgram, error) {
+	compiledProgram := vval.NewCompiledProgram()
 	for _, statementInterface := range tree.Statements {
 		switch statement := statementInterface.(type) {
-		case *ClassDeclarationNode:
+		case *ast.ClassDeclarationNode:
 			code, err := compiler.compileClassDeclaration(statement)
 			if err != nil {
 				return nil, err
 			}
 			compiledProgram[statement.Name] = code
-		case *EnumDeclarationNode:
+		case *ast.EnumDeclarationNode:
 			err := compiler.compileEnumDeclaration(statement)
 			if err != nil {
 				return nil, err
 			}
-		case *FunctionDeclarationNode:
+		case *ast.FunctionDeclarationNode:
 			code, err := compiler.compileFunctionDeclaration(statement)
 			if err != nil {
 				return nil, err
@@ -97,51 +103,51 @@ func (compiler *Compiler) Compile(tree *ProgramNode) (CompiledProgram, error) {
  * Compile statements
  */
 
-func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Bytecode, error) {
+func (compiler *Compiler) compileStatement(treeInterface ast.StatementNode) ([]*vval.Bytecode, error) {
 	switch tree := treeInterface.(type) {
-	case *AssignStatementNode:
+	case *ast.AssignStatementNode:
 		code, eType, err := compiler.compileExpression(tree.Expr)
 		if err != nil {
 			return nil, err
 		}
 
-		expectedType, ok := compiler.symbolTable.Get(tree.Symbol)
+		expectedType, ok := compiler.SymbolTable.Get(tree.Symbol)
 		if !ok {
 			return nil, compiler.customError(treeInterface, fmt.Sprintf("cannot assign to undeclared symbol %q", tree.Symbol))
 		} else if !areTypesCompatible(expectedType, eType) {
 			return nil, compiler.customError(treeInterface, fmt.Sprintf("wrong expression type in assignment to %q", tree.Symbol))
 		}
 
-		code = append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Symbol}))
+		code = append(code, vval.NewBytecode("STORE_NAME", &vval.VeniceString{tree.Symbol}))
 		return code, nil
-	case *BreakStatementNode:
+	case *ast.BreakStatementNode:
 		if compiler.nestedLoopCount == 0 {
 			return nil, compiler.customError(treeInterface, "break statement outside of loop")
 		}
 
 		// BREAK_LOOP is a temporary bytecode instruction that the compiler will later
 		// convert to a REL_JUMP instruction.
-		return []*Bytecode{NewBytecode("BREAK_LOOP")}, nil
-	case *ContinueStatementNode:
+		return []*vval.Bytecode{vval.NewBytecode("BREAK_LOOP")}, nil
+	case *ast.ContinueStatementNode:
 		if compiler.nestedLoopCount == 0 {
 			return nil, compiler.customError(treeInterface, "break statement outside of loop")
 		}
 
 		// CONTINUE_LOOP is a temporary bytecode instruction that the compiler will later
 		// convert to a REL_JUMP instruction.
-		return []*Bytecode{NewBytecode("CONTINUE_LOOP")}, nil
-	case *ExpressionStatementNode:
+		return []*vval.Bytecode{vval.NewBytecode("CONTINUE_LOOP")}, nil
+	case *ast.ExpressionStatementNode:
 		code, _, err := compiler.compileExpression(tree.Expr)
 		if err != nil {
 			return nil, err
 		}
 		return code, nil
-	case *ForLoopNode:
+	case *ast.ForLoopNode:
 		return compiler.compileForLoop(tree)
-	case *IfStatementNode:
+	case *ast.IfStatementNode:
 		return compiler.compileIfStatement(tree)
-	case *LetStatementNode:
-		if _, ok := compiler.symbolTable.Get(tree.Symbol); ok {
+	case *ast.LetStatementNode:
+		if _, ok := compiler.SymbolTable.Get(tree.Symbol); ok {
 			return nil, compiler.customError(treeInterface, fmt.Sprintf("re-declaration of symbol %q", tree.Symbol))
 		}
 
@@ -149,9 +155,9 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 		if err != nil {
 			return nil, err
 		}
-		compiler.symbolTable.Put(tree.Symbol, eType)
-		return append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Symbol})), nil
-	case *ReturnStatementNode:
+		compiler.SymbolTable.Put(tree.Symbol, eType)
+		return append(code, vval.NewBytecode("STORE_NAME", &vval.VeniceString{tree.Symbol})), nil
+	case *ast.ReturnStatementNode:
 		if compiler.functionInfo == nil {
 			return nil, compiler.customError(treeInterface, "return statement outside of function definition")
 		}
@@ -167,74 +173,74 @@ func (compiler *Compiler) compileStatement(treeInterface StatementNode) ([]*Byte
 			}
 
 			compiler.functionInfo.seenReturnStatement = true
-			code = append(code, NewBytecode("RETURN"))
+			code = append(code, vval.NewBytecode("RETURN"))
 			return code, err
 		} else {
 			if !areTypesCompatible(compiler.functionInfo.declaredReturnType, nil) {
 				return nil, compiler.customError(treeInterface, "function cannot return void")
 			}
 
-			return []*Bytecode{NewBytecode("RETURN")}, nil
+			return []*vval.Bytecode{vval.NewBytecode("RETURN")}, nil
 		}
-	case *WhileLoopNode:
+	case *ast.WhileLoopNode:
 		return compiler.compileWhileLoop(tree)
 	default:
 		return nil, compiler.customError(treeInterface, fmt.Sprintf("unknown statement type: %T", treeInterface))
 	}
 }
 
-func (compiler *Compiler) compileClassDeclaration(tree *ClassDeclarationNode) ([]*Bytecode, error) {
+func (compiler *Compiler) compileClassDeclaration(tree *ast.ClassDeclarationNode) ([]*vval.Bytecode, error) {
 	if tree.GenericTypeParameter != "" {
 		subTypeSymbolTable := &SymbolTable{
-			compiler.typeSymbolTable,
-			map[string]VeniceType{
-				tree.GenericTypeParameter: &VeniceGenericParameterType{tree.GenericTypeParameter},
+			compiler.TypeSymbolTable,
+			map[string]vtype.VeniceType{
+				tree.GenericTypeParameter: &vtype.VeniceGenericParameterType{tree.GenericTypeParameter},
 			},
 		}
-		compiler.typeSymbolTable = subTypeSymbolTable
+		compiler.TypeSymbolTable = subTypeSymbolTable
 	}
 
-	fields := []*VeniceClassField{}
-	paramTypes := []VeniceType{}
+	fields := []*vtype.VeniceClassField{}
+	paramTypes := []vtype.VeniceType{}
 	for _, field := range tree.Fields {
 		paramType, err := compiler.resolveType(field.FieldType)
 		if err != nil {
 			return nil, err
 		}
 		paramTypes = append(paramTypes, paramType)
-		fields = append(fields, &VeniceClassField{field.Name, field.Public, paramType})
+		fields = append(fields, &vtype.VeniceClassField{field.Name, field.Public, paramType})
 	}
 
-	var classType VeniceType
+	var classType vtype.VeniceType
 	if tree.GenericTypeParameter == "" {
-		classType = &VeniceClassType{fields}
+		classType = &vtype.VeniceClassType{fields}
 	} else {
-		classType = &VeniceGenericType{[]string{tree.GenericTypeParameter}, &VeniceClassType{fields}}
-		compiler.typeSymbolTable = compiler.typeSymbolTable.parent
+		classType = &vtype.VeniceGenericType{[]string{tree.GenericTypeParameter}, &vtype.VeniceClassType{fields}}
+		compiler.TypeSymbolTable = compiler.TypeSymbolTable.Parent
 	}
-	compiler.typeSymbolTable.Put(tree.Name, classType)
+	compiler.TypeSymbolTable.Put(tree.Name, classType)
 
-	constructorType := &VeniceFunctionType{paramTypes, classType}
-	compiler.symbolTable.Put(tree.Name, constructorType)
+	constructorType := &vtype.VeniceFunctionType{paramTypes, classType}
+	compiler.SymbolTable.Put(tree.Name, constructorType)
 
-	constructorBytecode := []*Bytecode{NewBytecode("BUILD_CLASS", &VeniceInteger{len(fields)})}
+	constructorBytecode := []*vval.Bytecode{vval.NewBytecode("BUILD_CLASS", &vval.VeniceInteger{len(fields)})}
 	return constructorBytecode, nil
 }
 
-func (compiler *Compiler) compileEnumDeclaration(tree *EnumDeclarationNode) error {
+func (compiler *Compiler) compileEnumDeclaration(tree *ast.EnumDeclarationNode) error {
 	if tree.GenericTypeParameter != "" {
 		subTypeSymbolTable := &SymbolTable{
-			compiler.typeSymbolTable,
-			map[string]VeniceType{
-				tree.GenericTypeParameter: &VeniceGenericParameterType{tree.GenericTypeParameter},
+			compiler.TypeSymbolTable,
+			map[string]vtype.VeniceType{
+				tree.GenericTypeParameter: &vtype.VeniceGenericParameterType{tree.GenericTypeParameter},
 			},
 		}
-		compiler.typeSymbolTable = subTypeSymbolTable
+		compiler.TypeSymbolTable = subTypeSymbolTable
 	}
 
-	caseTypes := []*VeniceCaseType{}
+	caseTypes := []*vtype.VeniceCaseType{}
 	for _, caseNode := range tree.Cases {
-		types := []VeniceType{}
+		types := []vtype.VeniceType{}
 		for _, typeNode := range caseNode.Types {
 			veniceType, err := compiler.resolveType(typeNode)
 			if err != nil {
@@ -242,26 +248,26 @@ func (compiler *Compiler) compileEnumDeclaration(tree *EnumDeclarationNode) erro
 			}
 			types = append(types, veniceType)
 		}
-		caseTypes = append(caseTypes, &VeniceCaseType{caseNode.Label, types})
+		caseTypes = append(caseTypes, &vtype.VeniceCaseType{caseNode.Label, types})
 	}
 
 	if tree.GenericTypeParameter != "" {
-		compiler.typeSymbolTable = compiler.typeSymbolTable.parent
-		compiler.typeSymbolTable.Put(
+		compiler.TypeSymbolTable = compiler.TypeSymbolTable.Parent
+		compiler.TypeSymbolTable.Put(
 			tree.Name,
-			&VeniceGenericType{
+			&vtype.VeniceGenericType{
 				[]string{tree.GenericTypeParameter},
-				&VeniceEnumType{caseTypes},
+				&vtype.VeniceEnumType{caseTypes},
 			},
 		)
 	} else {
-		compiler.typeSymbolTable.Put(tree.Name, &VeniceEnumType{caseTypes})
+		compiler.TypeSymbolTable.Put(tree.Name, &vtype.VeniceEnumType{caseTypes})
 	}
 
 	return nil
 }
 
-func (compiler *Compiler) compileForLoop(tree *ForLoopNode) ([]*Bytecode, error) {
+func (compiler *Compiler) compileForLoop(tree *ast.ForLoopNode) ([]*vval.Bytecode, error) {
 	iterableCode, iterableTypeAny, err := compiler.compileExpression(tree.Iterable)
 	if err != nil {
 		return nil, err
@@ -269,23 +275,23 @@ func (compiler *Compiler) compileForLoop(tree *ForLoopNode) ([]*Bytecode, error)
 
 	var symbolTable *SymbolTable
 	switch iterableType := iterableTypeAny.(type) {
-	case *VeniceListType:
+	case *vtype.VeniceListType:
 		if len(tree.Variables) != 1 {
 			return nil, compiler.customError(tree, "too many for loop variables")
 		}
 
 		symbolTable = &SymbolTable{
-			parent:  compiler.symbolTable,
-			symbols: map[string]VeniceType{tree.Variables[0]: iterableType.ItemType},
+			Parent:  compiler.SymbolTable,
+			Symbols: map[string]vtype.VeniceType{tree.Variables[0]: iterableType.ItemType},
 		}
-	case *VeniceMapType:
+	case *vtype.VeniceMapType:
 		if len(tree.Variables) != 2 {
 			return nil, compiler.customError(tree, "too many for loop variables")
 		}
 
 		symbolTable = &SymbolTable{
-			parent: compiler.symbolTable,
-			symbols: map[string]VeniceType{
+			Parent: compiler.SymbolTable,
+			Symbols: map[string]vtype.VeniceType{
 				tree.Variables[0]: iterableType.KeyType,
 				tree.Variables[1]: iterableType.ValueType,
 			},
@@ -294,31 +300,31 @@ func (compiler *Compiler) compileForLoop(tree *ForLoopNode) ([]*Bytecode, error)
 		return nil, compiler.customError(tree.Iterable, "for loop must be of list")
 	}
 
-	compiler.symbolTable = symbolTable
+	compiler.SymbolTable = symbolTable
 	compiler.nestedLoopCount += 1
 	bodyCode, err := compiler.compileBlock(tree.Body)
 	compiler.nestedLoopCount -= 1
-	compiler.symbolTable = compiler.symbolTable.parent
+	compiler.SymbolTable = compiler.SymbolTable.Parent
 
 	if err != nil {
 		return nil, err
 	}
 
 	code := iterableCode
-	code = append(code, NewBytecode("GET_ITER"))
-	code = append(code, NewBytecode("FOR_ITER", &VeniceInteger{len(bodyCode) + len(tree.Variables) + 2}))
+	code = append(code, vval.NewBytecode("GET_ITER"))
+	code = append(code, vval.NewBytecode("FOR_ITER", &vval.VeniceInteger{len(bodyCode) + len(tree.Variables) + 2}))
 	for i := len(tree.Variables) - 1; i >= 0; i-- {
-		code = append(code, NewBytecode("STORE_NAME", &VeniceString{tree.Variables[i]}))
+		code = append(code, vval.NewBytecode("STORE_NAME", &vval.VeniceString{tree.Variables[i]}))
 	}
 	code = append(code, bodyCode...)
-	code = append(code, NewBytecode("REL_JUMP", &VeniceInteger{-(len(bodyCode) + len(tree.Variables) + 1)}))
+	code = append(code, vval.NewBytecode("REL_JUMP", &vval.VeniceInteger{-(len(bodyCode) + len(tree.Variables) + 1)}))
 	return code, nil
 }
 
-func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNode) ([]*Bytecode, error) {
+func (compiler *Compiler) compileFunctionDeclaration(tree *ast.FunctionDeclarationNode) ([]*vval.Bytecode, error) {
 	params := []string{}
-	paramTypes := []VeniceType{}
-	bodySymbolTableMap := map[string]VeniceType{}
+	paramTypes := []vtype.VeniceType{}
+	bodySymbolTableMap := map[string]vtype.VeniceType{}
 	for _, param := range tree.Params {
 		paramType, err := compiler.resolveType(param.ParamType)
 		if err != nil {
@@ -330,7 +336,7 @@ func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNo
 
 		bodySymbolTableMap[param.Name] = paramType
 	}
-	bodySymbolTable := &SymbolTable{compiler.symbolTable, bodySymbolTableMap}
+	bodySymbolTable := &SymbolTable{compiler.SymbolTable, bodySymbolTableMap}
 
 	declaredReturnType, err := compiler.resolveType(tree.ReturnType)
 	if err != nil {
@@ -339,9 +345,9 @@ func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNo
 
 	// Put the function's entry in the symbol table before compiling the body so that
 	// recursive functions can call themselves.
-	compiler.symbolTable.Put(tree.Name, &VeniceFunctionType{paramTypes, declaredReturnType})
+	compiler.SymbolTable.Put(tree.Name, &vtype.VeniceFunctionType{paramTypes, declaredReturnType})
 
-	compiler.symbolTable = bodySymbolTable
+	compiler.SymbolTable = bodySymbolTable
 	compiler.functionInfo = &FunctionInfo{
 		declaredReturnType:  declaredReturnType,
 		seenReturnStatement: false,
@@ -353,11 +359,11 @@ func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNo
 	}
 
 	compiler.functionInfo = nil
-	compiler.symbolTable = bodySymbolTable.parent
+	compiler.SymbolTable = bodySymbolTable.Parent
 
-	paramLoadCode := []*Bytecode{}
+	paramLoadCode := []*vval.Bytecode{}
 	for _, param := range tree.Params {
-		paramLoadCode = append(paramLoadCode, NewBytecode("STORE_NAME", &VeniceString{param.Name}))
+		paramLoadCode = append(paramLoadCode, vval.NewBytecode("STORE_NAME", &vval.VeniceString{param.Name}))
 	}
 	bodyCode = append(paramLoadCode, bodyCode...)
 
@@ -368,13 +374,13 @@ func (compiler *Compiler) compileFunctionDeclaration(tree *FunctionDeclarationNo
 	return bodyCode, nil
 }
 
-func (compiler *Compiler) compileIfStatement(tree *IfStatementNode) ([]*Bytecode, error) {
+func (compiler *Compiler) compileIfStatement(tree *ast.IfStatementNode) ([]*vval.Bytecode, error) {
 	conditionCode, conditionType, err := compiler.compileExpression(tree.Condition)
 	if err != nil {
 		return nil, err
 	}
 
-	if !areTypesCompatible(VENICE_TYPE_BOOLEAN, conditionType) {
+	if !areTypesCompatible(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
 		return nil, compiler.customError(tree.Condition, "condition of if statement must be a boolean")
 	}
 
@@ -384,7 +390,7 @@ func (compiler *Compiler) compileIfStatement(tree *IfStatementNode) ([]*Bytecode
 	}
 
 	code := conditionCode
-	code = append(code, NewBytecode("REL_JUMP_IF_FALSE", &VeniceInteger{len(trueClauseCode) + 1}))
+	code = append(code, vval.NewBytecode("REL_JUMP_IF_FALSE", &vval.VeniceInteger{len(trueClauseCode) + 1}))
 	code = append(code, trueClauseCode...)
 
 	if tree.FalseClause != nil {
@@ -393,20 +399,20 @@ func (compiler *Compiler) compileIfStatement(tree *IfStatementNode) ([]*Bytecode
 			return nil, err
 		}
 
-		code = append(code, NewBytecode("REL_JUMP", &VeniceInteger{len(falseClauseCode) + 1}))
+		code = append(code, vval.NewBytecode("REL_JUMP", &vval.VeniceInteger{len(falseClauseCode) + 1}))
 		code = append(code, falseClauseCode...)
 	}
 
 	return code, nil
 }
 
-func (compiler *Compiler) compileWhileLoop(tree *WhileLoopNode) ([]*Bytecode, error) {
+func (compiler *Compiler) compileWhileLoop(tree *ast.WhileLoopNode) ([]*vval.Bytecode, error) {
 	conditionCode, conditionType, err := compiler.compileExpression(tree.Condition)
 	if err != nil {
 		return nil, err
 	}
 
-	if !areTypesCompatible(VENICE_TYPE_BOOLEAN, conditionType) {
+	if !areTypesCompatible(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
 		return nil, compiler.customError(tree.Condition, "condition of while loop must be a boolean")
 	}
 
@@ -419,26 +425,26 @@ func (compiler *Compiler) compileWhileLoop(tree *WhileLoopNode) ([]*Bytecode, er
 
 	code := conditionCode
 	jumpForward := len(bodyCode) + 2
-	code = append(code, NewBytecode("REL_JUMP_IF_FALSE", &VeniceInteger{jumpForward}))
+	code = append(code, vval.NewBytecode("REL_JUMP_IF_FALSE", &vval.VeniceInteger{jumpForward}))
 	code = append(code, bodyCode...)
 	jumpBack := -(len(conditionCode) + len(bodyCode) + 1)
-	code = append(code, NewBytecode("REL_JUMP", &VeniceInteger{jumpBack}))
+	code = append(code, vval.NewBytecode("REL_JUMP", &vval.VeniceInteger{jumpBack}))
 
 	for i, bytecode := range code {
 		if bytecode.Name == "BREAK_LOOP" {
 			bytecode.Name = "REL_JUMP"
-			bytecode.Args = append(bytecode.Args, &VeniceInteger{len(code) - i})
+			bytecode.Args = append(bytecode.Args, &vval.VeniceInteger{len(code) - i})
 		} else if bytecode.Name == "CONTINUE_LOOP" {
 			bytecode.Name = "REL_JUMP"
-			bytecode.Args = append(bytecode.Args, &VeniceInteger{-i})
+			bytecode.Args = append(bytecode.Args, &vval.VeniceInteger{-i})
 		}
 	}
 
 	return code, nil
 }
 
-func (compiler *Compiler) compileBlock(block []StatementNode) ([]*Bytecode, error) {
-	code := []*Bytecode{}
+func (compiler *Compiler) compileBlock(block []ast.StatementNode) ([]*vval.Bytecode, error) {
+	code := []*vval.Bytecode{}
 	for _, statement := range block {
 		statementCode, err := compiler.compileStatement(statement)
 		if err != nil {
@@ -454,27 +460,27 @@ func (compiler *Compiler) compileBlock(block []StatementNode) ([]*Bytecode, erro
  * Compile expressions
  */
 
-func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*Bytecode, VeniceType, error) {
+func (compiler *Compiler) compileExpression(treeInterface ast.ExpressionNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
 	switch tree := treeInterface.(type) {
-	case *BooleanNode:
-		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceBoolean{tree.Value})}, VENICE_TYPE_BOOLEAN, nil
-	case *CallNode:
+	case *ast.BooleanNode:
+		return []*vval.Bytecode{vval.NewBytecode("PUSH_CONST", &vval.VeniceBoolean{tree.Value})}, vtype.VENICE_TYPE_BOOLEAN, nil
+	case *ast.CallNode:
 		return compiler.compileCallNode(tree)
-	case *CharacterNode:
-		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceCharacter{tree.Value})}, VENICE_TYPE_CHARACTER, nil
-	case *EnumSymbolNode:
+	case *ast.CharacterNode:
+		return []*vval.Bytecode{vval.NewBytecode("PUSH_CONST", &vval.VeniceCharacter{tree.Value})}, vtype.VENICE_TYPE_CHARACTER, nil
+	case *ast.EnumSymbolNode:
 		return compiler.compileEnumSymbolNode(tree)
-	case *FieldAccessNode:
+	case *ast.FieldAccessNode:
 		return compiler.compileFieldAccessNode(tree)
-	case *IndexNode:
+	case *ast.IndexNode:
 		return compiler.compileIndexNode(tree)
-	case *InfixNode:
+	case *ast.InfixNode:
 		return compiler.compileInfixNode(tree)
-	case *IntegerNode:
-		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceInteger{tree.Value})}, VENICE_TYPE_INTEGER, nil
-	case *ListNode:
-		code := []*Bytecode{}
-		var itemType VeniceType
+	case *ast.IntegerNode:
+		return []*vval.Bytecode{vval.NewBytecode("PUSH_CONST", &vval.VeniceInteger{tree.Value})}, vtype.VENICE_TYPE_INTEGER, nil
+	case *ast.ListNode:
+		code := []*vval.Bytecode{}
+		var itemType vtype.VeniceType
 		for i := len(tree.Values) - 1; i >= 0; i-- {
 			value := tree.Values[i]
 			valueCode, valueType, err := compiler.compileExpression(value)
@@ -490,12 +496,12 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 
 			code = append(code, valueCode...)
 		}
-		code = append(code, NewBytecode("BUILD_LIST", &VeniceInteger{len(tree.Values)}))
-		return code, &VeniceListType{itemType}, nil
-	case *MapNode:
-		code := []*Bytecode{}
-		var keyType VeniceType
-		var valueType VeniceType
+		code = append(code, vval.NewBytecode("BUILD_LIST", &vval.VeniceInteger{len(tree.Values)}))
+		return code, &vtype.VeniceListType{itemType}, nil
+	case *ast.MapNode:
+		code := []*vval.Bytecode{}
+		var keyType vtype.VeniceType
+		var valueType vtype.VeniceType
 		for i := len(tree.Pairs) - 1; i >= 0; i-- {
 			pair := tree.Pairs[i]
 			keyCode, thisKeyType, err := compiler.compileExpression(pair.Key)
@@ -524,21 +530,21 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 
 			code = append(code, valueCode...)
 		}
-		code = append(code, NewBytecode("BUILD_MAP", &VeniceInteger{len(tree.Pairs)}))
-		return code, &VeniceMapType{keyType, valueType}, nil
-	case *StringNode:
-		return []*Bytecode{NewBytecode("PUSH_CONST", &VeniceString{tree.Value})}, VENICE_TYPE_STRING, nil
-	case *SymbolNode:
-		symbolType, ok := compiler.symbolTable.Get(tree.Value)
+		code = append(code, vval.NewBytecode("BUILD_MAP", &vval.VeniceInteger{len(tree.Pairs)}))
+		return code, &vtype.VeniceMapType{keyType, valueType}, nil
+	case *ast.StringNode:
+		return []*vval.Bytecode{vval.NewBytecode("PUSH_CONST", &vval.VeniceString{tree.Value})}, vtype.VENICE_TYPE_STRING, nil
+	case *ast.SymbolNode:
+		symbolType, ok := compiler.SymbolTable.Get(tree.Value)
 		if !ok {
 			return nil, nil, compiler.customError(treeInterface, fmt.Sprintf("undefined symbol: %s", tree.Value))
 		}
-		return []*Bytecode{NewBytecode("PUSH_NAME", &VeniceString{tree.Value})}, symbolType, nil
-	case *TupleFieldAccessNode:
+		return []*vval.Bytecode{vval.NewBytecode("PUSH_NAME", &vval.VeniceString{tree.Value})}, symbolType, nil
+	case *ast.TupleFieldAccessNode:
 		return compiler.compileTupleFieldAccessNode(tree)
-	case *TupleNode:
-		code := []*Bytecode{}
-		itemTypes := []VeniceType{}
+	case *ast.TupleNode:
+		code := []*vval.Bytecode{}
+		itemTypes := []vtype.VeniceType{}
 		for i := len(tree.Values) - 1; i >= 0; i-- {
 			value := tree.Values[i]
 			valueCode, valueType, err := compiler.compileExpression(value)
@@ -554,15 +560,15 @@ func (compiler *Compiler) compileExpression(treeInterface ExpressionNode) ([]*By
 			itemTypes[i], itemTypes[j] = itemTypes[j], itemTypes[i]
 		}
 
-		code = append(code, NewBytecode("BUILD_TUPLE", &VeniceInteger{len(tree.Values)}))
-		return code, &VeniceTupleType{itemTypes}, nil
+		code = append(code, vval.NewBytecode("BUILD_TUPLE", &vval.VeniceInteger{len(tree.Values)}))
+		return code, &vtype.VeniceTupleType{itemTypes}, nil
 	default:
 		return nil, nil, compiler.customError(treeInterface, fmt.Sprintf("unknown expression type: %T", treeInterface))
 	}
 }
 
-func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceType, error) {
-	if v, ok := tree.Function.(*SymbolNode); ok {
+func (compiler *Compiler) compileCallNode(tree *ast.CallNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
+	if v, ok := tree.Function.(*ast.SymbolNode); ok {
 		if v.Value == "print" {
 			if len(tree.Args) != 1 {
 				return nil, nil, compiler.customError(tree, "`print` takes exactly 1 argument")
@@ -573,29 +579,29 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 				return nil, nil, err
 			}
 
-			code = append(code, NewBytecode("CALL_BUILTIN", &VeniceString{"print"}))
+			code = append(code, vval.NewBytecode("CALL_BUILTIN", &vval.VeniceString{"print"}))
 			return code, nil, nil
 		} else {
-			valueInterface, ok := compiler.symbolTable.Get(v.Value)
+			valueInterface, ok := compiler.SymbolTable.Get(v.Value)
 			if !ok {
 				return nil, nil, compiler.customError(tree, fmt.Sprintf("undefined symbol: %s", v.Value))
 			}
 
-			if f, ok := valueInterface.(*VeniceFunctionType); ok {
+			if f, ok := valueInterface.(*vtype.VeniceFunctionType); ok {
 				if len(f.ParamTypes) != len(tree.Args) {
 					return nil, nil, compiler.customError(tree, fmt.Sprintf("wrong number of arguments: expected %d, got %d", len(f.ParamTypes), len(tree.Args)))
 				}
 
-				code := []*Bytecode{}
+				code := []*vval.Bytecode{}
 				genericParameters := []string{}
-				concreteTypes := []VeniceType{}
+				concreteTypes := []vtype.VeniceType{}
 				for i := 0; i < len(f.ParamTypes); i++ {
 					argCode, argType, err := compiler.compileExpression(tree.Args[i])
 					if err != nil {
 						return nil, nil, err
 					}
 
-					if genericParamType, ok := f.ParamTypes[i].(*VeniceGenericParameterType); ok {
+					if genericParamType, ok := f.ParamTypes[i].(*vtype.VeniceGenericParameterType); ok {
 						genericParameters = append(genericParameters, genericParamType.Label)
 						concreteTypes = append(concreteTypes, argType)
 					} else {
@@ -607,7 +613,7 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 					code = append(code, argCode...)
 				}
 
-				code = append(code, NewBytecode("CALL_FUNCTION", &VeniceString{v.Value}, &VeniceInteger{len(f.ParamTypes)}))
+				code = append(code, vval.NewBytecode("CALL_FUNCTION", &vval.VeniceString{v.Value}, &vval.VeniceInteger{len(f.ParamTypes)}))
 
 				if len(genericParameters) > 0 {
 					return code, f.ReturnType.SubstituteGenerics(genericParameters, concreteTypes), nil
@@ -620,20 +626,20 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 		}
 	}
 
-	if v, ok := tree.Function.(*EnumSymbolNode); ok {
-		enumTypeInterface, err := compiler.resolveType(&SimpleTypeNode{v.Enum, nil})
+	if v, ok := tree.Function.(*ast.EnumSymbolNode); ok {
+		enumTypeInterface, err := compiler.resolveType(&ast.SimpleTypeNode{v.Enum, nil})
 		if err != nil {
 			return nil, nil, err
 		}
 
 		isEnum := false
-		enumType, ok := enumTypeInterface.(*VeniceEnumType)
+		enumType, ok := enumTypeInterface.(*vtype.VeniceEnumType)
 		if ok {
 			isEnum = true
 		} else {
-			genericType, ok := enumTypeInterface.(*VeniceGenericType)
+			genericType, ok := enumTypeInterface.(*vtype.VeniceGenericType)
 			if ok {
-				enumType, ok = genericType.GenericType.(*VeniceEnumType)
+				enumType, ok = genericType.GenericType.(*vtype.VeniceEnumType)
 				isEnum = ok
 			} else {
 				isEnum = false
@@ -650,16 +656,16 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 					return nil, nil, compiler.customError(tree, fmt.Sprintf("%s takes %d argument(s)", enumCase.Label, len(enumCase.Types)))
 				}
 
-				code := []*Bytecode{}
+				code := []*vval.Bytecode{}
 				genericParameters := []string{}
-				concreteTypes := []VeniceType{}
+				concreteTypes := []vtype.VeniceType{}
 				for i := 0; i < len(tree.Args); i++ {
 					argCode, argType, err := compiler.compileExpression(tree.Args[i])
 					if err != nil {
 						return nil, nil, err
 					}
 
-					if genericParamType, ok := enumCase.Types[i].(*VeniceGenericParameterType); ok {
+					if genericParamType, ok := enumCase.Types[i].(*vtype.VeniceGenericParameterType); ok {
 						genericParameters = append(genericParameters, genericParamType.Label)
 						concreteTypes = append(concreteTypes, argType)
 					} else {
@@ -670,7 +676,7 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 
 					code = append(code, argCode...)
 				}
-				code = append(code, NewBytecode("PUSH_ENUM", &VeniceString{v.Case}, &VeniceInteger{len(tree.Args)}))
+				code = append(code, vval.NewBytecode("PUSH_ENUM", &vval.VeniceString{v.Case}, &vval.VeniceInteger{len(tree.Args)}))
 
 				if len(genericParameters) > 0 {
 					return code, enumType.SubstituteGenerics(genericParameters, concreteTypes), nil
@@ -686,20 +692,20 @@ func (compiler *Compiler) compileCallNode(tree *CallNode) ([]*Bytecode, VeniceTy
 	return nil, nil, compiler.customError(tree, "function calls for non-symbols not implemented yet")
 }
 
-func (compiler *Compiler) compileEnumSymbolNode(tree *EnumSymbolNode) ([]*Bytecode, VeniceType, error) {
-	enumTypeInterface, err := compiler.resolveType(&SimpleTypeNode{tree.Enum, nil})
+func (compiler *Compiler) compileEnumSymbolNode(tree *ast.EnumSymbolNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
+	enumTypeInterface, err := compiler.resolveType(&ast.SimpleTypeNode{tree.Enum, nil})
 	if err != nil {
 		return nil, nil, err
 	}
 
 	isEnum := false
-	enumType, ok := enumTypeInterface.(*VeniceEnumType)
+	enumType, ok := enumTypeInterface.(*vtype.VeniceEnumType)
 	if ok {
 		isEnum = true
 	} else {
-		genericType, ok := enumTypeInterface.(*VeniceGenericType)
+		genericType, ok := enumTypeInterface.(*vtype.VeniceGenericType)
 		if ok {
-			enumType, ok = genericType.GenericType.(*VeniceEnumType)
+			enumType, ok = genericType.GenericType.(*vtype.VeniceEnumType)
 			isEnum = ok
 		} else {
 			isEnum = false
@@ -716,20 +722,20 @@ func (compiler *Compiler) compileEnumSymbolNode(tree *EnumSymbolNode) ([]*Byteco
 				return nil, nil, compiler.customError(tree, fmt.Sprintf("%s takes %d argument(s)", enumCase.Label, len(enumCase.Types)))
 			}
 
-			return []*Bytecode{NewBytecode("PUSH_ENUM", &VeniceString{tree.Case}, &VeniceInteger{0})}, enumType, nil
+			return []*vval.Bytecode{vval.NewBytecode("PUSH_ENUM", &vval.VeniceString{tree.Case}, &vval.VeniceInteger{0})}, enumType, nil
 		}
 	}
 
 	return nil, nil, compiler.customError(tree, fmt.Sprintf("enum %s does not have case %s", tree.Enum, tree.Case))
 }
 
-func (compiler *Compiler) compileFieldAccessNode(tree *FieldAccessNode) ([]*Bytecode, VeniceType, error) {
+func (compiler *Compiler) compileFieldAccessNode(tree *ast.FieldAccessNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
 	code, typeInterface, err := compiler.compileExpression(tree.Expr)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	classType, ok := typeInterface.(*VeniceClassType)
+	classType, ok := typeInterface.(*vtype.VeniceClassType)
 	if !ok {
 		return nil, nil, compiler.customError(tree, "left-hand side of dot must be a class object")
 	}
@@ -741,7 +747,7 @@ func (compiler *Compiler) compileFieldAccessNode(tree *FieldAccessNode) ([]*Byte
 				return nil, nil, compiler.customError(tree, "use of private field")
 			}
 
-			code = append(code, NewBytecode("PUSH_FIELD", &VeniceInteger{i}))
+			code = append(code, vval.NewBytecode("PUSH_FIELD", &vval.VeniceInteger{i}))
 			return code, field.FieldType, nil
 		}
 	}
@@ -749,7 +755,7 @@ func (compiler *Compiler) compileFieldAccessNode(tree *FieldAccessNode) ([]*Byte
 	return nil, nil, compiler.customError(tree, fmt.Sprintf("no such field: %s", tree.Name))
 }
 
-func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, VeniceType, error) {
+func (compiler *Compiler) compileIndexNode(tree *ast.IndexNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
 	exprCode, exprTypeInterface, err := compiler.compileExpression(tree.Expr)
 	if err != nil {
 		return nil, nil, err
@@ -763,36 +769,36 @@ func (compiler *Compiler) compileIndexNode(tree *IndexNode) ([]*Bytecode, Venice
 	code := append(exprCode, indexCode...)
 
 	switch exprType := exprTypeInterface.(type) {
-	case *VeniceAtomicType:
-		if exprType != VENICE_TYPE_STRING {
+	case *vtype.VeniceAtomicType:
+		if exprType != vtype.VENICE_TYPE_STRING {
 			return nil, nil, compiler.customError(tree, fmt.Sprintf("%s cannot be indexed", exprType.String()))
 		}
-		if !areTypesCompatible(VENICE_TYPE_INTEGER, indexType) {
+		if !areTypesCompatible(vtype.VENICE_TYPE_INTEGER, indexType) {
 			return nil, nil, compiler.customError(tree.Expr, "string index must be integer")
 		}
 
-		code = append(code, NewBytecode("BINARY_STRING_INDEX"))
-		return code, VENICE_TYPE_CHARACTER, nil
-	case *VeniceListType:
-		if !areTypesCompatible(VENICE_TYPE_INTEGER, indexType) {
+		code = append(code, vval.NewBytecode("BINARY_STRING_INDEX"))
+		return code, vtype.VENICE_TYPE_CHARACTER, nil
+	case *vtype.VeniceListType:
+		if !areTypesCompatible(vtype.VENICE_TYPE_INTEGER, indexType) {
 			return nil, nil, compiler.customError(tree.Expr, "list index must be integer")
 		}
 
-		code = append(code, NewBytecode("BINARY_LIST_INDEX"))
+		code = append(code, vval.NewBytecode("BINARY_LIST_INDEX"))
 		return code, exprType.ItemType, nil
-	case *VeniceMapType:
+	case *vtype.VeniceMapType:
 		if !areTypesCompatible(exprType.KeyType, indexType) {
 			return nil, nil, compiler.customError(tree.Expr, "wrong map key type in index expression")
 		}
 
-		code = append(code, NewBytecode("BINARY_MAP_INDEX"))
+		code = append(code, vval.NewBytecode("BINARY_MAP_INDEX"))
 		return code, exprType.KeyType, nil
 	default:
 		return nil, nil, compiler.customError(tree, fmt.Sprintf("%s cannot be indexed", exprTypeInterface))
 	}
 }
 
-func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, VeniceType, error) {
+func (compiler *Compiler) compileInfixNode(tree *ast.InfixNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
 	// TODO(2021-08-07): Boolean operators should short-circuit.
 	bytecodeName, ok := opsToBytecodeNames[tree.Operator]
 	if !ok {
@@ -819,17 +825,17 @@ func (compiler *Compiler) compileInfixNode(tree *InfixNode) ([]*Bytecode, Venice
 	}
 
 	code := append(leftCode, rightCode...)
-	code = append(code, NewBytecode(bytecodeName))
+	code = append(code, vval.NewBytecode(bytecodeName))
 	return code, resultType, nil
 }
 
-func (compiler *Compiler) compileTupleFieldAccessNode(tree *TupleFieldAccessNode) ([]*Bytecode, VeniceType, error) {
+func (compiler *Compiler) compileTupleFieldAccessNode(tree *ast.TupleFieldAccessNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
 	code, typeInterface, err := compiler.compileExpression(tree.Expr)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	tupleType, ok := typeInterface.(*VeniceTupleType)
+	tupleType, ok := typeInterface.(*vtype.VeniceTupleType)
 	if !ok {
 		return nil, nil, compiler.customError(tree, "left-hand side of dot must be a tuple object")
 	}
@@ -838,7 +844,7 @@ func (compiler *Compiler) compileTupleFieldAccessNode(tree *TupleFieldAccessNode
 		return nil, nil, compiler.customError(tree, "tuple index out of bounds")
 	}
 
-	code = append(code, NewBytecode("PUSH_TUPLE_FIELD", &VeniceInteger{tree.Index}))
+	code = append(code, vval.NewBytecode("PUSH_TUPLE_FIELD", &vval.VeniceInteger{tree.Index}))
 	return code, tupleType.ItemTypes[tree.Index], nil
 }
 
@@ -862,65 +868,65 @@ var opsToBytecodeNames = map[string]string{
 	"-":   "BINARY_SUB",
 }
 
-func checkInfixLeftType(operator string, leftType VeniceType) bool {
+func checkInfixLeftType(operator string, leftType vtype.VeniceType) bool {
 	switch operator {
 	case "==":
 		return true
 	case "and", "or":
-		return areTypesCompatible(VENICE_TYPE_BOOLEAN, leftType)
+		return areTypesCompatible(vtype.VENICE_TYPE_BOOLEAN, leftType)
 	case "++":
-		if _, ok := leftType.(*VeniceListType); ok {
+		if _, ok := leftType.(*vtype.VeniceListType); ok {
 			return true
 		} else {
-			return areTypesCompatible(VENICE_TYPE_STRING, leftType)
+			return areTypesCompatible(vtype.VENICE_TYPE_STRING, leftType)
 		}
 	default:
-		return areTypesCompatible(VENICE_TYPE_INTEGER, leftType)
+		return areTypesCompatible(vtype.VENICE_TYPE_INTEGER, leftType)
 	}
 }
 
-func checkInfixRightType(operator string, leftType VeniceType, rightType VeniceType) (VeniceType, bool) {
+func checkInfixRightType(operator string, leftType vtype.VeniceType, rightType vtype.VeniceType) (vtype.VeniceType, bool) {
 	switch operator {
 	case "==", "!=":
-		return VENICE_TYPE_BOOLEAN, areTypesCompatible(leftType, rightType)
+		return vtype.VENICE_TYPE_BOOLEAN, areTypesCompatible(leftType, rightType)
 	case "and", "or":
-		return VENICE_TYPE_BOOLEAN, areTypesCompatible(VENICE_TYPE_BOOLEAN, rightType)
+		return vtype.VENICE_TYPE_BOOLEAN, areTypesCompatible(vtype.VENICE_TYPE_BOOLEAN, rightType)
 	case ">", ">=", "<", "<=":
-		return VENICE_TYPE_BOOLEAN, areTypesCompatible(VENICE_TYPE_INTEGER, rightType)
+		return vtype.VENICE_TYPE_BOOLEAN, areTypesCompatible(vtype.VENICE_TYPE_INTEGER, rightType)
 	case "++":
-		if areTypesCompatible(VENICE_TYPE_STRING, leftType) {
-			return VENICE_TYPE_STRING, areTypesCompatible(VENICE_TYPE_STRING, rightType)
+		if areTypesCompatible(vtype.VENICE_TYPE_STRING, leftType) {
+			return vtype.VENICE_TYPE_STRING, areTypesCompatible(vtype.VENICE_TYPE_STRING, rightType)
 		} else {
 			return leftType, areTypesCompatible(leftType, rightType)
 		}
 	default:
-		return VENICE_TYPE_INTEGER, areTypesCompatible(VENICE_TYPE_INTEGER, rightType)
+		return vtype.VENICE_TYPE_INTEGER, areTypesCompatible(vtype.VENICE_TYPE_INTEGER, rightType)
 	}
 }
 
-func areTypesCompatible(expectedTypeInterface VeniceType, actualTypeInterface VeniceType) bool {
+func areTypesCompatible(expectedTypeInterface vtype.VeniceType, actualTypeInterface vtype.VeniceType) bool {
 	if expectedTypeInterface == nil && actualTypeInterface == nil {
 		return true
 	}
 
 	switch expectedType := expectedTypeInterface.(type) {
-	case *VeniceAtomicType:
+	case *vtype.VeniceAtomicType:
 		switch actualType := actualTypeInterface.(type) {
-		case *VeniceAtomicType:
+		case *vtype.VeniceAtomicType:
 			return expectedType.Type == actualType.Type
 		default:
 			return false
 		}
-	case *VeniceEnumType:
+	case *vtype.VeniceEnumType:
 		switch actualType := actualTypeInterface.(type) {
-		case *VeniceEnumType:
+		case *vtype.VeniceEnumType:
 			return expectedType == actualType
 		default:
 			return false
 		}
-	case *VeniceListType:
+	case *vtype.VeniceListType:
 		switch actualType := actualTypeInterface.(type) {
-		case *VeniceListType:
+		case *vtype.VeniceListType:
 			return areTypesCompatible(expectedType.ItemType, actualType.ItemType)
 		default:
 			return false
@@ -930,14 +936,14 @@ func areTypesCompatible(expectedTypeInterface VeniceType, actualTypeInterface Ve
 	}
 }
 
-func (compiler *Compiler) resolveType(typeNodeInterface TypeNode) (VeniceType, error) {
+func (compiler *Compiler) resolveType(typeNodeInterface ast.TypeNode) (vtype.VeniceType, error) {
 	if typeNodeInterface == nil {
 		return nil, nil
 	}
 
 	switch typeNode := typeNodeInterface.(type) {
-	case *SimpleTypeNode:
-		resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Symbol)
+	case *ast.SimpleTypeNode:
+		resolvedType, ok := compiler.TypeSymbolTable.Get(typeNode.Symbol)
 		if !ok {
 			return nil, compiler.customError(typeNodeInterface, fmt.Sprintf("unknown type: %s", typeNode.Symbol))
 		}
@@ -951,11 +957,11 @@ func (compiler *Compiler) resolveType(typeNodeInterface TypeNode) (VeniceType, e
  * Symbol table methods
  */
 
-func (symtab *SymbolTable) Get(symbol string) (VeniceType, bool) {
-	value, ok := symtab.symbols[symbol]
+func (symtab *SymbolTable) Get(symbol string) (vtype.VeniceType, bool) {
+	value, ok := symtab.Symbols[symbol]
 	if !ok {
-		if symtab.parent != nil {
-			return symtab.parent.Get(symbol)
+		if symtab.Parent != nil {
+			return symtab.Parent.Get(symbol)
 		} else {
 			return nil, false
 		}
@@ -963,13 +969,13 @@ func (symtab *SymbolTable) Get(symbol string) (VeniceType, bool) {
 	return value, true
 }
 
-func (symtab *SymbolTable) Put(symbol string, value VeniceType) {
-	symtab.symbols[symbol] = value
+func (symtab *SymbolTable) Put(symbol string, value vtype.VeniceType) {
+	symtab.Symbols[symbol] = value
 }
 
 type CompileError struct {
 	Message  string
-	Location *Location
+	Location *lexer.Location
 }
 
 func (e *CompileError) Error() string {
@@ -980,6 +986,6 @@ func (e *CompileError) Error() string {
 	}
 }
 
-func (compiler *Compiler) customError(node Node, message string) *CompileError {
-	return &CompileError{message, node.getLocation()}
+func (compiler *Compiler) customError(node ast.Node, message string) *CompileError {
+	return &CompileError{message, node.GetLocation()}
 }

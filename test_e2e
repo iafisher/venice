@@ -17,10 +17,8 @@ def main():
     )
     args = parser.parse_args()
 
-    os.chdir(os.path.abspath(os.path.dirname(__file__)))
-
     print("=== Building Venice binaries ===")
-    result = subprocess.run(["go", "build"], cwd="src")
+    result = subprocess.run(["go", "build"])
     if result.returncode != 0:
         sys.exit(1)
     else:
@@ -66,7 +64,7 @@ def check_path(path):
     expected_output, expect_failure = get_expected_output(path)
     subcommand = "compile" if expect_failure else "execute"
     result = subprocess.run(
-        ["./src/venice", subcommand, path],
+        ["./venice", subcommand, path],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         encoding="utf8",

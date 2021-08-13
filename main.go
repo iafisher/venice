@@ -4,6 +4,11 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/iafisher/venice/src/compiler"
+	lexer_mod "github.com/iafisher/venice/src/lexer"
+	"github.com/iafisher/venice/src/parser"
+	vm_mod "github.com/iafisher/venice/src/vm"
+	"github.com/iafisher/venice/src/vval"
 	"github.com/shurcooL/go-goon"
 	"io/ioutil"
 	"os"
@@ -37,10 +42,10 @@ func repl() {
 	fmt.Print("The Venice programming language.\n\n")
 	fmt.Print("Type !help to view available commands.\n\n\n")
 
-	vm := NewVirtualMachine()
-	compiler := NewCompiler()
+	vm := vm_mod.NewVirtualMachine()
+	compiler := compiler.NewCompiler()
 	scanner := bufio.NewScanner(os.Stdin)
-	compiledProgram := NewCompiledProgram()
+	compiledProgram := vval.NewCompiledProgram()
 	for {
 		fmt.Print(">>> ")
 		ok := scanner.Scan()
@@ -98,27 +103,27 @@ func repl() {
 				case "!parse":
 					operation = "parse"
 				case "!stack":
-					if len(vm.stack) == 0 {
+					if len(vm.Stack) == 0 {
 						fmt.Println("Stack is empty")
 					} else {
 						fmt.Println("Stack (bottom to top)")
-						for _, value := range vm.stack {
+						for _, value := range vm.Stack {
 							fmt.Println(value.String())
 						}
 					}
 					continue
 				case "!symbols":
-					for key, value := range vm.env.symbols {
+					for key, value := range vm.Env.Symbols {
 						fmt.Printf("%s: %s\n", key, value.String())
 					}
 					continue
 				case "!symbolTypes":
-					for key, value := range compiler.symbolTable.symbols {
+					for key, value := range compiler.SymbolTable.Symbols {
 						fmt.Printf("%s: %s\n", key, value.String())
 					}
 					continue
 				case "!types":
-					for key, value := range compiler.typeSymbolTable.symbols {
+					for key, value := range compiler.TypeSymbolTable.Symbols {
 						fmt.Printf("%s: %s\n", key, value.String())
 					}
 					continue
@@ -129,17 +134,17 @@ func repl() {
 			}
 		}
 
-		lexer := NewLexer(line)
+		lexer := lexer_mod.NewLexer(line)
 		if operation == "lex" {
 			token := lexer.NextToken()
-			for token.Type != TOKEN_EOF {
-				fmt.Println(token.asString())
+			for token.Type != lexer_mod.TOKEN_EOF {
+				fmt.Println(token.String())
 				token = lexer.NextToken()
 			}
 			continue
 		}
 
-		tree, err := NewParser(lexer).Parse()
+		tree, err := parser.NewParser(lexer).Parse()
 		if err != nil && strings.HasPrefix(err.Error(), "premature end of input") {
 			var sb strings.Builder
 			sb.WriteString(line)
@@ -160,7 +165,7 @@ func repl() {
 				}
 			}
 
-			tree, err = NewParser(NewLexer(sb.String())).Parse()
+			tree, err = parser.NewParser(lexer_mod.NewLexer(sb.String())).Parse()
 		}
 
 		if err != nil {
@@ -223,12 +228,12 @@ func compileProgram(filePath string, toStdout bool) {
 	}
 
 	fileContents := string(fileContentsBytes)
-	tree, err := NewParser(NewLexer(fileContents)).Parse()
+	tree, err := parser.NewParser(lexer_mod.NewLexer(fileContents)).Parse()
 	if err != nil {
 		fatalError("Parse error: %v", err)
 	}
 
-	code, err := NewCompiler().Compile(tree)
+	code, err := compiler.NewCompiler().Compile(tree)
 	if err != nil {
 		fatalError("Compile error: %v", err)
 	}
@@ -248,7 +253,7 @@ func compileProgram(filePath string, toStdout bool) {
 		writer = bufio.NewWriter(f)
 	}
 
-	WriteCompiledProgramToFile(writer, code)
+	vval.WriteCompiledProgramToFile(writer, code)
 }
 
 func executeProgram(filePath string) {
@@ -263,12 +268,12 @@ func executeProgram(filePath string) {
 	}
 
 	fileContents := string(fileContentsBytes)
-	bytecodeList, err := ReadCompiledProgramFromString(fileContents)
+	bytecodeList, err := vval.ReadCompiledProgramFromString(fileContents)
 	if err != nil {
 		fatalError("Error while reading %s: %v", filePath, err)
 	}
 
-	vm := NewVirtualMachine()
+	vm := vm_mod.NewVirtualMachine()
 	_, err = vm.Execute(bytecodeList, false)
 	if err != nil {
 		fatalError("Execution error: %s", err)

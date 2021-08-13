@@ -38,14 +38,15 @@ def init(precommit):
     precommit.check(
         checks.Command(
             "UnitTests",
-            ["go", "test"],
+            ["./test_unit"],
             exclude=["*.md", "precommit.py"],
-            working_directory="src",
         )
     )
 
     precommit.check(
-        checks.Command("IntegrationTests", ["./t"], exclude=["*.md", "precommit.py"])
+        checks.Command(
+            "EndToEndTests", ["./test_e2e"], exclude=["*.md", "precommit.py"]
+        )
     )
 
     # Run a custom command.
