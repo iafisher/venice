@@ -310,6 +310,7 @@ const (
 	TOKEN_LET                    = "TOKEN_LET"
 	TOKEN_MINUS                  = "TOKEN_MINUS"
 	TOKEN_NEWLINE                = "TOKEN_NEWLINE"
+	TOKEN_NOT                    = "TOKEN_NOT"
 	TOKEN_NOT_EQUALS             = "TOKEN_NOT_EQUALS"
 	TOKEN_OR                     = "TOKEN_OR"
 	TOKEN_PRIVATE                = "TOKEN_PRIVATE"
@@ -342,6 +343,7 @@ var keywords = map[string]string{
 	"if":       TOKEN_IF,
 	"in":       TOKEN_IN,
 	"let":      TOKEN_LET,
+	"not":      TOKEN_NOT,
 	"or":       TOKEN_OR,
 	"private":  TOKEN_PRIVATE,
 	"public":   TOKEN_PUBLIC,

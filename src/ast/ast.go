@@ -220,6 +220,12 @@ type TupleFieldAccessNode struct {
 	Location *lexer.Location
 }
 
+type UnaryNode struct {
+	Operator string
+	Expr     ExpressionNode
+	Location *lexer.Location
+}
+
 /**
  * Type nodes
  */
@@ -338,6 +344,10 @@ func (n *TupleFieldAccessNode) GetLocation() *lexer.Location {
 }
 
 func (n *TupleNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *UnaryNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -576,6 +586,10 @@ func (n *TupleNode) String() string {
 	return sb.String()
 }
 
+func (n *UnaryNode) String() string {
+	return fmt.Sprintf("(unary %s %s)", n.Operator, n.Expr.String())
+}
+
 func (n *WhileLoopNode) String() string {
 	var sb strings.Builder
 	sb.WriteString("(while ")
@@ -623,5 +637,6 @@ func (n *StringNode) expressionNode()           {}
 func (n *SymbolNode) expressionNode()           {}
 func (n *TupleFieldAccessNode) expressionNode() {}
 func (n *TupleNode) expressionNode()            {}
+func (n *UnaryNode) expressionNode()            {}
 
 func (n *SimpleTypeNode) typeNode() {}

@@ -42,6 +42,12 @@ func TestParseSimpleExpressions(t *testing.T) {
 	checkParseExpression(t, "abc", "abc")
 }
 
+func TestParseUnaryOperators(t *testing.T) {
+	checkParseExpression(t, "-(123)", "(unary - 123)")
+	checkParseExpression(t, "- 123 + 2", "(infix + (unary - 123) 2)")
+	checkParseExpression(t, "not true", "(unary not true)")
+}
+
 func checkParseExpression(t *testing.T, input string, expectedOutput string) {
 	tree, err := NewParser(lexer_mod.NewLexer(input)).Parse()
 	if err != nil {

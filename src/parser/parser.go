@@ -630,6 +630,14 @@ func (p *Parser) matchPrefix() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 		return &ast.ListNode{values, location}, nil
+	case lexer_mod.TOKEN_MINUS, lexer_mod.TOKEN_NOT:
+		operator := p.currentToken.Value
+		p.nextToken()
+		expr, err := p.matchExpression(PRECEDENCE_PREFIX)
+		if err != nil {
+			return nil, err
+		}
+		return &ast.UnaryNode{operator, expr, location}, nil
 	case lexer_mod.TOKEN_STRING:
 		value := p.currentToken.Value
 		p.nextToken()

@@ -364,6 +364,22 @@ func (vm *VirtualMachine) executeOne(bytecode *vval.Bytecode, compiledProgram vv
 		symbol := bytecode.Args[0].(*vval.VeniceString).Value
 		topOfStack := vm.popStack()
 		vm.Env.Put(symbol, topOfStack)
+	case "UNARY_MINUS":
+		topOfStack, ok := vm.popStack().(*vval.VeniceInteger)
+		if !ok {
+			return -1, &ExecutionError{"expected integer at top of virtual machine stack"}
+		}
+
+		topOfStack.Value = -topOfStack.Value
+		vm.pushStack(topOfStack)
+	case "UNARY_NOT":
+		topOfStack, ok := vm.popStack().(*vval.VeniceBoolean)
+		if !ok {
+			return -1, &ExecutionError{"expected boolean at top of virtual machine stack"}
+		}
+
+		topOfStack.Value = !topOfStack.Value
+		vm.pushStack(topOfStack)
 	default:
 		return -1, &ExecutionError{fmt.Sprintf("unknown bytecode instruction: %s", bytecode.Name)}
 	}

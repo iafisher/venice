@@ -562,6 +562,35 @@ func (compiler *Compiler) compileExpression(treeInterface ast.ExpressionNode) ([
 
 		code = append(code, vval.NewBytecode("BUILD_TUPLE", &vval.VeniceInteger{len(tree.Values)}))
 		return code, &vtype.VeniceTupleType{itemTypes}, nil
+	case *ast.UnaryNode:
+		switch tree.Operator {
+		case "-":
+			code, exprType, err := compiler.compileExpression(tree.Expr)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			if exprType != vtype.VENICE_TYPE_INTEGER {
+				return nil, nil, compiler.customError(tree, fmt.Sprintf("argument to unary minus must be integer, not %s", exprType.String()))
+			}
+
+			code = append(code, vval.NewBytecode("UNARY_MINUS"))
+			return code, vtype.VENICE_TYPE_INTEGER, nil
+		case "not":
+			code, exprType, err := compiler.compileExpression(tree.Expr)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			if exprType != vtype.VENICE_TYPE_BOOLEAN {
+				return nil, nil, compiler.customError(tree, fmt.Sprintf("argument to `not` must be boolean, not %s", exprType.String()))
+			}
+
+			code = append(code, vval.NewBytecode("UNARY_NOT"))
+			return code, vtype.VENICE_TYPE_BOOLEAN, nil
+		default:
+			return nil, nil, compiler.customError(tree, fmt.Sprintf("unknown unary operator: %s", tree.Operator))
+		}
 	default:
 		return nil, nil, compiler.customError(treeInterface, fmt.Sprintf("unknown expression type: %T", treeInterface))
 	}
