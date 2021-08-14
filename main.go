@@ -9,7 +9,6 @@ import (
 	"github.com/iafisher/venice/src/parser"
 	vm_mod "github.com/iafisher/venice/src/vm"
 	"github.com/iafisher/venice/src/vval"
-	"github.com/shurcooL/go-goon"
 	"io/ioutil"
 	"os"
 	"path"
@@ -174,7 +173,7 @@ func repl() {
 		}
 
 		if operation == "parse" {
-			goon.Dump(parsedFile)
+			fmt.Println(parsedFile.String())
 			continue
 		}
 
