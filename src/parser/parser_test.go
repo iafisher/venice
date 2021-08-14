@@ -2,7 +2,6 @@ package parser
 
 import (
 	"github.com/iafisher/venice/src/ast"
-	lexer_mod "github.com/iafisher/venice/src/lexer"
 	"testing"
 )
 
@@ -60,7 +59,7 @@ func TestParseUnaryOperators(t *testing.T) {
 }
 
 func checkParseExpression(t *testing.T, input string, expectedOutput string) {
-	tree, err := NewParser(lexer_mod.NewLexer(input)).Parse()
+	tree, err := NewParser().ParseString(input)
 	if err != nil {
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
@@ -81,7 +80,7 @@ func checkParseExpression(t *testing.T, input string, expectedOutput string) {
 }
 
 func checkParseStatement(t *testing.T, input string, expectedOutput string) {
-	tree, err := NewParser(lexer_mod.NewLexer(input)).Parse()
+	tree, err := NewParser().ParseString(input)
 	if err != nil {
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
@@ -97,7 +96,7 @@ func checkParseStatement(t *testing.T, input string, expectedOutput string) {
 }
 
 func checkParseStatements(t *testing.T, input string, expectedOutput string) {
-	tree, err := NewParser(lexer_mod.NewLexer(input)).Parse()
+	tree, err := NewParser().ParseString(input)
 	if err != nil {
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}

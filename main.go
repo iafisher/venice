@@ -134,7 +134,7 @@ func repl() {
 			}
 		}
 
-		lexer := lexer_mod.NewLexer(line)
+		lexer := lexer_mod.NewLexer("<string>", line)
 		if operation == "lex" {
 			token := lexer.NextToken()
 			for token.Type != lexer_mod.TOKEN_EOF {
@@ -144,7 +144,7 @@ func repl() {
 			continue
 		}
 
-		tree, err := parser.NewParser(lexer).Parse()
+		tree, err := parser.NewParser().ParseString(line)
 		if err != nil && strings.HasPrefix(err.Error(), "premature end of input") {
 			var sb strings.Builder
 			sb.WriteString(line)
@@ -165,7 +165,7 @@ func repl() {
 				}
 			}
 
-			tree, err = parser.NewParser(lexer_mod.NewLexer(sb.String())).Parse()
+			tree, err = parser.NewParser().ParseString(sb.String())
 		}
 
 		if err != nil {
@@ -222,13 +222,7 @@ const helpString = `!compile <code>   Compile the Venice code into bytecode.
 !types            Print all types in the current environment.`
 
 func compileProgram(filePath string, toStdout bool) {
-	fileContentsBytes, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		fatalError("Error while opening %s: %v", filePath, err)
-	}
-
-	fileContents := string(fileContentsBytes)
-	tree, err := parser.NewParser(lexer_mod.NewLexer(fileContents)).Parse()
+	tree, err := parser.NewParser().ParseFile(filePath)
 	if err != nil {
 		fatalError("Parse error: %v", err)
 	}

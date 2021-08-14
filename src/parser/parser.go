@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/iafisher/venice/src/ast"
 	lexer_mod "github.com/iafisher/venice/src/lexer"
+	"io/ioutil"
 	"strconv"
 )
 
@@ -21,13 +22,26 @@ type Parser struct {
 	brackets int
 }
 
-func NewParser(lexer *lexer_mod.Lexer) *Parser {
-	parser := &Parser{lexer: lexer, currentToken: nil, brackets: 0}
-	parser.nextTokenSkipNewlines()
-	return parser
+func NewParser() *Parser {
+	return &Parser{lexer: nil, currentToken: nil, brackets: 0}
 }
 
-func (p *Parser) Parse() (*ast.ProgramNode, error) {
+func (p *Parser) ParseString(input string) (*ast.ProgramNode, error) {
+	return p.parseGeneric("<string>", input)
+}
+
+func (p *Parser) ParseFile(filePath string) (*ast.ProgramNode, error) {
+	fileContentsBytes, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.parseGeneric(filePath, string(fileContentsBytes))
+}
+
+func (p *Parser) parseGeneric(filePath string, input string) (*ast.ProgramNode, error) {
+	p.lexer = lexer_mod.NewLexer(filePath, input)
+	p.nextTokenSkipNewlines()
 	statements := []ast.StatementNode{}
 
 	for {
@@ -799,7 +813,7 @@ type ParseError struct {
 
 func (e *ParseError) Error() string {
 	if e.Location != nil {
-		return fmt.Sprintf("%s at line %d, column %d", e.Message, e.Location.Line, e.Location.Column)
+		return fmt.Sprintf("%s at line %d, column %d of %s", e.Message, e.Location.Line, e.Location.Column, e.Location.FilePath)
 	} else {
 		return e.Message
 	}

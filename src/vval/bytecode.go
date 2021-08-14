@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	lexer_mod "github.com/iafisher/venice/src/lexer"
+	"io/ioutil"
 	"strconv"
 	"strings"
 )
@@ -47,11 +48,24 @@ func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram CompiledPr
 	writer.Flush()
 }
 
+func ReadCompiledProgramFromFile(filePath string) (CompiledProgram, error) {
+	fileContentsBytes, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return readCompiledProgramGeneric(filePath, string(fileContentsBytes))
+}
+
 func ReadCompiledProgramFromString(programString string) (CompiledProgram, error) {
+	return readCompiledProgramGeneric("<string>", programString)
+}
+
+func readCompiledProgramGeneric(filePath string, programString string) (CompiledProgram, error) {
 	compiledProgram := NewCompiledProgram()
 	var currentFunctionName string
 	for i, line := range strings.Split(programString, "\n") {
-		lexer := lexer_mod.NewLexer(line)
+		lexer := lexer_mod.NewLexer(filePath, line)
 		firstToken := lexer.NextToken()
 		if firstToken.Type == lexer_mod.TOKEN_EOF {
 			continue

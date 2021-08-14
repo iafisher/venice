@@ -88,7 +88,7 @@ func TestKeywordTokens(t *testing.T) {
 
 func getTokens(program string) []*Token {
 	tokens := []*Token{}
-	lexer := NewLexer(program)
+	lexer := NewLexer("<string>", program)
 	for {
 		token := lexer.NextToken()
 		if token.Type == TOKEN_EOF {

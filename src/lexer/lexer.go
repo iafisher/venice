@@ -18,12 +18,13 @@ type Token struct {
 }
 
 type Location struct {
-	Line   int
-	Column int
+	Line     int
+	Column   int
+	FilePath string
 }
 
-func NewLexer(program string) *Lexer {
-	return &Lexer{program: program, index: 0, location: Location{Line: 1, Column: 1}}
+func NewLexer(filePath string, program string) *Lexer {
+	return &Lexer{program: program, index: 0, location: Location{Line: 1, Column: 1, FilePath: filePath}}
 }
 
 func (l *Lexer) NextToken() *Token {
@@ -252,7 +253,7 @@ func (l *Lexer) startsWith(prefix string) bool {
 }
 
 func (l *Lexer) copyLocation() *Location {
-	return &Location{Line: l.location.Line, Column: l.location.Column}
+	return &Location{Line: l.location.Line, Column: l.location.Column, FilePath: l.location.FilePath}
 }
 
 func (token *Token) String() string {
