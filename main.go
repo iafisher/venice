@@ -133,7 +133,7 @@ func repl() {
 			}
 		}
 
-		lexer := lexer_mod.NewLexer("<string>", line)
+		lexer := lexer_mod.NewLexer("", line)
 		if operation == "lex" {
 			token := lexer.NextToken()
 			for token.Type != lexer_mod.TOKEN_EOF {

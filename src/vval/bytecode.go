@@ -58,7 +58,7 @@ func ReadCompiledProgramFromFile(filePath string) (CompiledProgram, error) {
 }
 
 func ReadCompiledProgramFromString(programString string) (CompiledProgram, error) {
-	return readCompiledProgramGeneric("<string>", programString)
+	return readCompiledProgramGeneric("", programString)
 }
 
 func readCompiledProgramGeneric(filePath string, programString string) (CompiledProgram, error) {

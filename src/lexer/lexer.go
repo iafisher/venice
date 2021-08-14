@@ -385,6 +385,16 @@ var two_char_tokens = map[string]string{
 	"!=": TOKEN_NOT_EQUALS,
 }
 
+func (l *Location) String() string {
+	var filePath string
+	if l.FilePath != "" {
+		filePath = l.FilePath
+	} else {
+		filePath = "<string>"
+	}
+	return fmt.Sprintf("line %d, column %d of %s", l.Line, l.Column, filePath)
+}
+
 type LexerError struct {
 	Message string
 }

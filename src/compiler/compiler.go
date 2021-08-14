@@ -1026,7 +1026,7 @@ type CompileError struct {
 
 func (e *CompileError) Error() string {
 	if e.Location != nil {
-		return fmt.Sprintf("%s at line %d, column %d of %s", e.Message, e.Location.Line, e.Location.Column, e.Location.FilePath)
+		return fmt.Sprintf("%s at %s", e.Message, e.Location)
 	} else {
 		return e.Message
 	}

@@ -27,7 +27,7 @@ func NewParser() *Parser {
 }
 
 func (p *Parser) ParseString(input string) (*ast.File, error) {
-	return p.parseGeneric("<string>", input)
+	return p.parseGeneric("", input)
 }
 
 func (p *Parser) ParseFile(filePath string) (*ast.File, error) {
@@ -813,7 +813,7 @@ type ParseError struct {
 
 func (e *ParseError) Error() string {
 	if e.Location != nil {
-		return fmt.Sprintf("%s at line %d, column %d of %s", e.Message, e.Location.Line, e.Location.Column, e.Location.FilePath)
+		return fmt.Sprintf("%s at %s", e.Message, e.Location)
 	} else {
 		return e.Message
 	}
