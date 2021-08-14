@@ -889,6 +889,7 @@ var opsToBytecodeNames = map[string]string{
 	"==":  "BINARY_EQ",
 	">":   "BINARY_GT",
 	">=":  "BINARY_GT_EQ",
+	"in":  "BINARY_IN",
 	"<":   "BINARY_LT",
 	"<=":  "BINARY_LT_EQ",
 	"*":   "BINARY_MUL",
@@ -899,7 +900,7 @@ var opsToBytecodeNames = map[string]string{
 
 func checkInfixLeftType(operator string, leftType vtype.VeniceType) bool {
 	switch operator {
-	case "==":
+	case "==", "in":
 		return true
 	case "and", "or":
 		return areTypesCompatible(vtype.VENICE_TYPE_BOOLEAN, leftType)
@@ -927,6 +928,22 @@ func checkInfixRightType(operator string, leftType vtype.VeniceType, rightType v
 			return vtype.VENICE_TYPE_STRING, areTypesCompatible(vtype.VENICE_TYPE_STRING, rightType)
 		} else {
 			return leftType, areTypesCompatible(leftType, rightType)
+		}
+	case "in":
+		switch rightConcreteType := rightType.(type) {
+		case *vtype.VeniceAtomicType:
+			if rightConcreteType == vtype.VENICE_TYPE_STRING {
+				return vtype.VENICE_TYPE_BOOLEAN, areTypesCompatible(vtype.VENICE_TYPE_CHARACTER, leftType) || areTypesCompatible(vtype.VENICE_TYPE_STRING, leftType)
+
+			} else {
+				return nil, false
+			}
+		case *vtype.VeniceListType:
+			return vtype.VENICE_TYPE_BOOLEAN, areTypesCompatible(rightConcreteType.ItemType, leftType)
+		case *vtype.VeniceMapType:
+			return vtype.VENICE_TYPE_BOOLEAN, areTypesCompatible(rightConcreteType.KeyType, leftType)
+		default:
+			return nil, false
 		}
 	default:
 		return vtype.VENICE_TYPE_INTEGER, areTypesCompatible(vtype.VENICE_TYPE_INTEGER, rightType)

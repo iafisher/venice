@@ -780,6 +780,7 @@ var precedenceMap = map[string]int{
 	lexer_mod.TOKEN_EQUALS:                 PRECEDENCE_CMP,
 	lexer_mod.TOKEN_GREATER_THAN:           PRECEDENCE_CMP,
 	lexer_mod.TOKEN_GREATER_THAN_OR_EQUALS: PRECEDENCE_CMP,
+	lexer_mod.TOKEN_IN:                     PRECEDENCE_CMP,
 	lexer_mod.TOKEN_LEFT_PAREN:             PRECEDENCE_CALL_INDEX,
 	lexer_mod.TOKEN_LEFT_SQUARE:            PRECEDENCE_CALL_INDEX,
 	lexer_mod.TOKEN_LESS_THAN:              PRECEDENCE_CMP,

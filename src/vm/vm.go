@@ -3,6 +3,7 @@ package vm
 import (
 	"fmt"
 	"github.com/iafisher/venice/src/vval"
+	"strings"
 )
 
 type Environment struct {
@@ -117,6 +118,41 @@ func (vm *VirtualMachine) executeOne(bytecode *vval.Bytecode, compiledProgram vv
 			return -1, err
 		}
 		vm.pushStack(&vval.VeniceBoolean{left.Value >= right.Value})
+	case "BINARY_IN":
+		rightAny := vm.popStack()
+		leftAny := vm.popStack()
+
+		var result bool
+		switch right := rightAny.(type) {
+		case *vval.VeniceString:
+			switch left := leftAny.(type) {
+			case *vval.VeniceCharacter:
+				result = strings.IndexByte(right.Value, left.Value) != -1
+			case *vval.VeniceString:
+				result = strings.Contains(right.Value, left.Value)
+			default:
+				return -1, &ExecutionError{"BINARY_IN expected character or string"}
+			}
+		case *vval.VeniceList:
+			result = false
+			for _, value := range right.Values {
+				if value.Equals(leftAny) {
+					result = true
+					break
+				}
+			}
+		case *vval.VeniceMap:
+			result = false
+			for _, pair := range right.Pairs {
+				if pair.Key.Equals(leftAny) {
+					result = true
+					break
+				}
+			}
+		default:
+			return -1, &ExecutionError{"BINARY_IN requires list, map, or string"}
+		}
+		vm.pushStack(&vval.VeniceBoolean{result})
 	case "BINARY_LIST_INDEX":
 		indexInterface := vm.popStack()
 		index, ok := indexInterface.(*vval.VeniceInteger)
