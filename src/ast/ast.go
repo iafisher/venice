@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+type File struct {
+	Statements []StatementNode
+	Imports    []string
+}
+
 /**
  * AST interface declarations
  */
@@ -121,10 +126,6 @@ type LetStatementNode struct {
 	Symbol   string
 	Expr     ExpressionNode
 	Location *lexer.Location
-}
-
-type ProgramNode struct {
-	Statements []StatementNode
 }
 
 type ReturnStatementNode struct {
@@ -329,10 +330,6 @@ func (n *MapNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *ProgramNode) GetLocation() *lexer.Location {
-	return &lexer.Location{Line: 1, Column: 1}
-}
-
 func (n *ReturnStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
@@ -471,6 +468,12 @@ func (n *FieldAccessNode) String() string {
 	return fmt.Sprintf("(field-access %s %s)", n.Expr.String(), n.Name)
 }
 
+func (f *File) String() string {
+	var sb strings.Builder
+	writeBlock(&sb, f.Statements)
+	return sb.String()
+}
+
 func (n *ForLoopNode) String() string {
 	var sb strings.Builder
 	sb.WriteString("(for (")
@@ -568,12 +571,6 @@ func (n *MapNode) String() string {
 	return sb.String()
 }
 
-func (n *ProgramNode) String() string {
-	var sb strings.Builder
-	writeBlock(&sb, n.Statements)
-	return sb.String()
-}
-
 func (n *ReturnStatementNode) String() string {
 	if n.Expr != nil {
 		return fmt.Sprintf("(return %s)", n.Expr.String())
@@ -643,7 +640,6 @@ func (n *FunctionDeclarationNode) statementNode() {}
 func (n *IfStatementNode) statementNode()         {}
 func (n *ImportStatementNode) statementNode()     {}
 func (n *LetStatementNode) statementNode()        {}
-func (n *ProgramNode) statementNode()             {}
 func (n *ReturnStatementNode) statementNode()     {}
 func (n *WhileLoopNode) statementNode()           {}
 

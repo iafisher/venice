@@ -67,9 +67,9 @@ func NewBuiltinTypeSymbolTable() *SymbolTable {
 	return &SymbolTable{nil, symbols}
 }
 
-func (compiler *Compiler) Compile(tree *ast.ProgramNode) (vval.CompiledProgram, error) {
+func (compiler *Compiler) Compile(file *ast.File) (vval.CompiledProgram, error) {
 	compiledProgram := vval.NewCompiledProgram()
-	for _, statementInterface := range tree.Statements {
+	for _, statementInterface := range file.Statements {
 		switch statement := statementInterface.(type) {
 		case *ast.ClassDeclarationNode:
 			code, err := compiler.compileClassDeclaration(statement)

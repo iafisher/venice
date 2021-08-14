@@ -59,18 +59,18 @@ func TestParseUnaryOperators(t *testing.T) {
 }
 
 func checkParseExpression(t *testing.T, input string, expectedOutput string) {
-	tree, err := NewParser().ParseString(input)
+	parsedFile, err := NewParser().ParseString(input)
 	if err != nil {
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
 
-	if len(tree.Statements) != 1 {
-		t.Fatalf("Expected exactly 1 statement, got %d", len(tree.Statements))
+	if len(parsedFile.Statements) != 1 {
+		t.Fatalf("Expected exactly 1 statement, got %d", len(parsedFile.Statements))
 	}
 
-	expressionStatement, ok := tree.Statements[0].(*ast.ExpressionStatementNode)
+	expressionStatement, ok := parsedFile.Statements[0].(*ast.ExpressionStatementNode)
 	if !ok {
-		t.Fatalf("Expected expression, got %s", tree.Statements[0].String())
+		t.Fatalf("Expected expression, got %s", parsedFile.Statements[0].String())
 	}
 
 	actualOutput := expressionStatement.Expr.String()
@@ -80,28 +80,28 @@ func checkParseExpression(t *testing.T, input string, expectedOutput string) {
 }
 
 func checkParseStatement(t *testing.T, input string, expectedOutput string) {
-	tree, err := NewParser().ParseString(input)
+	parsedFile, err := NewParser().ParseString(input)
 	if err != nil {
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
 
-	if len(tree.Statements) != 1 {
-		t.Fatalf("Expected exactly 1 statement, got %d", len(tree.Statements))
+	if len(parsedFile.Statements) != 1 {
+		t.Fatalf("Expected exactly 1 statement, got %d", len(parsedFile.Statements))
 	}
 
-	actualOutput := tree.Statements[0].String()
+	actualOutput := parsedFile.Statements[0].String()
 	if actualOutput != expectedOutput {
 		t.Fatalf("Expected %q, got %q", expectedOutput, actualOutput)
 	}
 }
 
 func checkParseStatements(t *testing.T, input string, expectedOutput string) {
-	tree, err := NewParser().ParseString(input)
+	parsedFile, err := NewParser().ParseString(input)
 	if err != nil {
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
 
-	actualOutput := tree.String()
+	actualOutput := parsedFile.String()
 	if actualOutput != expectedOutput {
 		t.Fatalf("Expected %q, got %q", expectedOutput, actualOutput)
 	}

@@ -26,11 +26,11 @@ func NewParser() *Parser {
 	return &Parser{lexer: nil, currentToken: nil, brackets: 0}
 }
 
-func (p *Parser) ParseString(input string) (*ast.ProgramNode, error) {
+func (p *Parser) ParseString(input string) (*ast.File, error) {
 	return p.parseGeneric("<string>", input)
 }
 
-func (p *Parser) ParseFile(filePath string) (*ast.ProgramNode, error) {
+func (p *Parser) ParseFile(filePath string) (*ast.File, error) {
 	fileContentsBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (p *Parser) ParseFile(filePath string) (*ast.ProgramNode, error) {
 	return p.parseGeneric(filePath, string(fileContentsBytes))
 }
 
-func (p *Parser) parseGeneric(filePath string, input string) (*ast.ProgramNode, error) {
+func (p *Parser) parseGeneric(filePath string, input string) (*ast.File, error) {
 	p.lexer = lexer_mod.NewLexer(filePath, input)
 	p.nextTokenSkipNewlines()
 	statements := []ast.StatementNode{}
@@ -60,7 +60,7 @@ func (p *Parser) parseGeneric(filePath string, input string) (*ast.ProgramNode, 
 		return nil, p.customError("empty program")
 	}
 
-	return &ast.ProgramNode{statements}, nil
+	return &ast.File{Statements: statements, Imports: []string{}}, nil
 }
 
 /**

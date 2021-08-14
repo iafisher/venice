@@ -144,7 +144,7 @@ func repl() {
 			continue
 		}
 
-		tree, err := parser.NewParser().ParseString(line)
+		parsedFile, err := parser.NewParser().ParseString(line)
 		if err != nil && strings.HasPrefix(err.Error(), "premature end of input") {
 			var sb strings.Builder
 			sb.WriteString(line)
@@ -165,7 +165,7 @@ func repl() {
 				}
 			}
 
-			tree, err = parser.NewParser().ParseString(sb.String())
+			parsedFile, err = parser.NewParser().ParseString(sb.String())
 		}
 
 		if err != nil {
@@ -174,11 +174,11 @@ func repl() {
 		}
 
 		if operation == "parse" {
-			goon.Dump(tree)
+			goon.Dump(parsedFile)
 			continue
 		}
 
-		thisCompiledProgram, err := compiler.Compile(tree)
+		thisCompiledProgram, err := compiler.Compile(parsedFile)
 		if err != nil {
 			fmt.Printf("Compile error: %v\n", err)
 			continue
@@ -222,12 +222,12 @@ const helpString = `!compile <code>   Compile the Venice code into bytecode.
 !types            Print all types in the current environment.`
 
 func compileProgram(filePath string, toStdout bool) {
-	tree, err := parser.NewParser().ParseFile(filePath)
+	parsedFile, err := parser.NewParser().ParseFile(filePath)
 	if err != nil {
 		fatalError("Parse error: %v", err)
 	}
 
-	code, err := compiler.NewCompiler().Compile(tree)
+	code, err := compiler.NewCompiler().Compile(parsedFile)
 	if err != nil {
 		fatalError("Compile error: %v", err)
 	}
