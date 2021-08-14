@@ -94,6 +94,7 @@ def get_expected_output(path):
     output_builder = []
     expect_failure = False
     in_output = False
+    seen_output = False
     with open(path, "r", encoding="utf8") as f:
         for line in f:
             line = line.strip()
@@ -102,6 +103,7 @@ def get_expected_output(path):
                     expect_failure = True
                 elif line == "# OUTPUT":
                     in_output = True
+                    seen_output = True
                 elif line == "# END OUTPUT":
                     in_output = False
                 else:
@@ -111,7 +113,7 @@ def get_expected_output(path):
             else:
                 break
 
-    if not expect_failure and not output_builder:
+    if not expect_failure and (not seen_output or in_output):
         raise Exception(f"could not parse expected output for {path}")
 
     output = "\n".join(output_builder)

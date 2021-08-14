@@ -111,6 +111,12 @@ type IfStatementNode struct {
 	Location    *lexer.Location
 }
 
+type ImportStatementNode struct {
+	Path     string
+	Name     string
+	Location *lexer.Location
+}
+
 type LetStatementNode struct {
 	Symbol   string
 	Expr     ExpressionNode
@@ -292,6 +298,10 @@ func (n *FunctionDeclarationNode) GetLocation() *lexer.Location {
 }
 
 func (n *IfStatementNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *ImportStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -481,14 +491,23 @@ func (n *FunctionDeclarationNode) String() string {
 	sb.WriteString("(function-declaration ")
 	sb.WriteString(n.Name)
 	sb.WriteString(" (")
-	for _, param := range n.Params {
-		sb.WriteString(" (function-param ")
+	for i, param := range n.Params {
+		if i != 0 {
+			sb.WriteByte(' ')
+		}
+		sb.WriteString("(function-param ")
 		sb.WriteString(param.Name)
 		sb.WriteByte(' ')
 		sb.WriteString(param.ParamType.String())
 		sb.WriteByte(')')
 	}
 	sb.WriteByte(')')
+	if n.ReturnType != nil {
+		sb.WriteByte(' ')
+		sb.WriteString(n.ReturnType.String())
+	}
+	sb.WriteByte(' ')
+	writeBlock(&sb, n.Body)
 	sb.WriteByte(')')
 	return sb.String()
 }
@@ -502,6 +521,10 @@ func (n *IfStatementNode) String() string {
 	writeBlock(&sb, n.FalseClause)
 	sb.WriteByte(')')
 	return sb.String()
+}
+
+func (n *ImportStatementNode) String() string {
+	return fmt.Sprintf("(import %s %q)", n.Name, n.Path)
 }
 
 func (n *IndexNode) String() string {
@@ -618,6 +641,7 @@ func (n *ExpressionStatementNode) statementNode() {}
 func (n *ForLoopNode) statementNode()             {}
 func (n *FunctionDeclarationNode) statementNode() {}
 func (n *IfStatementNode) statementNode()         {}
+func (n *ImportStatementNode) statementNode()     {}
 func (n *LetStatementNode) statementNode()        {}
 func (n *ProgramNode) statementNode()             {}
 func (n *ReturnStatementNode) statementNode()     {}
