@@ -558,6 +558,29 @@ func (p *Parser) matchExpression(precedence int) (ast.ExpressionNode, error) {
 						FalseClause: elseExpr,
 						Location:    location,
 					}
+				} else if p.currentToken.Type == lexer_mod.TOKEN_NOT {
+					unaryLocation := p.currentToken.Location
+					p.nextToken()
+					if p.currentToken.Type != lexer_mod.TOKEN_IN {
+						return nil, p.customError("expected `in` after `not` in infix position")
+					}
+
+					p.nextToken()
+					right, err := p.matchExpression(infixPrecedence)
+					if err != nil {
+						return nil, err
+					}
+
+					expr = &ast.UnaryNode{
+						Operator: "not",
+						Expr: &ast.InfixNode{
+							Operator: "in",
+							Left:     expr,
+							Right:    right,
+							Location: location,
+						},
+						Location: unaryLocation,
+					}
 				} else {
 					expr, err = p.matchInfix(expr, infixPrecedence)
 					if err != nil {
@@ -845,6 +868,7 @@ var precedenceMap = map[string]int{
 	lexer_mod.TOKEN_LESS_THAN:              PRECEDENCE_CMP,
 	lexer_mod.TOKEN_LESS_THAN_OR_EQUALS:    PRECEDENCE_CMP,
 	lexer_mod.TOKEN_MINUS:                  PRECEDENCE_ADD_SUB,
+	lexer_mod.TOKEN_NOT:                    PRECEDENCE_CMP, // `not` is used in the binary operator `not in`.
 	lexer_mod.TOKEN_NOT_EQUALS:             PRECEDENCE_CMP,
 	lexer_mod.TOKEN_OR:                     PRECEDENCE_OR,
 	lexer_mod.TOKEN_PLUS:                   PRECEDENCE_ADD_SUB,

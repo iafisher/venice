@@ -44,6 +44,7 @@ func TestParseInfixExpressions(t *testing.T) {
 	checkParseExpression(t, "1 * 2 + 3", "(infix + (infix * 1 2) 3)")
 	checkParseExpression(t, "1 * (2 + 3)", "(infix * 1 (infix + 2 3))")
 	checkParseExpression(t, "1 + 1 in x", "(infix in (infix + 1 1) x)")
+	checkParseExpression(t, "1 + 1 not in x", "(unary not (infix in (infix + 1 1) x))")
 	// checkParseExpression(t, "1 + 1 not in x", "(unary not (infix in (infix + 1 1) x))")
 	checkParseExpression(t, "0 <= x < 10", "(infix and (infix <= 0 x) (infix < x 10))")
 	checkParseExpression(t, "x if y else z", "(ternary-if y x z)")
