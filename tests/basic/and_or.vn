@@ -1,0 +1,12 @@
+# OUTPUT
+# good
+# END OUTPUT
+
+let l = [1]
+if length(l) >= 2 and l[1] == 42 {
+  print("uh oh")
+}
+
+if true or [0][1] == 10 {
+  print("good")
+}

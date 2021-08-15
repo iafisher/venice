@@ -408,6 +408,30 @@ func (vm *VirtualMachine) executeOne(bytecode *vval.Bytecode, compiledProgram vv
 			value := bytecode.Args[0].(*vval.VeniceInteger).Value
 			return value, nil
 		}
+	case "REL_JUMP_IF_FALSE_OR_POP":
+		topOfStack, ok := vm.peekStack().(*vval.VeniceBoolean)
+		if !ok {
+			return -1, &ExecutionError{"expected boolean at top of virtual machine stack"}
+		}
+
+		if !topOfStack.Value {
+			value := bytecode.Args[0].(*vval.VeniceInteger).Value
+			return value, nil
+		} else {
+			vm.popStack()
+		}
+	case "REL_JUMP_IF_TRUE_OR_POP":
+		topOfStack, ok := vm.peekStack().(*vval.VeniceBoolean)
+		if !ok {
+			return -1, &ExecutionError{"expected boolean at top of virtual machine stack"}
+		}
+
+		if topOfStack.Value {
+			value := bytecode.Args[0].(*vval.VeniceInteger).Value
+			return value, nil
+		} else {
+			vm.popStack()
+		}
 	case "RETURN":
 		return 0, nil
 	case "STORE_NAME":
@@ -444,6 +468,10 @@ func (vm *VirtualMachine) popStack() vval.VeniceValue {
 	ret := vm.Stack[len(vm.Stack)-1]
 	vm.Stack = vm.Stack[:len(vm.Stack)-1]
 	return ret
+}
+
+func (vm *VirtualMachine) peekStack() vval.VeniceValue {
+	return vm.Stack[len(vm.Stack)-1]
 }
 
 func (vm *VirtualMachine) popTwoInts() (*vval.VeniceInteger, *vval.VeniceInteger, error) {

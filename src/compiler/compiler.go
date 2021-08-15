@@ -876,8 +876,32 @@ func (compiler *Compiler) compileInfixNode(tree *ast.InfixNode) ([]*vval.Bytecod
 		return nil, nil, compiler.customError(tree.Right, fmt.Sprintf("invalid type for right operand of %s", tree.Operator))
 	}
 
-	code := append(leftCode, rightCode...)
-	code = append(code, vval.NewBytecode(bytecodeName))
+	var code []*vval.Bytecode
+	if tree.Operator == "and" {
+		code = leftCode
+		code = append(
+			code,
+			vval.NewBytecode(
+				"REL_JUMP_IF_FALSE_OR_POP",
+				&vval.VeniceInteger{len(rightCode) + 1},
+			),
+		)
+		code = append(code, rightCode...)
+	} else if tree.Operator == "or" {
+		code = leftCode
+		code = append(
+			code,
+			vval.NewBytecode(
+				"REL_JUMP_IF_TRUE_OR_POP",
+				&vval.VeniceInteger{len(rightCode) + 1},
+			),
+		)
+		code = append(code, rightCode...)
+	} else {
+		code = append(leftCode, rightCode...)
+		code = append(code, vval.NewBytecode(bytecodeName))
+	}
+
 	return code, resultType, nil
 }
 
