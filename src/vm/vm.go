@@ -283,6 +283,20 @@ func (vm *VirtualMachine) executeOne(bytecode *vval.Bytecode, compiledProgram vv
 	case "CALL_BUILTIN":
 		if v, ok := bytecode.Args[0].(*vval.VeniceString); ok {
 			switch v.Value {
+			case "length":
+				topOfStackAny := vm.popStack()
+				var n int
+				switch topOfStack := topOfStackAny.(type) {
+				case *vval.VeniceList:
+					n = len(topOfStack.Values)
+				case *vval.VeniceMap:
+					n = len(topOfStack.Pairs)
+				case *vval.VeniceString:
+					n = len(topOfStack.Value)
+				default:
+					return -1, &ExecutionError{"invalid argument to `length`"}
+				}
+				vm.pushStack(&vval.VeniceInteger{n})
 			case "print":
 				topOfStackAny := vm.popStack()
 				switch topOfStack := topOfStackAny.(type) {

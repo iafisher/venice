@@ -610,6 +610,29 @@ func (compiler *Compiler) compileCallNode(tree *ast.CallNode) ([]*vval.Bytecode,
 
 			code = append(code, vval.NewBytecode("CALL_BUILTIN", &vval.VeniceString{"print"}))
 			return code, nil, nil
+		} else if v.Value == "length" {
+			if len(tree.Args) != 1 {
+				return nil, nil, compiler.customError(tree, "`length` takes exactly 1 argument")
+			}
+
+			code, argTypeAny, err := compiler.compileExpression(tree.Args[0])
+			if err != nil {
+				return nil, nil, err
+			}
+
+			switch argType := argTypeAny.(type) {
+			case *vtype.VeniceAtomicType:
+				if argType != vtype.VENICE_TYPE_STRING {
+					return nil, nil, compiler.customError(tree.Args[0], "argument of `length` must be string, list, or map")
+				}
+			case *vtype.VeniceListType:
+			case *vtype.VeniceMapType:
+			default:
+				return nil, nil, compiler.customError(tree.Args[0], "argument of `length` must be string, list, or map")
+			}
+
+			code = append(code, vval.NewBytecode("CALL_BUILTIN", &vval.VeniceString{"length"}))
+			return code, vtype.VENICE_TYPE_INTEGER, nil
 		} else {
 			valueInterface, ok := compiler.SymbolTable.Get(v.Value)
 			if !ok {
