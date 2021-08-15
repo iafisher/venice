@@ -535,8 +535,29 @@ func (p *Parser) matchExpression(precedence int) (ast.ExpressionNode, error) {
 					}
 
 					p.nextToken()
-				} else if _, ok := comparisonOperators[p.currentToken.Type]; ok {
+				} else if p.currentToken.Type == lexer_mod.TOKEN_IF {
+					p.nextToken()
+					conditionExpr, err := p.matchExpression(PRECEDENCE_LOWEST)
+					if err != nil {
+						return nil, err
+					}
 
+					if p.currentToken.Type != lexer_mod.TOKEN_ELSE {
+						return nil, p.customError("`else`")
+					}
+
+					p.nextToken()
+					elseExpr, err := p.matchExpression(PRECEDENCE_LOWEST)
+					if err != nil {
+						return nil, err
+					}
+
+					expr = &ast.TernaryIfNode{
+						Condition:   conditionExpr,
+						TrueClause:  expr,
+						FalseClause: elseExpr,
+						Location:    location,
+					}
 				} else {
 					expr, err = p.matchInfix(expr, infixPrecedence)
 					if err != nil {
@@ -798,6 +819,7 @@ func (p *Parser) nextTokenSkipNewlines() *lexer_mod.Token {
 const (
 	_ int = iota
 	PRECEDENCE_LOWEST
+	PRECEDENCE_TERNARY_IF
 	PRECEDENCE_OR
 	PRECEDENCE_AND
 	PRECEDENCE_CMP
@@ -816,6 +838,7 @@ var precedenceMap = map[string]int{
 	lexer_mod.TOKEN_EQUALS:                 PRECEDENCE_CMP,
 	lexer_mod.TOKEN_GREATER_THAN:           PRECEDENCE_CMP,
 	lexer_mod.TOKEN_GREATER_THAN_OR_EQUALS: PRECEDENCE_CMP,
+	lexer_mod.TOKEN_IF:                     PRECEDENCE_TERNARY_IF,
 	lexer_mod.TOKEN_IN:                     PRECEDENCE_CMP,
 	lexer_mod.TOKEN_LEFT_PAREN:             PRECEDENCE_CALL_INDEX,
 	lexer_mod.TOKEN_LEFT_SQUARE:            PRECEDENCE_CALL_INDEX,

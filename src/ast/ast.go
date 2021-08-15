@@ -216,6 +216,13 @@ type SymbolNode struct {
 	Location *lexer.Location
 }
 
+type TernaryIfNode struct {
+	Condition   ExpressionNode
+	TrueClause  ExpressionNode
+	FalseClause ExpressionNode
+	Location    *lexer.Location
+}
+
 type TupleNode struct {
 	Values   []ExpressionNode
 	Location *lexer.Location
@@ -343,6 +350,10 @@ func (n *StringNode) GetLocation() *lexer.Location {
 }
 
 func (n *SymbolNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *TernaryIfNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -591,6 +602,10 @@ func (n *SymbolNode) String() string {
 	return n.Value
 }
 
+func (n *TernaryIfNode) String() string {
+	return fmt.Sprintf("(ternary-if %s %s %s)", n.Condition.String(), n.TrueClause.String(), n.FalseClause.String())
+}
+
 func (n *TupleFieldAccessNode) String() string {
 	return fmt.Sprintf("(tuple-field-access %s %d)", n.Expr.String(), n.Index)
 }
@@ -655,6 +670,7 @@ func (n *ListNode) expressionNode()             {}
 func (n *MapNode) expressionNode()              {}
 func (n *StringNode) expressionNode()           {}
 func (n *SymbolNode) expressionNode()           {}
+func (n *TernaryIfNode) expressionNode()        {}
 func (n *TupleFieldAccessNode) expressionNode() {}
 func (n *TupleNode) expressionNode()            {}
 func (n *UnaryNode) expressionNode()            {}

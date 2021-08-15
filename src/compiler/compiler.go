@@ -540,6 +540,8 @@ func (compiler *Compiler) compileExpression(treeAny ast.ExpressionNode) ([]*vval
 			return nil, nil, compiler.customError(treeAny, fmt.Sprintf("undefined symbol: %s", tree.Value))
 		}
 		return []*vval.Bytecode{vval.NewBytecode("PUSH_NAME", &vval.VeniceString{tree.Value})}, symbolType, nil
+	case *ast.TernaryIfNode:
+		return compiler.compileTernaryIfNode(tree)
 	case *ast.TupleFieldAccessNode:
 		return compiler.compileTupleFieldAccessNode(tree)
 	case *ast.TupleNode:
@@ -903,6 +905,38 @@ func (compiler *Compiler) compileInfixNode(tree *ast.InfixNode) ([]*vval.Bytecod
 	}
 
 	return code, resultType, nil
+}
+
+func (compiler *Compiler) compileTernaryIfNode(tree *ast.TernaryIfNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
+	conditionCode, conditionType, err := compiler.compileExpression(tree.Condition)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !areTypesCompatible(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
+		return nil, nil, compiler.customError(tree, "condition of `if` expression must be a boolean")
+	}
+
+	trueClauseCode, trueClauseType, err := compiler.compileExpression(tree.TrueClause)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	falseClauseCode, falseClauseType, err := compiler.compileExpression(tree.FalseClause)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !areTypesCompatible(trueClauseType, falseClauseType) {
+		return nil, nil, compiler.customError(tree, "branches of `if` expression are of different types")
+	}
+
+	code := conditionCode
+	code = append(code, vval.NewBytecode("REL_JUMP_IF_FALSE", &vval.VeniceInteger{len(trueClauseCode) + 2}))
+	code = append(code, trueClauseCode...)
+	code = append(code, vval.NewBytecode("REL_JUMP", &vval.VeniceInteger{len(falseClauseCode) + 1}))
+	code = append(code, falseClauseCode...)
+	return code, trueClauseType, nil
 }
 
 func (compiler *Compiler) compileTupleFieldAccessNode(tree *ast.TupleFieldAccessNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
