@@ -266,9 +266,35 @@ func (v *VeniceListIterator) Equals(otherInterface VeniceValue) bool {
 	return false
 }
 
-func (v *VeniceMap) Equals(otherInterface VeniceValue) bool {
-	// TODO(2021-08-31): Implement.
-	return false
+func (v *VeniceMap) Equals(otherAny VeniceValue) bool {
+	other, ok := otherAny.(*VeniceMap)
+	if !ok {
+		return false
+	}
+
+	if len(v.Pairs) != len(other.Pairs) {
+		return false
+	}
+
+	for _, pair := range v.Pairs {
+		found := false
+		for _, otherPair := range other.Pairs {
+			if pair.Key.Equals(otherPair.Key) {
+				if pair.Value.Equals(otherPair.Value) {
+					found = true
+					break
+				} else {
+					return false
+				}
+			}
+		}
+
+		if !found {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (v *VeniceMapIterator) Equals(otherInterface VeniceValue) bool {

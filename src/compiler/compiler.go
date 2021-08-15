@@ -1024,6 +1024,13 @@ func areTypesCompatible(expectedTypeInterface vtype.VeniceType, actualTypeInterf
 		default:
 			return false
 		}
+	case *vtype.VeniceMapType:
+		actualType, ok := actualTypeInterface.(*vtype.VeniceMapType)
+		if !ok {
+			return false
+		}
+
+		return areTypesCompatible(expectedType.KeyType, actualType.KeyType) && areTypesCompatible(expectedType.ValueType, actualType.ValueType)
 	default:
 		return false
 	}
