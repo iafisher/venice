@@ -406,8 +406,7 @@ func (n *CallNode) String() string {
 }
 
 func (n *CharacterNode) String() string {
-	// TODO(2021-08-13): Does this handle backslash escapes correctly?
-	return fmt.Sprintf("'%c'", n.Value)
+	return fmt.Sprintf("%q", n.Value)
 }
 
 func (n *ClassDeclarationNode) String() string {

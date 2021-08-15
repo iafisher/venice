@@ -36,7 +36,7 @@ func TestParseImportStatements(t *testing.T) {
 }
 
 func TestParseLetStatements(t *testing.T) {
-	checkParseStatement(t, "let x = 10", "(let x 10)")
+	checkParseStatement(t, "let x = '\\n'", "(let x '\\n')")
 }
 
 func TestParseInfixExpressions(t *testing.T) {
