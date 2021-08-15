@@ -563,26 +563,6 @@ func (p *Parser) matchExpression(precedence int) (ast.ExpressionNode, error) {
 					if err != nil {
 						return nil, err
 					}
-
-					infixExpr, ok := expr.(*ast.InfixNode)
-					if ok {
-						rightInfixExpr, ok := infixExpr.Left.(*ast.InfixNode)
-						if ok {
-							if comparisonOperators[infixExpr.Operator] && comparisonOperators[rightInfixExpr.Operator] {
-								expr = &ast.InfixNode{
-									Operator: "and",
-									Left:     rightInfixExpr,
-									Right: &ast.InfixNode{
-										Operator: infixExpr.Operator,
-										Left:     rightInfixExpr.Right,
-										Right:    infixExpr.Right,
-										Location: infixExpr.GetLocation(),
-									},
-									Location: expr.GetLocation(),
-								}
-							}
-						}
-					}
 				}
 			} else {
 				break
@@ -602,6 +582,26 @@ func (p *Parser) matchInfix(left ast.ExpressionNode, precedence int) (ast.Expres
 	if err != nil {
 		return nil, err
 	}
+
+	// If the infix expression is a double comparison like `0 <= x < 100`, then refactor
+	// it into `0 <= x and x < 100`.
+	leftInfix, ok := left.(*ast.InfixNode)
+	if ok {
+		if comparisonOperators[operator] && comparisonOperators[leftInfix.Operator] {
+			return &ast.InfixNode{
+				Operator: "and",
+				Left:     left,
+				Right: &ast.InfixNode{
+					Operator: operator,
+					Left:     leftInfix.Right,
+					Right:    right,
+					Location: right.GetLocation(),
+				},
+				Location: left.GetLocation(),
+			}, nil
+		}
+	}
+
 	return &ast.InfixNode{operator, left, right, left.GetLocation()}, nil
 }
 
