@@ -86,6 +86,32 @@ func TestKeywordTokens(t *testing.T) {
 	checkTokensLength(t, tokens, 19)
 }
 
+func TestStringLiterals(t *testing.T) {
+	tokens := getTokens(`"hello" "\"" "\\\\\u263a"`)
+	checkToken(t, tokens[0], TOKEN_STRING, "hello", 1, 1)
+	checkToken(t, tokens[1], TOKEN_STRING, "\"", 1, 9)
+	checkToken(t, tokens[2], TOKEN_STRING, "\\\\☺", 1, 14)
+
+	tokens = getTokens(`"`)
+	checkToken(t, tokens[0], TOKEN_ERROR, "invalid string literal", 1, 1)
+
+	tokens = getTokens(`"\xGG"`)
+	checkToken(t, tokens[0], TOKEN_ERROR, "invalid string literal", 1, 1)
+}
+
+func TestCharacterLiterals(t *testing.T) {
+	tokens := getTokens(`'a' '\\' '\u263a'`)
+	checkToken(t, tokens[0], TOKEN_CHARACTER, "a", 1, 1)
+	checkToken(t, tokens[1], TOKEN_CHARACTER, "\\", 1, 5)
+	checkToken(t, tokens[2], TOKEN_CHARACTER, "☺", 1, 10)
+
+	tokens = getTokens(`'`)
+	checkToken(t, tokens[0], TOKEN_ERROR, "invalid character literal", 1, 1)
+
+	tokens = getTokens(`'abc'`)
+	checkToken(t, tokens[0], TOKEN_ERROR, "invalid character literal", 1, 1)
+}
+
 func getTokens(program string) []*Token {
 	tokens := []*Token{}
 	lexer := NewLexer("", program)

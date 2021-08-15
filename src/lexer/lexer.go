@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -87,19 +88,17 @@ func (l *Lexer) nextToken() *Token {
 			return &Token{Type: TOKEN_SYMBOL, Value: value, Location: location}
 		}
 	case ch == '"':
-		value := l.readString()
+		value, err := l.readString('"')
+		if err != nil {
+			return &Token{Type: TOKEN_ERROR, Value: "invalid string literal", Location: location}
+		}
 		return &Token{Type: TOKEN_STRING, Value: value, Location: location}
 	case ch == '\'':
-		if l.index+2 < len(l.program) && l.program[l.index+2] == '\'' {
-			value := string(l.program[l.index+1])
-			l.advance()
-			l.advance()
-			l.advance()
-			return &Token{Type: TOKEN_CHARACTER, Value: value, Location: location}
-		} else {
-			l.advance()
-			return &Token{Type: TOKEN_UNKNOWN, Value: string(ch), Location: location}
+		value, err := l.readString('\'')
+		if err != nil {
+			return &Token{Type: TOKEN_ERROR, Value: "invalid character literal", Location: location}
 		}
+		return &Token{Type: TOKEN_CHARACTER, Value: value, Location: location}
 	default:
 		l.advance()
 		return &Token{Type: TOKEN_UNKNOWN, Value: string(ch), Location: location}
@@ -226,14 +225,21 @@ func (l *Lexer) readSymbol() string {
 	return l.program[start:l.index]
 }
 
-func (l *Lexer) readString() string {
+func (l *Lexer) readString(delimiter byte) (string, error) {
 	start := l.index
 	l.advance()
-	for l.index < len(l.program) && l.program[l.index] != '"' {
-		l.advance()
+	for l.index < len(l.program) {
+		if l.program[l.index] == delimiter {
+			break
+		} else if l.program[l.index] == '\\' {
+			l.advance()
+			l.advance()
+		} else {
+			l.advance()
+		}
 	}
 	l.advance()
-	return l.program[start+1 : l.index-1]
+	return strconv.Unquote(l.program[start:l.index])
 }
 
 func (l *Lexer) advance() {
