@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	bytecode_mod "github.com/iafisher/venice/src/bytecode"
 	"github.com/iafisher/venice/src/compiler"
 	lexer_mod "github.com/iafisher/venice/src/lexer"
 	"github.com/iafisher/venice/src/parser"
 	vm_mod "github.com/iafisher/venice/src/vm"
-	"github.com/iafisher/venice/src/vval"
 	"io/ioutil"
 	"os"
 	"path"
@@ -44,7 +44,7 @@ func repl() {
 	vm := vm_mod.NewVirtualMachine()
 	compiler := compiler.NewCompiler()
 	scanner := bufio.NewScanner(os.Stdin)
-	compiledProgram := vval.NewCompiledProgram()
+	compiledProgram := bytecode_mod.NewCompiledProgram()
 	for {
 		fmt.Print(">>> ")
 		ok := scanner.Scan()
@@ -246,7 +246,7 @@ func compileProgram(filePath string, toStdout bool) {
 		writer = bufio.NewWriter(f)
 	}
 
-	vval.WriteCompiledProgramToFile(writer, code)
+	bytecode_mod.WriteCompiledProgramToFile(writer, code)
 }
 
 func executeProgram(filePath string) {
@@ -261,7 +261,7 @@ func executeProgram(filePath string) {
 	}
 
 	fileContents := string(fileContentsBytes)
-	bytecodeList, err := vval.ReadCompiledProgramFromString(fileContents)
+	bytecodeList, err := bytecode_mod.ReadCompiledProgramFromString(fileContents)
 	if err != nil {
 		fatalError("Error while reading %s: %v", filePath, err)
 	}

@@ -27,11 +27,6 @@ type VeniceEnumObject struct {
 	Values []VeniceValue
 }
 
-type VeniceFunction struct {
-	Params []string
-	Body   []*Bytecode
-}
-
 type VeniceList struct {
 	Values []VeniceValue
 }
@@ -137,10 +132,6 @@ func (v *VeniceEnumObject) String() string {
 	return sb.String()
 }
 
-func (v *VeniceFunction) String() string {
-	return "<function object>"
-}
-
 func (v *VeniceInteger) String() string {
 	return fmt.Sprintf("%d", v.Value)
 }
@@ -227,10 +218,6 @@ func (v *VeniceClassObject) Equals(otherAny VeniceValue) bool {
 
 func (v *VeniceEnumObject) Equals(otherAny VeniceValue) bool {
 	// TODO(2021-08-09): Implement.
-	return false
-}
-
-func (v *VeniceFunction) Equals(otherAny VeniceValue) bool {
 	return false
 }
 
@@ -355,7 +342,6 @@ func (v *VeniceBoolean) veniceValue()      {}
 func (v *VeniceCharacter) veniceValue()    {}
 func (v *VeniceClassObject) veniceValue()  {}
 func (v *VeniceEnumObject) veniceValue()   {}
-func (v *VeniceFunction) veniceValue()     {}
 func (v *VeniceInteger) veniceValue()      {}
 func (v *VeniceListIterator) veniceValue() {}
 func (v *VeniceMap) veniceValue()          {}
