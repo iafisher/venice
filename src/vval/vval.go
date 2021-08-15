@@ -202,8 +202,8 @@ func (v *VeniceTuple) String() string {
  * Equals() implementations
  */
 
-func (v *VeniceBoolean) Equals(otherInterface VeniceValue) bool {
-	switch other := otherInterface.(type) {
+func (v *VeniceBoolean) Equals(otherAny VeniceValue) bool {
+	switch other := otherAny.(type) {
 	case *VeniceBoolean:
 		return v.Value == other.Value
 	default:
@@ -211,8 +211,8 @@ func (v *VeniceBoolean) Equals(otherInterface VeniceValue) bool {
 	}
 }
 
-func (v *VeniceCharacter) Equals(otherInterface VeniceValue) bool {
-	switch other := otherInterface.(type) {
+func (v *VeniceCharacter) Equals(otherAny VeniceValue) bool {
+	switch other := otherAny.(type) {
 	case *VeniceCharacter:
 		return v.Value == other.Value
 	default:
@@ -220,49 +220,48 @@ func (v *VeniceCharacter) Equals(otherInterface VeniceValue) bool {
 	}
 }
 
-func (v *VeniceClassObject) Equals(otherInterface VeniceValue) bool {
+func (v *VeniceClassObject) Equals(otherAny VeniceValue) bool {
 	// TODO(2021-08-08): Implement.
 	return false
 }
 
-func (v *VeniceEnumObject) Equals(otherInterface VeniceValue) bool {
+func (v *VeniceEnumObject) Equals(otherAny VeniceValue) bool {
 	// TODO(2021-08-09): Implement.
 	return false
 }
 
-func (v *VeniceFunction) Equals(otherInterface VeniceValue) bool {
+func (v *VeniceFunction) Equals(otherAny VeniceValue) bool {
 	return false
 }
 
-func (v *VeniceInteger) Equals(otherInterface VeniceValue) bool {
-	switch other := otherInterface.(type) {
-	case *VeniceInteger:
-		return v.Value == other.Value
-	default:
+func (v *VeniceInteger) Equals(otherAny VeniceValue) bool {
+	other, ok := otherAny.(*VeniceInteger)
+	if !ok {
 		return false
 	}
+	return v.Value == other.Value
 }
 
-func (v *VeniceList) Equals(otherInterface VeniceValue) bool {
-	switch other := otherInterface.(type) {
-	case *VeniceList:
-		if len(v.Values) != len(other.Values) {
+func (v *VeniceList) Equals(otherAny VeniceValue) bool {
+	other, ok := otherAny.(*VeniceList)
+	if !ok {
+		return false
+	}
+
+	if len(v.Values) != len(other.Values) {
+		return false
+	}
+
+	for i := 0; i < len(v.Values); i++ {
+		if !v.Values[i].Equals(other.Values[i]) {
 			return false
 		}
-
-		for i := 0; i < len(v.Values); i++ {
-			if !v.Values[i].Equals(other.Values[i]) {
-				return false
-			}
-		}
-
-		return true
-	default:
-		return false
 	}
+
+	return true
 }
 
-func (v *VeniceListIterator) Equals(otherInterface VeniceValue) bool {
+func (v *VeniceListIterator) Equals(otherAny VeniceValue) bool {
 	return false
 }
 
@@ -297,36 +296,35 @@ func (v *VeniceMap) Equals(otherAny VeniceValue) bool {
 	return true
 }
 
-func (v *VeniceMapIterator) Equals(otherInterface VeniceValue) bool {
+func (v *VeniceMapIterator) Equals(otherAny VeniceValue) bool {
 	return false
 }
 
-func (v *VeniceString) Equals(otherInterface VeniceValue) bool {
-	switch other := otherInterface.(type) {
-	case *VeniceString:
-		return v.Value == other.Value
-	default:
+func (v *VeniceString) Equals(otherAny VeniceValue) bool {
+	other, ok := otherAny.(*VeniceString)
+	if !ok {
 		return false
 	}
+	return v.Value == other.Value
 }
 
-func (v *VeniceTuple) Equals(otherInterface VeniceValue) bool {
-	switch other := otherInterface.(type) {
-	case *VeniceTuple:
-		if len(v.Values) != len(other.Values) {
-			return false
-		}
-
-		for i := 0; i < len(v.Values); i++ {
-			if !v.Values[i].Equals(other.Values[i]) {
-				return false
-			}
-		}
-
-		return true
-	default:
+func (v *VeniceTuple) Equals(otherAny VeniceValue) bool {
+	other, ok := otherAny.(*VeniceTuple)
+	if !ok {
 		return false
 	}
+
+	if len(v.Values) != len(other.Values) {
+		return false
+	}
+
+	for i := 0; i < len(v.Values); i++ {
+		if !v.Values[i].Equals(other.Values[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 /**

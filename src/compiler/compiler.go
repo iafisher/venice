@@ -69,8 +69,8 @@ func NewBuiltinTypeSymbolTable() *SymbolTable {
 
 func (compiler *Compiler) Compile(file *ast.File) (vval.CompiledProgram, error) {
 	compiledProgram := vval.NewCompiledProgram()
-	for _, statementInterface := range file.Statements {
-		switch statement := statementInterface.(type) {
+	for _, statementAny := range file.Statements {
+		switch statement := statementAny.(type) {
 		case *ast.ClassDeclarationNode:
 			code, err := compiler.compileClassDeclaration(statement)
 			if err != nil {
@@ -89,7 +89,7 @@ func (compiler *Compiler) Compile(file *ast.File) (vval.CompiledProgram, error) 
 			}
 			compiledProgram[statement.Name] = code
 		default:
-			code, err := compiler.compileStatement(statementInterface)
+			code, err := compiler.compileStatement(statementAny)
 			if err != nil {
 				return nil, err
 			}
@@ -103,8 +103,8 @@ func (compiler *Compiler) Compile(file *ast.File) (vval.CompiledProgram, error) 
  * Compile statements
  */
 
-func (compiler *Compiler) compileStatement(treeInterface ast.StatementNode) ([]*vval.Bytecode, error) {
-	switch tree := treeInterface.(type) {
+func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]*vval.Bytecode, error) {
+	switch tree := treeAny.(type) {
 	case *ast.AssignStatementNode:
 		code, eType, err := compiler.compileExpression(tree.Expr)
 		if err != nil {
@@ -113,16 +113,16 @@ func (compiler *Compiler) compileStatement(treeInterface ast.StatementNode) ([]*
 
 		expectedType, ok := compiler.SymbolTable.Get(tree.Symbol)
 		if !ok {
-			return nil, compiler.customError(treeInterface, fmt.Sprintf("cannot assign to undeclared symbol %q", tree.Symbol))
+			return nil, compiler.customError(treeAny, fmt.Sprintf("cannot assign to undeclared symbol %q", tree.Symbol))
 		} else if !areTypesCompatible(expectedType, eType) {
-			return nil, compiler.customError(treeInterface, fmt.Sprintf("wrong expression type in assignment to %q", tree.Symbol))
+			return nil, compiler.customError(treeAny, fmt.Sprintf("wrong expression type in assignment to %q", tree.Symbol))
 		}
 
 		code = append(code, vval.NewBytecode("STORE_NAME", &vval.VeniceString{tree.Symbol}))
 		return code, nil
 	case *ast.BreakStatementNode:
 		if compiler.nestedLoopCount == 0 {
-			return nil, compiler.customError(treeInterface, "break statement outside of loop")
+			return nil, compiler.customError(treeAny, "break statement outside of loop")
 		}
 
 		// BREAK_LOOP is a temporary bytecode instruction that the compiler will later
@@ -130,7 +130,7 @@ func (compiler *Compiler) compileStatement(treeInterface ast.StatementNode) ([]*
 		return []*vval.Bytecode{vval.NewBytecode("BREAK_LOOP")}, nil
 	case *ast.ContinueStatementNode:
 		if compiler.nestedLoopCount == 0 {
-			return nil, compiler.customError(treeInterface, "break statement outside of loop")
+			return nil, compiler.customError(treeAny, "break statement outside of loop")
 		}
 
 		// CONTINUE_LOOP is a temporary bytecode instruction that the compiler will later
@@ -148,7 +148,7 @@ func (compiler *Compiler) compileStatement(treeInterface ast.StatementNode) ([]*
 		return compiler.compileIfStatement(tree)
 	case *ast.LetStatementNode:
 		if _, ok := compiler.SymbolTable.Get(tree.Symbol); ok {
-			return nil, compiler.customError(treeInterface, fmt.Sprintf("re-declaration of symbol %q", tree.Symbol))
+			return nil, compiler.customError(treeAny, fmt.Sprintf("re-declaration of symbol %q", tree.Symbol))
 		}
 
 		code, eType, err := compiler.compileExpression(tree.Expr)
@@ -159,7 +159,7 @@ func (compiler *Compiler) compileStatement(treeInterface ast.StatementNode) ([]*
 		return append(code, vval.NewBytecode("STORE_NAME", &vval.VeniceString{tree.Symbol})), nil
 	case *ast.ReturnStatementNode:
 		if compiler.functionInfo == nil {
-			return nil, compiler.customError(treeInterface, "return statement outside of function definition")
+			return nil, compiler.customError(treeAny, "return statement outside of function definition")
 		}
 
 		if tree.Expr != nil {
@@ -169,7 +169,7 @@ func (compiler *Compiler) compileStatement(treeInterface ast.StatementNode) ([]*
 			}
 
 			if !areTypesCompatible(compiler.functionInfo.declaredReturnType, exprType) {
-				return nil, compiler.customError(treeInterface, "conflicting function return types")
+				return nil, compiler.customError(treeAny, "conflicting function return types")
 			}
 
 			compiler.functionInfo.seenReturnStatement = true
@@ -177,7 +177,7 @@ func (compiler *Compiler) compileStatement(treeInterface ast.StatementNode) ([]*
 			return code, err
 		} else {
 			if !areTypesCompatible(compiler.functionInfo.declaredReturnType, nil) {
-				return nil, compiler.customError(treeInterface, "function cannot return void")
+				return nil, compiler.customError(treeAny, "function cannot return void")
 			}
 
 			return []*vval.Bytecode{vval.NewBytecode("RETURN")}, nil
@@ -185,7 +185,7 @@ func (compiler *Compiler) compileStatement(treeInterface ast.StatementNode) ([]*
 	case *ast.WhileLoopNode:
 		return compiler.compileWhileLoop(tree)
 	default:
-		return nil, compiler.customError(treeInterface, fmt.Sprintf("unknown statement type: %T", treeInterface))
+		return nil, compiler.customError(treeAny, fmt.Sprintf("unknown statement type: %T", treeAny))
 	}
 }
 
@@ -460,8 +460,8 @@ func (compiler *Compiler) compileBlock(block []ast.StatementNode) ([]*vval.Bytec
  * Compile expressions
  */
 
-func (compiler *Compiler) compileExpression(treeInterface ast.ExpressionNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
-	switch tree := treeInterface.(type) {
+func (compiler *Compiler) compileExpression(treeAny ast.ExpressionNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
+	switch tree := treeAny.(type) {
 	case *ast.BooleanNode:
 		return []*vval.Bytecode{vval.NewBytecode("PUSH_CONST", &vval.VeniceBoolean{tree.Value})}, vtype.VENICE_TYPE_BOOLEAN, nil
 	case *ast.CallNode:
@@ -537,7 +537,7 @@ func (compiler *Compiler) compileExpression(treeInterface ast.ExpressionNode) ([
 	case *ast.SymbolNode:
 		symbolType, ok := compiler.SymbolTable.Get(tree.Value)
 		if !ok {
-			return nil, nil, compiler.customError(treeInterface, fmt.Sprintf("undefined symbol: %s", tree.Value))
+			return nil, nil, compiler.customError(treeAny, fmt.Sprintf("undefined symbol: %s", tree.Value))
 		}
 		return []*vval.Bytecode{vval.NewBytecode("PUSH_NAME", &vval.VeniceString{tree.Value})}, symbolType, nil
 	case *ast.TupleFieldAccessNode:
@@ -592,7 +592,7 @@ func (compiler *Compiler) compileExpression(treeInterface ast.ExpressionNode) ([
 			return nil, nil, compiler.customError(tree, fmt.Sprintf("unknown unary operator: %s", tree.Operator))
 		}
 	default:
-		return nil, nil, compiler.customError(treeInterface, fmt.Sprintf("unknown expression type: %T", treeInterface))
+		return nil, nil, compiler.customError(treeAny, fmt.Sprintf("unknown expression type: %T", treeAny))
 	}
 }
 
@@ -634,12 +634,12 @@ func (compiler *Compiler) compileCallNode(tree *ast.CallNode) ([]*vval.Bytecode,
 			code = append(code, vval.NewBytecode("CALL_BUILTIN", &vval.VeniceString{"length"}))
 			return code, vtype.VENICE_TYPE_INTEGER, nil
 		} else {
-			valueInterface, ok := compiler.SymbolTable.Get(v.Value)
+			valueAny, ok := compiler.SymbolTable.Get(v.Value)
 			if !ok {
 				return nil, nil, compiler.customError(tree, fmt.Sprintf("undefined symbol: %s", v.Value))
 			}
 
-			if f, ok := valueInterface.(*vtype.VeniceFunctionType); ok {
+			if f, ok := valueAny.(*vtype.VeniceFunctionType); ok {
 				if len(f.ParamTypes) != len(tree.Args) {
 					return nil, nil, compiler.customError(tree, fmt.Sprintf("wrong number of arguments: expected %d, got %d", len(f.ParamTypes), len(tree.Args)))
 				}
@@ -679,17 +679,17 @@ func (compiler *Compiler) compileCallNode(tree *ast.CallNode) ([]*vval.Bytecode,
 	}
 
 	if v, ok := tree.Function.(*ast.EnumSymbolNode); ok {
-		enumTypeInterface, err := compiler.resolveType(&ast.SimpleTypeNode{v.Enum, nil})
+		enumTypeAny, err := compiler.resolveType(&ast.SimpleTypeNode{v.Enum, nil})
 		if err != nil {
 			return nil, nil, err
 		}
 
 		isEnum := false
-		enumType, ok := enumTypeInterface.(*vtype.VeniceEnumType)
+		enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
 		if ok {
 			isEnum = true
 		} else {
-			genericType, ok := enumTypeInterface.(*vtype.VeniceGenericType)
+			genericType, ok := enumTypeAny.(*vtype.VeniceGenericType)
 			if ok {
 				enumType, ok = genericType.GenericType.(*vtype.VeniceEnumType)
 				isEnum = ok
@@ -745,17 +745,17 @@ func (compiler *Compiler) compileCallNode(tree *ast.CallNode) ([]*vval.Bytecode,
 }
 
 func (compiler *Compiler) compileEnumSymbolNode(tree *ast.EnumSymbolNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
-	enumTypeInterface, err := compiler.resolveType(&ast.SimpleTypeNode{tree.Enum, nil})
+	enumTypeAny, err := compiler.resolveType(&ast.SimpleTypeNode{tree.Enum, nil})
 	if err != nil {
 		return nil, nil, err
 	}
 
 	isEnum := false
-	enumType, ok := enumTypeInterface.(*vtype.VeniceEnumType)
+	enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
 	if ok {
 		isEnum = true
 	} else {
-		genericType, ok := enumTypeInterface.(*vtype.VeniceGenericType)
+		genericType, ok := enumTypeAny.(*vtype.VeniceGenericType)
 		if ok {
 			enumType, ok = genericType.GenericType.(*vtype.VeniceEnumType)
 			isEnum = ok
@@ -782,12 +782,12 @@ func (compiler *Compiler) compileEnumSymbolNode(tree *ast.EnumSymbolNode) ([]*vv
 }
 
 func (compiler *Compiler) compileFieldAccessNode(tree *ast.FieldAccessNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
-	code, typeInterface, err := compiler.compileExpression(tree.Expr)
+	code, typeAny, err := compiler.compileExpression(tree.Expr)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	classType, ok := typeInterface.(*vtype.VeniceClassType)
+	classType, ok := typeAny.(*vtype.VeniceClassType)
 	if !ok {
 		return nil, nil, compiler.customError(tree, "left-hand side of dot must be a class object")
 	}
@@ -808,7 +808,7 @@ func (compiler *Compiler) compileFieldAccessNode(tree *ast.FieldAccessNode) ([]*
 }
 
 func (compiler *Compiler) compileIndexNode(tree *ast.IndexNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
-	exprCode, exprTypeInterface, err := compiler.compileExpression(tree.Expr)
+	exprCode, exprTypeAny, err := compiler.compileExpression(tree.Expr)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -820,7 +820,7 @@ func (compiler *Compiler) compileIndexNode(tree *ast.IndexNode) ([]*vval.Bytecod
 
 	code := append(exprCode, indexCode...)
 
-	switch exprType := exprTypeInterface.(type) {
+	switch exprType := exprTypeAny.(type) {
 	case *vtype.VeniceAtomicType:
 		if exprType != vtype.VENICE_TYPE_STRING {
 			return nil, nil, compiler.customError(tree, fmt.Sprintf("%s cannot be indexed", exprType.String()))
@@ -846,7 +846,7 @@ func (compiler *Compiler) compileIndexNode(tree *ast.IndexNode) ([]*vval.Bytecod
 		code = append(code, vval.NewBytecode("BINARY_MAP_INDEX"))
 		return code, exprType.KeyType, nil
 	default:
-		return nil, nil, compiler.customError(tree, fmt.Sprintf("%s cannot be indexed", exprTypeInterface))
+		return nil, nil, compiler.customError(tree, fmt.Sprintf("%s cannot be indexed", exprTypeAny))
 	}
 }
 
@@ -906,12 +906,12 @@ func (compiler *Compiler) compileInfixNode(tree *ast.InfixNode) ([]*vval.Bytecod
 }
 
 func (compiler *Compiler) compileTupleFieldAccessNode(tree *ast.TupleFieldAccessNode) ([]*vval.Bytecode, vtype.VeniceType, error) {
-	code, typeInterface, err := compiler.compileExpression(tree.Expr)
+	code, typeAny, err := compiler.compileExpression(tree.Expr)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	tupleType, ok := typeInterface.(*vtype.VeniceTupleType)
+	tupleType, ok := typeAny.(*vtype.VeniceTupleType)
 	if !ok {
 		return nil, nil, compiler.customError(tree, "left-hand side of dot must be a tuple object")
 	}
@@ -997,35 +997,32 @@ func checkInfixRightType(operator string, leftType vtype.VeniceType, rightType v
 	}
 }
 
-func areTypesCompatible(expectedTypeInterface vtype.VeniceType, actualTypeInterface vtype.VeniceType) bool {
-	if expectedTypeInterface == nil && actualTypeInterface == nil {
+func areTypesCompatible(expectedTypeAny vtype.VeniceType, actualTypeAny vtype.VeniceType) bool {
+	if expectedTypeAny == nil && actualTypeAny == nil {
 		return true
 	}
 
-	switch expectedType := expectedTypeInterface.(type) {
+	switch expectedType := expectedTypeAny.(type) {
 	case *vtype.VeniceAtomicType:
-		switch actualType := actualTypeInterface.(type) {
-		case *vtype.VeniceAtomicType:
-			return expectedType.Type == actualType.Type
-		default:
+		actualType, ok := actualTypeAny.(*vtype.VeniceAtomicType)
+		if !ok {
 			return false
 		}
+		return expectedType.Type == actualType.Type
 	case *vtype.VeniceEnumType:
-		switch actualType := actualTypeInterface.(type) {
-		case *vtype.VeniceEnumType:
-			return expectedType == actualType
-		default:
+		actualType, ok := actualTypeAny.(*vtype.VeniceEnumType)
+		if !ok {
 			return false
 		}
+		return expectedType == actualType
 	case *vtype.VeniceListType:
-		switch actualType := actualTypeInterface.(type) {
-		case *vtype.VeniceListType:
-			return areTypesCompatible(expectedType.ItemType, actualType.ItemType)
-		default:
+		actualType, ok := actualTypeAny.(*vtype.VeniceListType)
+		if !ok {
 			return false
 		}
+		return areTypesCompatible(expectedType.ItemType, actualType.ItemType)
 	case *vtype.VeniceMapType:
-		actualType, ok := actualTypeInterface.(*vtype.VeniceMapType)
+		actualType, ok := actualTypeAny.(*vtype.VeniceMapType)
 		if !ok {
 			return false
 		}
@@ -1036,20 +1033,20 @@ func areTypesCompatible(expectedTypeInterface vtype.VeniceType, actualTypeInterf
 	}
 }
 
-func (compiler *Compiler) resolveType(typeNodeInterface ast.TypeNode) (vtype.VeniceType, error) {
-	if typeNodeInterface == nil {
+func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceType, error) {
+	if typeNodeAny == nil {
 		return nil, nil
 	}
 
-	switch typeNode := typeNodeInterface.(type) {
+	switch typeNode := typeNodeAny.(type) {
 	case *ast.SimpleTypeNode:
 		resolvedType, ok := compiler.TypeSymbolTable.Get(typeNode.Symbol)
 		if !ok {
-			return nil, compiler.customError(typeNodeInterface, fmt.Sprintf("unknown type: %s", typeNode.Symbol))
+			return nil, compiler.customError(typeNodeAny, fmt.Sprintf("unknown type: %s", typeNode.Symbol))
 		}
 		return resolvedType, nil
 	default:
-		return nil, compiler.customError(typeNodeInterface, fmt.Sprintf("unknown type node: %T", typeNodeInterface))
+		return nil, compiler.customError(typeNodeAny, fmt.Sprintf("unknown type node: %T", typeNodeAny))
 	}
 }
 

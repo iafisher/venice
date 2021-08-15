@@ -82,18 +82,18 @@ func (vm *VirtualMachine) executeOne(bytecode *vval.Bytecode, compiledProgram vv
 		}
 		vm.pushStack(&vval.VeniceBoolean{left.Value && right.Value})
 	case "BINARY_CONCAT":
-		rightInterface := vm.popStack()
-		leftInterface := vm.popStack()
+		rightAny := vm.popStack()
+		leftAny := vm.popStack()
 
-		switch right := rightInterface.(type) {
+		switch right := rightAny.(type) {
 		case *vval.VeniceList:
-			left := leftInterface.(*vval.VeniceList)
+			left := leftAny.(*vval.VeniceList)
 			vm.pushStack(&vval.VeniceList{append(left.Values, right.Values...)})
 		case *vval.VeniceString:
-			left := leftInterface.(*vval.VeniceString)
+			left := leftAny.(*vval.VeniceString)
 			vm.pushStack(&vval.VeniceString{left.Value + right.Value})
 		default:
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_CONCAT requires list or string on top of stack, got %s (%T)", rightInterface.String(), rightInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_CONCAT requires list or string on top of stack, got %s (%T)", rightAny.String(), rightAny)}
 		}
 	case "BINARY_DIV":
 		left, right, err := vm.popTwoInts()
@@ -154,16 +154,16 @@ func (vm *VirtualMachine) executeOne(bytecode *vval.Bytecode, compiledProgram vv
 		}
 		vm.pushStack(&vval.VeniceBoolean{result})
 	case "BINARY_LIST_INDEX":
-		indexInterface := vm.popStack()
-		index, ok := indexInterface.(*vval.VeniceInteger)
+		indexAny := vm.popStack()
+		index, ok := indexAny.(*vval.VeniceInteger)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires integer on top of stack, got %s (%T)", indexInterface.String(), indexInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires integer on top of stack, got %s (%T)", indexAny.String(), indexAny)}
 		}
 
-		listInterface := vm.popStack()
-		list, ok := listInterface.(*vval.VeniceList)
+		listAny := vm.popStack()
+		list, ok := listAny.(*vval.VeniceList)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires list on top of stack, got %s (%T)", listInterface.String(), listInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_LIST_INDEX requires list on top of stack, got %s (%T)", listAny.String(), listAny)}
 		}
 
 		if index.Value < 0 || index.Value >= len(list.Values) {
@@ -185,10 +185,10 @@ func (vm *VirtualMachine) executeOne(bytecode *vval.Bytecode, compiledProgram vv
 		vm.pushStack(&vval.VeniceBoolean{left.Value <= right.Value})
 	case "BINARY_MAP_INDEX":
 		index := vm.popStack()
-		vMapInterface := vm.popStack()
-		vMap, ok := vMapInterface.(*vval.VeniceMap)
+		vMapAny := vm.popStack()
+		vMap, ok := vMapAny.(*vval.VeniceMap)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_MAP_INDEX requires map on top of stack, got %s (%T)", vMapInterface.String(), vMapInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_MAP_INDEX requires map on top of stack, got %s (%T)", vMapAny.String(), vMapAny)}
 		}
 
 		for _, pair := range vMap.Pairs {
@@ -218,16 +218,16 @@ func (vm *VirtualMachine) executeOne(bytecode *vval.Bytecode, compiledProgram vv
 		}
 		vm.pushStack(&vval.VeniceBoolean{left.Value || right.Value})
 	case "BINARY_STRING_INDEX":
-		indexInterface := vm.popStack()
-		index, ok := indexInterface.(*vval.VeniceInteger)
+		indexAny := vm.popStack()
+		index, ok := indexAny.(*vval.VeniceInteger)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_STRING_INDEX requires integer on top of stack, got %s (%T)", indexInterface.String(), indexInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_STRING_INDEX requires integer on top of stack, got %s (%T)", indexAny.String(), indexAny)}
 		}
 
-		stringInterface := vm.popStack()
-		str, ok := stringInterface.(*vval.VeniceString)
+		stringAny := vm.popStack()
+		str, ok := stringAny.(*vval.VeniceString)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("BINARY_STRING_INDEX requires string on top of stack, got %s (%T)", stringInterface.String(), stringInterface)}
+			return -1, &ExecutionError{fmt.Sprintf("BINARY_STRING_INDEX requires string on top of stack, got %s (%T)", stringAny.String(), stringAny)}
 		}
 
 		if index.Value < 0 || index.Value >= len(str.Value) {
