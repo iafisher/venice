@@ -535,10 +535,32 @@ func (p *Parser) matchExpression(precedence int) (ast.ExpressionNode, error) {
 					}
 
 					p.nextToken()
+				} else if _, ok := comparisonOperators[p.currentToken.Type]; ok {
+
 				} else {
 					expr, err = p.matchInfix(expr, infixPrecedence)
 					if err != nil {
 						return nil, err
+					}
+
+					infixExpr, ok := expr.(*ast.InfixNode)
+					if ok {
+						rightInfixExpr, ok := infixExpr.Left.(*ast.InfixNode)
+						if ok {
+							if comparisonOperators[infixExpr.Operator] && comparisonOperators[rightInfixExpr.Operator] {
+								expr = &ast.InfixNode{
+									Operator: "and",
+									Left:     rightInfixExpr,
+									Right: &ast.InfixNode{
+										Operator: infixExpr.Operator,
+										Left:     rightInfixExpr.Right,
+										Right:    infixExpr.Right,
+										Location: infixExpr.GetLocation(),
+									},
+									Location: expr.GetLocation(),
+								}
+							}
+						}
 					}
 				}
 			} else {
@@ -804,6 +826,13 @@ var precedenceMap = map[string]int{
 	lexer_mod.TOKEN_OR:                     PRECEDENCE_OR,
 	lexer_mod.TOKEN_PLUS:                   PRECEDENCE_ADD_SUB,
 	lexer_mod.TOKEN_SLASH:                  PRECEDENCE_MUL_DIV,
+}
+
+var comparisonOperators = map[string]bool{
+	"<":  true,
+	"<=": true,
+	">":  true,
+	">=": true,
 }
 
 type ParseError struct {
