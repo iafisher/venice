@@ -529,7 +529,7 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 				return nil, nil, err
 			}
 
-			code = append(code, &bytecode.CallBuiltin{"print"})
+			code = append(code, &bytecode.CallBuiltin{"print", 1})
 			return code, nil, nil
 		} else if v.Value == "length" {
 			if len(node.Args) != 1 {
@@ -552,7 +552,7 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 				return nil, nil, compiler.customError(node.Args[0], "argument of `length` must be string, list, or map")
 			}
 
-			code = append(code, &bytecode.CallBuiltin{"length"})
+			code = append(code, &bytecode.CallBuiltin{"length", 1})
 			return code, vtype.VENICE_TYPE_INTEGER, nil
 		} else {
 			valueAny, ok := compiler.SymbolTable.Get(v.Value)

@@ -282,33 +282,20 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 		}
 		vm.pushStack(&vval.VeniceTuple{values})
 	case *bytecode.CallBuiltin:
-		switch bcode.Name {
-		case "length":
-			topOfStackAny := vm.popStack()
-			var n int
-			switch topOfStack := topOfStackAny.(type) {
-			case *vval.VeniceList:
-				n = len(topOfStack.Values)
-			case *vval.VeniceMap:
-				n = len(topOfStack.Pairs)
-			case *vval.VeniceString:
-				n = len(topOfStack.Value)
-			default:
-				return -1, &ExecutionError{"invalid argument to `length`"}
-			}
-			vm.pushStack(&vval.VeniceInteger{n})
-		case "print":
-			topOfStackAny := vm.popStack()
-			switch topOfStack := topOfStackAny.(type) {
-			case *vval.VeniceCharacter:
-				fmt.Println(string(topOfStack.Value))
-			case *vval.VeniceString:
-				fmt.Println(topOfStack.Value)
-			default:
-				fmt.Println(topOfStackAny.String())
-			}
-		default:
-			return -1, &ExecutionError{fmt.Sprintf("unknown builtin: %s", bcode.Name)}
+		builtin, ok := builtins[bcode.Name]
+		if !ok {
+			return -1, &ExecutionError{fmt.Sprintf("unknown builtin `%s`", bcode.Name)}
+		}
+
+		args := []vval.VeniceValue{}
+		for i := 0; i < bcode.N; i++ {
+			topOfStack := vm.popStack()
+			args = append(args, topOfStack)
+		}
+
+		result := builtin(args...)
+		if result != nil {
+			vm.pushStack(result)
 		}
 	case *bytecode.CallFunction:
 		functionEnv := &Environment{vm.Env, map[string]vval.VeniceValue{}}

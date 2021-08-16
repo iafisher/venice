@@ -342,9 +342,9 @@ func (v *VeniceCharacter) veniceValue()    {}
 func (v *VeniceClassObject) veniceValue()  {}
 func (v *VeniceEnumObject) veniceValue()   {}
 func (v *VeniceInteger) veniceValue()      {}
+func (v *VeniceList) veniceValue()         {}
 func (v *VeniceListIterator) veniceValue() {}
 func (v *VeniceMap) veniceValue()          {}
 func (v *VeniceMapIterator) veniceValue()  {}
-func (v *VeniceList) veniceValue()         {}
 func (v *VeniceString) veniceValue()       {}
 func (v *VeniceTuple) veniceValue()        {}

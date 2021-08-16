@@ -145,7 +145,11 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			if !ok {
 				continue
 			}
-			bytecode = &CallBuiltin{name}
+			n, ok := p.expectInt()
+			if !ok {
+				continue
+			}
+			bytecode = &CallBuiltin{name, n}
 		case "CALL_FUNCTION":
 			name, ok := p.expectString()
 			if !ok {
