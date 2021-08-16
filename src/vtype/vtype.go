@@ -41,6 +41,7 @@ type VeniceCaseType struct {
 }
 
 type VeniceFunctionType struct {
+	Name       string
 	ParamTypes []VeniceType
 	ReturnType VeniceType
 	IsBuiltin  bool
@@ -259,9 +260,10 @@ func (t *VeniceFunctionType) SubstituteGenerics(labels []string, concreteTypes [
 		paramTypes = append(paramTypes, paramType.SubstituteGenerics(labels, concreteTypes))
 	}
 	return &VeniceFunctionType{
-		paramTypes,
-		t.ReturnType.SubstituteGenerics(labels, concreteTypes),
-		t.IsBuiltin,
+		Name:       t.Name,
+		ParamTypes: paramTypes,
+		ReturnType: t.ReturnType.SubstituteGenerics(labels, concreteTypes),
+		IsBuiltin:  t.IsBuiltin,
 	}
 }
 

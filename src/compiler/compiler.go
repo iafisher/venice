@@ -44,6 +44,7 @@ type SymbolTable struct {
 func NewBuiltinSymbolTable() *SymbolTable {
 	symbols := map[string]vtype.VeniceType{
 		"length": &vtype.VeniceFunctionType{
+			Name: "length",
 			ParamTypes: []vtype.VeniceType{
 				&vtype.VeniceUnionType{
 					[]vtype.VeniceType{
@@ -57,6 +58,7 @@ func NewBuiltinSymbolTable() *SymbolTable {
 			IsBuiltin:  true,
 		},
 		"print": &vtype.VeniceFunctionType{
+			Name:       "print",
 			ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_ANY},
 			ReturnType: nil,
 			IsBuiltin:  true,
@@ -239,7 +241,12 @@ func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode
 	}
 	compiler.TypeSymbolTable.Put(node.Name, classType)
 
-	constructorType := &vtype.VeniceFunctionType{ParamTypes: paramTypes, ReturnType: classType, IsBuiltin: false}
+	constructorType := &vtype.VeniceFunctionType{
+		Name:       node.Name,
+		ParamTypes: paramTypes,
+		ReturnType: classType,
+		IsBuiltin:  false,
+	}
 	compiler.SymbolTable.Put(node.Name, constructorType)
 
 	constructorBytecode := []bytecode.Bytecode{&bytecode.BuildClass{len(fields)}}
@@ -367,6 +374,7 @@ func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarati
 	compiler.SymbolTable.Put(
 		node.Name,
 		&vtype.VeniceFunctionType{
+			Name:       node.Name,
 			ParamTypes: paramTypes,
 			ReturnType: declaredReturnType,
 			IsBuiltin:  false,
@@ -544,118 +552,128 @@ func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytec
 }
 
 func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
-	if v, ok := node.Function.(*ast.SymbolNode); ok {
-		valueAny, ok := compiler.SymbolTable.Get(v.Value)
-		if !ok {
-			return nil, nil, compiler.customError(node, fmt.Sprintf("undefined symbol: %s", v.Value))
+	if nodeAsEnumSymbol, ok := node.Function.(*ast.EnumSymbolNode); ok {
+		return compiler.compileEnumCallNode(nodeAsEnumSymbol, node)
+	}
+
+	_, functionTypeAny, err := compiler.compileExpression(node.Function)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	functionType, ok := functionTypeAny.(*vtype.VeniceFunctionType)
+	if !ok {
+		return nil, nil, compiler.customError(node.Function, fmt.Sprintf("type %s cannot be used as a function", functionTypeAny.String()))
+	}
+
+	if len(functionType.ParamTypes) != len(node.Args) {
+		return nil, nil, compiler.customError(
+			node,
+			fmt.Sprintf(
+				"wrong number of arguments: expected %d, got %d",
+				len(functionType.ParamTypes),
+				len(node.Args),
+			),
+		)
+	}
+
+	code := []bytecode.Bytecode{}
+	genericParameters := []string{}
+	concreteTypes := []vtype.VeniceType{}
+	for i := 0; i < len(functionType.ParamTypes); i++ {
+		argCode, argType, err := compiler.compileExpression(node.Args[i])
+		if err != nil {
+			return nil, nil, err
 		}
 
-		if f, ok := valueAny.(*vtype.VeniceFunctionType); ok {
-			if len(f.ParamTypes) != len(node.Args) {
-				return nil, nil, compiler.customError(node, fmt.Sprintf("wrong number of arguments: expected %d, got %d", len(f.ParamTypes), len(node.Args)))
+		if genericParamType, ok := functionType.ParamTypes[i].(*vtype.VeniceGenericParameterType); ok {
+			genericParameters = append(genericParameters, genericParamType.Label)
+			concreteTypes = append(concreteTypes, argType)
+		} else {
+			if !areTypesCompatible(functionType.ParamTypes[i], argType) {
+				return nil, nil, compiler.customError(node.Args[i], "wrong function parameter type")
+			}
+		}
+
+		code = append(code, argCode...)
+	}
+
+	if functionType.IsBuiltin {
+		code = append(code, &bytecode.CallBuiltin{functionType.Name, len(functionType.ParamTypes)})
+	} else {
+		code = append(code, &bytecode.CallFunction{functionType.Name, len(functionType.ParamTypes)})
+	}
+
+	if len(genericParameters) > 0 {
+		return code, functionType.ReturnType.SubstituteGenerics(genericParameters, concreteTypes), nil
+	} else {
+		return code, functionType.ReturnType, nil
+	}
+
+	return nil, nil, compiler.customError(node, "function calls for non-symbols not implemented yet")
+}
+
+func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.EnumSymbolNode, callNode *ast.CallNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+	enumTypeAny, err := compiler.resolveType(&ast.SimpleTypeNode{enumSymbolNode.Enum, nil})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	isEnum := false
+	enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
+	if ok {
+		isEnum = true
+	} else {
+		genericType, ok := enumTypeAny.(*vtype.VeniceGenericType)
+		if ok {
+			enumType, ok = genericType.GenericType.(*vtype.VeniceEnumType)
+			isEnum = ok
+		} else {
+			isEnum = false
+		}
+	}
+
+	if !isEnum {
+		return nil, nil, compiler.customError(callNode, "cannot use double colon after non-enum type")
+	}
+
+	for _, enumCase := range enumType.Cases {
+		if enumCase.Label == enumSymbolNode.Case {
+			if len(enumCase.Types) != len(callNode.Args) {
+				return nil, nil, compiler.customError(callNode, fmt.Sprintf("%s takes %d argument(s)", enumCase.Label, len(enumCase.Types)))
 			}
 
 			code := []bytecode.Bytecode{}
 			genericParameters := []string{}
 			concreteTypes := []vtype.VeniceType{}
-			for i := 0; i < len(f.ParamTypes); i++ {
-				argCode, argType, err := compiler.compileExpression(node.Args[i])
+			for i := 0; i < len(callNode.Args); i++ {
+				argCode, argType, err := compiler.compileExpression(callNode.Args[i])
 				if err != nil {
 					return nil, nil, err
 				}
 
-				if genericParamType, ok := f.ParamTypes[i].(*vtype.VeniceGenericParameterType); ok {
+				if genericParamType, ok := enumCase.Types[i].(*vtype.VeniceGenericParameterType); ok {
 					genericParameters = append(genericParameters, genericParamType.Label)
 					concreteTypes = append(concreteTypes, argType)
 				} else {
-					if !areTypesCompatible(f.ParamTypes[i], argType) {
-						return nil, nil, compiler.customError(node.Args[i], "wrong function parameter type")
+					if !areTypesCompatible(enumCase.Types[i], argType) {
+						return nil, nil, compiler.customError(callNode.Args[i], "wrong enum parameter type")
 					}
 				}
 
 				code = append(code, argCode...)
 			}
-
-			if f.IsBuiltin {
-				code = append(code, &bytecode.CallBuiltin{v.Value, len(f.ParamTypes)})
-			} else {
-				code = append(code, &bytecode.CallFunction{v.Value, len(f.ParamTypes)})
-			}
+			code = append(code, &bytecode.PushEnum{enumSymbolNode.Case, len(callNode.Args)})
 
 			if len(genericParameters) > 0 {
-				return code, f.ReturnType.SubstituteGenerics(genericParameters, concreteTypes), nil
+				return code, enumType.SubstituteGenerics(genericParameters, concreteTypes), nil
 			} else {
-				return code, f.ReturnType, nil
+				return code, enumType, nil
 			}
-		} else {
-			return nil, nil, compiler.customError(node, "not a function")
 		}
 	}
 
-	if v, ok := node.Function.(*ast.EnumSymbolNode); ok {
-		enumTypeAny, err := compiler.resolveType(&ast.SimpleTypeNode{v.Enum, nil})
-		if err != nil {
-			return nil, nil, err
-		}
-
-		isEnum := false
-		enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
-		if ok {
-			isEnum = true
-		} else {
-			genericType, ok := enumTypeAny.(*vtype.VeniceGenericType)
-			if ok {
-				enumType, ok = genericType.GenericType.(*vtype.VeniceEnumType)
-				isEnum = ok
-			} else {
-				isEnum = false
-			}
-		}
-
-		if !isEnum {
-			return nil, nil, compiler.customError(node, "cannot use double colon after non-enum type")
-		}
-
-		for _, enumCase := range enumType.Cases {
-			if enumCase.Label == v.Case {
-				if len(enumCase.Types) != len(node.Args) {
-					return nil, nil, compiler.customError(node, fmt.Sprintf("%s takes %d argument(s)", enumCase.Label, len(enumCase.Types)))
-				}
-
-				code := []bytecode.Bytecode{}
-				genericParameters := []string{}
-				concreteTypes := []vtype.VeniceType{}
-				for i := 0; i < len(node.Args); i++ {
-					argCode, argType, err := compiler.compileExpression(node.Args[i])
-					if err != nil {
-						return nil, nil, err
-					}
-
-					if genericParamType, ok := enumCase.Types[i].(*vtype.VeniceGenericParameterType); ok {
-						genericParameters = append(genericParameters, genericParamType.Label)
-						concreteTypes = append(concreteTypes, argType)
-					} else {
-						if !areTypesCompatible(enumCase.Types[i], argType) {
-							return nil, nil, compiler.customError(node.Args[i], "wrong enum parameter type")
-						}
-					}
-
-					code = append(code, argCode...)
-				}
-				code = append(code, &bytecode.PushEnum{v.Case, len(node.Args)})
-
-				if len(genericParameters) > 0 {
-					return code, enumType.SubstituteGenerics(genericParameters, concreteTypes), nil
-				} else {
-					return code, enumType, nil
-				}
-			}
-		}
-
-		return nil, nil, compiler.customError(node, fmt.Sprintf("enum %s does not have case %s", v.Enum, v.Case))
-	}
-
-	return nil, nil, compiler.customError(node, "function calls for non-symbols not implemented yet")
+	return nil, nil, compiler.customError(callNode, fmt.Sprintf("enum %s does not have case %s", enumSymbolNode.Enum, enumSymbolNode.Case))
 }
 
 func (compiler *Compiler) compileEnumSymbolNode(node *ast.EnumSymbolNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
