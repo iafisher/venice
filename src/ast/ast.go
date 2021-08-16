@@ -110,10 +110,15 @@ type FunctionParamNode struct {
 }
 
 type IfStatementNode struct {
-	Condition   ExpressionNode
-	TrueClause  []StatementNode
-	FalseClause []StatementNode
-	Location    *lexer.Location
+	Clauses    []*IfClauseNode
+	ElseClause []StatementNode
+	Location   *lexer.Location
+}
+
+// Helper struct - does not implement Node
+type IfClauseNode struct {
+	Condition ExpressionNode
+	Body      []StatementNode
 }
 
 type ImportStatementNode struct {
@@ -527,11 +532,22 @@ func (n *FunctionDeclarationNode) String() string {
 
 func (n *IfStatementNode) String() string {
 	var sb strings.Builder
-	sb.WriteString("(if ")
-	sb.WriteString(n.Condition.String())
-	sb.WriteByte(' ')
-	writeBlock(&sb, n.TrueClause)
-	writeBlock(&sb, n.FalseClause)
+	sb.WriteString("(if")
+
+	for _, clause := range n.Clauses {
+		sb.WriteString(" (")
+		sb.WriteString(clause.Condition.String())
+		sb.WriteByte(' ')
+		writeBlock(&sb, clause.Body)
+		sb.WriteByte(')')
+	}
+
+	if len(n.ElseClause) > 0 {
+		sb.WriteString(" (else ")
+		writeBlock(&sb, n.ElseClause)
+		sb.WriteByte(')')
+	}
+
 	sb.WriteByte(')')
 	return sb.String()
 }

@@ -35,8 +35,40 @@ func TestParseImportStatements(t *testing.T) {
 	// checkParseStatement(t, "import \"./lib.vn\" as lib", "(import lib \"./lib.vn\")")
 }
 
-func TestParseLetStatements(t *testing.T) {
-	checkParseStatement(t, "let x = '\\n'", "(let x '\\n')")
+func TestParseIfStatements(t *testing.T) {
+	checkParseStatement(
+		t,
+		`
+		  if true {
+			  print("true")
+		  } else {
+			  print("false")
+		  }
+		`,
+		`(if (true (block (expression-statement (call print "true")))) (else (block (expression-statement (call print "false")))))`,
+	)
+	checkParseStatement(
+		t,
+		`
+		  if true {
+			  print("true")
+		  }
+		`,
+		`(if (true (block (expression-statement (call print "true")))))`,
+	)
+	checkParseStatement(
+		t,
+		`
+		  if true {
+			  print("true")
+		  } else if x {
+			  print("x")
+		  } else {
+			  print("false")
+		  }
+		`,
+		`(if (true (block (expression-statement (call print "true")))) (x (block (expression-statement (call print "x")))) (else (block (expression-statement (call print "false")))))`,
+	)
 }
 
 func TestParseInfixExpressions(t *testing.T) {
@@ -48,6 +80,10 @@ func TestParseInfixExpressions(t *testing.T) {
 	// checkParseExpression(t, "1 + 1 not in x", "(unary not (infix in (infix + 1 1) x))")
 	checkParseExpression(t, "0 <= x < 10", "(infix and (infix <= 0 x) (infix < x 10))")
 	checkParseExpression(t, "x if y else z", "(ternary-if y x z)")
+}
+
+func TestParseLetStatements(t *testing.T) {
+	checkParseStatement(t, "let x = '\\n'", "(let x '\\n')")
 }
 
 func TestParseSimpleExpressions(t *testing.T) {

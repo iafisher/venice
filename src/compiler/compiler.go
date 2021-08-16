@@ -375,32 +375,47 @@ func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarati
 }
 
 func (compiler *Compiler) compileIfStatement(node *ast.IfStatementNode) ([]bytecode.Bytecode, error) {
-	conditionCode, conditionType, err := compiler.compileExpression(node.Condition)
-	if err != nil {
-		return nil, err
+	if len(node.Clauses) == 0 {
+		return nil, compiler.customError(node, "`if` statement with no clauses")
 	}
 
-	if !areTypesCompatible(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
-		return nil, compiler.customError(node.Condition, "condition of if statement must be a boolean")
-	}
-
-	trueClauseCode, err := compiler.compileBlock(node.TrueClause)
-	if err != nil {
-		return nil, err
-	}
-
-	code := conditionCode
-	code = append(code, &bytecode.RelJumpIfFalse{len(trueClauseCode) + 1})
-	code = append(code, trueClauseCode...)
-
-	if node.FalseClause != nil {
-		falseClauseCode, err := compiler.compileBlock(node.FalseClause)
+	code := []bytecode.Bytecode{}
+	for _, clause := range node.Clauses {
+		conditionCode, conditionType, err := compiler.compileExpression(clause.Condition)
 		if err != nil {
 			return nil, err
 		}
 
-		code = append(code, &bytecode.RelJump{len(falseClauseCode) + 1})
-		code = append(code, falseClauseCode...)
+		if !areTypesCompatible(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
+			return nil, compiler.customError(clause.Condition, "condition of `if` statement must be a boolean")
+		}
+
+		bodyCode, err := compiler.compileBlock(clause.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		code = append(code, conditionCode...)
+		code = append(code, &bytecode.RelJumpIfFalse{len(bodyCode) + 2})
+		code = append(code, bodyCode...)
+		// The relative jump values will be filled in later.
+		code = append(code, &bytecode.RelJump{0})
+	}
+
+	if node.ElseClause != nil {
+		elseClauseCode, err := compiler.compileBlock(node.ElseClause)
+		if err != nil {
+			return nil, err
+		}
+
+		code = append(code, elseClauseCode...)
+	}
+
+	// Fill in the relative jump values now that we have generated all the code.
+	for i, bcodeAny := range code {
+		if bcode, ok := bcodeAny.(*bytecode.RelJump); ok {
+			bcode.N = len(code) - i
+		}
 	}
 
 	return code, nil

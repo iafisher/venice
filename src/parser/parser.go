@@ -422,16 +422,36 @@ func (p *Parser) matchIfStatement() (*ast.IfStatementNode, error) {
 		return nil, err
 	}
 
-	if p.currentToken.Type == lexer_mod.TOKEN_ELSE {
+	var elseClause []ast.StatementNode
+	clauses := []*ast.IfClauseNode{&ast.IfClauseNode{condition, trueClauseStatements}}
+	for p.currentToken.Type == lexer_mod.TOKEN_ELSE {
 		p.nextToken()
-		falseClauseStatements, err := p.matchBlock()
-		if err != nil {
-			return nil, err
+
+		if p.currentToken.Type == lexer_mod.TOKEN_LEFT_CURLY {
+			elseClause, err = p.matchBlock()
+			if err != nil {
+				return nil, err
+			}
+			break
+		} else if p.currentToken.Type == lexer_mod.TOKEN_IF {
+			p.nextToken()
+			condition, err = p.matchExpression(PRECEDENCE_LOWEST)
+			if err != nil {
+				return nil, err
+			}
+
+			body, err := p.matchBlock()
+			if err != nil {
+				return nil, err
+			}
+
+			clauses = append(clauses, &ast.IfClauseNode{condition, body})
+		} else {
+			return nil, p.unexpectedToken("`else if` or `else`")
 		}
-		return &ast.IfStatementNode{condition, trueClauseStatements, falseClauseStatements, location}, nil
 	}
 
-	return &ast.IfStatementNode{condition, trueClauseStatements, nil, location}, nil
+	return &ast.IfStatementNode{clauses, elseClause, location}, nil
 }
 
 func (p *Parser) matchLetStatement() (*ast.LetStatementNode, error) {
