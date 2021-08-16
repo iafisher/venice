@@ -4,10 +4,16 @@ import (
 	"fmt"
 )
 
-type CompiledProgram map[string][]Bytecode
+type CompiledProgram struct {
+	Version int
+	Code    map[string][]Bytecode
+}
 
-func NewCompiledProgram() CompiledProgram {
-	return map[string][]Bytecode{"main": []Bytecode{}}
+func NewCompiledProgram() *CompiledProgram {
+	return &CompiledProgram{
+		Version: 1,
+		Code:    map[string][]Bytecode{"main": []Bytecode{}},
+	}
 }
 
 type Bytecode interface {

@@ -8,8 +8,10 @@ import (
 	"strconv"
 )
 
-func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram CompiledProgram) {
-	for functionName, functionCode := range compiledProgram {
+func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram *CompiledProgram) {
+	writer.WriteString(fmt.Sprintf("version %d\n\n", compiledProgram.Version))
+
+	for functionName, functionCode := range compiledProgram.Code {
 		writer.WriteString(functionName)
 		writer.WriteString(":\n")
 		for _, bytecode := range functionCode {
@@ -22,7 +24,7 @@ func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram CompiledPr
 	writer.Flush()
 }
 
-func ReadCompiledProgramFromFile(filePath string) (CompiledProgram, error) {
+func ReadCompiledProgramFromFile(filePath string) (*CompiledProgram, error) {
 	fileContentsBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -32,7 +34,7 @@ func ReadCompiledProgramFromFile(filePath string) (CompiledProgram, error) {
 	return p.parse()
 }
 
-func ReadCompiledProgramFromString(programString string) (CompiledProgram, error) {
+func ReadCompiledProgramFromString(programString string) (*CompiledProgram, error) {
 	p := bytecodeParser{lexer: lexer_mod.NewLexer("", programString)}
 	return p.parse()
 }
@@ -44,10 +46,21 @@ type bytecodeParser struct {
 	errors              []error
 }
 
-func (p *bytecodeParser) parse() (CompiledProgram, error) {
+func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 	compiledProgram := NewCompiledProgram()
 
 	p.nextTokenSkipNewlines()
+
+	if p.currentToken.Type != lexer_mod.TOKEN_SYMBOL && p.currentToken.Value != "version" {
+		p.newError("expected version declaration at beginning of file")
+	}
+
+	p.nextToken()
+	compiledProgram.Version, _ = p.expectInt()
+	if len(p.errors) > 0 {
+		return nil, p.errors[0]
+	}
+
 	for p.currentToken.Type != lexer_mod.TOKEN_EOF {
 		if p.currentToken.Type == lexer_mod.TOKEN_NEWLINE {
 			p.nextTokenSkipNewlines()
@@ -247,7 +260,7 @@ func (p *bytecodeParser) parse() (CompiledProgram, error) {
 			continue
 		}
 
-		compiledProgram[p.currentFunctionName] = append(compiledProgram[p.currentFunctionName], bytecode)
+		compiledProgram.Code[p.currentFunctionName] = append(compiledProgram.Code[p.currentFunctionName], bytecode)
 		p.expect(lexer_mod.TOKEN_NEWLINE)
 	}
 

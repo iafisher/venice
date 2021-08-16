@@ -183,12 +183,12 @@ func repl() {
 			continue
 		}
 
-		for functionName, functionCode := range thisCompiledProgram {
-			compiledProgram[functionName] = functionCode
+		for functionName, functionCode := range thisCompiledProgram.Code {
+			compiledProgram.Code[functionName] = functionCode
 		}
 
 		if operation == "compile" {
-			for functionName, code := range compiledProgram {
+			for functionName, code := range compiledProgram.Code {
 				fmt.Printf("%s:\n", functionName)
 				for _, bytecode := range code {
 					fmt.Printf("  %s\n", bytecode)

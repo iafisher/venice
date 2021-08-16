@@ -67,7 +67,7 @@ func NewBuiltinTypeSymbolTable() *SymbolTable {
 	return &SymbolTable{nil, symbols}
 }
 
-func (compiler *Compiler) Compile(file *ast.File) (bytecode.CompiledProgram, error) {
+func (compiler *Compiler) Compile(file *ast.File) (*bytecode.CompiledProgram, error) {
 	compiledProgram := bytecode.NewCompiledProgram()
 	for _, statementAny := range file.Statements {
 		switch statement := statementAny.(type) {
@@ -76,7 +76,7 @@ func (compiler *Compiler) Compile(file *ast.File) (bytecode.CompiledProgram, err
 			if err != nil {
 				return nil, err
 			}
-			compiledProgram[statement.Name] = code
+			compiledProgram.Code[statement.Name] = code
 		case *ast.EnumDeclarationNode:
 			err := compiler.compileEnumDeclaration(statement)
 			if err != nil {
@@ -87,13 +87,13 @@ func (compiler *Compiler) Compile(file *ast.File) (bytecode.CompiledProgram, err
 			if err != nil {
 				return nil, err
 			}
-			compiledProgram[statement.Name] = code
+			compiledProgram.Code[statement.Name] = code
 		default:
 			code, err := compiler.compileStatement(statementAny)
 			if err != nil {
 				return nil, err
 			}
-			compiledProgram["main"] = append(compiledProgram["main"], code...)
+			compiledProgram.Code["main"] = append(compiledProgram.Code["main"], code...)
 		}
 	}
 	return compiledProgram, nil

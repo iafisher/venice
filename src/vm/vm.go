@@ -21,12 +21,16 @@ func NewVirtualMachine() *VirtualMachine {
 	return &VirtualMachine{[]vval.VeniceValue{}, &Environment{nil, make(map[string]vval.VeniceValue)}}
 }
 
-func (vm *VirtualMachine) Execute(compiledProgram bytecode.CompiledProgram, debug bool) (vval.VeniceValue, error) {
+func (vm *VirtualMachine) Execute(compiledProgram *bytecode.CompiledProgram, debug bool) (vval.VeniceValue, error) {
+	if compiledProgram.Version != 1 {
+		return nil, &ExecutionError{fmt.Sprintf("unsupported bytecode version: %d", compiledProgram.Version)}
+	}
+
 	return vm.executeFunction(compiledProgram, "main", debug)
 }
 
-func (vm *VirtualMachine) executeFunction(compiledProgram bytecode.CompiledProgram, functionName string, debug bool) (vval.VeniceValue, error) {
-	code, ok := compiledProgram[functionName]
+func (vm *VirtualMachine) executeFunction(compiledProgram *bytecode.CompiledProgram, functionName string, debug bool) (vval.VeniceValue, error) {
+	code, ok := compiledProgram.Code[functionName]
 	if !ok {
 		return nil, &ExecutionError{fmt.Sprintf("function %q not found", functionName)}
 	}
@@ -68,7 +72,7 @@ func (vm *VirtualMachine) executeFunction(compiledProgram bytecode.CompiledProgr
 	}
 }
 
-func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram bytecode.CompiledProgram, debug bool) (int, error) {
+func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram *bytecode.CompiledProgram, debug bool) (int, error) {
 	switch bcode := bcodeAny.(type) {
 	case *bytecode.BinaryAdd:
 		left, right, err := vm.popTwoInts()
