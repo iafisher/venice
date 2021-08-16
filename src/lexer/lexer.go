@@ -127,17 +127,30 @@ func (l *Lexer) skipCommentsAndAllWhitespace() {
 }
 
 func (l *Lexer) skipCommentsAndWhitespaceExceptNewlines() {
-	inComment := false
+	inLineComment := false
+	inBlockComment := false
 	for l.index < len(l.program) {
 		ch := l.program[l.index]
 
-		if inComment {
+		if inLineComment {
 			if ch == '\n' {
-				inComment = false
+				inLineComment = false
+			}
+		} else if inBlockComment {
+			if strings.HasPrefix(l.program[l.index:], "###") {
+				inBlockComment = false
+				l.advance()
+				l.advance()
 			}
 		} else {
 			if ch == '#' {
-				inComment = true
+				if strings.HasPrefix(l.program[l.index:], "###") {
+					inBlockComment = true
+					l.advance()
+					l.advance()
+				} else {
+					inLineComment = true
+				}
 			} else if !isWhitespace(ch) || ch == '\n' {
 				break
 			}

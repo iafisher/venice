@@ -2,6 +2,31 @@ package lexer
 
 import "testing"
 
+func TestBlockComments(t *testing.T) {
+	tokens := getTokens(
+		`###
+		This is a block comment.
+		# This is part of the comment.
+
+		###`,
+	)
+
+	checkTokensLength(t, tokens, 0)
+}
+
+func TestCharacterLiterals(t *testing.T) {
+	tokens := getTokens(`'a' '\\' '\u263a'`)
+	checkToken(t, tokens[0], TOKEN_CHARACTER, "a", 1, 1)
+	checkToken(t, tokens[1], TOKEN_CHARACTER, "\\", 1, 5)
+	checkToken(t, tokens[2], TOKEN_CHARACTER, "☺", 1, 10)
+
+	tokens = getTokens(`'`)
+	checkToken(t, tokens[0], TOKEN_ERROR, "invalid character literal", 1, 1)
+
+	tokens = getTokens(`'abc'`)
+	checkToken(t, tokens[0], TOKEN_ERROR, "invalid character literal", 1, 1)
+}
+
 func TestIntegerLiterals(t *testing.T) {
 	tokens := getTokens("100 -12 0xabc 0o123 0b101011 0")
 	checkToken(t, tokens[0], TOKEN_INT, "100", 1, 1)
@@ -22,44 +47,6 @@ func TestInvalidIntegerLiterals(t *testing.T) {
 	checkToken(t, tokens[4], TOKEN_ERROR, "integer literal cannot start with '0'", 1, 18)
 	checkToken(t, tokens[5], TOKEN_ERROR, "integer literal cannot start with '0'", 1, 21)
 	checkTokensLength(t, tokens, 6)
-}
-
-func TestSymbols(t *testing.T) {
-	tokens := getTokens("a b c abc a1_0")
-	checkToken(t, tokens[0], TOKEN_SYMBOL, "a", 1, 1)
-	checkToken(t, tokens[1], TOKEN_SYMBOL, "b", 1, 3)
-	checkToken(t, tokens[2], TOKEN_SYMBOL, "c", 1, 5)
-	checkToken(t, tokens[3], TOKEN_SYMBOL, "abc", 1, 7)
-	checkToken(t, tokens[4], TOKEN_SYMBOL, "a1_0", 1, 11)
-	checkTokensLength(t, tokens, 5)
-}
-
-func TestOneCharTokens(t *testing.T) {
-	tokens := getTokens("[{()}]=+-*/")
-	checkToken(t, tokens[0], TOKEN_LEFT_SQUARE, "[", 1, 1)
-	checkToken(t, tokens[1], TOKEN_LEFT_CURLY, "{", 1, 2)
-	checkToken(t, tokens[2], TOKEN_LEFT_PAREN, "(", 1, 3)
-	checkToken(t, tokens[3], TOKEN_RIGHT_PAREN, ")", 1, 4)
-	checkToken(t, tokens[4], TOKEN_RIGHT_CURLY, "}", 1, 5)
-	checkToken(t, tokens[5], TOKEN_RIGHT_SQUARE, "]", 1, 6)
-	checkToken(t, tokens[6], TOKEN_ASSIGN, "=", 1, 7)
-	checkToken(t, tokens[7], TOKEN_PLUS, "+", 1, 8)
-	checkToken(t, tokens[8], TOKEN_MINUS, "-", 1, 9)
-	checkToken(t, tokens[9], TOKEN_ASTERISK, "*", 1, 10)
-	checkToken(t, tokens[10], TOKEN_SLASH, "/", 1, 11)
-	checkTokensLength(t, tokens, 11)
-}
-
-func TestTwoCharTokens(t *testing.T) {
-	tokens := getTokens("-> ++ :: == >= <= !=")
-	checkToken(t, tokens[0], TOKEN_ARROW, "->", 1, 1)
-	checkToken(t, tokens[1], TOKEN_DOUBLE_PLUS, "++", 1, 4)
-	checkToken(t, tokens[2], TOKEN_DOUBLE_COLON, "::", 1, 7)
-	checkToken(t, tokens[3], TOKEN_EQUALS, "==", 1, 10)
-	checkToken(t, tokens[4], TOKEN_GREATER_THAN_OR_EQUALS, ">=", 1, 13)
-	checkToken(t, tokens[5], TOKEN_LESS_THAN_OR_EQUALS, "<=", 1, 16)
-	checkToken(t, tokens[6], TOKEN_NOT_EQUALS, "!=", 1, 19)
-	checkTokensLength(t, tokens, 7)
 }
 
 func TestKeywordTokens(t *testing.T) {
@@ -86,6 +73,22 @@ func TestKeywordTokens(t *testing.T) {
 	checkTokensLength(t, tokens, 19)
 }
 
+func TestOneCharTokens(t *testing.T) {
+	tokens := getTokens("[{()}]=+-*/")
+	checkToken(t, tokens[0], TOKEN_LEFT_SQUARE, "[", 1, 1)
+	checkToken(t, tokens[1], TOKEN_LEFT_CURLY, "{", 1, 2)
+	checkToken(t, tokens[2], TOKEN_LEFT_PAREN, "(", 1, 3)
+	checkToken(t, tokens[3], TOKEN_RIGHT_PAREN, ")", 1, 4)
+	checkToken(t, tokens[4], TOKEN_RIGHT_CURLY, "}", 1, 5)
+	checkToken(t, tokens[5], TOKEN_RIGHT_SQUARE, "]", 1, 6)
+	checkToken(t, tokens[6], TOKEN_ASSIGN, "=", 1, 7)
+	checkToken(t, tokens[7], TOKEN_PLUS, "+", 1, 8)
+	checkToken(t, tokens[8], TOKEN_MINUS, "-", 1, 9)
+	checkToken(t, tokens[9], TOKEN_ASTERISK, "*", 1, 10)
+	checkToken(t, tokens[10], TOKEN_SLASH, "/", 1, 11)
+	checkTokensLength(t, tokens, 11)
+}
+
 func TestStringLiterals(t *testing.T) {
 	tokens := getTokens(`"hello" "\"" "\\\\\u263a"`)
 	checkToken(t, tokens[0], TOKEN_STRING, "hello", 1, 1)
@@ -99,17 +102,26 @@ func TestStringLiterals(t *testing.T) {
 	checkToken(t, tokens[0], TOKEN_ERROR, "invalid string literal", 1, 1)
 }
 
-func TestCharacterLiterals(t *testing.T) {
-	tokens := getTokens(`'a' '\\' '\u263a'`)
-	checkToken(t, tokens[0], TOKEN_CHARACTER, "a", 1, 1)
-	checkToken(t, tokens[1], TOKEN_CHARACTER, "\\", 1, 5)
-	checkToken(t, tokens[2], TOKEN_CHARACTER, "☺", 1, 10)
+func TestSymbols(t *testing.T) {
+	tokens := getTokens("a b c abc a1_0")
+	checkToken(t, tokens[0], TOKEN_SYMBOL, "a", 1, 1)
+	checkToken(t, tokens[1], TOKEN_SYMBOL, "b", 1, 3)
+	checkToken(t, tokens[2], TOKEN_SYMBOL, "c", 1, 5)
+	checkToken(t, tokens[3], TOKEN_SYMBOL, "abc", 1, 7)
+	checkToken(t, tokens[4], TOKEN_SYMBOL, "a1_0", 1, 11)
+	checkTokensLength(t, tokens, 5)
+}
 
-	tokens = getTokens(`'`)
-	checkToken(t, tokens[0], TOKEN_ERROR, "invalid character literal", 1, 1)
-
-	tokens = getTokens(`'abc'`)
-	checkToken(t, tokens[0], TOKEN_ERROR, "invalid character literal", 1, 1)
+func TestTwoCharTokens(t *testing.T) {
+	tokens := getTokens("-> ++ :: == >= <= !=")
+	checkToken(t, tokens[0], TOKEN_ARROW, "->", 1, 1)
+	checkToken(t, tokens[1], TOKEN_DOUBLE_PLUS, "++", 1, 4)
+	checkToken(t, tokens[2], TOKEN_DOUBLE_COLON, "::", 1, 7)
+	checkToken(t, tokens[3], TOKEN_EQUALS, "==", 1, 10)
+	checkToken(t, tokens[4], TOKEN_GREATER_THAN_OR_EQUALS, ">=", 1, 13)
+	checkToken(t, tokens[5], TOKEN_LESS_THAN_OR_EQUALS, "<=", 1, 16)
+	checkToken(t, tokens[6], TOKEN_NOT_EQUALS, "!=", 1, 19)
+	checkTokensLength(t, tokens, 7)
 }
 
 func getTokens(program string) []*Token {
