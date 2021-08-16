@@ -43,6 +43,7 @@ type VeniceCaseType struct {
 type VeniceFunctionType struct {
 	ParamTypes []VeniceType
 	ReturnType VeniceType
+	IsBuiltin  bool
 }
 
 type VeniceGenericParameterType struct {
@@ -67,11 +68,16 @@ type VeniceTupleType struct {
 	ItemTypes []VeniceType
 }
 
+type VeniceUnionType struct {
+	Types []VeniceType
+}
+
 /**
  * Primitive type declarations
  */
 
 const (
+	VENICE_TYPE_ANY_LABEL       = "any"
 	VENICE_TYPE_BOOLEAN_LABEL   = "bool"
 	VENICE_TYPE_CHARACTER_LABEL = "char"
 	VENICE_TYPE_INTEGER_LABEL   = "int"
@@ -79,6 +85,7 @@ const (
 )
 
 var (
+	VENICE_TYPE_ANY       = &VeniceAtomicType{VENICE_TYPE_ANY_LABEL}
 	VENICE_TYPE_BOOLEAN   = &VeniceAtomicType{VENICE_TYPE_BOOLEAN_LABEL}
 	VENICE_TYPE_CHARACTER = &VeniceAtomicType{VENICE_TYPE_CHARACTER_LABEL}
 	VENICE_TYPE_INTEGER   = &VeniceAtomicType{VENICE_TYPE_INTEGER_LABEL}
@@ -197,6 +204,19 @@ func (t *VeniceTupleType) String() string {
 	return sb.String()
 }
 
+func (t *VeniceUnionType) String() string {
+	var sb strings.Builder
+	sb.WriteString("union<")
+	for i, subType := range t.Types {
+		sb.WriteString(subType.String())
+		if i != len(t.Types)-1 {
+			sb.WriteString(", ")
+		}
+	}
+	sb.WriteByte('>')
+	return sb.String()
+}
+
 /**
  * SubstituteGenerics() implementations
  *
@@ -241,6 +261,7 @@ func (t *VeniceFunctionType) SubstituteGenerics(labels []string, concreteTypes [
 	return &VeniceFunctionType{
 		paramTypes,
 		t.ReturnType.SubstituteGenerics(labels, concreteTypes),
+		t.IsBuiltin,
 	}
 }
 
@@ -300,6 +321,14 @@ func (t *VeniceTupleType) SubstituteGenerics(labels []string, concreteTypes []Ve
 	return &VeniceTupleType{newItemTypes}
 }
 
+func (t *VeniceUnionType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+	newTypes := []VeniceType{}
+	for _, subType := range t.Types {
+		newTypes = append(newTypes, subType.SubstituteGenerics(labels, concreteTypes))
+	}
+	return &VeniceUnionType{newTypes}
+}
+
 func (t *VeniceAtomicType) veniceType()           {}
 func (t *VeniceClassType) veniceType()            {}
 func (t *VeniceEnumType) veniceType()             {}
@@ -309,3 +338,4 @@ func (t *VeniceGenericType) veniceType()          {}
 func (t *VeniceListType) veniceType()             {}
 func (t *VeniceMapType) veniceType()              {}
 func (t *VeniceTupleType) veniceType()            {}
+func (t *VeniceUnionType) veniceType()            {}

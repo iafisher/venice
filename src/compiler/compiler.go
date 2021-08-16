@@ -42,7 +42,26 @@ type SymbolTable struct {
 }
 
 func NewBuiltinSymbolTable() *SymbolTable {
-	symbols := map[string]vtype.VeniceType{}
+	symbols := map[string]vtype.VeniceType{
+		"length": &vtype.VeniceFunctionType{
+			ParamTypes: []vtype.VeniceType{
+				&vtype.VeniceUnionType{
+					[]vtype.VeniceType{
+						vtype.VENICE_TYPE_STRING,
+						&vtype.VeniceListType{vtype.VENICE_TYPE_ANY},
+						&vtype.VeniceMapType{vtype.VENICE_TYPE_ANY, vtype.VENICE_TYPE_ANY},
+					},
+				},
+			},
+			ReturnType: vtype.VENICE_TYPE_INTEGER,
+			IsBuiltin:  true,
+		},
+		"print": &vtype.VeniceFunctionType{
+			ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_ANY},
+			ReturnType: nil,
+			IsBuiltin:  true,
+		},
+	}
 	return &SymbolTable{nil, symbols}
 }
 
@@ -220,7 +239,7 @@ func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode
 	}
 	compiler.TypeSymbolTable.Put(node.Name, classType)
 
-	constructorType := &vtype.VeniceFunctionType{paramTypes, classType}
+	constructorType := &vtype.VeniceFunctionType{ParamTypes: paramTypes, ReturnType: classType, IsBuiltin: false}
 	compiler.SymbolTable.Put(node.Name, constructorType)
 
 	constructorBytecode := []bytecode.Bytecode{&bytecode.BuildClass{len(fields)}}
@@ -345,7 +364,14 @@ func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarati
 
 	// Put the function's entry in the symbol table before compiling the body so that
 	// recursive functions can call themselves.
-	compiler.SymbolTable.Put(node.Name, &vtype.VeniceFunctionType{paramTypes, declaredReturnType})
+	compiler.SymbolTable.Put(
+		node.Name,
+		&vtype.VeniceFunctionType{
+			ParamTypes: paramTypes,
+			ReturnType: declaredReturnType,
+			IsBuiltin:  false,
+		},
+	)
 
 	compiler.SymbolTable = bodySymbolTable
 	compiler.functionInfo = &FunctionInfo{
@@ -519,83 +545,50 @@ func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytec
 
 func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	if v, ok := node.Function.(*ast.SymbolNode); ok {
-		if v.Value == "print" {
-			if len(node.Args) != 1 {
-				return nil, nil, compiler.customError(node, "`print` takes exactly 1 argument")
+		valueAny, ok := compiler.SymbolTable.Get(v.Value)
+		if !ok {
+			return nil, nil, compiler.customError(node, fmt.Sprintf("undefined symbol: %s", v.Value))
+		}
+
+		if f, ok := valueAny.(*vtype.VeniceFunctionType); ok {
+			if len(f.ParamTypes) != len(node.Args) {
+				return nil, nil, compiler.customError(node, fmt.Sprintf("wrong number of arguments: expected %d, got %d", len(f.ParamTypes), len(node.Args)))
 			}
 
-			code, _, err := compiler.compileExpression(node.Args[0])
-			if err != nil {
-				return nil, nil, err
-			}
-
-			code = append(code, &bytecode.CallBuiltin{"print", 1})
-			return code, nil, nil
-		} else if v.Value == "length" {
-			if len(node.Args) != 1 {
-				return nil, nil, compiler.customError(node, "`length` takes exactly 1 argument")
-			}
-
-			code, argTypeAny, err := compiler.compileExpression(node.Args[0])
-			if err != nil {
-				return nil, nil, err
-			}
-
-			switch argType := argTypeAny.(type) {
-			case *vtype.VeniceAtomicType:
-				if argType != vtype.VENICE_TYPE_STRING {
-					return nil, nil, compiler.customError(node.Args[0], "argument of `length` must be string, list, or map")
-				}
-			case *vtype.VeniceListType:
-			case *vtype.VeniceMapType:
-			default:
-				return nil, nil, compiler.customError(node.Args[0], "argument of `length` must be string, list, or map")
-			}
-
-			code = append(code, &bytecode.CallBuiltin{"length", 1})
-			return code, vtype.VENICE_TYPE_INTEGER, nil
-		} else {
-			valueAny, ok := compiler.SymbolTable.Get(v.Value)
-			if !ok {
-				return nil, nil, compiler.customError(node, fmt.Sprintf("undefined symbol: %s", v.Value))
-			}
-
-			if f, ok := valueAny.(*vtype.VeniceFunctionType); ok {
-				if len(f.ParamTypes) != len(node.Args) {
-					return nil, nil, compiler.customError(node, fmt.Sprintf("wrong number of arguments: expected %d, got %d", len(f.ParamTypes), len(node.Args)))
+			code := []bytecode.Bytecode{}
+			genericParameters := []string{}
+			concreteTypes := []vtype.VeniceType{}
+			for i := 0; i < len(f.ParamTypes); i++ {
+				argCode, argType, err := compiler.compileExpression(node.Args[i])
+				if err != nil {
+					return nil, nil, err
 				}
 
-				code := []bytecode.Bytecode{}
-				genericParameters := []string{}
-				concreteTypes := []vtype.VeniceType{}
-				for i := 0; i < len(f.ParamTypes); i++ {
-					argCode, argType, err := compiler.compileExpression(node.Args[i])
-					if err != nil {
-						return nil, nil, err
-					}
-
-					if genericParamType, ok := f.ParamTypes[i].(*vtype.VeniceGenericParameterType); ok {
-						genericParameters = append(genericParameters, genericParamType.Label)
-						concreteTypes = append(concreteTypes, argType)
-					} else {
-						if !areTypesCompatible(f.ParamTypes[i], argType) {
-							return nil, nil, compiler.customError(node.Args[i], "wrong function parameter type")
-						}
-					}
-
-					code = append(code, argCode...)
-				}
-
-				code = append(code, &bytecode.CallFunction{v.Value, len(f.ParamTypes)})
-
-				if len(genericParameters) > 0 {
-					return code, f.ReturnType.SubstituteGenerics(genericParameters, concreteTypes), nil
+				if genericParamType, ok := f.ParamTypes[i].(*vtype.VeniceGenericParameterType); ok {
+					genericParameters = append(genericParameters, genericParamType.Label)
+					concreteTypes = append(concreteTypes, argType)
 				} else {
-					return code, f.ReturnType, nil
+					if !areTypesCompatible(f.ParamTypes[i], argType) {
+						return nil, nil, compiler.customError(node.Args[i], "wrong function parameter type")
+					}
 				}
-			} else {
-				return nil, nil, compiler.customError(node, "not a function")
+
+				code = append(code, argCode...)
 			}
+
+			if f.IsBuiltin {
+				code = append(code, &bytecode.CallBuiltin{v.Value, len(f.ParamTypes)})
+			} else {
+				code = append(code, &bytecode.CallFunction{v.Value, len(f.ParamTypes)})
+			}
+
+			if len(genericParameters) > 0 {
+				return code, f.ReturnType.SubstituteGenerics(genericParameters, concreteTypes), nil
+			} else {
+				return code, f.ReturnType, nil
+			}
+		} else {
+			return nil, nil, compiler.customError(node, "not a function")
 		}
 	}
 
@@ -1056,10 +1049,15 @@ func areTypesCompatible(expectedTypeAny vtype.VeniceType, actualTypeAny vtype.Ve
 
 	switch expectedType := expectedTypeAny.(type) {
 	case *vtype.VeniceAtomicType:
+		if expectedType.Type == "any" {
+			return actualTypeAny != nil
+		}
+
 		actualType, ok := actualTypeAny.(*vtype.VeniceAtomicType)
 		if !ok {
 			return false
 		}
+
 		return expectedType.Type == actualType.Type
 	case *vtype.VeniceEnumType:
 		actualType, ok := actualTypeAny.(*vtype.VeniceEnumType)
@@ -1080,6 +1078,14 @@ func areTypesCompatible(expectedTypeAny vtype.VeniceType, actualTypeAny vtype.Ve
 		}
 
 		return areTypesCompatible(expectedType.KeyType, actualType.KeyType) && areTypesCompatible(expectedType.ValueType, actualType.ValueType)
+	case *vtype.VeniceUnionType:
+		for _, subType := range expectedType.Types {
+			if areTypesCompatible(subType, actualTypeAny) {
+				return true
+			}
+		}
+
+		return false
 	default:
 		return false
 	}
