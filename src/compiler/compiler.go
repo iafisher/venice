@@ -239,9 +239,12 @@ func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode
 
 	var classType vtype.VeniceType
 	if node.GenericTypeParameter == "" {
-		classType = &vtype.VeniceClassType{fields}
+		classType = &vtype.VeniceClassType{Fields: fields, Methods: nil}
 	} else {
-		classType = &vtype.VeniceGenericType{[]string{node.GenericTypeParameter}, &vtype.VeniceClassType{fields}}
+		classType = &vtype.VeniceGenericType{
+			[]string{node.GenericTypeParameter},
+			&vtype.VeniceClassType{Fields: fields, Methods: nil},
+		}
 		compiler.TypeSymbolTable = compiler.TypeSymbolTable.Parent
 	}
 	compiler.TypeSymbolTable.Put(node.Name, classType)

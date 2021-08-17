@@ -340,6 +340,7 @@ const (
 	TOKEN_RIGHT_CURLY            = "TOKEN_RIGHT_CURLY"
 	TOKEN_RIGHT_PAREN            = "TOKEN_RIGHT_PAREN"
 	TOKEN_RIGHT_SQUARE           = "TOKEN_RIGHT_SQUARE"
+	TOKEN_SELF                   = "TOKEN_SELF"
 	TOKEN_SEMICOLON              = "TOKEN_SEMICOLON"
 	TOKEN_SLASH                  = "TOKEN_SLASH"
 	TOKEN_STRING                 = "TOKEN_STRING"
@@ -368,6 +369,7 @@ var keywords = map[string]string{
 	"private":  TOKEN_PRIVATE,
 	"public":   TOKEN_PUBLIC,
 	"return":   TOKEN_RETURN,
+	"self":     TOKEN_SELF,
 	"true":     TOKEN_TRUE,
 	"while":    TOKEN_WHILE,
 	"void":     TOKEN_VOID,

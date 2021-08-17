@@ -54,6 +54,7 @@ type ClassDeclarationNode struct {
 	Name                 string
 	GenericTypeParameter string
 	Fields               []*ClassFieldNode
+	Methods              []*ClassMethodNode
 	Location             *lexer.Location
 }
 
@@ -62,6 +63,15 @@ type ClassFieldNode struct {
 	Name      string
 	Public    bool
 	FieldType TypeNode
+}
+
+type ClassMethodNode struct {
+	Name       string
+	Public     bool
+	Params     []*FunctionParamNode
+	ReturnType TypeNode
+	Body       []StatementNode
+	Location   *lexer.Location
 }
 
 type ContinueStatementNode struct {
@@ -282,6 +292,10 @@ func (n *ClassDeclarationNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
+func (n *ClassMethodNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
 func (n *ContinueStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
@@ -438,7 +452,46 @@ func (n *ClassDeclarationNode) String() string {
 		sb.WriteString(field.FieldType.String())
 		sb.WriteByte(')')
 	}
+
+	for _, method := range n.Methods {
+		sb.WriteByte(' ')
+		sb.WriteString(method.String())
+	}
+
 	sb.WriteString("))")
+	return sb.String()
+}
+
+func (n *ClassMethodNode) String() string {
+	var sb strings.Builder
+	sb.WriteString("(class-method ")
+	if n.Public {
+		sb.WriteString("public ")
+	} else {
+		sb.WriteString("private ")
+	}
+	sb.WriteString(n.Name)
+	sb.WriteString(" (")
+	for i, param := range n.Params {
+		if i != 0 {
+			sb.WriteByte(' ')
+		}
+		sb.WriteString("(function-param ")
+		sb.WriteString(param.Name)
+		sb.WriteByte(' ')
+		sb.WriteString(param.ParamType.String())
+		sb.WriteByte(')')
+	}
+	sb.WriteByte(')')
+	if n.ReturnType != nil {
+		sb.WriteByte(' ')
+		sb.WriteString(n.ReturnType.String())
+	} else {
+		sb.WriteString(" void")
+	}
+	sb.WriteByte(' ')
+	writeBlock(&sb, n.Body)
+	sb.WriteByte(')')
 	return sb.String()
 }
 
@@ -523,6 +576,8 @@ func (n *FunctionDeclarationNode) String() string {
 	if n.ReturnType != nil {
 		sb.WriteByte(' ')
 		sb.WriteString(n.ReturnType.String())
+	} else {
+		sb.WriteString(" void")
 	}
 	sb.WriteByte(' ')
 	writeBlock(&sb, n.Body)
@@ -662,6 +717,7 @@ func writeBlock(sb *strings.Builder, block []StatementNode) {
 func (n *AssignStatementNode) statementNode()     {}
 func (n *BreakStatementNode) statementNode()      {}
 func (n *ClassDeclarationNode) statementNode()    {}
+func (n *ClassMethodNode) statementNode()         {}
 func (n *ContinueStatementNode) statementNode()   {}
 func (n *EnumDeclarationNode) statementNode()     {}
 func (n *ExpressionStatementNode) statementNode() {}

@@ -21,7 +21,8 @@ type VeniceAtomicType struct {
 }
 
 type VeniceClassType struct {
-	Fields []*VeniceClassField
+	Fields  []*VeniceClassField
+	Methods []*VeniceFunctionType
 }
 
 // Helper struct - does not implement VeniceType
@@ -240,7 +241,7 @@ func (t *VeniceClassType) SubstituteGenerics(labels []string, concreteTypes []Ve
 			field.FieldType.SubstituteGenerics(labels, concreteTypes),
 		})
 	}
-	return &VeniceClassType{fields}
+	return &VeniceClassType{Fields: fields, Methods: t.Methods}
 }
 
 func (t *VeniceEnumType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {

@@ -14,7 +14,31 @@ func TestParseBreakStatements(t *testing.T) {
 }
 
 func TestParseClassDeclarationStatements(t *testing.T) {
-	checkParseStatement(t, "class Point {\n  public x: int\n  public y: int\n}", "(class-declaration Point ((class-field public x int) (class-field public y int)))")
+	checkParseStatement(
+		t,
+		`
+		  class Point {
+			public x: int
+			public y: int
+		  }
+		`,
+		"(class-declaration Point ((class-field public x int) (class-field public y int)))",
+	)
+
+	checkParseStatement(
+		t,
+		`
+		  class Point {
+			public x: int
+			public y: int
+
+			public fn f(self, x: int) {
+			  x
+		    }
+		  }
+		`,
+		"(class-declaration Point ((class-field public x int) (class-field public y int) (class-method public f ((function-param x int)) void (block (expression-statement x)))))",
+	)
 }
 
 func TestParseContinueStatements(t *testing.T) {
