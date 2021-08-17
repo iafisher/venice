@@ -132,20 +132,7 @@ func (compiler *Compiler) GetType(expr ast.ExpressionNode) (vtype.VeniceType, er
 func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecode.Bytecode, error) {
 	switch node := treeAny.(type) {
 	case *ast.AssignStatementNode:
-		code, eType, err := compiler.compileExpression(node.Expr)
-		if err != nil {
-			return nil, err
-		}
-
-		expectedType, ok := compiler.SymbolTable.Get(node.Symbol)
-		if !ok {
-			return nil, compiler.customError(treeAny, "cannot assign to undeclared symbol `%s`", node.Symbol)
-		} else if !expectedType.Check(eType) {
-			return nil, compiler.customError(treeAny, "wrong expression type in assignment to `%s`", node.Symbol)
-		}
-
-		code = append(code, &bytecode.StoreName{node.Symbol})
-		return code, nil
+		return compiler.compileAssignStatement(node)
 	case *ast.BreakStatementNode:
 		if compiler.nestedLoopCount == 0 {
 			return nil, compiler.customError(treeAny, "break statement outside of loop")
@@ -212,6 +199,52 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 		return compiler.compileWhileLoop(node)
 	default:
 		return nil, compiler.customError(treeAny, "unknown statement type: %T", treeAny)
+	}
+}
+
+func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) ([]bytecode.Bytecode, error) {
+	code, eType, err := compiler.compileExpression(node.Expr)
+	if err != nil {
+		return nil, err
+	}
+
+	switch destination := node.Destination.(type) {
+	case *ast.FieldAccessNode:
+		destinationCode, destinationTypeAny, err := compiler.compileExpression(destination.Expr)
+		if err != nil {
+			return nil, err
+		}
+
+		classType, ok := destinationTypeAny.(*vtype.VeniceClassType)
+		if !ok {
+			return nil, compiler.customError(node, "cannot assign to field on type %s", destinationTypeAny.String())
+		}
+
+		for i, field := range classType.Fields {
+			if field.Name == destination.Name {
+				if !field.Public {
+					return nil, compiler.customError(node, "cannot assign to non-public field")
+				}
+
+				code = append(code, destinationCode...)
+				code = append(code, &bytecode.StoreField{i})
+				return code, nil
+			}
+		}
+
+		return nil, compiler.customError(node, "field `%s` does not exist on %s", destination.Name, classType.String())
+	case *ast.SymbolNode:
+		expectedType, ok := compiler.SymbolTable.Get(destination.Value)
+		if !ok {
+			return nil, compiler.customError(node, "cannot assign to undeclared symbol `%s`", destination.Value)
+		} else if !expectedType.Check(eType) {
+			return nil, compiler.customError(node, "wrong expression type in assignment to `%s`", destination.Value)
+		}
+
+		code = append(code, &bytecode.StoreName{destination.Value})
+		return code, nil
+	default:
+		return nil, compiler.customError(destination, "cannot assign to non-symbol")
 	}
 }
 

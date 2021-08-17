@@ -409,6 +409,16 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 		}
 	case *bytecode.Return:
 		return 0, nil
+	case *bytecode.StoreField:
+		destinationAny := vm.popStack()
+		value := vm.popStack()
+
+		destination, ok := destinationAny.(*vval.VeniceClassObject)
+		if !ok {
+			return -1, &ExecutionError{"expected class object at top of virtual machine stack"}
+		}
+
+		destination.Values[bcode.Index] = value
 	case *bytecode.StoreName:
 		topOfStack := vm.popStack()
 		vm.Env.Put(bcode.Name, topOfStack)

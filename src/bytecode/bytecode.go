@@ -143,6 +143,10 @@ type RelJumpIfTrueOrPop struct {
 
 type Return struct{}
 
+type StoreField struct {
+	Index int
+}
+
 type StoreName struct {
 	Name string
 }
@@ -315,6 +319,10 @@ func (b *Return) String() string {
 	return "RETURN"
 }
 
+func (b *StoreField) String() string {
+	return fmt.Sprintf("STORE_FIELD %d", b.Index)
+}
+
 func (b *StoreName) String() string {
 	return fmt.Sprintf("STORE_NAME %q", b.Name)
 }
@@ -367,6 +375,7 @@ func (b *RelJumpIfFalse) bytecode()      {}
 func (b *RelJumpIfFalseOrPop) bytecode() {}
 func (b *RelJumpIfTrueOrPop) bytecode()  {}
 func (b *Return) bytecode()              {}
+func (b *StoreField) bytecode()          {}
 func (b *StoreName) bytecode()           {}
 func (b *UnaryMinus) bytecode()          {}
 func (b *UnaryNot) bytecode()            {}

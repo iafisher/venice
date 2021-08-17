@@ -41,9 +41,9 @@ type TypeNode interface {
  */
 
 type AssignStatementNode struct {
-	Symbol   string
-	Expr     ExpressionNode
-	Location *lexer.Location
+	Destination ExpressionNode
+	Expr        ExpressionNode
+	Location    *lexer.Location
 }
 
 type BreakStatementNode struct {
@@ -397,7 +397,7 @@ func (n *WhileLoopNode) GetLocation() *lexer.Location {
  */
 
 func (n *AssignStatementNode) String() string {
-	return fmt.Sprintf("(assign %s %s)", n.Symbol, n.Expr.String())
+	return fmt.Sprintf("(assign %s %s)", n.Destination.String(), n.Expr.String())
 }
 
 func (n *BooleanNode) String() string {

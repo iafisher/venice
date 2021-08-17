@@ -101,17 +101,13 @@ func (p *Parser) matchStatement() (ast.StatementNode, error) {
 		}
 
 		if p.currentToken.Type == lexer_mod.TOKEN_ASSIGN {
-			if symbol, ok := expr.(*ast.SymbolNode); ok {
-				p.nextToken()
-				assignExpr, err := p.matchExpression(PRECEDENCE_LOWEST)
-				if err != nil {
-					return nil, err
-				}
-
-				tree = &ast.AssignStatementNode{symbol.Value, assignExpr, location}
-			} else {
-				return nil, p.customError("cannot assign to non-symbol")
+			p.nextToken()
+			assignExpr, err := p.matchExpression(PRECEDENCE_LOWEST)
+			if err != nil {
+				return nil, err
 			}
+
+			tree = &ast.AssignStatementNode{Destination: expr, Expr: assignExpr, Location: location}
 		} else {
 			tree = &ast.ExpressionStatementNode{expr, expr.GetLocation()}
 		}

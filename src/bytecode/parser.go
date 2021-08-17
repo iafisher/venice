@@ -248,6 +248,12 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			bytecode = &RelJumpIfTrueOrPop{n}
 		case "RETURN":
 			bytecode = &Return{}
+		case "STORE_FIELD":
+			n, ok := p.expectInt()
+			if !ok {
+				continue
+			}
+			bytecode = &StoreField{n}
 		case "STORE_NAME":
 			name, ok := p.expectString()
 			if !ok {

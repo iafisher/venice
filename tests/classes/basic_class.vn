@@ -1,5 +1,6 @@
 # OUTPUT
 # 0
+# 10
 # END OUTPUT
 
 class Point {
@@ -8,4 +9,6 @@ class Point {
 }
 
 let p = Point(0, 1)
+print(p.x)
+p.x = 10
 print(p.x)
