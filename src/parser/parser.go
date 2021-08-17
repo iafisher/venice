@@ -122,7 +122,7 @@ func (p *Parser) matchStatement() (ast.StatementNode, error) {
 	}
 
 	if p.currentToken.Type != lexer_mod.TOKEN_NEWLINE && p.currentToken.Type != lexer_mod.TOKEN_SEMICOLON && p.currentToken.Type != lexer_mod.TOKEN_EOF && p.currentToken.Type != lexer_mod.TOKEN_RIGHT_CURLY {
-		return nil, p.customError(fmt.Sprintf("statement must be followed by newline or semicolon (got %s)", p.currentToken.Type))
+		return nil, p.customError("statement must be followed by newline or semicolon (got %s)", p.currentToken.Type)
 	}
 
 	if p.currentToken.Type == lexer_mod.TOKEN_NEWLINE || p.currentToken.Type == lexer_mod.TOKEN_SEMICOLON {
@@ -918,14 +918,14 @@ func (e *ParseError) Error() string {
 func (p *Parser) unexpectedToken(expected string) *ParseError {
 	if p.currentToken.Type == lexer_mod.TOKEN_EOF {
 		// Don't change the start of this error message or multi-line parsing in the REPL will break.
-		return p.customError(fmt.Sprintf("premature end of input (expected %s)", expected))
+		return p.customError("premature end of input (expected %s)", expected)
 	} else if p.currentToken.Type == lexer_mod.TOKEN_ERROR {
-		return p.customError(p.currentToken.Value)
+		return p.customError("%s", p.currentToken.Value)
 	} else {
-		return p.customError(fmt.Sprintf("expected %s, got %s", expected, p.currentToken.Type))
+		return p.customError("expected %s, got %s", expected, p.currentToken.Type)
 	}
 }
 
-func (p *Parser) customError(message string) *ParseError {
-	return &ParseError{message, p.currentToken.Location}
+func (p *Parser) customError(message string, args ...interface{}) *ParseError {
+	return &ParseError{fmt.Sprintf(message, args...), p.currentToken.Location}
 }

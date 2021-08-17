@@ -139,9 +139,9 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 
 		expectedType, ok := compiler.SymbolTable.Get(node.Symbol)
 		if !ok {
-			return nil, compiler.customError(treeAny, fmt.Sprintf("cannot assign to undeclared symbol %q", node.Symbol))
+			return nil, compiler.customError(treeAny, "cannot assign to undeclared symbol `%s`", node.Symbol)
 		} else if !expectedType.Check(eType) {
-			return nil, compiler.customError(treeAny, fmt.Sprintf("wrong expression type in assignment to %q", node.Symbol))
+			return nil, compiler.customError(treeAny, "wrong expression type in assignment to `%s`", node.Symbol)
 		}
 
 		code = append(code, &bytecode.StoreName{node.Symbol})
@@ -174,7 +174,7 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 		return compiler.compileIfStatement(node)
 	case *ast.LetStatementNode:
 		if _, ok := compiler.SymbolTable.Get(node.Symbol); ok {
-			return nil, compiler.customError(treeAny, fmt.Sprintf("re-declaration of symbol %q", node.Symbol))
+			return nil, compiler.customError(treeAny, "re-declaration of symbol `%q`", node.Symbol)
 		}
 
 		code, eType, err := compiler.compileExpression(node.Expr)
@@ -211,7 +211,7 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 	case *ast.WhileLoopNode:
 		return compiler.compileWhileLoop(node)
 	default:
-		return nil, compiler.customError(treeAny, fmt.Sprintf("unknown statement type: %T", treeAny))
+		return nil, compiler.customError(treeAny, "unknown statement type: %T", treeAny)
 	}
 }
 
@@ -467,7 +467,7 @@ func (compiler *Compiler) compileWhileLoop(node *ast.WhileLoopNode) ([]bytecode.
 	}
 
 	if !vtype.VENICE_TYPE_BOOLEAN.Check(conditionType) {
-		return nil, compiler.customError(node.Condition, "condition of while loop must be a boolean")
+		return nil, compiler.customError(node.Condition, "condition of `while` loop must be a boolean")
 	}
 
 	compiler.nestedLoopCount += 1
@@ -540,7 +540,7 @@ func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytec
 	case *ast.SymbolNode:
 		symbolType, ok := compiler.SymbolTable.Get(node.Value)
 		if !ok {
-			return nil, nil, compiler.customError(nodeAny, fmt.Sprintf("undefined symbol: %s", node.Value))
+			return nil, nil, compiler.customError(nodeAny, "undefined symbol: %s", node.Value)
 		}
 		return []bytecode.Bytecode{&bytecode.PushName{node.Value}}, symbolType, nil
 	case *ast.TernaryIfNode:
@@ -552,7 +552,7 @@ func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytec
 	case *ast.UnaryNode:
 		return compiler.compileUnaryNode(node)
 	default:
-		return nil, nil, compiler.customError(nodeAny, fmt.Sprintf("unknown expression type: %T", nodeAny))
+		return nil, nil, compiler.customError(nodeAny, "unknown expression type: %T", nodeAny)
 	}
 }
 
@@ -568,17 +568,15 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 
 	functionType, ok := functionTypeAny.(*vtype.VeniceFunctionType)
 	if !ok {
-		return nil, nil, compiler.customError(node.Function, fmt.Sprintf("type %s cannot be used as a function", functionTypeAny.String()))
+		return nil, nil, compiler.customError(node.Function, "type %s cannot be used as a function", functionTypeAny.String())
 	}
 
 	if len(functionType.ParamTypes) != len(node.Args) {
 		return nil, nil, compiler.customError(
 			node,
-			fmt.Sprintf(
-				"wrong number of arguments: expected %d, got %d",
-				len(functionType.ParamTypes),
-				len(node.Args),
-			),
+			"wrong number of arguments: expected %d, got %d",
+			len(functionType.ParamTypes),
+			len(node.Args),
 		)
 	}
 
@@ -645,7 +643,7 @@ func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.EnumSymbolNode
 	for _, enumCase := range enumType.Cases {
 		if enumCase.Label == enumSymbolNode.Case {
 			if len(enumCase.Types) != len(callNode.Args) {
-				return nil, nil, compiler.customError(callNode, fmt.Sprintf("%s takes %d argument(s)", enumCase.Label, len(enumCase.Types)))
+				return nil, nil, compiler.customError(callNode, "%s takes %d argument(s)", enumCase.Label, len(enumCase.Types))
 			}
 
 			code := []bytecode.Bytecode{}
@@ -678,7 +676,7 @@ func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.EnumSymbolNode
 		}
 	}
 
-	return nil, nil, compiler.customError(callNode, fmt.Sprintf("enum %s does not have case %s", enumSymbolNode.Enum, enumSymbolNode.Case))
+	return nil, nil, compiler.customError(callNode, "enum %s does not have case %s", enumSymbolNode.Enum, enumSymbolNode.Case)
 }
 
 func (compiler *Compiler) compileEnumSymbolNode(node *ast.EnumSymbolNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
@@ -708,14 +706,14 @@ func (compiler *Compiler) compileEnumSymbolNode(node *ast.EnumSymbolNode) ([]byt
 	for _, enumCase := range enumType.Cases {
 		if enumCase.Label == node.Case {
 			if len(enumCase.Types) != 0 {
-				return nil, nil, compiler.customError(node, fmt.Sprintf("%s takes %d argument(s)", enumCase.Label, len(enumCase.Types)))
+				return nil, nil, compiler.customError(node, "%s takes %d argument(s)", enumCase.Label, len(enumCase.Types))
 			}
 
 			return []bytecode.Bytecode{&bytecode.PushEnum{node.Case, 0}}, enumType, nil
 		}
 	}
 
-	return nil, nil, compiler.customError(node, fmt.Sprintf("enum %s does not have case %s", node.Enum, node.Case))
+	return nil, nil, compiler.customError(node, "enum %s does not have case %s", node.Enum, node.Case)
 }
 
 func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
@@ -741,7 +739,7 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 		}
 	}
 
-	return nil, nil, compiler.customError(node, fmt.Sprintf("no such field: %s", node.Name))
+	return nil, nil, compiler.customError(node, "no such field `%s`", node.Name)
 }
 
 func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
@@ -760,7 +758,7 @@ func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Byte
 	switch exprType := exprTypeAny.(type) {
 	case *vtype.VeniceAtomicType:
 		if exprType != vtype.VENICE_TYPE_STRING {
-			return nil, nil, compiler.customError(node, fmt.Sprintf("%s cannot be indexed", exprType.String()))
+			return nil, nil, compiler.customError(node, "%s cannot be indexed", exprType.String())
 		}
 		if !vtype.VENICE_TYPE_INTEGER.Check(indexType) {
 			return nil, nil, compiler.customError(node.Expr, "string index must be integer")
@@ -783,7 +781,7 @@ func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Byte
 		code = append(code, &bytecode.BinaryMapIndex{})
 		return code, exprType.KeyType, nil
 	default:
-		return nil, nil, compiler.customError(node, fmt.Sprintf("%s cannot be indexed", exprTypeAny))
+		return nil, nil, compiler.customError(node, "%s cannot be indexed", exprTypeAny)
 	}
 }
 
@@ -791,7 +789,7 @@ func (compiler *Compiler) compileInfixNode(node *ast.InfixNode) ([]bytecode.Byte
 	// TODO(2021-08-07): Boolean operators should short-circuit.
 	opBytecode, ok := opsToBytecodes[node.Operator]
 	if !ok {
-		return nil, nil, compiler.customError(node, fmt.Sprintf("unknown operator: %s", node.Operator))
+		return nil, nil, compiler.customError(node, "unknown operator `%s`", node.Operator)
 	}
 
 	leftCode, leftType, err := compiler.compileExpression(node.Left)
@@ -800,7 +798,7 @@ func (compiler *Compiler) compileInfixNode(node *ast.InfixNode) ([]bytecode.Byte
 	}
 
 	if !checkInfixLeftType(node.Operator, leftType) {
-		return nil, nil, compiler.customError(node.Left, fmt.Sprintf("invalid type for left operand of %s", node.Operator))
+		return nil, nil, compiler.customError(node.Left, "invalid type for left operand of %s", node.Operator)
 	}
 
 	rightCode, rightType, err := compiler.compileExpression(node.Right)
@@ -810,7 +808,7 @@ func (compiler *Compiler) compileInfixNode(node *ast.InfixNode) ([]bytecode.Byte
 
 	resultType, ok := checkInfixRightType(node.Operator, leftType, rightType)
 	if !ok {
-		return nil, nil, compiler.customError(node.Right, fmt.Sprintf("invalid type for right operand of %s", node.Operator))
+		return nil, nil, compiler.customError(node.Right, "invalid type for right operand of %s", node.Operator)
 	}
 
 	var code []bytecode.Bytecode
@@ -970,7 +968,7 @@ func (compiler *Compiler) compileUnaryNode(node *ast.UnaryNode) ([]bytecode.Byte
 		}
 
 		if exprType != vtype.VENICE_TYPE_INTEGER {
-			return nil, nil, compiler.customError(node, fmt.Sprintf("argument to unary minus must be integer, not %s", exprType.String()))
+			return nil, nil, compiler.customError(node, "argument to unary minus must be integer, not %s", exprType.String())
 		}
 
 		code = append(code, &bytecode.UnaryMinus{})
@@ -982,13 +980,13 @@ func (compiler *Compiler) compileUnaryNode(node *ast.UnaryNode) ([]bytecode.Byte
 		}
 
 		if exprType != vtype.VENICE_TYPE_BOOLEAN {
-			return nil, nil, compiler.customError(node, fmt.Sprintf("argument to `not` must be boolean, not %s", exprType.String()))
+			return nil, nil, compiler.customError(node, "argument to `not` must be boolean, not %s", exprType.String())
 		}
 
 		code = append(code, &bytecode.UnaryNot{})
 		return code, vtype.VENICE_TYPE_BOOLEAN, nil
 	default:
-		return nil, nil, compiler.customError(node, fmt.Sprintf("unknown unary operator: %s", node.Operator))
+		return nil, nil, compiler.customError(node, "unknown unary operator `%s`", node.Operator)
 	}
 }
 
@@ -1074,11 +1072,11 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 	case *ast.SimpleTypeNode:
 		resolvedType, ok := compiler.TypeSymbolTable.Get(typeNode.Symbol)
 		if !ok {
-			return nil, compiler.customError(typeNodeAny, fmt.Sprintf("unknown type: %s", typeNode.Symbol))
+			return nil, compiler.customError(typeNodeAny, "unknown type `%s`", typeNode.Symbol)
 		}
 		return resolvedType, nil
 	default:
-		return nil, compiler.customError(typeNodeAny, fmt.Sprintf("unknown type node: %T", typeNodeAny))
+		return nil, compiler.customError(typeNodeAny, "unknown type node: %T", typeNodeAny)
 	}
 }
 
@@ -1115,6 +1113,6 @@ func (e *CompileError) Error() string {
 	}
 }
 
-func (compiler *Compiler) customError(node ast.Node, message string) *CompileError {
-	return &CompileError{message, node.GetLocation()}
+func (compiler *Compiler) customError(node ast.Node, message string, args ...interface{}) *CompileError {
+	return &CompileError{fmt.Sprintf(message, args...), node.GetLocation()}
 }
