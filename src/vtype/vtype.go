@@ -44,6 +44,7 @@ type VeniceCaseType struct {
 
 type VeniceFunctionType struct {
 	Name       string
+	Public     bool
 	ParamTypes []VeniceType
 	ReturnType VeniceType
 	IsBuiltin  bool

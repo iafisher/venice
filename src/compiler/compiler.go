@@ -93,11 +93,10 @@ func (compiler *Compiler) Compile(file *ast.File) (*bytecode.CompiledProgram, er
 	for _, statementAny := range file.Statements {
 		switch statement := statementAny.(type) {
 		case *ast.ClassDeclarationNode:
-			code, err := compiler.compileClassDeclaration(statement)
+			err := compiler.compileClassDeclaration(compiledProgram, statement)
 			if err != nil {
 				return nil, err
 			}
-			compiledProgram.Code[statement.Name] = code
 		case *ast.EnumDeclarationNode:
 			err := compiler.compileEnumDeclaration(statement)
 			if err != nil {
@@ -248,7 +247,7 @@ func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) 
 	}
 }
 
-func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.CompiledProgram, node *ast.ClassDeclarationNode) error {
 	if node.GenericTypeParameter != "" {
 		subTypeSymbolTable := &SymbolTable{
 			compiler.TypeSymbolTable,
@@ -264,24 +263,52 @@ func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode
 	for _, field := range node.Fields {
 		paramType, err := compiler.resolveType(field.FieldType)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		paramTypes = append(paramTypes, paramType)
 		fields = append(fields, &vtype.VeniceClassField{field.Name, field.Public, paramType})
 	}
 
+	methods := []*vtype.VeniceFunctionType{}
+	for _, method := range node.Methods {
+		methodParams := []string{}
+		methodParamTypes := []vtype.VeniceType{}
+		for _, param := range method.Params {
+			paramType, err := compiler.resolveType(param.ParamType)
+			if err != nil {
+				return err
+			}
+
+			methodParams = append(methodParams, param.Name)
+			methodParamTypes = append(methodParamTypes, paramType)
+		}
+
+		declaredReturnType, err := compiler.resolveType(method.ReturnType)
+		if err != nil {
+			return err
+		}
+
+		methodType := &vtype.VeniceFunctionType{
+			Name:       method.Name,
+			Public:     method.Public,
+			ParamTypes: paramTypes,
+			ReturnType: declaredReturnType,
+			IsBuiltin:  false,
+		}
+		methods = append(methods, methodType)
+	}
+
 	var classType vtype.VeniceType
 	if node.GenericTypeParameter == "" {
-		classType = &vtype.VeniceClassType{Fields: fields, Methods: nil}
+		classType = &vtype.VeniceClassType{Fields: fields, Methods: methods}
 	} else {
 		classType = &vtype.VeniceGenericType{
 			[]string{node.GenericTypeParameter},
-			&vtype.VeniceClassType{Fields: fields, Methods: nil},
+			&vtype.VeniceClassType{Fields: fields, Methods: methods},
 		}
 		compiler.TypeSymbolTable = compiler.TypeSymbolTable.Parent
 	}
 	compiler.TypeSymbolTable.Put(node.Name, classType)
-
 	constructorType := &vtype.VeniceFunctionType{
 		Name:       node.Name,
 		ParamTypes: paramTypes,
@@ -290,8 +317,53 @@ func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode
 	}
 	compiler.SymbolTable.Put(node.Name, constructorType)
 
-	constructorBytecode := []bytecode.Bytecode{&bytecode.BuildClass{len(fields)}}
-	return constructorBytecode, nil
+	for i := 0; i < len(methods); i++ {
+		method := node.Methods[i]
+		methodType := methods[i]
+		bodySymbolTableMap := map[string]vtype.VeniceType{}
+		for j := 0; j < len(method.Params); j++ {
+			bodySymbolTableMap[method.Params[j].Name] = methodType.ParamTypes[j]
+		}
+		bodySymbolTable := &SymbolTable{compiler.SymbolTable, bodySymbolTableMap}
+
+		declaredReturnType := methodType.ReturnType
+
+		// Put `self` in the symbol table.
+		bodySymbolTable.Put("self", classType)
+
+		compiler.SymbolTable = bodySymbolTable
+		compiler.functionInfo = &FunctionInfo{
+			declaredReturnType:  declaredReturnType,
+			seenReturnStatement: false,
+		}
+		bodyCode, err := compiler.compileBlock(method.Body)
+
+		if declaredReturnType != nil && !compiler.functionInfo.seenReturnStatement {
+			return compiler.customError(node, "non-void function has no return statement")
+		}
+
+		compiler.functionInfo = nil
+		compiler.SymbolTable = bodySymbolTable.Parent
+
+		paramLoadCode := []bytecode.Bytecode{
+			&bytecode.StoreName{"self"},
+		}
+		for i := len(method.Params) - 1; i >= 0; i-- {
+			param := method.Params[i]
+			paramLoadCode = append(paramLoadCode, &bytecode.StoreName{param.Name})
+		}
+		bodyCode = append(paramLoadCode, bodyCode...)
+
+		if err != nil {
+			return err
+		}
+
+		compiledProgram.Code[fmt.Sprintf("%s__%s", node.Name, method.Name)] = bodyCode
+	}
+
+	constructorBytecode := []bytecode.Bytecode{&bytecode.BuildClass{node.Name, len(fields)}}
+	compiledProgram.Code[node.Name] = constructorBytecode
+	return nil
 }
 
 func (compiler *Compiler) compileEnumDeclaration(node *ast.EnumDeclarationNode) error {
@@ -437,7 +509,8 @@ func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarati
 	compiler.SymbolTable = bodySymbolTable.Parent
 
 	paramLoadCode := []bytecode.Bytecode{}
-	for _, param := range node.Params {
+	for i := len(node.Params) - 1; i >= 0; i-- {
+		param := node.Params[i]
 		paramLoadCode = append(paramLoadCode, &bytecode.StoreName{param.Name})
 	}
 	bodyCode = append(paramLoadCode, bodyCode...)
@@ -597,7 +670,7 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 		return compiler.compileEnumCallNode(nodeAsEnumSymbol, node)
 	}
 
-	_, functionTypeAny, err := compiler.compileExpression(node.Function)
+	functionCode, functionTypeAny, err := compiler.compileExpression(node.Function)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -607,19 +680,31 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 		return nil, nil, compiler.customError(node.Function, "type %s cannot be used as a function", functionTypeAny.String())
 	}
 
-	if len(functionType.ParamTypes) != len(node.Args) {
-		return nil, nil, compiler.customError(
-			node,
-			"wrong number of arguments: expected %d, got %d",
-			len(functionType.ParamTypes),
-			len(node.Args),
-		)
+	_, isClassMethod := node.Function.(*ast.FieldAccessNode)
+	code := []bytecode.Bytecode{}
+	if isClassMethod {
+		if len(functionType.ParamTypes) != len(node.Args)+1 {
+			return nil, nil, compiler.customError(
+				node,
+				"wrong number of arguments: expected %d, got %d",
+				len(functionType.ParamTypes),
+				len(node.Args)+1,
+			)
+		}
+	} else {
+		if len(functionType.ParamTypes) != len(node.Args) {
+			return nil, nil, compiler.customError(
+				node,
+				"wrong number of arguments: expected %d, got %d",
+				len(functionType.ParamTypes),
+				len(node.Args),
+			)
+		}
 	}
 
-	code := []bytecode.Bytecode{}
 	genericParameters := []string{}
 	concreteTypes := []vtype.VeniceType{}
-	for i := 0; i < len(functionType.ParamTypes); i++ {
+	for i := len(node.Args) - 1; i >= 0; i-- {
 		argCode, argType, err := compiler.compileExpression(node.Args[i])
 		if err != nil {
 			return nil, nil, err
@@ -640,7 +725,13 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 	if functionType.IsBuiltin {
 		code = append(code, &bytecode.CallBuiltin{functionType.Name, len(functionType.ParamTypes)})
 	} else {
-		code = append(code, &bytecode.CallFunction{functionType.Name, len(functionType.ParamTypes)})
+		if isClassMethod {
+			code = append(code, functionCode...)
+			code = append(code, &bytecode.LookupMethod{functionType.Name})
+		} else {
+			code = append(code, &bytecode.PushConstStr{functionType.Name})
+		}
+		code = append(code, &bytecode.CallFunction{len(functionType.ParamTypes)})
 	}
 
 	if len(genericParameters) > 0 {
@@ -775,7 +866,17 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 		}
 	}
 
-	return nil, nil, compiler.customError(node, "no such field `%s`", node.Name)
+	for _, methodType := range classType.Methods {
+		// TODO(2021-08-17): Allow this when inside the class itself.
+		if methodType.Name == node.Name {
+			if !methodType.Public {
+				return nil, nil, compiler.customError(node, "use of private method")
+			}
+			return code, methodType, nil
+		}
+	}
+
+	return nil, nil, compiler.customError(node, "no such field or method `%s`", node.Name)
 }
 
 func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {

@@ -1,0 +1,18 @@
+# OUTPUT
+# 0
+# 10
+# END OUTPUT
+
+class Point {
+  public x: int
+  public y: int
+
+  public fn addx(self, x: int) {
+    self.x = self.x + x
+  }
+}
+
+let p = Point(0, 1)
+print(p.x)
+p.addx(10)
+print(p.x)

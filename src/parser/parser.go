@@ -812,6 +812,9 @@ func (p *Parser) matchPrefix() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 		return &ast.UnaryNode{operator, expr, location}, nil
+	case lexer_mod.TOKEN_SELF:
+		p.nextToken()
+		return &ast.SymbolNode{"self", location}, nil
 	case lexer_mod.TOKEN_STRING:
 		value := p.currentToken.Value
 		p.nextToken()

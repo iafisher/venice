@@ -253,12 +253,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 			values = append(values, topOfStack)
 		}
 
-		// Reverse the array since the values are popped off the stack in reverse order.
-		for i, j := 0, len(values)-1; i < j; i, j = i+1, j-1 {
-			values[i], values[j] = values[j], values[i]
-		}
-
-		vm.pushStack(&vval.VeniceClassObject{values})
+		vm.pushStack(&vval.VeniceClassObject{ClassName: bcode.Name, Values: values})
 	case *bytecode.BuildList:
 		values := []vval.VeniceValue{}
 		for i := 0; i < bcode.N; i++ {
@@ -298,16 +293,21 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 			vm.pushStack(result)
 		}
 	case *bytecode.CallFunction:
+		functionName, ok := vm.popStack().(*vval.VeniceString)
+		if !ok {
+			return -1, &ExecutionError{"expected string at top of virtual machine stack for CALL_FUNCTION"}
+		}
+
 		functionEnv := &Environment{vm.Env, map[string]vval.VeniceValue{}}
-		functionStack := vm.Stack[len(vm.Stack)-bcode.Args:]
-		vm.Stack = vm.Stack[:len(vm.Stack)-bcode.Args]
+		functionStack := vm.Stack[len(vm.Stack)-bcode.N:]
+		vm.Stack = vm.Stack[:len(vm.Stack)-bcode.N]
 
 		if debug {
 			fmt.Println("DEBUG: Calling function in child virtual machine")
 		}
 
 		functionVm := &VirtualMachine{functionStack, functionEnv}
-		value, err := functionVm.executeFunction(compiledProgram, bcode.Name, debug)
+		value, err := functionVm.executeFunction(compiledProgram, functionName.Value, debug)
 		if err != nil {
 			return -1, err
 		}
@@ -333,6 +333,12 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 		case *vval.VeniceMap:
 			vm.pushStack(&vval.VeniceMapIterator{Map: topOfStack, Index: 0})
 		}
+	case *bytecode.LookupMethod:
+		topOfStack, ok := vm.Stack[len(vm.Stack)-1].(*vval.VeniceClassObject)
+		if !ok {
+			return -1, &ExecutionError{"expected class object at top of virtual machine stack for LOOKUP_METHOD"}
+		}
+		vm.pushStack(&vval.VeniceString{fmt.Sprintf("%s__%s", topOfStack.ClassName, bcode.Name)})
 	case *bytecode.PushConstBool:
 		vm.pushStack(&vval.VeniceBoolean{bcode.Value})
 	case *bytecode.PushConstChar:
@@ -357,7 +363,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 	case *bytecode.PushField:
 		topOfStack, ok := vm.popStack().(*vval.VeniceClassObject)
 		if !ok {
-			return -1, &ExecutionError{"expected class object at top of virtual machine stack"}
+			return -1, &ExecutionError{"expected class object at top of virtual machine stack for PUSH_FIELD"}
 		}
 
 		vm.pushStack(topOfStack.Values[bcode.Index])
@@ -370,7 +376,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 	case *bytecode.PushTupleField:
 		topOfStack, ok := vm.popStack().(*vval.VeniceTuple)
 		if !ok {
-			return -1, &ExecutionError{"expected tuple at top of virtual machine stack"}
+			return -1, &ExecutionError{"expected tuple at top of virtual machine stack for PUSH_TUPLE_FIELD"}
 		}
 
 		vm.pushStack(topOfStack.Values[bcode.Index])
@@ -379,7 +385,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 	case *bytecode.RelJumpIfFalse:
 		topOfStack, ok := vm.popStack().(*vval.VeniceBoolean)
 		if !ok {
-			return -1, &ExecutionError{"expected boolean at top of virtual machine stack"}
+			return -1, &ExecutionError{"expected boolean at top of virtual machine stack for REL_JUMP_IF_FALSE"}
 		}
 
 		if !topOfStack.Value {
@@ -388,7 +394,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 	case *bytecode.RelJumpIfFalseOrPop:
 		topOfStack, ok := vm.peekStack().(*vval.VeniceBoolean)
 		if !ok {
-			return -1, &ExecutionError{"expected boolean at top of virtual machine stack"}
+			return -1, &ExecutionError{"expected boolean at top of virtual machine stack for REL_JUMP_IF_FALSE_OR_POP"}
 		}
 
 		if !topOfStack.Value {
@@ -399,7 +405,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 	case *bytecode.RelJumpIfTrueOrPop:
 		topOfStack, ok := vm.peekStack().(*vval.VeniceBoolean)
 		if !ok {
-			return -1, &ExecutionError{"expected boolean at top of virtual machine stack"}
+			return -1, &ExecutionError{"expected boolean at top of virtual machine stack for REL_JUMP_IF_TRUE_OR_POP"}
 		}
 
 		if topOfStack.Value {
@@ -415,7 +421,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 
 		destination, ok := destinationAny.(*vval.VeniceClassObject)
 		if !ok {
-			return -1, &ExecutionError{"expected class object at top of virtual machine stack"}
+			return -1, &ExecutionError{"expected class object at top of virtual machine stack for STORE_FIELD"}
 		}
 
 		destination.Values[bcode.Index] = value
@@ -425,7 +431,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 	case *bytecode.UnaryMinus:
 		topOfStack, ok := vm.popStack().(*vval.VeniceInteger)
 		if !ok {
-			return -1, &ExecutionError{"expected integer at top of virtual machine stack"}
+			return -1, &ExecutionError{"expected integer at top of virtual machine stack for UNARY_MINUS"}
 		}
 
 		topOfStack.Value = -topOfStack.Value
@@ -433,7 +439,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 	case *bytecode.UnaryNot:
 		topOfStack, ok := vm.popStack().(*vval.VeniceBoolean)
 		if !ok {
-			return -1, &ExecutionError{"expected boolean at top of virtual machine stack"}
+			return -1, &ExecutionError{"expected boolean at top of virtual machine stack for UNARY_NOT"}
 		}
 
 		topOfStack.Value = !topOfStack.Value

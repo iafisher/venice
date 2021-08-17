@@ -12,7 +12,7 @@ endif
 let b:current_syntax = "venice"
 
 syn keyword veniceBuiltin  boolean character false input int length list map print string true uint
-syn keyword veniceKeywords alias and as break case class constructor continue default enum elif else exception export fn for from if import in interface let match not or public private return throw var while with
+syn keyword veniceKeywords alias and as break case class constructor continue default enum elif else exception export fn for from if import in interface let match not or public private return self throw var while with
 
 syn match veniceLineComment "#.*$"
 syn region veniceBlockComment start="^###" end="^###"

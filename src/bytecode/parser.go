@@ -117,11 +117,16 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 		case "BINARY_SUB":
 			bytecode = &BinarySub{}
 		case "BUILD_CLASS":
+			name, ok := p.expectString()
+			if !ok {
+				continue
+			}
+
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &BuildClass{n}
+			bytecode = &BuildClass{name, n}
 		case "BUILD_LIST":
 			n, ok := p.expectInt()
 			if !ok {
@@ -145,23 +150,19 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			if !ok {
 				continue
 			}
+
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
 			bytecode = &CallBuiltin{name, n}
 		case "CALL_FUNCTION":
-			name, ok := p.expectString()
-			if !ok {
-				continue
-			}
-
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
 
-			bytecode = &CallFunction{name, n}
+			bytecode = &CallFunction{n}
 		case "FOR_ITER":
 			n, ok := p.expectInt()
 			if !ok {
@@ -170,6 +171,12 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			bytecode = &ForIter{n}
 		case "GET_ITER":
 			bytecode = &GetIter{}
+		case "LOOKUP_METHOD":
+			name, ok := p.expectString()
+			if !ok {
+				continue
+			}
+			bytecode = &LookupMethod{name}
 		case "PUSH_CONST_BOOL":
 			n, ok := p.expectInt()
 			if !ok {

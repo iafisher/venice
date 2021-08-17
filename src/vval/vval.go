@@ -19,7 +19,8 @@ type VeniceValue interface {
  */
 
 type VeniceClassObject struct {
-	Values []VeniceValue
+	ClassName string
+	Values    []VeniceValue
 }
 
 type VeniceEnumObject struct {

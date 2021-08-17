@@ -59,7 +59,8 @@ type BinarySub struct{}
 type BreakLoop struct{}
 
 type BuildClass struct {
-	N int
+	Name string
+	N    int
 }
 
 type BuildList struct {
@@ -80,8 +81,7 @@ type CallBuiltin struct {
 }
 
 type CallFunction struct {
-	Name string
-	Args int
+	N int
 }
 
 type ContinueLoop struct{}
@@ -91,6 +91,10 @@ type ForIter struct {
 }
 
 type GetIter struct{}
+
+type LookupMethod struct {
+	Name string
+}
 
 type PushConstBool struct {
 	Value bool
@@ -228,7 +232,7 @@ func (b *BreakLoop) String() string {
 }
 
 func (b *BuildClass) String() string {
-	return fmt.Sprintf("BUILD_CLASS %d", b.N)
+	return fmt.Sprintf("BUILD_CLASS %q %d", b.Name, b.N)
 }
 
 func (b *BuildList) String() string {
@@ -248,7 +252,7 @@ func (b *CallBuiltin) String() string {
 }
 
 func (b *CallFunction) String() string {
-	return fmt.Sprintf("CALL_FUNCTION %q %d", b.Name, b.Args)
+	return fmt.Sprintf("CALL_FUNCTION %d", b.N)
 }
 
 func (b *ContinueLoop) String() string {
@@ -261,6 +265,10 @@ func (b *ForIter) String() string {
 
 func (b *GetIter) String() string {
 	return "GET_ITER"
+}
+
+func (b *LookupMethod) String() string {
+	return fmt.Sprintf("LOOKUP_METHOD %q", b.Name)
 }
 
 func (b *PushConstBool) String() string {
@@ -362,6 +370,7 @@ func (b *CallFunction) bytecode()        {}
 func (b *ContinueLoop) bytecode()        {}
 func (b *ForIter) bytecode()             {}
 func (b *GetIter) bytecode()             {}
+func (b *LookupMethod) bytecode()        {}
 func (b *PushConstBool) bytecode()       {}
 func (b *PushConstChar) bytecode()       {}
 func (b *PushConstInt) bytecode()        {}
