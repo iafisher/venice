@@ -314,7 +314,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 
 		vm.pushStack(value)
 	case *bytecode.ForIter:
-		iter := vm.Stack[len(vm.Stack)-1].(vval.VeniceIterator)
+		iter := vm.peekStack().(vval.VeniceIterator)
 
 		next := iter.Next()
 		if next == nil {
@@ -334,7 +334,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 			vm.pushStack(&vval.VeniceMapIterator{Map: topOfStack, Index: 0})
 		}
 	case *bytecode.LookupMethod:
-		topOfStack, ok := vm.Stack[len(vm.Stack)-1].(*vval.VeniceClassObject)
+		topOfStack, ok := vm.peekStack().(*vval.VeniceClassObject)
 		if !ok {
 			return -1, &ExecutionError{"expected class object at top of virtual machine stack for LOOKUP_METHOD"}
 		}
