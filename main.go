@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/iafisher/venice/src/ast"
 	bytecode_mod "github.com/iafisher/venice/src/bytecode"
 	"github.com/iafisher/venice/src/compiler"
 	lexer_mod "github.com/iafisher/venice/src/lexer"
@@ -121,6 +122,8 @@ func repl() {
 						fmt.Printf("%s: %s\n", key, value.String())
 					}
 					continue
+				case "!type":
+					operation = "type"
 				case "!types":
 					for key, value := range compiler.TypeSymbolTable.Symbols {
 						fmt.Printf("%s: %s\n", key, value.String())
@@ -174,6 +177,30 @@ func repl() {
 
 		if operation == "parse" {
 			fmt.Println(parsedFile.String())
+			continue
+		}
+
+		if operation == "type" {
+			if len(parsedFile.Statements) == 0 {
+				fmt.Println("Parse error: empty input")
+				continue
+			} else if len(parsedFile.Statements) > 1 {
+				fmt.Println("Parse error: too many statements")
+				continue
+			}
+
+			exprStmt, ok := parsedFile.Statements[0].(*ast.ExpressionStatementNode)
+			if !ok {
+				fmt.Println("Compile error: can only get type of expression, not statement")
+				continue
+			}
+
+			exprType, err := compiler.GetType(exprStmt.Expr)
+			if err != nil {
+				fmt.Printf("Compile error: %v\n", err)
+			} else {
+				fmt.Println(exprType.String())
+			}
 			continue
 		}
 

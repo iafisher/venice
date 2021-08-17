@@ -120,6 +120,11 @@ func (compiler *Compiler) Compile(file *ast.File) (*bytecode.CompiledProgram, er
 	return compiledProgram, nil
 }
 
+func (compiler *Compiler) GetType(expr ast.ExpressionNode) (vtype.VeniceType, error) {
+	_, exprType, err := compiler.compileExpression(expr)
+	return exprType, err
+}
+
 /**
  * Compile statements
  */
