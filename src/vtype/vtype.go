@@ -94,7 +94,23 @@ var (
 	VENICE_TYPE_CHARACTER = &VeniceAtomicType{VENICE_TYPE_CHARACTER_LABEL}
 	VENICE_TYPE_INTEGER   = &VeniceAtomicType{VENICE_TYPE_INTEGER_LABEL}
 	VENICE_TYPE_STRING    = &VeniceAtomicType{VENICE_TYPE_STRING_LABEL}
+	VENICE_TYPE_OPTIONAL  = &VeniceGenericType{
+		[]string{"T"},
+		&VeniceEnumType{
+			[]*VeniceCaseType{
+				&VeniceCaseType{
+					"Some",
+					[]VeniceType{&VeniceGenericParameterType{"T"}},
+				},
+				&VeniceCaseType{"None", nil},
+			},
+		},
+	}
 )
+
+func VeniceOptionalTypeOf(concreteType VeniceType) VeniceType {
+	return VENICE_TYPE_OPTIONAL.SubstituteGenerics([]string{"T"}, []VeniceType{concreteType})
+}
 
 /**
  * String() implementations

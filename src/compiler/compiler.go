@@ -69,21 +69,10 @@ func NewBuiltinSymbolTable() *SymbolTable {
 
 func NewBuiltinTypeSymbolTable() *SymbolTable {
 	symbols := map[string]vtype.VeniceType{
-		"bool":   vtype.VENICE_TYPE_BOOLEAN,
-		"int":    vtype.VENICE_TYPE_INTEGER,
-		"string": vtype.VENICE_TYPE_STRING,
-		"Optional": &vtype.VeniceGenericType{
-			[]string{"T"},
-			&vtype.VeniceEnumType{
-				[]*vtype.VeniceCaseType{
-					&vtype.VeniceCaseType{
-						"Some",
-						[]vtype.VeniceType{&vtype.VeniceGenericParameterType{"T"}},
-					},
-					&vtype.VeniceCaseType{"None", nil},
-				},
-			},
-		},
+		"bool":     vtype.VENICE_TYPE_BOOLEAN,
+		"int":      vtype.VENICE_TYPE_INTEGER,
+		"string":   vtype.VENICE_TYPE_STRING,
+		"Optional": vtype.VENICE_TYPE_OPTIONAL,
 	}
 	return &SymbolTable{nil, symbols}
 }
@@ -710,11 +699,18 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 			return nil, nil, err
 		}
 
-		if genericParamType, ok := functionType.ParamTypes[i].(*vtype.VeniceGenericParameterType); ok {
+		var paramType vtype.VeniceType
+		if isClassMethod {
+			paramType = functionType.ParamTypes[i+1]
+		} else {
+			paramType = functionType.ParamTypes[i]
+		}
+
+		if genericParamType, ok := paramType.(*vtype.VeniceGenericParameterType); ok {
 			genericParameters = append(genericParameters, genericParamType.Label)
 			concreteTypes = append(concreteTypes, argType)
 		} else {
-			if !functionType.ParamTypes[i].Check(argType) {
+			if !paramType.Check(argType) {
 				return nil, nil, compiler.customError(node.Args[i], "wrong function parameter type")
 			}
 		}
@@ -1249,10 +1245,28 @@ var listBuiltins = map[string]vtype.VeniceType{
 }
 
 var stringBuiltins = map[string]vtype.VeniceType{
+	"find": &vtype.VeniceFunctionType{
+		Name:       "find",
+		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING, vtype.VENICE_TYPE_CHARACTER},
+		ReturnType: vtype.VeniceOptionalTypeOf(vtype.VENICE_TYPE_INTEGER),
+		IsBuiltin:  true,
+	},
 	"length": &vtype.VeniceFunctionType{
 		Name:       "length",
 		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING},
 		ReturnType: vtype.VENICE_TYPE_INTEGER,
+		IsBuiltin:  true,
+	},
+	"to_lower": &vtype.VeniceFunctionType{
+		Name:       "to_lower",
+		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING},
+		ReturnType: vtype.VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"to_upper": &vtype.VeniceFunctionType{
+		Name:       "to_upper",
+		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING},
+		ReturnType: vtype.VENICE_TYPE_STRING,
 		IsBuiltin:  true,
 	},
 }

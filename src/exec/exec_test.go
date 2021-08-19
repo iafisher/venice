@@ -75,6 +75,8 @@ func TestListBuiltins(t *testing.T) {
 func TestStringBuiltins(t *testing.T) {
 	assertEqual(t, `let s = "123"; s.length()`, I(3))
 	assertEqual(t, `"123".length()`, I(3))
+	assertEqual(t, `"abc".to_upper()`, S("ABC"))
+	assertEqual(t, `"ABC".to_lower()`, S("abc"))
 }
 
 func TestTernaryIf(t *testing.T) {

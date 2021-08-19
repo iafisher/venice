@@ -85,6 +85,15 @@ type VeniceString struct {
 	Value string
 }
 
+func VeniceOptionalOf(value VeniceValue) *VeniceEnumObject {
+	return &VeniceEnumObject{
+		Label:  "Some",
+		Values: []VeniceValue{value},
+	}
+}
+
+var VENICE_OPTIONAL_NONE = &VeniceEnumObject{Label: "None", Values: nil}
+
 /**
  * String() implementations
  */
