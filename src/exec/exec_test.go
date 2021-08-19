@@ -5,6 +5,7 @@ import (
 	"github.com/iafisher/venice/src/parser"
 	vm_mod "github.com/iafisher/venice/src/vm"
 	"github.com/iafisher/venice/src/vval"
+	"strings"
 	"testing"
 )
 
@@ -13,6 +14,40 @@ func TestAndOr(t *testing.T) {
 	// would cause an error.
 	assertEqual(t, `let l = [1]; length(l) >= 2 and l[1] == 42`, B(false))
 	assertEqual(t, `true or [0][1] == 10`, B(true))
+}
+
+func TestClassEquality(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		class Box {
+			public value: int
+		}
+
+		let b1 = Box(42)
+		let b2 = Box(42)
+		b1 == b2
+		`,
+		B(true),
+	)
+
+	assertTypecheckError(
+		t,
+		`
+		class Box1 {
+			public value: int
+		}
+
+		class Box2 {
+			public value: int
+		}
+
+		let b1 = Box1(42)
+		let b2 = Box2(42)
+		b1 == b2
+		`,
+		"invalid type for right operand of ==",
+	)
 }
 
 func TestConcat(t *testing.T) {
@@ -86,5 +121,27 @@ func assertEqual(t *testing.T, program string, result vval.VeniceValue) {
 
 	if !value.Equals(result) {
 		t.Fatalf("Expected %s, got %s\n\nInput: %q", result.String(), value.String(), program)
+	}
+}
+
+func assertTypecheckError(t *testing.T, program string, errorMessage string) {
+	parsedFile, err := parser.NewParser().ParseString(program)
+	if err != nil {
+		t.Fatalf("Parse error: %s\n\nInput: %q", err, program)
+	}
+
+	compiler := compiler.NewCompiler()
+	_, err = compiler.Compile(parsedFile)
+	if err == nil {
+		t.Fatalf("Expected compile error, but program compiled without error\n\nInput: %q", program)
+	}
+
+	if !strings.Contains(err.Error(), errorMessage) {
+		t.Fatalf(
+			"Expected compile error to contain substring %q, but it did not\n\nError: %s\n\nInput: %q",
+			errorMessage,
+			err.Error(),
+			program,
+		)
 	}
 }

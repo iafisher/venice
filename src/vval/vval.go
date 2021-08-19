@@ -212,8 +212,25 @@ func (v *VeniceCharacter) Equals(otherAny VeniceValue) bool {
 }
 
 func (v *VeniceClassObject) Equals(otherAny VeniceValue) bool {
-	// TODO(2021-08-08): Implement.
-	return false
+	other, ok := otherAny.(*VeniceClassObject)
+	if !ok {
+		return false
+	}
+
+	// We don't check `v.Name == other.Name` because the type-checker already guarantees
+	// they will be of the same type.
+
+	if len(v.Values) != len(other.Values) {
+		return false
+	}
+
+	for i := 0; i < len(v.Values); i++ {
+		if !v.Values[i].Equals(other.Values[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (v *VeniceEnumObject) Equals(otherAny VeniceValue) bool {
