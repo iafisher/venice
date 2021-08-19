@@ -344,8 +344,10 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 			vm.pushStack(&vval.VeniceString{fmt.Sprintf("%s__%s", topOfStack.ClassName, bcode.Name)})
 		case *vval.VeniceList:
 			vm.pushStack(&vval.VeniceString{fmt.Sprintf("list__%s", bcode.Name)})
+		case *vval.VeniceString:
+			vm.pushStack(&vval.VeniceString{fmt.Sprintf("string__%s", bcode.Name)})
 		default:
-			return -1, &ExecutionError{"expected class, list, or map object at top of virtual machine stack for LOOKUP_METHOD"}
+			return -1, &ExecutionError{"expected class, list, map, or string object at top of virtual machine stack for LOOKUP_METHOD"}
 		}
 	case *bytecode.PushConstBool:
 		vm.pushStack(&vval.VeniceBoolean{bcode.Value})

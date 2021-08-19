@@ -856,6 +856,14 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 	}
 
 	switch concreteType := typeAny.(type) {
+	case *vtype.VeniceAtomicType:
+		if concreteType == vtype.VENICE_TYPE_STRING {
+			methodType, ok := stringBuiltins[node.Name]
+			if !ok {
+				return nil, nil, compiler.customError(node, "no such field or method `%s` on string type", node.Name)
+			}
+			return code, methodType, nil
+		}
 	case *vtype.VeniceClassType:
 		for i, field := range concreteType.Fields {
 			if field.Name == node.Name {
@@ -886,9 +894,9 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 			return nil, nil, compiler.customError(node, "no such field or method `%s` on list type", node.Name)
 		}
 		return code, methodType, nil
-	default:
-		return nil, nil, compiler.customError(node, "left-hand side of dot must be a class, list, or map object")
 	}
+
+	return nil, nil, compiler.customError(node, "no such field or method `%s` on type %s", node.Name, typeAny.String())
 }
 
 func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
@@ -1235,6 +1243,15 @@ var listBuiltins = map[string]vtype.VeniceType{
 		ParamTypes: []vtype.VeniceType{
 			&vtype.VeniceListType{vtype.VENICE_TYPE_ANY},
 		},
+		ReturnType: vtype.VENICE_TYPE_INTEGER,
+		IsBuiltin:  true,
+	},
+}
+
+var stringBuiltins = map[string]vtype.VeniceType{
+	"length": &vtype.VeniceFunctionType{
+		Name:       "length",
+		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING},
 		ReturnType: vtype.VENICE_TYPE_INTEGER,
 		IsBuiltin:  true,
 	},
