@@ -68,6 +68,10 @@ func TestLength(t *testing.T) {
 	assertEqual(t, `length("")`, I(0))
 }
 
+func TestListBuiltins(t *testing.T) {
+	assertEqual(t, `let l = [1, 2, 3]; l.length()`, I(3))
+}
+
 func TestTernaryIf(t *testing.T) {
 	assertEqual(t, `(41 if true else 665) + 1`, I(42))
 }

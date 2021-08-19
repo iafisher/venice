@@ -33,6 +33,7 @@ func builtinPrint(args ...vval.VeniceValue) vval.VeniceValue {
 }
 
 var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
-	"length": builtinLength,
-	"print":  builtinPrint,
+	"length":       builtinLength,
+	"list__length": builtinLength,
+	"print":        builtinPrint,
 }

@@ -277,9 +277,14 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 		}
 		vm.pushStack(&vval.VeniceTuple{values})
 	case *bytecode.CallBuiltin:
-		builtin, ok := builtins[bcode.Name]
+		functionName, ok := vm.popStack().(*vval.VeniceString)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("unknown builtin `%s`", bcode.Name)}
+			return -1, &ExecutionError{"expected string at top of virtual machine stack for CALL_BUILTIN"}
+		}
+
+		builtin, ok := builtins[functionName.Value]
+		if !ok {
+			return -1, &ExecutionError{fmt.Sprintf("unknown builtin `%s`", functionName.Value)}
 		}
 
 		args := []vval.VeniceValue{}
@@ -334,11 +339,14 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 			vm.pushStack(&vval.VeniceMapIterator{Map: topOfStack, Index: 0})
 		}
 	case *bytecode.LookupMethod:
-		topOfStack, ok := vm.peekStack().(*vval.VeniceClassObject)
-		if !ok {
-			return -1, &ExecutionError{"expected class object at top of virtual machine stack for LOOKUP_METHOD"}
+		switch topOfStack := vm.peekStack().(type) {
+		case *vval.VeniceClassObject:
+			vm.pushStack(&vval.VeniceString{fmt.Sprintf("%s__%s", topOfStack.ClassName, bcode.Name)})
+		case *vval.VeniceList:
+			vm.pushStack(&vval.VeniceString{fmt.Sprintf("list__%s", bcode.Name)})
+		default:
+			return -1, &ExecutionError{"expected class, list, or map object at top of virtual machine stack for LOOKUP_METHOD"}
 		}
-		vm.pushStack(&vval.VeniceString{fmt.Sprintf("%s__%s", topOfStack.ClassName, bcode.Name)})
 	case *bytecode.PushConstBool:
 		vm.pushStack(&vval.VeniceBoolean{bcode.Value})
 	case *bytecode.PushConstChar:

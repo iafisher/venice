@@ -723,7 +723,13 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 	}
 
 	if functionType.IsBuiltin {
-		code = append(code, &bytecode.CallBuiltin{functionType.Name, len(functionType.ParamTypes)})
+		if isClassMethod {
+			code = append(code, functionCode...)
+			code = append(code, &bytecode.LookupMethod{functionType.Name})
+		} else {
+			code = append(code, &bytecode.PushConstStr{functionType.Name})
+		}
+		code = append(code, &bytecode.CallBuiltin{len(functionType.ParamTypes)})
 	} else {
 		if isClassMethod {
 			code = append(code, functionCode...)
@@ -849,34 +855,40 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 		return nil, nil, err
 	}
 
-	classType, ok := typeAny.(*vtype.VeniceClassType)
-	if !ok {
-		return nil, nil, compiler.customError(node, "left-hand side of dot must be a class object")
-	}
+	switch concreteType := typeAny.(type) {
+	case *vtype.VeniceClassType:
+		for i, field := range concreteType.Fields {
+			if field.Name == node.Name {
+				// TODO(2021-08-09): Allow this when inside the class itself.
+				if !field.Public {
+					return nil, nil, compiler.customError(node, "use of private field")
+				}
 
-	for i, field := range classType.Fields {
-		if field.Name == node.Name {
-			// TODO(2021-08-09): Allow this when inside the class itself.
-			if !field.Public {
-				return nil, nil, compiler.customError(node, "use of private field")
+				code = append(code, &bytecode.PushField{i})
+				return code, field.FieldType, nil
 			}
-
-			code = append(code, &bytecode.PushField{i})
-			return code, field.FieldType, nil
 		}
-	}
 
-	for _, methodType := range classType.Methods {
-		// TODO(2021-08-17): Allow this when inside the class itself.
-		if methodType.Name == node.Name {
-			if !methodType.Public {
-				return nil, nil, compiler.customError(node, "use of private method")
+		for _, methodType := range concreteType.Methods {
+			// TODO(2021-08-17): Allow this when inside the class itself.
+			if methodType.Name == node.Name {
+				if !methodType.Public {
+					return nil, nil, compiler.customError(node, "use of private method")
+				}
+				return code, methodType, nil
 			}
-			return code, methodType, nil
 		}
-	}
 
-	return nil, nil, compiler.customError(node, "no such field or method `%s`", node.Name)
+		return nil, nil, compiler.customError(node, "no such field or method `%s`", node.Name)
+	case *vtype.VeniceListType:
+		methodType, ok := listBuiltins[node.Name]
+		if !ok {
+			return nil, nil, compiler.customError(node, "no such field or method `%s` on list type", node.Name)
+		}
+		return code, methodType, nil
+	default:
+		return nil, nil, compiler.customError(node, "left-hand side of dot must be a class, list, or map object")
+	}
 }
 
 func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
@@ -1215,6 +1227,17 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 	default:
 		return nil, compiler.customError(typeNodeAny, "unknown type node: %T", typeNodeAny)
 	}
+}
+
+var listBuiltins = map[string]vtype.VeniceType{
+	"length": &vtype.VeniceFunctionType{
+		Name: "length",
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceListType{vtype.VENICE_TYPE_ANY},
+		},
+		ReturnType: vtype.VENICE_TYPE_INTEGER,
+		IsBuiltin:  true,
+	},
 }
 
 /**

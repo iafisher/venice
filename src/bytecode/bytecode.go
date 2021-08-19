@@ -76,8 +76,7 @@ type BuildTuple struct {
 }
 
 type CallBuiltin struct {
-	Name string
-	N    int
+	N int
 }
 
 type CallFunction struct {
@@ -248,7 +247,7 @@ func (b *BuildTuple) String() string {
 }
 
 func (b *CallBuiltin) String() string {
-	return fmt.Sprintf("CALL_BUILTIN %q %d", b.Name, b.N)
+	return fmt.Sprintf("CALL_BUILTIN %d", b.N)
 }
 
 func (b *CallFunction) String() string {
