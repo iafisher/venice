@@ -44,6 +44,17 @@ func (l *Lexer) nextToken() *Token {
 		return &Token{Type: TOKEN_EOF, Value: "", Location: location}
 	}
 
+	if l.index+2 < len(l.program) {
+		three_prefix := l.program[l.index : l.index+3]
+		token_type, ok := three_char_tokens[three_prefix]
+		if ok {
+			l.advance()
+			l.advance()
+			l.advance()
+			return &Token{Type: token_type, Value: three_prefix, Location: location}
+		}
+	}
+
 	if l.index+1 < len(l.program) {
 		two_prefix := l.program[l.index : l.index+2]
 		token_type, ok := two_char_tokens[two_prefix]
@@ -301,14 +312,17 @@ const (
 	TOKEN_ASSIGN                 = "TOKEN_ASSIGN"
 	TOKEN_ASTERISK               = "TOKEN_ASTERISK"
 	TOKEN_BREAK                  = "TOKEN_BREAK"
+	TOKEN_CASE                   = "TOKEN_CASE"
 	TOKEN_CHARACTER              = "TOKEN_CHARACTER"
 	TOKEN_CLASS                  = "TOKEN_CLASS"
 	TOKEN_COLON                  = "TOKEN_COLON"
 	TOKEN_COMMA                  = "TOKEN_COMMA"
 	TOKEN_CONTINUE               = "TOKEN_CONTINUE"
+	TOKEN_DEFAULT                = "TOKEN_DEFAULT"
 	TOKEN_DOT                    = "TOKEN_DOT"
 	TOKEN_DOUBLE_COLON           = "TOKEN_DOUBLE_COLON"
 	TOKEN_DOUBLE_PLUS            = "TOKEN_DOUBLE_PLUS"
+	TOKEN_ELLIPSIS               = "TOKEN_ELLIPSIS"
 	TOKEN_ELSE                   = "TOKEN_ELSE"
 	TOKEN_ENUM                   = "TOKEN_ENUM"
 	TOKEN_EQUALS                 = "TOKEN_EQUALS"
@@ -328,6 +342,7 @@ const (
 	TOKEN_LESS_THAN              = "TOKEN_LESS_THAN"
 	TOKEN_LESS_THAN_OR_EQUALS    = "TOKEN_LESS_THAN_OR_EQUALS"
 	TOKEN_LET                    = "TOKEN_LET"
+	TOKEN_MATCH                  = "TOKEN_MATCH"
 	TOKEN_MINUS                  = "TOKEN_MINUS"
 	TOKEN_NEWLINE                = "TOKEN_NEWLINE"
 	TOKEN_NOT                    = "TOKEN_NOT"
@@ -354,8 +369,10 @@ const (
 var keywords = map[string]string{
 	"and":      TOKEN_AND,
 	"break":    TOKEN_BREAK,
+	"case":     TOKEN_CASE,
 	"class":    TOKEN_CLASS,
 	"continue": TOKEN_CONTINUE,
+	"default":  TOKEN_DEFAULT,
 	"else":     TOKEN_ELSE,
 	"enum":     TOKEN_ENUM,
 	"false":    TOKEN_FALSE,
@@ -364,6 +381,7 @@ var keywords = map[string]string{
 	"if":       TOKEN_IF,
 	"in":       TOKEN_IN,
 	"let":      TOKEN_LET,
+	"match":    TOKEN_MATCH,
 	"not":      TOKEN_NOT,
 	"or":       TOKEN_OR,
 	"private":  TOKEN_PRIVATE,
@@ -404,6 +422,10 @@ var two_char_tokens = map[string]string{
 	">=": TOKEN_GREATER_THAN_OR_EQUALS,
 	"<=": TOKEN_LESS_THAN_OR_EQUALS,
 	"!=": TOKEN_NOT_EQUALS,
+}
+
+var three_char_tokens = map[string]string{
+	"...": TOKEN_ELLIPSIS,
 }
 
 func (l *Location) String() string {

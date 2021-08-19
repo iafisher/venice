@@ -90,6 +90,8 @@ func (p *Parser) matchStatement() (ast.StatementNode, error) {
 		return p.matchIfStatement()
 	case lexer_mod.TOKEN_LET:
 		tree, err = p.matchLetStatement()
+	case lexer_mod.TOKEN_MATCH:
+		tree, err = p.matchMatchStatement()
 	case lexer_mod.TOKEN_RETURN:
 		tree, err = p.matchReturnStatement()
 	case lexer_mod.TOKEN_WHILE:
@@ -550,6 +552,59 @@ func (p *Parser) matchLetStatement() (*ast.LetStatementNode, error) {
 	return &ast.LetStatementNode{symbol, expr, location}, nil
 }
 
+func (p *Parser) matchMatchStatement() (*ast.MatchStatementNode, error) {
+	location := p.currentToken.Location
+
+	p.nextToken()
+	expr, err := p.matchExpression(PRECEDENCE_LOWEST)
+	if err != nil {
+		return nil, err
+	}
+
+	if p.currentToken.Type != lexer_mod.TOKEN_LEFT_CURLY {
+		return nil, p.unexpectedToken("left curly brace")
+	}
+
+	p.nextTokenSkipNewlines()
+	clauses := []*ast.MatchClause{}
+	for {
+		if p.currentToken.Type == lexer_mod.TOKEN_CASE {
+			p.nextToken()
+			pattern, err := p.matchPatternNode()
+			if err != nil {
+				return nil, err
+			}
+
+			body, err := p.matchBlock()
+			if err != nil {
+				return nil, err
+			}
+
+			clauses = append(clauses, &ast.MatchClause{Pattern: pattern, Body: body})
+		} else if p.currentToken.Type == lexer_mod.TOKEN_DEFAULT || p.currentToken.Type == lexer_mod.TOKEN_RIGHT_CURLY {
+			break
+		} else {
+			return nil, p.unexpectedToken("`case` keyword, `default` keyword, or right curly brace")
+		}
+	}
+
+	dfault := []ast.StatementNode{}
+	if p.currentToken.Type == lexer_mod.TOKEN_DEFAULT {
+		p.nextToken()
+		dfault, err = p.matchBlock()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if p.currentToken.Type != lexer_mod.TOKEN_RIGHT_CURLY {
+		return nil, p.unexpectedToken("right curly brace")
+	}
+
+	p.nextTokenSkipNewlines()
+	return &ast.MatchStatementNode{Expr: expr, Clauses: clauses, Default: dfault, Location: location}, nil
+}
+
 func (p *Parser) matchReturnStatement() (*ast.ReturnStatementNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
@@ -855,6 +910,53 @@ func (p *Parser) matchTypeNode() (ast.TypeNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	return &ast.SimpleTypeNode{name, location}, nil
+}
+
+/**
+ * Match patterns
+ */
+
+func (p *Parser) matchPatternNode() (ast.MatchPattern, error) {
+	if p.currentToken.Type == lexer_mod.TOKEN_SYMBOL {
+		value := p.currentToken.Value
+		p.nextToken()
+		if p.currentToken.Type == lexer_mod.TOKEN_LEFT_PAREN {
+			patterns := []ast.MatchPattern{}
+
+			p.nextToken()
+			first_pattern, err := p.matchPatternNode()
+			if err != nil {
+				return nil, err
+			}
+			patterns = append(patterns, first_pattern)
+
+			for {
+				if p.currentToken.Type == lexer_mod.TOKEN_COMMA {
+					p.nextToken()
+				} else if p.currentToken.Type == lexer_mod.TOKEN_RIGHT_PAREN {
+					p.nextToken()
+					break
+				} else {
+					return nil, p.unexpectedToken("comma or right parenthesis")
+				}
+
+				pattern, err := p.matchPatternNode()
+				if err != nil {
+					return nil, err
+				}
+
+				patterns = append(patterns, pattern)
+			}
+			return &ast.CompoundMatchPattern{Label: value, Patterns: patterns}, nil
+		} else {
+			return &ast.SymbolMatchPattern{value}, nil
+		}
+	} else if p.currentToken.Type == lexer_mod.TOKEN_ELLIPSIS {
+		p.nextToken()
+		return &ast.EllipsisMatchPattern{}, nil
+	} else {
+		return nil, p.unexpectedToken("match pattern")
+	}
 }
 
 /**

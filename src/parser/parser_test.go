@@ -110,6 +110,23 @@ func TestParseLetStatements(t *testing.T) {
 	checkParseStatement(t, "let x = '\\n'", "(let x '\\n')")
 }
 
+func TestParseMatchStatements(t *testing.T) {
+	checkParseStatement(
+		t,
+		`
+		match optional {
+			case Some(x) {
+				print(x)
+			}
+			case None {
+				print("None")
+			}
+		}
+		`,
+		`(match optional (match-case (Some x) (block (expression-statement (call print x)))) (match-case None (block (expression-statement (call print "None")))))`,
+	)
+}
+
 func TestParseSimpleExpressions(t *testing.T) {
 	checkParseExpression(t, "123", "123")
 	checkParseExpression(t, "abc", "abc")

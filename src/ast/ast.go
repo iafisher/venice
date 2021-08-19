@@ -143,6 +143,19 @@ type LetStatementNode struct {
 	Location *lexer.Location
 }
 
+type MatchStatementNode struct {
+	Expr     ExpressionNode
+	Clauses  []*MatchClause
+	Default  []StatementNode
+	Location *lexer.Location
+}
+
+// Helper struct - does not implement Node
+type MatchClause struct {
+	Pattern MatchPattern
+	Body    []StatementNode
+}
+
 type ReturnStatementNode struct {
 	Expr     ExpressionNode
 	Location *lexer.Location
@@ -152,6 +165,26 @@ type WhileLoopNode struct {
 	Condition ExpressionNode
 	Body      []StatementNode
 	Location  *lexer.Location
+}
+
+/**
+ * Match pattern nodes
+ */
+
+type MatchPattern interface {
+	fmt.Stringer
+	matchPattern()
+}
+
+type CompoundMatchPattern struct {
+	Label    string
+	Patterns []MatchPattern
+}
+
+type EllipsisMatchPattern struct{}
+
+type SymbolMatchPattern struct {
+	Symbol string
 }
 
 /**
@@ -356,6 +389,10 @@ func (n *MapNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
+func (n *MatchStatementNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
 func (n *ReturnStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
@@ -495,8 +532,24 @@ func (n *ClassMethodNode) String() string {
 	return sb.String()
 }
 
+func (n *CompoundMatchPattern) String() string {
+	var sb strings.Builder
+	sb.WriteByte('(')
+	sb.WriteString(n.Label)
+	for _, pattern := range n.Patterns {
+		sb.WriteByte(' ')
+		sb.WriteString(pattern.String())
+	}
+	sb.WriteByte(')')
+	return sb.String()
+}
+
 func (n *ContinueStatementNode) String() string {
 	return "(continue)"
+}
+
+func (n *EllipsisMatchPattern) String() string {
+	return "..."
 }
 
 func (n *EnumDeclarationNode) String() string {
@@ -652,6 +705,34 @@ func (n *MapNode) String() string {
 	return sb.String()
 }
 
+func (n *MatchClause) String() string {
+	var sb strings.Builder
+	sb.WriteString("(match-case ")
+	sb.WriteString(n.Pattern.String())
+	sb.WriteByte(' ')
+	writeBlock(&sb, n.Body)
+	sb.WriteByte(')')
+	return sb.String()
+}
+
+func (n *MatchStatementNode) String() string {
+	var sb strings.Builder
+	sb.WriteString("(match ")
+	sb.WriteString(n.Expr.String())
+	for _, clause := range n.Clauses {
+		sb.WriteByte(' ')
+		sb.WriteString(clause.String())
+	}
+
+	if len(n.Default) > 0 {
+		sb.WriteString(" (match-default ")
+		writeBlock(&sb, n.Default)
+		sb.WriteByte(')')
+	}
+	sb.WriteByte(')')
+	return sb.String()
+}
+
 func (n *ReturnStatementNode) String() string {
 	if n.Expr != nil {
 		return fmt.Sprintf("(return %s)", n.Expr.String())
@@ -666,6 +747,10 @@ func (n *SimpleTypeNode) String() string {
 
 func (n *StringNode) String() string {
 	return strconv.Quote(n.Value)
+}
+
+func (n *SymbolMatchPattern) String() string {
+	return n.Symbol
 }
 
 func (n *SymbolNode) String() string {
@@ -726,6 +811,7 @@ func (n *FunctionDeclarationNode) statementNode() {}
 func (n *IfStatementNode) statementNode()         {}
 func (n *ImportStatementNode) statementNode()     {}
 func (n *LetStatementNode) statementNode()        {}
+func (n *MatchStatementNode) statementNode()      {}
 func (n *ReturnStatementNode) statementNode()     {}
 func (n *WhileLoopNode) statementNode()           {}
 
@@ -747,3 +833,7 @@ func (n *TupleNode) expressionNode()            {}
 func (n *UnaryNode) expressionNode()            {}
 
 func (n *SimpleTypeNode) typeNode() {}
+
+func (n *CompoundMatchPattern) matchPattern() {}
+func (n *EllipsisMatchPattern) matchPattern() {}
+func (n *SymbolMatchPattern) matchPattern()   {}
