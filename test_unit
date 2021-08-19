@@ -3,8 +3,16 @@
 set -eu
 
 main() {
+  go test github.com/iafisher/venice/src/ast
+  go test github.com/iafisher/venice/src/bytecode
+  go test github.com/iafisher/venice/src/compiler
   go test github.com/iafisher/venice/src/lexer
   go test github.com/iafisher/venice/src/parser
+  go test github.com/iafisher/venice/src/vm
+  go test github.com/iafisher/venice/src/vtype
+  go test github.com/iafisher/venice/src/vval
+
+  go test github.com/iafisher/venice/src/exec
 }
 
 main "$@"

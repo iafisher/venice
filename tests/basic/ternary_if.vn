@@ -1,5 +1,0 @@
-# OUTPUT
-# 42
-# END OUTPUT
-
-print((41 if true else 665) + 1)

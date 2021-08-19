@@ -1,8 +1,0 @@
-# OUTPUT
-# (1, "two", [3])
-# 3
-# END OUTPUT
-
-let t = (1, "two", [3])
-print(t)
-print(t.0 + 2)
