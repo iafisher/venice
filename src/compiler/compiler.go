@@ -195,7 +195,7 @@ func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.Comp
 		subTypeSymbolTable := &SymbolTable{
 			compiler.TypeSymbolTable,
 			map[string]vtype.VeniceType{
-				node.GenericTypeParameter: &vtype.VeniceGenericParameterType{node.GenericTypeParameter},
+				node.GenericTypeParameter: &vtype.VeniceSymbolType{node.GenericTypeParameter},
 			},
 		}
 		compiler.TypeSymbolTable = subTypeSymbolTable
@@ -245,9 +245,11 @@ func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.Comp
 	if node.GenericTypeParameter == "" {
 		classType = &vtype.VeniceClassType{Name: node.Name, Fields: fields, Methods: methods}
 	} else {
-		classType = &vtype.VeniceGenericType{
-			[]string{node.GenericTypeParameter},
-			&vtype.VeniceClassType{Name: node.Name, Fields: fields, Methods: methods},
+		classType = &vtype.VeniceClassType{
+			Name:              node.Name,
+			GenericParameters: []string{node.GenericTypeParameter},
+			Fields:            fields,
+			Methods:           methods,
 		}
 		compiler.TypeSymbolTable = compiler.TypeSymbolTable.Parent
 	}
@@ -314,7 +316,7 @@ func (compiler *Compiler) compileEnumDeclaration(node *ast.EnumDeclarationNode) 
 		subTypeSymbolTable := &SymbolTable{
 			compiler.TypeSymbolTable,
 			map[string]vtype.VeniceType{
-				node.GenericTypeParameter: &vtype.VeniceGenericParameterType{node.GenericTypeParameter},
+				node.GenericTypeParameter: &vtype.VeniceSymbolType{node.GenericTypeParameter},
 			},
 		}
 		compiler.TypeSymbolTable = subTypeSymbolTable
@@ -337,13 +339,17 @@ func (compiler *Compiler) compileEnumDeclaration(node *ast.EnumDeclarationNode) 
 		compiler.TypeSymbolTable = compiler.TypeSymbolTable.Parent
 		compiler.TypeSymbolTable.Put(
 			node.Name,
-			&vtype.VeniceGenericType{
-				[]string{node.GenericTypeParameter},
-				&vtype.VeniceEnumType{Name: node.Name, Cases: caseTypes},
+			&vtype.VeniceEnumType{
+				Name:              node.Name,
+				GenericParameters: []string{node.GenericTypeParameter},
+				Cases:             caseTypes,
 			},
 		)
 	} else {
-		compiler.TypeSymbolTable.Put(node.Name, &vtype.VeniceEnumType{Name: node.Name, Cases: caseTypes})
+		compiler.TypeSymbolTable.Put(
+			node.Name,
+			&vtype.VeniceEnumType{Name: node.Name, Cases: caseTypes},
+		)
 	}
 
 	return nil
@@ -656,21 +662,8 @@ func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.EnumSymbolNode
 		return nil, nil, err
 	}
 
-	isEnum := false
 	enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
-	if ok {
-		isEnum = true
-	} else {
-		genericType, ok := enumTypeAny.(*vtype.VeniceGenericType)
-		if ok {
-			enumType, ok = genericType.GenericType.(*vtype.VeniceEnumType)
-			isEnum = ok
-		} else {
-			isEnum = false
-		}
-	}
-
-	if !isEnum {
+	if !ok {
 		return nil, nil, compiler.customError(callNode, "cannot use double colon after non-enum type")
 	}
 
@@ -697,21 +690,8 @@ func (compiler *Compiler) compileEnumSymbolNode(node *ast.EnumSymbolNode) ([]byt
 		return nil, nil, err
 	}
 
-	isEnum := false
 	enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
-	if ok {
-		isEnum = true
-	} else {
-		genericType, ok := enumTypeAny.(*vtype.VeniceGenericType)
-		if ok {
-			enumType, ok = genericType.GenericType.(*vtype.VeniceEnumType)
-			isEnum = ok
-		} else {
-			isEnum = false
-		}
-	}
-
-	if !isEnum {
+	if !ok {
 		return nil, nil, compiler.customError(node, "cannot use double colon after non-enum type")
 	}
 
@@ -798,8 +778,12 @@ func (compiler *Compiler) compileFunctionArguments(
 		)
 	}
 
-	code := []bytecode.Bytecode{}
 	genericParameterMap := map[string]vtype.VeniceType{}
+	for _, genericParameter := range functionType.GenericParameters {
+		genericParameterMap[genericParameter] = nil
+	}
+
+	code := []bytecode.Bytecode{}
 	for i := len(args) - 1; i >= 0; i-- {
 		argCode, argType, err := compiler.compileExpression(args[i])
 		if err != nil {
@@ -821,6 +805,12 @@ func (compiler *Compiler) compileFunctionArguments(
 		code = append(code, argCode...)
 	}
 
+	for key, value := range genericParameterMap {
+		if value == nil {
+			return nil, nil, compiler.customError(node, "unsubstituted generic parameter `%s`", key)
+		}
+	}
+
 	if len(genericParameterMap) > 0 {
 		return code, functionType.ReturnType.SubstituteGenerics(genericParameterMap), nil
 	} else {
@@ -834,12 +824,13 @@ func (compiler *Compiler) checkFunctionArgType(
 	argType vtype.VeniceType,
 	genericParameterMap map[string]vtype.VeniceType,
 ) error {
-	if genericParamType, ok := paramType.(*vtype.VeniceGenericParameterType); ok {
-		genericParameterMap[genericParamType.Label] = argType
-	} else {
-		if !paramType.Check(argType) {
-			return compiler.customError(node, "wrong function parameter type")
-		}
+	err := paramType.MatchGenerics(genericParameterMap, argType)
+	if err != nil {
+		return err
+	}
+
+	if !paramType.Check(argType) {
+		return compiler.customError(node, "wrong function parameter type")
 	}
 
 	return nil

@@ -8,6 +8,7 @@ import (
 type VeniceType interface {
 	fmt.Stringer
 	veniceType()
+	MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error
 	SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType
 	Check(otherType VeniceType) bool
 }
@@ -21,9 +22,10 @@ type VeniceAtomicType struct {
 }
 
 type VeniceClassType struct {
-	Name    string
-	Fields  []*VeniceClassField
-	Methods []*VeniceFunctionType
+	Name              string
+	GenericParameters []string
+	Fields            []*VeniceClassField
+	Methods           []*VeniceFunctionType
 }
 
 // Helper struct - does not implement VeniceType
@@ -34,8 +36,9 @@ type VeniceClassField struct {
 }
 
 type VeniceEnumType struct {
-	Name  string
-	Cases []*VeniceCaseType
+	Name              string
+	GenericParameters []string
+	Cases             []*VeniceCaseType
 }
 
 // Helper struct - does not implement VeniceType
@@ -45,20 +48,12 @@ type VeniceCaseType struct {
 }
 
 type VeniceFunctionType struct {
-	Name       string
-	Public     bool
-	ParamTypes []VeniceType
-	ReturnType VeniceType
-	IsBuiltin  bool
-}
-
-type VeniceGenericParameterType struct {
-	Label string
-}
-
-type VeniceGenericType struct {
-	Parameters  []string
-	GenericType VeniceType
+	Name              string
+	Public            bool
+	GenericParameters []string
+	ParamTypes        []VeniceType
+	ReturnType        VeniceType
+	IsBuiltin         bool
 }
 
 type VeniceListType struct {
@@ -68,6 +63,10 @@ type VeniceListType struct {
 type VeniceMapType struct {
 	KeyType   VeniceType
 	ValueType VeniceType
+}
+
+type VeniceSymbolType struct {
+	Label string
 }
 
 type VeniceTupleType struct {
@@ -96,17 +95,15 @@ var (
 	VENICE_TYPE_CHARACTER = &VeniceAtomicType{VENICE_TYPE_CHARACTER_LABEL}
 	VENICE_TYPE_INTEGER   = &VeniceAtomicType{VENICE_TYPE_INTEGER_LABEL}
 	VENICE_TYPE_STRING    = &VeniceAtomicType{VENICE_TYPE_STRING_LABEL}
-	VENICE_TYPE_OPTIONAL  = &VeniceGenericType{
-		[]string{"T"},
-		&VeniceEnumType{
-			Name: "Optional",
-			Cases: []*VeniceCaseType{
-				&VeniceCaseType{
-					"Some",
-					[]VeniceType{&VeniceGenericParameterType{"T"}},
-				},
-				&VeniceCaseType{"None", nil},
+	VENICE_TYPE_OPTIONAL  = &VeniceEnumType{
+		Name:              "Optional",
+		GenericParameters: []string{"T"},
+		Cases: []*VeniceCaseType{
+			&VeniceCaseType{
+				"Some",
+				[]VeniceType{&VeniceSymbolType{"T"}},
 			},
+			&VeniceCaseType{"None", nil},
 		},
 	}
 )
@@ -150,32 +147,16 @@ func (t *VeniceFunctionType) String() string {
 	return sb.String()
 }
 
-func (t *VeniceGenericParameterType) String() string {
-	return t.Label
-}
-
-func (t *VeniceGenericType) String() string {
-	var sb strings.Builder
-	sb.WriteString("type<")
-	for i, parameter := range t.Parameters {
-		sb.WriteString(parameter)
-		if i != len(t.Parameters)-1 {
-			sb.WriteString(", ")
-		}
-	}
-	sb.WriteByte('>')
-	sb.WriteByte('(')
-	sb.WriteString(t.GenericType.String())
-	sb.WriteByte(')')
-	return sb.String()
-}
-
 func (t *VeniceListType) String() string {
 	return fmt.Sprintf("list<%s>", t.ItemType.String())
 }
 
 func (t *VeniceMapType) String() string {
 	return fmt.Sprintf("map<%s, %s>", t.KeyType.String(), t.ValueType.String())
+}
+
+func (t *VeniceSymbolType) String() string {
+	return t.Label
 }
 
 func (t *VeniceTupleType) String() string {
@@ -253,33 +234,6 @@ func (t *VeniceFunctionType) SubstituteGenerics(genericParameterMap map[string]V
 	}
 }
 
-func (t *VeniceGenericParameterType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
-	if concreteType, ok := genericParameterMap[t.Label]; ok {
-		return concreteType
-	} else {
-		return &VeniceGenericParameterType{t.Label}
-	}
-}
-
-func (t *VeniceGenericType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
-	parameters := []string{}
-	for _, param := range t.Parameters {
-		_, ok := genericParameterMap[param]
-		if !ok {
-			parameters = append(parameters, param)
-		}
-	}
-
-	if len(parameters) == 0 {
-		return t.GenericType.SubstituteGenerics(genericParameterMap)
-	} else {
-		return &VeniceGenericType{
-			parameters,
-			t.GenericType.SubstituteGenerics(genericParameterMap),
-		}
-	}
-}
-
 func (t *VeniceListType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	return &VeniceListType{
 		t.ItemType.SubstituteGenerics(genericParameterMap),
@@ -290,6 +244,14 @@ func (t *VeniceMapType) SubstituteGenerics(genericParameterMap map[string]Venice
 	return &VeniceMapType{
 		t.KeyType.SubstituteGenerics(genericParameterMap),
 		t.ValueType.SubstituteGenerics(genericParameterMap),
+	}
+}
+
+func (t *VeniceSymbolType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+	if concreteType, ok := genericParameterMap[t.Label]; ok {
+		return concreteType
+	} else {
+		return &VeniceSymbolType{t.Label}
 	}
 }
 
@@ -307,6 +269,96 @@ func (t *VeniceUnionType) SubstituteGenerics(genericParameterMap map[string]Veni
 		newTypes = append(newTypes, subType.SubstituteGenerics(genericParameterMap))
 	}
 	return &VeniceUnionType{newTypes}
+}
+
+/**
+ * MatchGenerics() implementations
+ */
+
+func (t *VeniceAtomicType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+	return nil
+}
+
+func (t *VeniceClassType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+	// TODO(2021-08-20): Is this right?
+	return nil
+}
+
+func (t *VeniceEnumType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+	if enumType, ok := concreteType.(*VeniceEnumType); ok {
+		for i, enumCase := range t.Cases {
+			if i >= len(enumType.Cases) {
+				break
+			}
+
+			for j, caseType := range enumCase.Types {
+				if j >= len(enumType.Cases[i].Types) {
+					break
+				}
+
+				caseType.MatchGenerics(genericParameterMap, enumType.Cases[i].Types[j])
+			}
+		}
+	}
+	return nil
+}
+
+func (t *VeniceFunctionType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+	if functionType, ok := concreteType.(*VeniceFunctionType); ok {
+		for i, paramType := range t.ParamTypes {
+			if i >= len(functionType.ParamTypes) {
+				break
+			}
+			paramType.MatchGenerics(genericParameterMap, functionType.ParamTypes[i])
+		}
+		t.ReturnType.MatchGenerics(genericParameterMap, functionType.ReturnType)
+	}
+	return nil
+}
+
+func (t *VeniceListType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+	if listType, ok := concreteType.(*VeniceListType); ok {
+		t.ItemType.MatchGenerics(genericParameterMap, listType.ItemType)
+	}
+	return nil
+}
+
+func (t *VeniceMapType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+	if mapType, ok := concreteType.(*VeniceMapType); ok {
+		t.KeyType.MatchGenerics(genericParameterMap, mapType.KeyType)
+		t.ValueType.MatchGenerics(genericParameterMap, mapType.ValueType)
+	}
+	return nil
+}
+
+func (t *VeniceSymbolType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+	// TODO(2021-08-20): Check for existing type.
+	genericParameterMap[t.Label] = concreteType
+	return nil
+}
+
+func (t *VeniceTupleType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+	if tupleType, ok := concreteType.(*VeniceTupleType); ok {
+		for i, itemType := range t.ItemTypes {
+			if i >= len(tupleType.ItemTypes) {
+				break
+			}
+			itemType.MatchGenerics(genericParameterMap, tupleType.ItemTypes[i])
+		}
+	}
+	return nil
+}
+
+func (t *VeniceUnionType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+	if unionType, ok := concreteType.(*VeniceUnionType); ok {
+		for i, subType := range t.Types {
+			if i >= len(unionType.Types) {
+				break
+			}
+			subType.MatchGenerics(genericParameterMap, unionType.Types[i])
+		}
+	}
+	return nil
 }
 
 /**
@@ -340,14 +392,6 @@ func (t *VeniceFunctionType) Check(otherTypeAny VeniceType) bool {
 	return false
 }
 
-func (t *VeniceGenericParameterType) Check(otherTypeAny VeniceType) bool {
-	return true
-}
-
-func (t *VeniceGenericType) Check(otherTypeAny VeniceType) bool {
-	return t.GenericType.Check(otherTypeAny)
-}
-
 func (t *VeniceListType) Check(otherTypeAny VeniceType) bool {
 	otherType, ok := otherTypeAny.(*VeniceListType)
 	return ok && t.ItemType.Check(otherType.ItemType)
@@ -356,6 +400,11 @@ func (t *VeniceListType) Check(otherTypeAny VeniceType) bool {
 func (t *VeniceMapType) Check(otherTypeAny VeniceType) bool {
 	otherType, ok := otherTypeAny.(*VeniceMapType)
 	return ok && t.KeyType.Check(otherType.KeyType) && t.ValueType.Check(otherType.ValueType)
+}
+
+func (t *VeniceSymbolType) Check(otherTypeAny VeniceType) bool {
+	// TODO(2021-08-20): Is this right?
+	return true
 }
 
 func (t *VeniceTupleType) Check(otherTypeAny VeniceType) bool {
@@ -392,21 +441,21 @@ func (t *VeniceUnionType) Check(otherTypeAny VeniceType) bool {
 
 func (t *VeniceCaseType) AsFunctionType(enumType *VeniceEnumType) *VeniceFunctionType {
 	return &VeniceFunctionType{
-		Name:       fmt.Sprintf("%s::%s", enumType.Name, t.Label),
-		Public:     true,
-		ParamTypes: t.Types,
-		ReturnType: enumType,
-		IsBuiltin:  false,
+		Name:              fmt.Sprintf("%s::%s", enumType.Name, t.Label),
+		Public:            true,
+		GenericParameters: enumType.GenericParameters,
+		ParamTypes:        t.Types,
+		ReturnType:        enumType,
+		IsBuiltin:         false,
 	}
 }
 
-func (t *VeniceAtomicType) veniceType()           {}
-func (t *VeniceClassType) veniceType()            {}
-func (t *VeniceEnumType) veniceType()             {}
-func (t *VeniceFunctionType) veniceType()         {}
-func (t *VeniceGenericParameterType) veniceType() {}
-func (t *VeniceGenericType) veniceType()          {}
-func (t *VeniceListType) veniceType()             {}
-func (t *VeniceMapType) veniceType()              {}
-func (t *VeniceTupleType) veniceType()            {}
-func (t *VeniceUnionType) veniceType()            {}
+func (t *VeniceAtomicType) veniceType()   {}
+func (t *VeniceClassType) veniceType()    {}
+func (t *VeniceEnumType) veniceType()     {}
+func (t *VeniceFunctionType) veniceType() {}
+func (t *VeniceListType) veniceType()     {}
+func (t *VeniceMapType) veniceType()      {}
+func (t *VeniceSymbolType) veniceType()   {}
+func (t *VeniceTupleType) veniceType()    {}
+func (t *VeniceUnionType) veniceType()    {}
