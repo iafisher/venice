@@ -31,52 +31,6 @@ func NewCompiler() *Compiler {
 	}
 }
 
-type FunctionInfo struct {
-	declaredReturnType  vtype.VeniceType
-	seenReturnStatement bool
-}
-
-type SymbolTable struct {
-	Parent  *SymbolTable
-	Symbols map[string]vtype.VeniceType
-}
-
-func NewBuiltinSymbolTable() *SymbolTable {
-	symbols := map[string]vtype.VeniceType{
-		"length": &vtype.VeniceFunctionType{
-			Name: "length",
-			ParamTypes: []vtype.VeniceType{
-				&vtype.VeniceUnionType{
-					[]vtype.VeniceType{
-						vtype.VENICE_TYPE_STRING,
-						&vtype.VeniceListType{vtype.VENICE_TYPE_ANY},
-						&vtype.VeniceMapType{vtype.VENICE_TYPE_ANY, vtype.VENICE_TYPE_ANY},
-					},
-				},
-			},
-			ReturnType: vtype.VENICE_TYPE_INTEGER,
-			IsBuiltin:  true,
-		},
-		"print": &vtype.VeniceFunctionType{
-			Name:       "print",
-			ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_ANY},
-			ReturnType: nil,
-			IsBuiltin:  true,
-		},
-	}
-	return &SymbolTable{nil, symbols}
-}
-
-func NewBuiltinTypeSymbolTable() *SymbolTable {
-	symbols := map[string]vtype.VeniceType{
-		"bool":     vtype.VENICE_TYPE_BOOLEAN,
-		"int":      vtype.VENICE_TYPE_INTEGER,
-		"string":   vtype.VENICE_TYPE_STRING,
-		"Optional": vtype.VENICE_TYPE_OPTIONAL,
-	}
-	return &SymbolTable{nil, symbols}
-}
-
 func (compiler *Compiler) Compile(file *ast.File) (*bytecode.CompiledProgram, error) {
 	compiledProgram := bytecode.NewCompiledProgram()
 	for _, statementAny := range file.Statements {
@@ -845,8 +799,7 @@ func (compiler *Compiler) compileFunctionArguments(
 	}
 
 	code := []bytecode.Bytecode{}
-	genericParameters := []string{}
-	concreteTypes := []vtype.VeniceType{}
+	genericParameterMap := map[string]vtype.VeniceType{}
 	for i := len(args) - 1; i >= 0; i-- {
 		argCode, argType, err := compiler.compileExpression(args[i])
 		if err != nil {
@@ -860,13 +813,9 @@ func (compiler *Compiler) compileFunctionArguments(
 			paramType = paramTypes[i]
 		}
 
-		if genericParamType, ok := paramType.(*vtype.VeniceGenericParameterType); ok {
-			genericParameters = append(genericParameters, genericParamType.Label)
-			concreteTypes = append(concreteTypes, argType)
-		} else {
-			if !paramType.Check(argType) {
-				return nil, nil, compiler.customError(args[i], "wrong function parameter type")
-			}
+		err = compiler.checkFunctionArgType(args[i], paramType, argType, genericParameterMap)
+		if err != nil {
+			return nil, nil, err
 		}
 
 		code = append(code, argCode...)
@@ -874,11 +823,28 @@ func (compiler *Compiler) compileFunctionArguments(
 
 	if returnType == nil {
 		return code, nil, nil
-	} else if len(genericParameters) > 0 {
-		return code, returnType.SubstituteGenerics(genericParameters, concreteTypes), nil
+	} else if len(genericParameterMap) > 0 {
+		return code, returnType.SubstituteGenerics(genericParameterMap), nil
 	} else {
 		return code, returnType, nil
 	}
+}
+
+func (compiler *Compiler) checkFunctionArgType(
+	node ast.Node,
+	paramType vtype.VeniceType,
+	argType vtype.VeniceType,
+	genericParameterMap map[string]vtype.VeniceType,
+) error {
+	if genericParamType, ok := paramType.(*vtype.VeniceGenericParameterType); ok {
+		genericParameterMap[genericParamType.Label] = argType
+	} else {
+		if !paramType.Check(argType) {
+			return compiler.customError(node, "wrong function parameter type")
+		}
+	}
+
+	return nil
 }
 
 func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
@@ -1260,6 +1226,52 @@ var stringBuiltins = map[string]vtype.VeniceType{
 /**
  * Symbol table methods
  */
+
+type FunctionInfo struct {
+	declaredReturnType  vtype.VeniceType
+	seenReturnStatement bool
+}
+
+type SymbolTable struct {
+	Parent  *SymbolTable
+	Symbols map[string]vtype.VeniceType
+}
+
+func NewBuiltinSymbolTable() *SymbolTable {
+	symbols := map[string]vtype.VeniceType{
+		"length": &vtype.VeniceFunctionType{
+			Name: "length",
+			ParamTypes: []vtype.VeniceType{
+				&vtype.VeniceUnionType{
+					[]vtype.VeniceType{
+						vtype.VENICE_TYPE_STRING,
+						&vtype.VeniceListType{vtype.VENICE_TYPE_ANY},
+						&vtype.VeniceMapType{vtype.VENICE_TYPE_ANY, vtype.VENICE_TYPE_ANY},
+					},
+				},
+			},
+			ReturnType: vtype.VENICE_TYPE_INTEGER,
+			IsBuiltin:  true,
+		},
+		"print": &vtype.VeniceFunctionType{
+			Name:       "print",
+			ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_ANY},
+			ReturnType: nil,
+			IsBuiltin:  true,
+		},
+	}
+	return &SymbolTable{nil, symbols}
+}
+
+func NewBuiltinTypeSymbolTable() *SymbolTable {
+	symbols := map[string]vtype.VeniceType{
+		"bool":     vtype.VENICE_TYPE_BOOLEAN,
+		"int":      vtype.VENICE_TYPE_INTEGER,
+		"string":   vtype.VENICE_TYPE_STRING,
+		"Optional": vtype.VENICE_TYPE_OPTIONAL,
+	}
+	return &SymbolTable{nil, symbols}
+}
 
 func (symtab *SymbolTable) Get(symbol string) (vtype.VeniceType, bool) {
 	value, ok := symtab.Symbols[symbol]

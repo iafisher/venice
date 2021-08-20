@@ -8,7 +8,7 @@ import (
 type VeniceType interface {
 	fmt.Stringer
 	veniceType()
-	SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType
+	SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType
 	Check(otherType VeniceType) bool
 }
 
@@ -112,7 +112,7 @@ var (
 )
 
 func VeniceOptionalTypeOf(concreteType VeniceType) VeniceType {
-	return VENICE_TYPE_OPTIONAL.SubstituteGenerics([]string{"T"}, []VeniceType{concreteType})
+	return VENICE_TYPE_OPTIONAL.SubstituteGenerics(map[string]VeniceType{"T": concreteType})
 }
 
 /**
@@ -212,107 +212,99 @@ func (t *VeniceUnionType) String() string {
  * - Generic parameter types substitute the concrete type if the parameter matches.
  */
 
-func (t *VeniceAtomicType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+func (t *VeniceAtomicType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	return &VeniceAtomicType{t.Type}
 }
 
-func (t *VeniceClassType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+func (t *VeniceClassType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	fields := []*VeniceClassField{}
 	for _, field := range t.Fields {
 		fields = append(fields, &VeniceClassField{
 			field.Name,
 			field.Public,
-			field.FieldType.SubstituteGenerics(labels, concreteTypes),
+			field.FieldType.SubstituteGenerics(genericParameterMap),
 		})
 	}
 	return &VeniceClassType{Name: t.Name, Fields: fields, Methods: t.Methods}
 }
 
-func (t *VeniceEnumType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+func (t *VeniceEnumType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	cases := []*VeniceCaseType{}
 	for _, enumCase := range t.Cases {
 		caseTypes := []VeniceType{}
 		for _, caseType := range enumCase.Types {
-			caseTypes = append(caseTypes, caseType.SubstituteGenerics(labels, concreteTypes))
+			caseTypes = append(caseTypes, caseType.SubstituteGenerics(genericParameterMap))
 		}
 		cases = append(cases, &VeniceCaseType{enumCase.Label, caseTypes})
 	}
 	return &VeniceEnumType{Name: t.Name, Cases: cases}
 }
 
-func (t *VeniceFunctionType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+func (t *VeniceFunctionType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	paramTypes := []VeniceType{}
 	for _, paramType := range t.ParamTypes {
-		paramTypes = append(paramTypes, paramType.SubstituteGenerics(labels, concreteTypes))
+		paramTypes = append(paramTypes, paramType.SubstituteGenerics(genericParameterMap))
 	}
 	return &VeniceFunctionType{
 		Name:       t.Name,
 		ParamTypes: paramTypes,
-		ReturnType: t.ReturnType.SubstituteGenerics(labels, concreteTypes),
+		ReturnType: t.ReturnType.SubstituteGenerics(genericParameterMap),
 		IsBuiltin:  t.IsBuiltin,
 	}
 }
 
-func (t *VeniceGenericParameterType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
-	for i, label := range labels {
-		if label == t.Label {
-			return concreteTypes[i]
-		}
+func (t *VeniceGenericParameterType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+	if concreteType, ok := genericParameterMap[t.Label]; ok {
+		return concreteType
+	} else {
+		return &VeniceGenericParameterType{t.Label}
 	}
-	return &VeniceGenericParameterType{t.Label}
 }
 
-func (t *VeniceGenericType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+func (t *VeniceGenericType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	parameters := []string{}
 	for _, param := range t.Parameters {
-		found := false
-		for _, label := range labels {
-			if param == label {
-				found = true
-				break
-			}
-		}
-
-		if !found {
+		_, ok := genericParameterMap[param]
+		if !ok {
 			parameters = append(parameters, param)
 		}
 	}
 
 	if len(parameters) == 0 {
-		return t.GenericType.SubstituteGenerics(labels, concreteTypes)
+		return t.GenericType.SubstituteGenerics(genericParameterMap)
 	} else {
 		return &VeniceGenericType{
 			parameters,
-			t.GenericType.SubstituteGenerics(labels, concreteTypes),
+			t.GenericType.SubstituteGenerics(genericParameterMap),
 		}
 	}
 }
 
-func (t *VeniceListType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+func (t *VeniceListType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	return &VeniceListType{
-		t.ItemType.SubstituteGenerics(labels, concreteTypes),
+		t.ItemType.SubstituteGenerics(genericParameterMap),
 	}
 }
 
-func (t *VeniceMapType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+func (t *VeniceMapType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	return &VeniceMapType{
-		t.KeyType.SubstituteGenerics(labels, concreteTypes),
-		t.ValueType.SubstituteGenerics(labels, concreteTypes),
+		t.KeyType.SubstituteGenerics(genericParameterMap),
+		t.ValueType.SubstituteGenerics(genericParameterMap),
 	}
 }
 
-func (t *VeniceTupleType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+func (t *VeniceTupleType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	newItemTypes := []VeniceType{}
 	for _, itemType := range t.ItemTypes {
-		newItemTypes = append(newItemTypes, itemType.SubstituteGenerics(labels, concreteTypes))
+		newItemTypes = append(newItemTypes, itemType.SubstituteGenerics(genericParameterMap))
 	}
 	return &VeniceTupleType{newItemTypes}
 }
 
-func (t *VeniceUnionType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
+func (t *VeniceUnionType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	newTypes := []VeniceType{}
 	for _, subType := range t.Types {
-		newTypes = append(newTypes, subType.SubstituteGenerics(labels, concreteTypes))
+		newTypes = append(newTypes, subType.SubstituteGenerics(genericParameterMap))
 	}
 	return &VeniceUnionType{newTypes}
 }
