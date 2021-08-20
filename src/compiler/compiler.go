@@ -811,7 +811,7 @@ func (compiler *Compiler) compileFunctionArguments(
 		}
 	}
 
-	if len(genericParameterMap) > 0 {
+	if len(genericParameterMap) > 0 && functionType.ReturnType != nil {
 		return code, functionType.ReturnType.SubstituteGenerics(genericParameterMap), nil
 	} else {
 		return code, functionType.ReturnType, nil
@@ -1175,6 +1175,16 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 }
 
 var listBuiltins = map[string]vtype.VeniceType{
+	"append": &vtype.VeniceFunctionType{
+		Name:              "append",
+		GenericParameters: []string{"T"},
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceListType{&vtype.VeniceSymbolType{"T"}},
+			&vtype.VeniceSymbolType{"T"},
+		},
+		ReturnType: nil,
+		IsBuiltin:  true,
+	},
 	"length": &vtype.VeniceFunctionType{
 		Name: "length",
 		ParamTypes: []vtype.VeniceType{

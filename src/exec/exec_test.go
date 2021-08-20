@@ -70,6 +70,7 @@ func TestLength(t *testing.T) {
 
 func TestListBuiltins(t *testing.T) {
 	assertEqual(t, `let l = [1, 2, 3]; l.length()`, I(3))
+	assertEqual(t, `let l = [1, 2]; l.append(3); l[2]`, I(3))
 }
 
 func TestStringBuiltins(t *testing.T) {
