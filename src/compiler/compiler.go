@@ -289,11 +289,11 @@ func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.Comp
 
 	var classType vtype.VeniceType
 	if node.GenericTypeParameter == "" {
-		classType = &vtype.VeniceClassType{Fields: fields, Methods: methods}
+		classType = &vtype.VeniceClassType{Name: node.Name, Fields: fields, Methods: methods}
 	} else {
 		classType = &vtype.VeniceGenericType{
 			[]string{node.GenericTypeParameter},
-			&vtype.VeniceClassType{Fields: fields, Methods: methods},
+			&vtype.VeniceClassType{Name: node.Name, Fields: fields, Methods: methods},
 		}
 		compiler.TypeSymbolTable = compiler.TypeSymbolTable.Parent
 	}
@@ -385,11 +385,11 @@ func (compiler *Compiler) compileEnumDeclaration(node *ast.EnumDeclarationNode) 
 			node.Name,
 			&vtype.VeniceGenericType{
 				[]string{node.GenericTypeParameter},
-				&vtype.VeniceEnumType{caseTypes},
+				&vtype.VeniceEnumType{Name: node.Name, Cases: caseTypes},
 			},
 		)
 	} else {
-		compiler.TypeSymbolTable.Put(node.Name, &vtype.VeniceEnumType{caseTypes})
+		compiler.TypeSymbolTable.Put(node.Name, &vtype.VeniceEnumType{Name: node.Name, Cases: caseTypes})
 	}
 
 	return nil

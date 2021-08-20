@@ -21,6 +21,7 @@ type VeniceAtomicType struct {
 }
 
 type VeniceClassType struct {
+	Name    string
 	Fields  []*VeniceClassField
 	Methods []*VeniceFunctionType
 }
@@ -33,6 +34,7 @@ type VeniceClassField struct {
 }
 
 type VeniceEnumType struct {
+	Name  string
 	Cases []*VeniceCaseType
 }
 
@@ -97,7 +99,8 @@ var (
 	VENICE_TYPE_OPTIONAL  = &VeniceGenericType{
 		[]string{"T"},
 		&VeniceEnumType{
-			[]*VeniceCaseType{
+			Name: "Optional",
+			Cases: []*VeniceCaseType{
 				&VeniceCaseType{
 					"Some",
 					[]VeniceType{&VeniceGenericParameterType{"T"}},
@@ -121,47 +124,11 @@ func (t *VeniceAtomicType) String() string {
 }
 
 func (t *VeniceClassType) String() string {
-	var sb strings.Builder
-	sb.WriteString("class(")
-	for i, field := range t.Fields {
-		if field.Public {
-			sb.WriteString("public ")
-		} else {
-			sb.WriteString("private ")
-		}
-
-		sb.WriteString(field.Name)
-		sb.WriteString(": ")
-		sb.WriteString(field.FieldType.String())
-
-		if i != len(t.Fields)-1 {
-			sb.WriteString(", ")
-		}
-	}
-	sb.WriteByte(')')
-	return sb.String()
+	return t.Name
 }
 
 func (t *VeniceEnumType) String() string {
-	var sb strings.Builder
-	sb.WriteString("enum(")
-	for i, enumCase := range t.Cases {
-		sb.WriteString(enumCase.Label)
-		sb.WriteByte('(')
-		for j, caseType := range enumCase.Types {
-			sb.WriteString(caseType.String())
-			if j != len(enumCase.Types)-1 {
-				sb.WriteString(", ")
-			}
-		}
-		sb.WriteByte(')')
-
-		if i != len(t.Cases)-1 {
-			sb.WriteString(", ")
-		}
-	}
-	sb.WriteByte(')')
-	return sb.String()
+	return t.Name
 }
 
 func (t *VeniceFunctionType) String() string {
@@ -258,7 +225,7 @@ func (t *VeniceClassType) SubstituteGenerics(labels []string, concreteTypes []Ve
 			field.FieldType.SubstituteGenerics(labels, concreteTypes),
 		})
 	}
-	return &VeniceClassType{Fields: fields, Methods: t.Methods}
+	return &VeniceClassType{Name: t.Name, Fields: fields, Methods: t.Methods}
 }
 
 func (t *VeniceEnumType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
@@ -270,7 +237,7 @@ func (t *VeniceEnumType) SubstituteGenerics(labels []string, concreteTypes []Ven
 		}
 		cases = append(cases, &VeniceCaseType{enumCase.Label, caseTypes})
 	}
-	return &VeniceEnumType{cases}
+	return &VeniceEnumType{Name: t.Name, Cases: cases}
 }
 
 func (t *VeniceFunctionType) SubstituteGenerics(labels []string, concreteTypes []VeniceType) VeniceType {
