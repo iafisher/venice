@@ -670,27 +670,13 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 	}
 
 	_, isClassMethod := node.Function.(*ast.FieldAccessNode)
-	if isClassMethod {
-		if len(functionType.ParamTypes) != len(node.Args)+1 {
-			return nil, nil, compiler.customError(
-				node,
-				"wrong number of arguments: expected %d, got %d",
-				len(functionType.ParamTypes),
-				len(node.Args)+1,
-			)
-		}
-	} else {
-		if len(functionType.ParamTypes) != len(node.Args) {
-			return nil, nil, compiler.customError(
-				node,
-				"wrong number of arguments: expected %d, got %d",
-				len(functionType.ParamTypes),
-				len(node.Args),
-			)
-		}
-	}
-
-	code, returnType, err := compiler.compileFunctionArguments(node.Args, functionType, isClassMethod)
+	code, returnType, err := compiler.compileFunctionArguments(
+		node,
+		node.Args,
+		functionType.ParamTypes,
+		functionType.ReturnType,
+		isClassMethod,
+	)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -737,37 +723,13 @@ func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.EnumSymbolNode
 
 	for _, enumCase := range enumType.Cases {
 		if enumCase.Label == enumSymbolNode.Case {
-			if len(enumCase.Types) != len(callNode.Args) {
-				return nil, nil, compiler.customError(callNode, "%s takes %d argument(s)", enumCase.Label, len(enumCase.Types))
+			code, returnType, err := compiler.compileFunctionArguments(callNode, callNode.Args, enumCase.Types, enumType, false)
+			if err != nil {
+				return nil, nil, err
 			}
 
-			code := []bytecode.Bytecode{}
-			genericParameters := []string{}
-			concreteTypes := []vtype.VeniceType{}
-			for i := 0; i < len(callNode.Args); i++ {
-				argCode, argType, err := compiler.compileExpression(callNode.Args[i])
-				if err != nil {
-					return nil, nil, err
-				}
-
-				if genericParamType, ok := enumCase.Types[i].(*vtype.VeniceGenericParameterType); ok {
-					genericParameters = append(genericParameters, genericParamType.Label)
-					concreteTypes = append(concreteTypes, argType)
-				} else {
-					if !enumCase.Types[i].Check(argType) {
-						return nil, nil, compiler.customError(callNode.Args[i], "wrong enum parameter type")
-					}
-				}
-
-				code = append(code, argCode...)
-			}
 			code = append(code, &bytecode.PushEnum{enumSymbolNode.Case, len(callNode.Args)})
-
-			if len(genericParameters) > 0 {
-				return code, enumType.SubstituteGenerics(genericParameters, concreteTypes), nil
-			} else {
-				return code, enumType, nil
-			}
+			return code, returnType, nil
 		}
 	}
 
@@ -862,10 +824,26 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 }
 
 func (compiler *Compiler) compileFunctionArguments(
+	node ast.Node,
 	args []ast.ExpressionNode,
-	functionType *vtype.VeniceFunctionType,
+	paramTypes []vtype.VeniceType,
+	returnType vtype.VeniceType,
 	isClassMethod bool,
 ) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+	actualNumberOfArgs := len(args)
+	if isClassMethod {
+		actualNumberOfArgs++
+	}
+
+	if len(paramTypes) != actualNumberOfArgs {
+		return nil, nil, compiler.customError(
+			node,
+			"wrong number of arguments: expected %d, got %d",
+			len(paramTypes),
+			actualNumberOfArgs,
+		)
+	}
+
 	code := []bytecode.Bytecode{}
 	genericParameters := []string{}
 	concreteTypes := []vtype.VeniceType{}
@@ -877,9 +855,9 @@ func (compiler *Compiler) compileFunctionArguments(
 
 		var paramType vtype.VeniceType
 		if isClassMethod {
-			paramType = functionType.ParamTypes[i+1]
+			paramType = paramTypes[i+1]
 		} else {
-			paramType = functionType.ParamTypes[i]
+			paramType = paramTypes[i]
 		}
 
 		if genericParamType, ok := paramType.(*vtype.VeniceGenericParameterType); ok {
@@ -894,10 +872,12 @@ func (compiler *Compiler) compileFunctionArguments(
 		code = append(code, argCode...)
 	}
 
-	if len(genericParameters) > 0 {
-		return code, functionType.ReturnType.SubstituteGenerics(genericParameters, concreteTypes), nil
+	if returnType == nil {
+		return code, nil, nil
+	} else if len(genericParameters) > 0 {
+		return code, returnType.SubstituteGenerics(genericParameters, concreteTypes), nil
 	} else {
-		return code, functionType.ReturnType, nil
+		return code, returnType, nil
 	}
 }
 
