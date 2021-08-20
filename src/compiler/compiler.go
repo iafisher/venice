@@ -627,8 +627,7 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 	code, returnType, err := compiler.compileFunctionArguments(
 		node,
 		node.Args,
-		functionType.ParamTypes,
-		functionType.ReturnType,
+		functionType,
 		isClassMethod,
 	)
 	if err != nil {
@@ -677,7 +676,9 @@ func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.EnumSymbolNode
 
 	for _, enumCase := range enumType.Cases {
 		if enumCase.Label == enumSymbolNode.Case {
-			code, returnType, err := compiler.compileFunctionArguments(callNode, callNode.Args, enumCase.Types, enumType, false)
+			code, returnType, err := compiler.compileFunctionArguments(
+				callNode, callNode.Args, enumCase.AsFunctionType(enumType), false,
+			)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -780,8 +781,7 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 func (compiler *Compiler) compileFunctionArguments(
 	node ast.Node,
 	args []ast.ExpressionNode,
-	paramTypes []vtype.VeniceType,
-	returnType vtype.VeniceType,
+	functionType *vtype.VeniceFunctionType,
 	isClassMethod bool,
 ) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	actualNumberOfArgs := len(args)
@@ -789,11 +789,11 @@ func (compiler *Compiler) compileFunctionArguments(
 		actualNumberOfArgs++
 	}
 
-	if len(paramTypes) != actualNumberOfArgs {
+	if len(functionType.ParamTypes) != actualNumberOfArgs {
 		return nil, nil, compiler.customError(
 			node,
 			"wrong number of arguments: expected %d, got %d",
-			len(paramTypes),
+			len(functionType.ParamTypes),
 			actualNumberOfArgs,
 		)
 	}
@@ -808,9 +808,9 @@ func (compiler *Compiler) compileFunctionArguments(
 
 		var paramType vtype.VeniceType
 		if isClassMethod {
-			paramType = paramTypes[i+1]
+			paramType = functionType.ParamTypes[i+1]
 		} else {
-			paramType = paramTypes[i]
+			paramType = functionType.ParamTypes[i]
 		}
 
 		err = compiler.checkFunctionArgType(args[i], paramType, argType, genericParameterMap)
@@ -821,12 +821,10 @@ func (compiler *Compiler) compileFunctionArguments(
 		code = append(code, argCode...)
 	}
 
-	if returnType == nil {
-		return code, nil, nil
-	} else if len(genericParameterMap) > 0 {
-		return code, returnType.SubstituteGenerics(genericParameterMap), nil
+	if len(genericParameterMap) > 0 {
+		return code, functionType.ReturnType.SubstituteGenerics(genericParameterMap), nil
 	} else {
-		return code, returnType, nil
+		return code, functionType.ReturnType, nil
 	}
 }
 

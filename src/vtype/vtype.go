@@ -386,6 +386,20 @@ func (t *VeniceUnionType) Check(otherTypeAny VeniceType) bool {
 	return false
 }
 
+/**
+ * Miscellaneous methods
+ */
+
+func (t *VeniceCaseType) AsFunctionType(enumType *VeniceEnumType) *VeniceFunctionType {
+	return &VeniceFunctionType{
+		Name:       fmt.Sprintf("%s::%s", enumType.Name, t.Label),
+		Public:     true,
+		ParamTypes: t.Types,
+		ReturnType: enumType,
+		IsBuiltin:  false,
+	}
+}
+
 func (t *VeniceAtomicType) veniceType()           {}
 func (t *VeniceClassType) veniceType()            {}
 func (t *VeniceEnumType) veniceType()             {}
