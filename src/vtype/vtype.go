@@ -10,7 +10,6 @@ type VeniceType interface {
 	veniceType()
 	MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error
 	SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType
-	Check(otherType VeniceType) bool
 }
 
 /**
@@ -405,91 +404,6 @@ func (t *VeniceUnionType) MatchGenerics(genericParameterMap map[string]VeniceTyp
 		}
 	}
 	return nil
-}
-
-/**
- * Check() implementations
- */
-
-func (t *VeniceAnyType) Check(otherTypeAny VeniceType) bool {
-	return true
-}
-
-func (t *VeniceBooleanType) Check(otherTypeAny VeniceType) bool {
-	_, ok := otherTypeAny.(*VeniceBooleanType)
-	return ok
-}
-
-func (t *VeniceCharacterType) Check(otherTypeAny VeniceType) bool {
-	_, ok := otherTypeAny.(*VeniceCharacterType)
-	return ok
-}
-
-func (t *VeniceClassType) Check(otherTypeAny VeniceType) bool {
-	otherType, ok := otherTypeAny.(*VeniceClassType)
-	return ok && t == otherType
-}
-
-func (t *VeniceEnumType) Check(otherTypeAny VeniceType) bool {
-	otherType, ok := otherTypeAny.(*VeniceEnumType)
-	return ok && t == otherType
-}
-
-func (t *VeniceFunctionType) Check(otherTypeAny VeniceType) bool {
-	return false
-}
-
-func (t *VeniceIntegerType) Check(otherTypeAny VeniceType) bool {
-	_, ok := otherTypeAny.(*VeniceIntegerType)
-	return ok
-}
-
-func (t *VeniceListType) Check(otherTypeAny VeniceType) bool {
-	otherType, ok := otherTypeAny.(*VeniceListType)
-	return ok && t.ItemType.Check(otherType.ItemType)
-}
-
-func (t *VeniceMapType) Check(otherTypeAny VeniceType) bool {
-	otherType, ok := otherTypeAny.(*VeniceMapType)
-	return ok && t.KeyType.Check(otherType.KeyType) && t.ValueType.Check(otherType.ValueType)
-}
-
-func (t *VeniceStringType) Check(otherTypeAny VeniceType) bool {
-	_, ok := otherTypeAny.(*VeniceStringType)
-	return ok
-}
-
-func (t *VeniceSymbolType) Check(otherTypeAny VeniceType) bool {
-	// TODO(2021-08-20): Is this right?
-	return true
-}
-
-func (t *VeniceTupleType) Check(otherTypeAny VeniceType) bool {
-	otherType, ok := otherTypeAny.(*VeniceTupleType)
-	if !ok {
-		return false
-	}
-
-	if len(t.ItemTypes) != len(otherType.ItemTypes) {
-		return false
-	}
-
-	for i := 0; i < len(t.ItemTypes); i++ {
-		if !t.ItemTypes[i].Check(otherType.ItemTypes[i]) {
-			return false
-		}
-	}
-
-	return true
-}
-
-func (t *VeniceUnionType) Check(otherTypeAny VeniceType) bool {
-	for _, subType := range t.Types {
-		if subType.Check(otherTypeAny) {
-			return true
-		}
-	}
-	return false
 }
 
 /**

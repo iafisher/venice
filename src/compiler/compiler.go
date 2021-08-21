@@ -123,7 +123,7 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 				return nil, err
 			}
 
-			if !compiler.functionInfo.declaredReturnType.Check(exprType) {
+			if !compiler.checkType(compiler.functionInfo.declaredReturnType, exprType) {
 				return nil, compiler.customError(treeAny, "conflicting function return types")
 			}
 
@@ -168,7 +168,7 @@ func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) 
 					return nil, compiler.customError(node, "cannot assign to non-public field")
 				}
 
-				if !field.FieldType.Check(eType) {
+				if !compiler.checkType(field.FieldType, eType) {
 					return nil, compiler.customError(
 						node.Expr,
 						"expected type %s, got %s",
@@ -199,7 +199,7 @@ func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) 
 			)
 		}
 
-		if !listType.ItemType.Check(eType) {
+		if !compiler.checkType(listType.ItemType, eType) {
 			return nil, compiler.customError(
 				node.Expr,
 				"expected type %s, got %s",
@@ -213,7 +213,7 @@ func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) 
 			return nil, err
 		}
 
-		if !vtype.VENICE_TYPE_INTEGER.Check(indexType) {
+		if !compiler.checkType(vtype.VENICE_TYPE_INTEGER, indexType) {
 			return nil, compiler.customError(node, "list index must be of type integer, not %s", indexType.String())
 		}
 
@@ -225,7 +225,7 @@ func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) 
 		expectedType, ok := compiler.SymbolTable.Get(destination.Value)
 		if !ok {
 			return nil, compiler.customError(node, "cannot assign to undeclared symbol `%s`", destination.Value)
-		} else if !expectedType.Check(eType) {
+		} else if !compiler.checkType(expectedType, eType) {
 			return nil, compiler.customError(node, "wrong expression type in assignment to `%s`", destination.Value)
 		}
 
@@ -529,7 +529,7 @@ func (compiler *Compiler) compileIfStatement(node *ast.IfStatementNode) ([]bytec
 			return nil, err
 		}
 
-		if !vtype.VENICE_TYPE_BOOLEAN.Check(conditionType) {
+		if !compiler.checkType(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
 			return nil, compiler.customError(clause.Condition, "condition of `if` statement must be a boolean")
 		}
 
@@ -570,7 +570,7 @@ func (compiler *Compiler) compileWhileLoop(node *ast.WhileLoopNode) ([]bytecode.
 		return nil, err
 	}
 
-	if !vtype.VENICE_TYPE_BOOLEAN.Check(conditionType) {
+	if !compiler.checkType(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
 		return nil, compiler.customError(node.Condition, "condition of `while` loop must be a boolean")
 	}
 
@@ -873,7 +873,7 @@ func (compiler *Compiler) checkFunctionArgType(
 		return err
 	}
 
-	if !paramType.Check(argType) {
+	if !compiler.checkType(paramType, argType) {
 		return compiler.customError(node, "wrong function parameter type")
 	}
 
@@ -895,21 +895,21 @@ func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Byte
 
 	switch exprType := exprTypeAny.(type) {
 	case *vtype.VeniceListType:
-		if !vtype.VENICE_TYPE_INTEGER.Check(indexType) {
+		if !compiler.checkType(vtype.VENICE_TYPE_INTEGER, indexType) {
 			return nil, nil, compiler.customError(node.Expr, "list index must be integer")
 		}
 
 		code = append(code, &bytecode.BinaryListIndex{})
 		return code, exprType.ItemType, nil
 	case *vtype.VeniceMapType:
-		if !exprType.KeyType.Check(indexType) {
+		if !compiler.checkType(exprType.KeyType, indexType) {
 			return nil, nil, compiler.customError(node.Expr, "wrong map key type in index expression")
 		}
 
 		code = append(code, &bytecode.BinaryMapIndex{})
 		return code, exprType.KeyType, nil
 	case *vtype.VeniceStringType:
-		if !vtype.VENICE_TYPE_INTEGER.Check(indexType) {
+		if !compiler.checkType(vtype.VENICE_TYPE_INTEGER, indexType) {
 			return nil, nil, compiler.customError(node.Expr, "string index must be integer")
 		}
 
@@ -932,7 +932,7 @@ func (compiler *Compiler) compileInfixNode(node *ast.InfixNode) ([]bytecode.Byte
 		return nil, nil, err
 	}
 
-	if !checkInfixLeftType(node.Operator, leftType) {
+	if !compiler.checkInfixLeftType(node.Operator, leftType) {
 		return nil, nil, compiler.customError(node.Left, "invalid type for left operand of %s", node.Operator)
 	}
 
@@ -941,7 +941,7 @@ func (compiler *Compiler) compileInfixNode(node *ast.InfixNode) ([]bytecode.Byte
 		return nil, nil, err
 	}
 
-	resultType, ok := checkInfixRightType(node.Operator, leftType, rightType)
+	resultType, ok := compiler.checkInfixRightType(node.Operator, leftType, rightType)
 	if !ok {
 		return nil, nil, compiler.customError(node.Right, "invalid type for right operand of %s", node.Operator)
 	}
@@ -975,7 +975,7 @@ func (compiler *Compiler) compileListNode(node *ast.ListNode) ([]bytecode.Byteco
 
 		if itemType == nil {
 			itemType = valueType
-		} else if !itemType.Check(valueType) {
+		} else if !compiler.checkType(itemType, valueType) {
 			return nil, nil, compiler.customError(value, "list elements must all be of same type")
 		}
 
@@ -998,7 +998,7 @@ func (compiler *Compiler) compileMapNode(node *ast.MapNode) ([]bytecode.Bytecode
 
 		if keyType == nil {
 			keyType = thisKeyType
-		} else if !keyType.Check(thisKeyType) {
+		} else if !compiler.checkType(keyType, thisKeyType) {
 			return nil, nil, compiler.customError(pair.Key, "map keys must all be of the same type")
 		}
 
@@ -1011,7 +1011,7 @@ func (compiler *Compiler) compileMapNode(node *ast.MapNode) ([]bytecode.Bytecode
 
 		if valueType == nil {
 			valueType = thisValueType
-		} else if !valueType.Check(thisValueType) {
+		} else if !compiler.checkType(valueType, thisValueType) {
 			return nil, nil, compiler.customError(pair.Value, "map values must all be of the same type")
 		}
 
@@ -1027,7 +1027,7 @@ func (compiler *Compiler) compileTernaryIfNode(node *ast.TernaryIfNode) ([]bytec
 		return nil, nil, err
 	}
 
-	if !vtype.VENICE_TYPE_BOOLEAN.Check(conditionType) {
+	if !compiler.checkType(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
 		return nil, nil, compiler.customError(node, "condition of `if` expression must be a boolean")
 	}
 
@@ -1041,7 +1041,7 @@ func (compiler *Compiler) compileTernaryIfNode(node *ast.TernaryIfNode) ([]bytec
 		return nil, nil, err
 	}
 
-	if !trueClauseType.Check(falseClauseType) {
+	if !compiler.checkType(trueClauseType, falseClauseType) {
 		return nil, nil, compiler.customError(node, "branches of `if` expression are of different types")
 	}
 
@@ -1146,50 +1146,99 @@ var opsToBytecodes = map[string]bytecode.Bytecode{
 	"-":   &bytecode.BinarySub{},
 }
 
-func checkInfixLeftType(operator string, leftType vtype.VeniceType) bool {
+func (compiler *Compiler) checkInfixLeftType(operator string, leftType vtype.VeniceType) bool {
 	switch operator {
 	case "==", "in":
 		return true
 	case "and", "or":
-		return vtype.VENICE_TYPE_BOOLEAN.Check(leftType)
+		return compiler.checkType(vtype.VENICE_TYPE_BOOLEAN, leftType)
 	case "++":
 		if _, ok := leftType.(*vtype.VeniceListType); ok {
 			return true
 		} else {
-			return vtype.VENICE_TYPE_STRING.Check(leftType)
+			return compiler.checkType(vtype.VENICE_TYPE_STRING, leftType)
 		}
 	default:
-		return vtype.VENICE_TYPE_INTEGER.Check(leftType)
+		return compiler.checkType(vtype.VENICE_TYPE_INTEGER, leftType)
 	}
 }
 
-func checkInfixRightType(operator string, leftType vtype.VeniceType, rightType vtype.VeniceType) (vtype.VeniceType, bool) {
+func (compiler *Compiler) checkInfixRightType(operator string, leftType vtype.VeniceType, rightType vtype.VeniceType) (vtype.VeniceType, bool) {
 	switch operator {
 	case "==", "!=":
-		return vtype.VENICE_TYPE_BOOLEAN, leftType.Check(rightType)
+		return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(leftType, rightType)
 	case "and", "or":
-		return vtype.VENICE_TYPE_BOOLEAN, vtype.VENICE_TYPE_BOOLEAN.Check(rightType)
+		return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(vtype.VENICE_TYPE_BOOLEAN, rightType)
 	case ">", ">=", "<", "<=":
-		return vtype.VENICE_TYPE_BOOLEAN, vtype.VENICE_TYPE_INTEGER.Check(rightType)
+		return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(vtype.VENICE_TYPE_INTEGER, rightType)
 	case "++":
-		if vtype.VENICE_TYPE_STRING.Check(leftType) {
-			return vtype.VENICE_TYPE_STRING, vtype.VENICE_TYPE_STRING.Check(rightType)
+		if compiler.checkType(vtype.VENICE_TYPE_STRING, leftType) {
+			return vtype.VENICE_TYPE_STRING, compiler.checkType(vtype.VENICE_TYPE_STRING, rightType)
 		} else {
-			return leftType, leftType.Check(rightType)
+			return leftType, compiler.checkType(leftType, rightType)
 		}
 	case "in":
 		switch rightConcreteType := rightType.(type) {
 		case *vtype.VeniceStringType:
-			return vtype.VENICE_TYPE_BOOLEAN, vtype.VENICE_TYPE_CHARACTER.Check(leftType) || vtype.VENICE_TYPE_STRING.Check(leftType)
+			return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(vtype.VENICE_TYPE_CHARACTER, leftType) || compiler.checkType(vtype.VENICE_TYPE_STRING, leftType)
 		case *vtype.VeniceListType:
-			return vtype.VENICE_TYPE_BOOLEAN, rightConcreteType.ItemType.Check(leftType)
+			return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(rightConcreteType.ItemType, leftType)
 		case *vtype.VeniceMapType:
-			return vtype.VENICE_TYPE_BOOLEAN, rightConcreteType.KeyType.Check(leftType)
+			return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(rightConcreteType.KeyType, leftType)
 		default:
 			return nil, false
 		}
 	default:
-		return vtype.VENICE_TYPE_INTEGER, vtype.VENICE_TYPE_INTEGER.Check(rightType)
+		return vtype.VENICE_TYPE_INTEGER, compiler.checkType(vtype.VENICE_TYPE_INTEGER, rightType)
+	}
+}
+
+func (compiler *Compiler) checkType(expectedTypeAny vtype.VeniceType, actualTypeAny vtype.VeniceType) bool {
+	switch expectedType := expectedTypeAny.(type) {
+	case *vtype.VeniceAnyType:
+		return true
+	case *vtype.VeniceListType:
+		actualType, ok := actualTypeAny.(*vtype.VeniceListType)
+		return ok && compiler.checkType(expectedType.ItemType, actualType.ItemType)
+	case *vtype.VeniceMapType:
+		actualType, ok := actualTypeAny.(*vtype.VeniceMapType)
+		return ok && compiler.checkType(expectedType.KeyType, actualType.KeyType) && compiler.checkType(expectedType.ValueType, actualType.ValueType)
+	case *vtype.VeniceSymbolType:
+		return true
+		// TODO(2021-08-21)
+		// symbolType, ok := compiler.TypeSymbolTable.Get(expectedType.Label)
+		// if !ok {
+		// 	// TODO(2021-08-21): Return an error?
+		// 	return false
+		// }
+		// return compiler.checkType(symbolType, actualTypeAny)
+	case *vtype.VeniceTupleType:
+		actualType, ok := actualTypeAny.(*vtype.VeniceTupleType)
+		if !ok {
+			return false
+		}
+
+		if len(expectedType.ItemTypes) != len(actualType.ItemTypes) {
+			return false
+		}
+
+		for i, itemType := range expectedType.ItemTypes {
+			if !compiler.checkType(itemType, actualType.ItemTypes[i]) {
+				return false
+			}
+		}
+
+		return true
+	case *vtype.VeniceUnionType:
+		for _, subType := range expectedType.Types {
+			if compiler.checkType(subType, actualTypeAny) {
+				return true
+			}
+		}
+
+		return false
+	default:
+		return expectedTypeAny == actualTypeAny
 	}
 }
 
