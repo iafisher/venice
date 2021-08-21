@@ -256,6 +256,8 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 				continue
 			}
 			bytecode = &StoreField{n}
+		case "STORE_INDEX":
+			bytecode = &StoreIndex{}
 		case "STORE_NAME":
 			name, ok := p.expectString()
 			if !ok {

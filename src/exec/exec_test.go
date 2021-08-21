@@ -73,6 +73,10 @@ func TestListBuiltins(t *testing.T) {
 	assertEqual(t, `let l = [1, 2]; l.append(3); l[2]`, I(3))
 }
 
+func TestListIndexAssignment(t *testing.T) {
+	assertEqual(t, `let l = [1]; l[0] = 42; l[0]`, I(42))
+}
+
 func TestStringBuiltins(t *testing.T) {
 	assertEqual(t, `let s = "123"; s.length()`, I(3))
 	assertEqual(t, `"123".length()`, I(3))

@@ -435,6 +435,22 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 		}
 
 		destination.Values[bcode.Index] = value
+	case *bytecode.StoreIndex:
+		destinationAny := vm.popStack()
+		indexAny := vm.popStack()
+		value := vm.popStack()
+
+		destination, ok := destinationAny.(*vval.VeniceList)
+		if !ok {
+			return -1, &ExecutionError{"expected list object at top of virtual machine stack for STORE_INDEX"}
+		}
+
+		index, ok := indexAny.(*vval.VeniceInteger)
+		if !ok {
+			return -1, &ExecutionError{"expected integer at top of virtual machine stack for STORE_INDEX"}
+		}
+
+		destination.Values[index.Value] = value
 	case *bytecode.StoreName:
 		topOfStack := vm.popStack()
 		vm.Env.Put(bcode.Name, topOfStack)

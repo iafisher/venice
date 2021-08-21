@@ -175,6 +175,43 @@ func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) 
 		}
 
 		return nil, compiler.customError(node, "field `%s` does not exist on %s", destination.Name, classType.String())
+	case *ast.IndexNode:
+		destinationCode, destinationTypeAny, err := compiler.compileExpression(destination.Expr)
+		if err != nil {
+			return nil, err
+		}
+
+		listType, ok := destinationTypeAny.(*vtype.VeniceListType)
+		if !ok {
+			return nil, compiler.customError(
+				node,
+				"cannot assign to index on type %s",
+				destinationTypeAny.String(),
+			)
+		}
+
+		if !listType.ItemType.Check(eType) {
+			return nil, compiler.customError(
+				node.Expr,
+				"expected type %s, got %s",
+				listType.ItemType.String(),
+				eType.String(),
+			)
+		}
+
+		indexCode, indexType, err := compiler.compileExpression(destination.Index)
+		if err != nil {
+			return nil, err
+		}
+
+		if !vtype.VENICE_TYPE_INTEGER.Check(indexType) {
+			return nil, compiler.customError(node, "list index must be of type integer, not %s", indexType.String())
+		}
+
+		code = append(code, indexCode...)
+		code = append(code, destinationCode...)
+		code = append(code, &bytecode.StoreIndex{})
+		return code, nil
 	case *ast.SymbolNode:
 		expectedType, ok := compiler.SymbolTable.Get(destination.Value)
 		if !ok {

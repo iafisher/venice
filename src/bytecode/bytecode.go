@@ -150,6 +150,8 @@ type StoreField struct {
 	Index int
 }
 
+type StoreIndex struct{}
+
 type StoreName struct {
 	Name string
 }
@@ -330,6 +332,10 @@ func (b *StoreField) String() string {
 	return fmt.Sprintf("STORE_FIELD %d", b.Index)
 }
 
+func (b *StoreIndex) String() string {
+	return "STORE_INDEX"
+}
+
 func (b *StoreName) String() string {
 	return fmt.Sprintf("STORE_NAME %q", b.Name)
 }
@@ -384,6 +390,7 @@ func (b *RelJumpIfFalseOrPop) bytecode() {}
 func (b *RelJumpIfTrueOrPop) bytecode()  {}
 func (b *Return) bytecode()              {}
 func (b *StoreField) bytecode()          {}
+func (b *StoreIndex) bytecode()          {}
 func (b *StoreName) bytecode()           {}
 func (b *UnaryMinus) bytecode()          {}
 func (b *UnaryNot) bytecode()            {}
