@@ -761,14 +761,6 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 	}
 
 	switch concreteType := typeAny.(type) {
-	case *vtype.VeniceAtomicType:
-		if concreteType == vtype.VENICE_TYPE_STRING {
-			methodType, ok := stringBuiltins[node.Name]
-			if !ok {
-				return nil, nil, compiler.customError(node, "no such field or method `%s` on string type", node.Name)
-			}
-			return code, methodType, nil
-		}
 	case *vtype.VeniceClassType:
 		for i, field := range concreteType.Fields {
 			if field.Name == node.Name {
@@ -799,9 +791,15 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 			return nil, nil, compiler.customError(node, "no such field or method `%s` on list type", node.Name)
 		}
 		return code, methodType, nil
+	case *vtype.VeniceStringType:
+		methodType, ok := stringBuiltins[node.Name]
+		if !ok {
+			return nil, nil, compiler.customError(node, "no such field or method `%s` on string type", node.Name)
+		}
+		return code, methodType, nil
+	default:
+		return nil, nil, compiler.customError(node, "no such field or method `%s` on type %s", node.Name, typeAny.String())
 	}
-
-	return nil, nil, compiler.customError(node, "no such field or method `%s` on type %s", node.Name, typeAny.String())
 }
 
 func (compiler *Compiler) compileFunctionArguments(
@@ -896,16 +894,6 @@ func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Byte
 	code := append(exprCode, indexCode...)
 
 	switch exprType := exprTypeAny.(type) {
-	case *vtype.VeniceAtomicType:
-		if exprType != vtype.VENICE_TYPE_STRING {
-			return nil, nil, compiler.customError(node, "%s cannot be indexed", exprType.String())
-		}
-		if !vtype.VENICE_TYPE_INTEGER.Check(indexType) {
-			return nil, nil, compiler.customError(node.Expr, "string index must be integer")
-		}
-
-		code = append(code, &bytecode.BinaryStringIndex{})
-		return code, vtype.VENICE_TYPE_CHARACTER, nil
 	case *vtype.VeniceListType:
 		if !vtype.VENICE_TYPE_INTEGER.Check(indexType) {
 			return nil, nil, compiler.customError(node.Expr, "list index must be integer")
@@ -920,6 +908,13 @@ func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Byte
 
 		code = append(code, &bytecode.BinaryMapIndex{})
 		return code, exprType.KeyType, nil
+	case *vtype.VeniceStringType:
+		if !vtype.VENICE_TYPE_INTEGER.Check(indexType) {
+			return nil, nil, compiler.customError(node.Expr, "string index must be integer")
+		}
+
+		code = append(code, &bytecode.BinaryStringIndex{})
+		return code, vtype.VENICE_TYPE_CHARACTER, nil
 	default:
 		return nil, nil, compiler.customError(node, "%s cannot be indexed", exprTypeAny)
 	}
@@ -1184,13 +1179,8 @@ func checkInfixRightType(operator string, leftType vtype.VeniceType, rightType v
 		}
 	case "in":
 		switch rightConcreteType := rightType.(type) {
-		case *vtype.VeniceAtomicType:
-			if rightConcreteType == vtype.VENICE_TYPE_STRING {
-				return vtype.VENICE_TYPE_BOOLEAN, vtype.VENICE_TYPE_CHARACTER.Check(leftType) || vtype.VENICE_TYPE_STRING.Check(leftType)
-
-			} else {
-				return nil, false
-			}
+		case *vtype.VeniceStringType:
+			return vtype.VENICE_TYPE_BOOLEAN, vtype.VENICE_TYPE_CHARACTER.Check(leftType) || vtype.VENICE_TYPE_STRING.Check(leftType)
 		case *vtype.VeniceListType:
 			return vtype.VENICE_TYPE_BOOLEAN, rightConcreteType.ItemType.Check(leftType)
 		case *vtype.VeniceMapType:
