@@ -168,6 +168,15 @@ func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) 
 					return nil, compiler.customError(node, "cannot assign to non-public field")
 				}
 
+				if !field.FieldType.Check(eType) {
+					return nil, compiler.customError(
+						node.Expr,
+						"expected type %s, got %s",
+						field.FieldType.String(),
+						eType.String(),
+					)
+				}
+
 				code = append(code, destinationCode...)
 				code = append(code, &bytecode.StoreField{i})
 				return code, nil

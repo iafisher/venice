@@ -50,6 +50,34 @@ func TestClassEquality(t *testing.T) {
 	)
 }
 
+func TestClassFieldAssignment(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		class Box {
+		  public value: int
+		}
+
+		let b = Box(0)
+		b.value = 42
+		b.value
+		`,
+		I(42),
+	)
+	assertTypecheckError(
+		t,
+		`
+		class Box {
+		  public value: int
+		}
+
+		let b = Box(0)
+		b.value = "42"
+		`,
+		"expected type int, got string",
+	)
+}
+
 func TestConcat(t *testing.T) {
 	assertEqual(t, `"abc" ++ "def"`, S("abcdef"))
 	assertEqual(t, `[1, 2, 3] ++ [4, 5, 6]`, L(I(1), I(2), I(3), I(4), I(5), I(6)))
@@ -120,41 +148,41 @@ func Tup(values ...vval.VeniceValue) *vval.VeniceTuple {
 func assertEqual(t *testing.T, program string, result vval.VeniceValue) {
 	parsedFile, err := parser.NewParser().ParseString(program)
 	if err != nil {
-		t.Fatalf("Parse error: %s\n\nInput: %q", err, program)
+		t.Fatalf("Parse error: %s\n\nInput:\n\n%s", err, program)
 	}
 
 	compiler := compiler.NewCompiler()
 	compiledProgram, err := compiler.Compile(parsedFile)
 	if err != nil {
-		t.Fatalf("Compile error: %s\n\nInput: %q", err, program)
+		t.Fatalf("Compile error: %s\n\nInput:\n\n%s", err, program)
 	}
 
 	vm := vm_mod.NewVirtualMachine()
 	value, err := vm.Execute(compiledProgram, false)
 	if err != nil {
-		t.Fatalf("Execution error: %s\n\nInput: %q", err, program)
+		t.Fatalf("Execution error: %s\n\nInput:\n\n%s", err, program)
 	}
 
 	if !value.Equals(result) {
-		t.Fatalf("Expected %s, got %s\n\nInput: %q", result.String(), value.String(), program)
+		t.Fatalf("Expected %s, got %s\n\nInput:\n\n%s", result.String(), value.String(), program)
 	}
 }
 
 func assertTypecheckError(t *testing.T, program string, errorMessage string) {
 	parsedFile, err := parser.NewParser().ParseString(program)
 	if err != nil {
-		t.Fatalf("Parse error: %s\n\nInput: %q", err, program)
+		t.Fatalf("Parse error: %s\n\nInput:\n\n%s", err, program)
 	}
 
 	compiler := compiler.NewCompiler()
 	_, err = compiler.Compile(parsedFile)
 	if err == nil {
-		t.Fatalf("Expected compile error, but program compiled without error\n\nInput: %q", program)
+		t.Fatalf("Expected compile error, but program compiled without error\n\nInput:\n\n%s", program)
 	}
 
 	if !strings.Contains(err.Error(), errorMessage) {
 		t.Fatalf(
-			"Expected compile error to contain substring %q, but it did not\n\nError: %s\n\nInput: %q",
+			"Expected compile error to contain substring %q, but it did not\n\nError: %s\n\nInput:\n\n%s",
 			errorMessage,
 			err.Error(),
 			program,
