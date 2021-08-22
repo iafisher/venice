@@ -139,6 +139,7 @@ type ImportStatementNode struct {
 
 type LetStatementNode struct {
 	Symbol   string
+	Var      bool
 	Expr     ExpressionNode
 	Location *lexer.Location
 }
@@ -677,7 +678,13 @@ func (n *IntegerNode) String() string {
 }
 
 func (n *LetStatementNode) String() string {
-	return fmt.Sprintf("(let %s %s)", n.Symbol, n.Expr.String())
+	var keyword string
+	if n.Var {
+		keyword = "var"
+	} else {
+		keyword = "let"
+	}
+	return fmt.Sprintf("(%s %s %s)", keyword, n.Symbol, n.Expr.String())
 }
 
 func (n *ListNode) String() string {

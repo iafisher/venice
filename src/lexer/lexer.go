@@ -362,6 +362,7 @@ const (
 	TOKEN_SYMBOL                 = "TOKEN_SYMBOL"
 	TOKEN_TRUE                   = "TOKEN_TRUE"
 	TOKEN_UNKNOWN                = "TOKEN_UNKNOWN"
+	TOKEN_VAR                    = "TOKEN_VAR"
 	TOKEN_VOID                   = "TOKEN_VOID"
 	TOKEN_WHILE                  = "TOKEN_WHILE"
 )
@@ -389,8 +390,9 @@ var keywords = map[string]string{
 	"return":   TOKEN_RETURN,
 	"self":     TOKEN_SELF,
 	"true":     TOKEN_TRUE,
-	"while":    TOKEN_WHILE,
+	"var":      TOKEN_VAR,
 	"void":     TOKEN_VOID,
+	"while":    TOKEN_WHILE,
 }
 
 var one_char_tokens = map[byte]string{

@@ -273,6 +273,18 @@ func TestTuples(t *testing.T) {
 	assertEqual(t, `let t = (1, "two", [3]); t.1`, S("two"))
 }
 
+func TestVarStatements(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		var i = 0
+		i = i + 1
+		i
+		`,
+		I(1),
+	)
+}
+
 func B(b bool) *vval.VeniceBoolean {
 	return &vval.VeniceBoolean{b}
 }

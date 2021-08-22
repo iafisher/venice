@@ -89,11 +89,13 @@ func (p *Parser) matchStatement() (ast.StatementNode, error) {
 	case lexer_mod.TOKEN_IF:
 		return p.matchIfStatement()
 	case lexer_mod.TOKEN_LET:
-		tree, err = p.matchLetStatement()
+		tree, err = p.matchLetStatement(false)
 	case lexer_mod.TOKEN_MATCH:
 		tree, err = p.matchMatchStatement()
 	case lexer_mod.TOKEN_RETURN:
 		tree, err = p.matchReturnStatement()
+	case lexer_mod.TOKEN_VAR:
+		tree, err = p.matchLetStatement(true)
 	case lexer_mod.TOKEN_WHILE:
 		return p.matchWhileLoop()
 	default:
@@ -530,7 +532,7 @@ func (p *Parser) matchIfStatement() (*ast.IfStatementNode, error) {
 	return &ast.IfStatementNode{clauses, elseClause, location}, nil
 }
 
-func (p *Parser) matchLetStatement() (*ast.LetStatementNode, error) {
+func (p *Parser) matchLetStatement(isVar bool) (*ast.LetStatementNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	if p.currentToken.Type != lexer_mod.TOKEN_SYMBOL {
@@ -549,7 +551,7 @@ func (p *Parser) matchLetStatement() (*ast.LetStatementNode, error) {
 		return nil, err
 	}
 
-	return &ast.LetStatementNode{symbol, expr, location}, nil
+	return &ast.LetStatementNode{Symbol: symbol, Var: isVar, Expr: expr, Location: location}, nil
 }
 
 func (p *Parser) matchMatchStatement() (*ast.MatchStatementNode, error) {
