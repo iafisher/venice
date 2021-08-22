@@ -80,17 +80,17 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 			return nil, compiler.customError(treeAny, "break statement outside of loop")
 		}
 
-		// BREAK_LOOP is a temporary bytecode instruction that the compiler will later
-		// convert to a REL_JUMP instruction.
-		return []bytecode.Bytecode{&bytecode.BreakLoop{}}, nil
+		// Return a placeholder bytecode instruction that the compiler will later convert
+		// to a REL_JUMP instruction.
+		return []bytecode.Bytecode{&bytecode.Placeholder{"break"}}, nil
 	case *ast.ContinueStatementNode:
 		if compiler.nestedLoopCount == 0 {
 			return nil, compiler.customError(treeAny, "continue statement outside of loop")
 		}
 
-		// CONTINUE_LOOP is a temporary bytecode instruction that the compiler will later
-		// convert to a REL_JUMP instruction.
-		return []bytecode.Bytecode{&bytecode.ContinueLoop{}}, nil
+		// Return a placeholder bytecode instruction that the compiler will later convert
+		// to a REL_JUMP instruction.
+		return []bytecode.Bytecode{&bytecode.Placeholder{"continue"}}, nil
 	case *ast.ExpressionStatementNode:
 		code, _, err := compiler.compileExpression(node.Expr)
 		if err != nil {
@@ -116,6 +116,8 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 			compiler.symbolTable.Put(node.Symbol, eType)
 		}
 		return append(code, &bytecode.StoreName{node.Symbol}), nil
+	case *ast.MatchStatementNode:
+		return compiler.compileMatchStatement(node)
 	case *ast.ReturnStatementNode:
 		if compiler.functionInfo == nil {
 			return nil, compiler.customError(treeAny, "return statement outside of function definition")
@@ -591,8 +593,9 @@ func (compiler *Compiler) compileIfStatement(node *ast.IfStatementNode) ([]bytec
 		code = append(code, conditionCode...)
 		code = append(code, &bytecode.RelJumpIfFalse{len(bodyCode) + 2})
 		code = append(code, bodyCode...)
-		// The relative jump values will be filled in later.
-		code = append(code, &bytecode.RelJump{0})
+		// To be replaced with REL_JUMP instructions once the total length of the code is
+		// known.
+		code = append(code, &bytecode.Placeholder{"if"})
 	}
 
 	if node.ElseClause != nil {
@@ -605,13 +608,127 @@ func (compiler *Compiler) compileIfStatement(node *ast.IfStatementNode) ([]bytec
 	}
 
 	// Fill in the relative jump values now that we have generated all the code.
-	for i, bcodeAny := range code {
-		if bcode, ok := bcodeAny.(*bytecode.RelJump); ok {
-			bcode.N = len(code) - i
+	for i, bcode := range code {
+		if placeholder, ok := bcode.(*bytecode.Placeholder); ok && placeholder.Name == "if" {
+			code[i] = &bytecode.RelJump{len(code) - i}
 		}
 	}
 
 	return code, nil
+}
+
+func (compiler *Compiler) compileMatchStatement(node *ast.MatchStatementNode) ([]bytecode.Bytecode, error) {
+	exprCode, exprType, err := compiler.compileExpression(node.Expr)
+	if err != nil {
+		return nil, err
+	}
+
+	enumType, ok := exprType.(*vtype.VeniceEnumType)
+	if !ok {
+		return nil, compiler.customError(node.Expr, "cannot match a non-enum type")
+	}
+
+	// TODO(2021-08-22): Ensure matches are exhaustive.
+	// TODO(2021-08-22): This code leaves the value on the top of the stack.
+	code := exprCode
+	for _, clause := range node.Clauses {
+		compiler.symbolTable = compiler.symbolTable.SpawnChild()
+		patternCode, err := compiler.compilePattern(clause.Pattern, enumType)
+		if err != nil {
+			return nil, err
+		}
+
+		bodyCode, err := compiler.compileBlock(clause.Body)
+		if err != nil {
+			return nil, err
+		}
+		compiler.symbolTable = compiler.symbolTable.Parent
+
+		code = append(code, patternCode...)
+		code = append(code, &bytecode.RelJumpIfFalseOrPop{len(bodyCode) + 2})
+		code = append(code, bodyCode...)
+		// To be replaced with REL_JUMP instructions once the total length of the code is
+		// known.
+		code = append(code, &bytecode.Placeholder{"match"})
+	}
+
+	// TODO(2021-08-22): Default clause.
+
+	for i, bcode := range code {
+		if placeholder, ok := bcode.(*bytecode.Placeholder); ok && placeholder.Name == "match" {
+			code[i] = &bytecode.RelJump{len(code) - i}
+		}
+	}
+
+	return code, nil
+}
+
+func (compiler *Compiler) compilePattern(patternAny ast.PatternNode, exprType vtype.VeniceType) ([]bytecode.Bytecode, error) {
+	switch pattern := patternAny.(type) {
+	case *ast.CompoundPatternNode:
+		enumType, ok := exprType.(*vtype.VeniceEnumType)
+		if !ok {
+			// TODO(2021-08-22): Better error message.
+			return nil, compiler.customError(patternAny, "does not match enum type")
+		}
+
+		index := -1
+		for i, caseType := range enumType.Cases {
+			if caseType.Label == pattern.Label {
+				index = i
+				break
+			}
+		}
+
+		if index == -1 {
+			return nil, compiler.customError(patternAny, "enum case `%s` not found", pattern.Label)
+		}
+
+		caseType := enumType.Cases[index]
+
+		if len(pattern.Patterns) > len(caseType.Types) {
+			return nil, compiler.customError(
+				patternAny, "too many patterns for %s", enumType.Name,
+			)
+		}
+
+		if !pattern.Elided && len(pattern.Patterns) < len(caseType.Types) {
+			return nil, compiler.customError(
+				patternAny, "too few patterns for %s", enumType.Name,
+			)
+		}
+
+		code := []bytecode.Bytecode{
+			&bytecode.CheckLabel{pattern.Label},
+			&bytecode.Placeholder{"pattern"},
+		}
+		for i, subPattern := range pattern.Patterns {
+			code = append(code, &bytecode.PushEnumIndex{i})
+			subPatternCode, err := compiler.compilePattern(subPattern, caseType.Types[i])
+			if err != nil {
+				return nil, err
+			}
+
+			code = append(code, subPatternCode...)
+		}
+
+		for i, bcode := range code {
+			if placeholder, ok := bcode.(*bytecode.Placeholder); ok && placeholder.Name == "pattern" {
+				code[i] = &bytecode.RelJumpIfFalseOrPop{len(code) - i}
+			}
+		}
+
+		return code, nil
+	case *ast.SymbolPatternNode:
+		compiler.symbolTable.Put(pattern.Symbol, exprType)
+		code := []bytecode.Bytecode{
+			&bytecode.StoreName{pattern.Symbol},
+			&bytecode.PushConstBool{true},
+		}
+		return code, nil
+	default:
+		return nil, compiler.customError(patternAny, "unknown pattern type %T", patternAny)
+	}
 }
 
 func (compiler *Compiler) compileWhileLoop(node *ast.WhileLoopNode) ([]bytecode.Bytecode, error) {
@@ -638,12 +755,13 @@ func (compiler *Compiler) compileWhileLoop(node *ast.WhileLoopNode) ([]bytecode.
 	jumpBack := -(len(conditionCode) + len(bodyCode) + 1)
 	code = append(code, &bytecode.RelJump{jumpBack})
 
-	for i, bytecodeAny := range code {
-		switch bytecodeAny.(type) {
-		case *bytecode.BreakLoop:
-			code[i] = &bytecode.RelJump{len(code) - i}
-		case *bytecode.ContinueLoop:
-			code[i] = &bytecode.RelJump{-i}
+	for i, bcode := range code {
+		if placeholder, ok := bcode.(*bytecode.Placeholder); ok {
+			if placeholder.Name == "break" {
+				code[i] = &bytecode.RelJump{len(code) - i}
+			} else if placeholder.Name == "continue" {
+				code[i] = &bytecode.RelJump{-i}
+			}
 		}
 	}
 

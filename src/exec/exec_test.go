@@ -321,6 +321,52 @@ func TestMapIndexAssignment(t *testing.T) {
 	)
 }
 
+func TestMatchStatements(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		var answer = 0
+		match Optional::Some(42) {
+			case Some(x) {
+				answer = x
+			}
+			case None {
+				answer = -1
+			}
+		}
+		answer
+		`,
+		I(42),
+	)
+
+	assertEqual(
+		t,
+		`
+		var answer = 0
+		match Optional::None {
+			case Some(x) {
+			}
+			case None {
+				answer = 42
+			}
+		}
+		answer
+		`,
+		I(42),
+	)
+
+	assertTypecheckError(
+		t,
+		`
+		match "abc" {
+			case Some(x) {}
+			case None {}
+		}
+		`,
+		"cannot match a non-enum type",
+	)
+}
+
 func TestStringBuiltins(t *testing.T) {
 	assertEqual(t, `let s = "123"; s.length()`, I(3))
 	assertEqual(t, `"123".length()`, I(3))

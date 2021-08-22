@@ -310,6 +310,9 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 		}
 
 		vm.pushStack(value)
+	case *bytecode.CheckLabel:
+		enum := vm.peekStack().(*vval.VeniceEnumObject)
+		vm.pushStack(&vval.VeniceBoolean{enum.Label == bcode.Name})
 	case *bytecode.ForIter:
 		iter := vm.peekStack().(vval.VeniceIterator)
 
@@ -362,6 +365,12 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 		}
 
 		vm.pushStack(&vval.VeniceEnumObject{bcode.Name, values})
+	case *bytecode.PushEnumIndex:
+		topOfStack, ok := vm.peekStack().(*vval.VeniceEnumObject)
+		if !ok {
+			return -1, &ExecutionError{"expected enum object at top of virtual machine stack for PUSH_ENUM_INDEX"}
+		}
+		vm.pushStack(topOfStack.Values[bcode.Index])
 	case *bytecode.PushField:
 		topOfStack, ok := vm.popStack().(*vval.VeniceClassObject)
 		if !ok {

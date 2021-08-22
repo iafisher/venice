@@ -26,6 +26,11 @@ type ExpressionNode interface {
 	expressionNode()
 }
 
+type PatternNode interface {
+	Node
+	patternNode()
+}
+
 type StatementNode interface {
 	Node
 	statementNode()
@@ -153,7 +158,7 @@ type MatchStatementNode struct {
 
 // Helper struct - does not implement Node
 type MatchClause struct {
-	Pattern MatchPattern
+	Pattern PatternNode
 	Body    []StatementNode
 }
 
@@ -169,23 +174,19 @@ type WhileLoopNode struct {
 }
 
 /**
- * Match pattern nodes
+ * Pattern nodes
  */
 
-type MatchPattern interface {
-	fmt.Stringer
-	matchPattern()
-}
-
-type CompoundMatchPattern struct {
+type CompoundPatternNode struct {
 	Label    string
-	Patterns []MatchPattern
+	Patterns []PatternNode
+	Elided   bool
+	Location *lexer.Location
 }
 
-type EllipsisMatchPattern struct{}
-
-type SymbolMatchPattern struct {
-	Symbol string
+type SymbolPatternNode struct {
+	Symbol   string
+	Location *lexer.Location
 }
 
 /**
@@ -330,6 +331,10 @@ func (n *ClassMethodNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
+func (n *CompoundPatternNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
 func (n *ContinueStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
@@ -407,6 +412,10 @@ func (n *StringNode) GetLocation() *lexer.Location {
 }
 
 func (n *SymbolNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *SymbolPatternNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -533,7 +542,7 @@ func (n *ClassMethodNode) String() string {
 	return sb.String()
 }
 
-func (n *CompoundMatchPattern) String() string {
+func (n *CompoundPatternNode) String() string {
 	var sb strings.Builder
 	sb.WriteByte('(')
 	sb.WriteString(n.Label)
@@ -541,16 +550,17 @@ func (n *CompoundMatchPattern) String() string {
 		sb.WriteByte(' ')
 		sb.WriteString(pattern.String())
 	}
+
+	if n.Elided {
+		sb.WriteString(" ...")
+	}
+
 	sb.WriteByte(')')
 	return sb.String()
 }
 
 func (n *ContinueStatementNode) String() string {
 	return "(continue)"
-}
-
-func (n *EllipsisMatchPattern) String() string {
-	return "..."
 }
 
 func (n *EnumDeclarationNode) String() string {
@@ -756,7 +766,7 @@ func (n *StringNode) String() string {
 	return strconv.Quote(n.Value)
 }
 
-func (n *SymbolMatchPattern) String() string {
+func (n *SymbolPatternNode) String() string {
 	return n.Symbol
 }
 
@@ -806,22 +816,6 @@ func writeBlock(sb *strings.Builder, block []StatementNode) {
 	sb.WriteByte(')')
 }
 
-func (n *AssignStatementNode) statementNode()     {}
-func (n *BreakStatementNode) statementNode()      {}
-func (n *ClassDeclarationNode) statementNode()    {}
-func (n *ClassMethodNode) statementNode()         {}
-func (n *ContinueStatementNode) statementNode()   {}
-func (n *EnumDeclarationNode) statementNode()     {}
-func (n *ExpressionStatementNode) statementNode() {}
-func (n *ForLoopNode) statementNode()             {}
-func (n *FunctionDeclarationNode) statementNode() {}
-func (n *IfStatementNode) statementNode()         {}
-func (n *ImportStatementNode) statementNode()     {}
-func (n *LetStatementNode) statementNode()        {}
-func (n *MatchStatementNode) statementNode()      {}
-func (n *ReturnStatementNode) statementNode()     {}
-func (n *WhileLoopNode) statementNode()           {}
-
 func (n *BooleanNode) expressionNode()          {}
 func (n *CallNode) expressionNode()             {}
 func (n *CharacterNode) expressionNode()        {}
@@ -839,8 +833,23 @@ func (n *TupleFieldAccessNode) expressionNode() {}
 func (n *TupleNode) expressionNode()            {}
 func (n *UnaryNode) expressionNode()            {}
 
-func (n *SimpleTypeNode) typeNode() {}
+func (n *CompoundPatternNode) patternNode() {}
+func (n *SymbolPatternNode) patternNode()   {}
 
-func (n *CompoundMatchPattern) matchPattern() {}
-func (n *EllipsisMatchPattern) matchPattern() {}
-func (n *SymbolMatchPattern) matchPattern()   {}
+func (n *AssignStatementNode) statementNode()     {}
+func (n *BreakStatementNode) statementNode()      {}
+func (n *ClassDeclarationNode) statementNode()    {}
+func (n *ClassMethodNode) statementNode()         {}
+func (n *ContinueStatementNode) statementNode()   {}
+func (n *EnumDeclarationNode) statementNode()     {}
+func (n *ExpressionStatementNode) statementNode() {}
+func (n *ForLoopNode) statementNode()             {}
+func (n *FunctionDeclarationNode) statementNode() {}
+func (n *IfStatementNode) statementNode()         {}
+func (n *ImportStatementNode) statementNode()     {}
+func (n *LetStatementNode) statementNode()        {}
+func (n *MatchStatementNode) statementNode()      {}
+func (n *ReturnStatementNode) statementNode()     {}
+func (n *WhileLoopNode) statementNode()           {}
+
+func (n *SimpleTypeNode) typeNode() {}

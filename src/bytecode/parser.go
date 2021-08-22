@@ -158,6 +158,12 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			}
 
 			bytecode = &CallFunction{n}
+		case "CHECK_LABEL":
+			name, ok := p.expectString()
+			if !ok {
+				continue
+			}
+			bytecode = &CheckLabel{name}
 		case "FOR_ITER":
 			n, ok := p.expectInt()
 			if !ok {
@@ -172,6 +178,9 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 				continue
 			}
 			bytecode = &LookupMethod{name}
+		case "PLACEHOLDER":
+			p.newError("placeholder instruction")
+			continue
 		case "PUSH_CONST_BOOL":
 			n, ok := p.expectInt()
 			if !ok {
@@ -201,11 +210,18 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			if !ok {
 				continue
 			}
+
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
 			bytecode = &PushEnum{name, n}
+		case "PUSH_ENUM_INDEX":
+			n, ok := p.expectInt()
+			if !ok {
+				continue
+			}
+			bytecode = &PushEnumIndex{n}
 		case "PUSH_FIELD":
 			n, ok := p.expectInt()
 			if !ok {

@@ -617,7 +617,7 @@ func (p *Parser) matchMatchStatement() (*ast.MatchStatementNode, error) {
 		return nil, p.unexpectedToken("right curly brace")
 	}
 
-	p.nextTokenSkipNewlines()
+	p.nextToken()
 	return &ast.MatchStatementNode{Expr: expr, Clauses: clauses, Default: dfault, Location: location}, nil
 }
 
@@ -932,12 +932,13 @@ func (p *Parser) matchTypeNode() (ast.TypeNode, error) {
  * Match patterns
  */
 
-func (p *Parser) matchPatternNode() (ast.MatchPattern, error) {
+func (p *Parser) matchPatternNode() (ast.PatternNode, error) {
+	location := p.currentToken.Location
 	if p.currentToken.Type == lexer_mod.TOKEN_SYMBOL {
 		value := p.currentToken.Value
 		p.nextToken()
 		if p.currentToken.Type == lexer_mod.TOKEN_LEFT_PAREN {
-			patterns := []ast.MatchPattern{}
+			patterns := []ast.PatternNode{}
 
 			p.nextToken()
 			first_pattern, err := p.matchPatternNode()
@@ -952,6 +953,13 @@ func (p *Parser) matchPatternNode() (ast.MatchPattern, error) {
 				} else if p.currentToken.Type == lexer_mod.TOKEN_RIGHT_PAREN {
 					p.nextToken()
 					break
+				} else if p.currentToken.Type == lexer_mod.TOKEN_ELLIPSIS {
+					p.nextToken()
+					if p.currentToken.Type != lexer_mod.TOKEN_RIGHT_PAREN {
+						return nil, p.unexpectedToken("right parenthesis")
+					}
+					p.nextToken()
+					break
 				} else {
 					return nil, p.unexpectedToken("comma or right parenthesis")
 				}
@@ -963,13 +971,10 @@ func (p *Parser) matchPatternNode() (ast.MatchPattern, error) {
 
 				patterns = append(patterns, pattern)
 			}
-			return &ast.CompoundMatchPattern{Label: value, Patterns: patterns}, nil
+			return &ast.CompoundPatternNode{Label: value, Patterns: patterns, Location: location}, nil
 		} else {
-			return &ast.SymbolMatchPattern{value}, nil
+			return &ast.SymbolPatternNode{Symbol: value, Location: location}, nil
 		}
-	} else if p.currentToken.Type == lexer_mod.TOKEN_ELLIPSIS {
-		p.nextToken()
-		return &ast.EllipsisMatchPattern{}, nil
 	} else {
 		return nil, p.unexpectedToken("match pattern")
 	}

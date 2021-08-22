@@ -55,9 +55,6 @@ type BinaryStringIndex struct{}
 
 type BinarySub struct{}
 
-// TODO(2021-08-15): Combine this and ContinueLoop into a Placeholder instruction.
-type BreakLoop struct{}
-
 type BuildClass struct {
 	Name string
 	N    int
@@ -83,7 +80,9 @@ type CallFunction struct {
 	N int
 }
 
-type ContinueLoop struct{}
+type CheckLabel struct {
+	Name string
+}
 
 type ForIter struct {
 	N int
@@ -92,6 +91,10 @@ type ForIter struct {
 type GetIter struct{}
 
 type LookupMethod struct {
+	Name string
+}
+
+type Placeholder struct {
 	Name string
 }
 
@@ -114,6 +117,10 @@ type PushConstStr struct {
 type PushEnum struct {
 	Name string
 	N    int
+}
+
+type PushEnumIndex struct {
+	Index int
 }
 
 type PushField struct {
@@ -230,10 +237,6 @@ func (b *BinarySub) String() string {
 	return "BINARY_SUB"
 }
 
-func (b *BreakLoop) String() string {
-	return "BREAK_LOOP"
-}
-
 func (b *BuildClass) String() string {
 	return fmt.Sprintf("BUILD_CLASS %q %d", b.Name, b.N)
 }
@@ -258,8 +261,8 @@ func (b *CallFunction) String() string {
 	return fmt.Sprintf("CALL_FUNCTION %d", b.N)
 }
 
-func (b *ContinueLoop) String() string {
-	return "CONTINUE_LOOP"
+func (b *CheckLabel) String() string {
+	return fmt.Sprintf("CHECK_LABEL %q", b.Name)
 }
 
 func (b *ForIter) String() string {
@@ -272,6 +275,10 @@ func (b *GetIter) String() string {
 
 func (b *LookupMethod) String() string {
 	return fmt.Sprintf("LOOKUP_METHOD %q", b.Name)
+}
+
+func (b *Placeholder) String() string {
+	return fmt.Sprintf("PLACEHOLDER %q", b.Name)
 }
 
 func (b *PushConstBool) String() string {
@@ -296,6 +303,10 @@ func (b *PushConstStr) String() string {
 
 func (b *PushEnum) String() string {
 	return fmt.Sprintf("PUSH_ENUM %q %d", b.Name, b.N)
+}
+
+func (b *PushEnumIndex) String() string {
+	return fmt.Sprintf("PUSH_ENUM_INDEX %d", b.Index)
 }
 
 func (b *PushField) String() string {
@@ -371,22 +382,23 @@ func (b *BinaryNotEq) bytecode()         {}
 func (b *BinaryOr) bytecode()            {}
 func (b *BinaryStringIndex) bytecode()   {}
 func (b *BinarySub) bytecode()           {}
-func (b *BreakLoop) bytecode()           {}
 func (b *BuildClass) bytecode()          {}
 func (b *BuildList) bytecode()           {}
 func (b *BuildMap) bytecode()            {}
 func (b *BuildTuple) bytecode()          {}
 func (b *CallBuiltin) bytecode()         {}
 func (b *CallFunction) bytecode()        {}
-func (b *ContinueLoop) bytecode()        {}
+func (b *CheckLabel) bytecode()          {}
 func (b *ForIter) bytecode()             {}
 func (b *GetIter) bytecode()             {}
 func (b *LookupMethod) bytecode()        {}
+func (b *Placeholder) bytecode()         {}
 func (b *PushConstBool) bytecode()       {}
 func (b *PushConstChar) bytecode()       {}
 func (b *PushConstInt) bytecode()        {}
 func (b *PushConstStr) bytecode()        {}
 func (b *PushEnum) bytecode()            {}
+func (b *PushEnumIndex) bytecode()       {}
 func (b *PushField) bytecode()           {}
 func (b *PushName) bytecode()            {}
 func (b *PushTupleField) bytecode()      {}
