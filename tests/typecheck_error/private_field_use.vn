@@ -1,8 +1,0 @@
-# FAIL
-
-class SecretBox {
-  private secret: string
-}
-
-let box = SecretBox("lorem ipsum")
-print(box.secret)

@@ -1,5 +1,0 @@
-# FAIL
-
-fn f() -> int {
-  let x = 10
-}

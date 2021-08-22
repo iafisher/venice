@@ -85,7 +85,7 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 		return []bytecode.Bytecode{&bytecode.BreakLoop{}}, nil
 	case *ast.ContinueStatementNode:
 		if compiler.nestedLoopCount == 0 {
-			return nil, compiler.customError(treeAny, "break statement outside of loop")
+			return nil, compiler.customError(treeAny, "continue statement outside of loop")
 		}
 
 		// CONTINUE_LOOP is a temporary bytecode instruction that the compiler will later

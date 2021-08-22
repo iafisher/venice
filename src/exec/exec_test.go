@@ -16,6 +16,22 @@ func TestAndOr(t *testing.T) {
 	assertEqual(t, `true or [0][1] == 10`, B(true))
 }
 
+func TestBreakStatement(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		let i = 41
+		while true {
+			i = i + 1
+			break
+		}
+		i
+		`,
+		I(42),
+	)
+	assertTypecheckError(t, "break", "break statement outside of loop")
+}
+
 func TestClassEquality(t *testing.T) {
 	assertEqual(
 		t,
@@ -50,6 +66,20 @@ func TestClassEquality(t *testing.T) {
 	)
 }
 
+func TestClassDeclaration(t *testing.T) {
+	assertTypecheckError(
+		t,
+		`
+		class SecretBox {
+			private secret: int
+		}
+		let box = SecretBox(42)
+		box.secret
+		`,
+		"use of private field",
+	)
+}
+
 func TestClassFieldAssignment(t *testing.T) {
 	assertEqual(
 		t,
@@ -76,11 +106,112 @@ func TestClassFieldAssignment(t *testing.T) {
 		`,
 		"expected type int, got string",
 	)
+	assertTypecheckError(
+		t,
+		`
+		class Box<T> {
+		  public object: T
+		}
+
+		let x = Box("41")
+		x + 1
+		`,
+		"invalid type for left operand of +",
+	)
 }
 
 func TestConcat(t *testing.T) {
 	assertEqual(t, `"abc" ++ "def"`, S("abcdef"))
 	assertEqual(t, `[1, 2, 3] ++ [4, 5, 6]`, L(I(1), I(2), I(3), I(4), I(5), I(6)))
+}
+
+func TestContinueStatement(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		let i = 41
+		while i != 42 {
+			i = i + 1
+			continue
+			i = 666
+		}
+		i
+		`,
+		I(42),
+	)
+	assertTypecheckError(t, "continue", "continue statement outside of loop")
+}
+
+func TestEnumDeclaration(t *testing.T) {
+	assertTypecheckError(
+		t,
+		`
+		enum MyBoolean { True, False }
+		MyBoolean::Maybe
+		`,
+		"enum MyBoolean does not have case Maybe",
+	)
+	assertTypecheckError(
+		t,
+		`
+		enum IntResult {
+		  Some(int),
+		  None,
+		}
+
+		IntResult::Some("hello")
+		`,
+		"wrong function parameter type",
+	)
+}
+
+func TestFunctionCall(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		fn add_one(x: int) -> int {
+			return x + 1
+		}
+
+		add_one(41)
+		`,
+		I(42),
+	)
+	assertTypecheckError(
+		t,
+		`
+		fn f(x: int) -> int {
+			return x + 1
+		}
+
+		f("not an integer")
+		`,
+		"wrong function parameter type",
+	)
+	assertTypecheckError(
+		t,
+		`
+		fn add_one(x: int) -> int {
+			return x + 1
+		}
+
+		x
+		`,
+		"undefined symbol",
+	)
+	assertTypecheckError(t, "int::y", "cannot use double colon after non-enum type")
+}
+
+func TestFunctionDeclaration(t *testing.T) {
+	assertTypecheckError(
+		t,
+		`
+		fn f() -> int {
+			let x = 42
+		}
+		`,
+		"non-void function has no return statement",
+	)
 }
 
 func TestIndexing(t *testing.T) {
@@ -94,6 +225,26 @@ func TestLength(t *testing.T) {
 	assertEqual(t, `length("abcdef")`, I(6))
 	// assertEqual(t, `length([])`, I(0))
 	assertEqual(t, `length("")`, I(0))
+}
+
+func TestLetStatement(t *testing.T) {
+	assertTypecheckError(
+		t,
+		`
+		let x = 10
+		let x = 11
+		`,
+		"re-declaration of symbol",
+	)
+	assertTypecheckError(
+		t,
+		`
+		fn f(x: int) {
+		  let x = 10
+		}
+		`,
+		"re-declaration of symbol",
+	)
 }
 
 func TestListBuiltins(t *testing.T) {
@@ -162,6 +313,10 @@ func assertEqual(t *testing.T, program string, result vval.VeniceValue) {
 	value, err := vm.Execute(compiledProgram, false)
 	if err != nil {
 		t.Fatalf("Execution error: %s\n\nInput:\n\n%s", err, program)
+	}
+
+	if value == nil {
+		t.Fatalf("Code snippet did not return a value\n\nInput:\n\n%s", program)
 	}
 
 	if !value.Equals(result) {

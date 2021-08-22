@@ -1,7 +1,0 @@
-# FAIL
-
-fn f(x: int) -> int {
-  return x + 1
-}
-
-print(x)
