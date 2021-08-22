@@ -149,101 +149,132 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 }
 
 func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) ([]bytecode.Bytecode, error) {
+	switch destination := node.Destination.(type) {
+	case *ast.FieldAccessNode:
+		return compiler.compileAssignStatementToField(node, destination)
+	case *ast.IndexNode:
+		return compiler.compileAssignStatementToIndex(node, destination)
+	case *ast.SymbolNode:
+		return compiler.compileAssignStatementToSymbol(node, destination)
+	default:
+		return nil, compiler.customError(destination, "cannot assign to non-symbol")
+	}
+}
+
+func (compiler *Compiler) compileAssignStatementToField(
+	node *ast.AssignStatementNode,
+	destination *ast.FieldAccessNode,
+) ([]bytecode.Bytecode, error) {
 	code, eType, err := compiler.compileExpression(node.Expr)
 	if err != nil {
 		return nil, err
 	}
 
-	switch destination := node.Destination.(type) {
-	case *ast.FieldAccessNode:
-		destinationCode, destinationTypeAny, err := compiler.compileExpression(destination.Expr)
-		if err != nil {
-			return nil, err
-		}
-
-		classType, ok := destinationTypeAny.(*vtype.VeniceClassType)
-		if !ok {
-			return nil, compiler.customError(node, "cannot assign to field on type %s", destinationTypeAny.String())
-		}
-
-		for i, field := range classType.Fields {
-			if field.Name == destination.Name {
-				if !field.Public {
-					return nil, compiler.customError(node, "cannot assign to non-public field")
-				}
-
-				if !compiler.checkType(field.FieldType, eType) {
-					return nil, compiler.customError(
-						node.Expr,
-						"expected type %s, got %s",
-						field.FieldType.String(),
-						eType.String(),
-					)
-				}
-
-				code = append(code, destinationCode...)
-				code = append(code, &bytecode.StoreField{i})
-				return code, nil
-			}
-		}
-
-		return nil, compiler.customError(node, "field `%s` does not exist on %s", destination.Name, classType.String())
-	case *ast.IndexNode:
-		destinationCode, destinationTypeAny, err := compiler.compileExpression(destination.Expr)
-		if err != nil {
-			return nil, err
-		}
-
-		listType, ok := destinationTypeAny.(*vtype.VeniceListType)
-		if !ok {
-			return nil, compiler.customError(
-				node,
-				"cannot assign to index on type %s",
-				destinationTypeAny.String(),
-			)
-		}
-
-		if !compiler.checkType(listType.ItemType, eType) {
-			return nil, compiler.customError(
-				node.Expr,
-				"expected type %s, got %s",
-				listType.ItemType.String(),
-				eType.String(),
-			)
-		}
-
-		indexCode, indexType, err := compiler.compileExpression(destination.Index)
-		if err != nil {
-			return nil, err
-		}
-
-		if !compiler.checkType(vtype.VENICE_TYPE_INTEGER, indexType) {
-			return nil, compiler.customError(node, "list index must be of type integer, not %s", indexType.String())
-		}
-
-		code = append(code, indexCode...)
-		code = append(code, destinationCode...)
-		code = append(code, &bytecode.StoreIndex{})
-		return code, nil
-	case *ast.SymbolNode:
-		if binding, ok := compiler.symbolTable.GetBinding(destination.Value); ok {
-			if !binding.IsVar {
-				return nil, compiler.customError(destination, "cannot assign to const symbol `%q`", destination.Value)
-			}
-		}
-
-		expectedType, ok := compiler.symbolTable.Get(destination.Value)
-		if !ok {
-			return nil, compiler.customError(node, "cannot assign to undeclared symbol `%s`", destination.Value)
-		} else if !compiler.checkType(expectedType, eType) {
-			return nil, compiler.customError(node, "wrong expression type in assignment to `%s`", destination.Value)
-		}
-
-		code = append(code, &bytecode.StoreName{destination.Value})
-		return code, nil
-	default:
-		return nil, compiler.customError(destination, "cannot assign to non-symbol")
+	destinationCode, destinationTypeAny, err := compiler.compileExpression(destination.Expr)
+	if err != nil {
+		return nil, err
 	}
+
+	classType, ok := destinationTypeAny.(*vtype.VeniceClassType)
+	if !ok {
+		return nil, compiler.customError(node, "cannot assign to field on type %s", destinationTypeAny.String())
+	}
+
+	for i, field := range classType.Fields {
+		if field.Name == destination.Name {
+			if !field.Public {
+				return nil, compiler.customError(node, "cannot assign to non-public field")
+			}
+
+			if !compiler.checkType(field.FieldType, eType) {
+				return nil, compiler.customError(
+					node.Expr,
+					"expected type %s, got %s",
+					field.FieldType.String(),
+					eType.String(),
+				)
+			}
+
+			code = append(code, destinationCode...)
+			code = append(code, &bytecode.StoreField{i})
+			return code, nil
+		}
+	}
+
+	return nil, compiler.customError(node, "field `%s` does not exist on %s", destination.Name, classType.String())
+}
+
+func (compiler *Compiler) compileAssignStatementToIndex(
+	node *ast.AssignStatementNode,
+	destination *ast.IndexNode,
+) ([]bytecode.Bytecode, error) {
+	code, eType, err := compiler.compileExpression(node.Expr)
+	if err != nil {
+		return nil, err
+	}
+
+	destinationCode, destinationTypeAny, err := compiler.compileExpression(destination.Expr)
+	if err != nil {
+		return nil, err
+	}
+
+	listType, ok := destinationTypeAny.(*vtype.VeniceListType)
+	if !ok {
+		return nil, compiler.customError(
+			node,
+			"cannot assign to index on type %s",
+			destinationTypeAny.String(),
+		)
+	}
+
+	if !compiler.checkType(listType.ItemType, eType) {
+		return nil, compiler.customError(
+			node.Expr,
+			"expected type %s, got %s",
+			listType.ItemType.String(),
+			eType.String(),
+		)
+	}
+
+	indexCode, indexType, err := compiler.compileExpression(destination.Index)
+	if err != nil {
+		return nil, err
+	}
+
+	if !compiler.checkType(vtype.VENICE_TYPE_INTEGER, indexType) {
+		return nil, compiler.customError(node, "list index must be of type integer, not %s", indexType.String())
+	}
+
+	code = append(code, indexCode...)
+	code = append(code, destinationCode...)
+	code = append(code, &bytecode.StoreIndex{})
+	return code, nil
+}
+
+func (compiler *Compiler) compileAssignStatementToSymbol(
+	node *ast.AssignStatementNode,
+	destination *ast.SymbolNode,
+) ([]bytecode.Bytecode, error) {
+	code, eType, err := compiler.compileExpression(node.Expr)
+	if err != nil {
+		return nil, err
+	}
+
+	if binding, ok := compiler.symbolTable.GetBinding(destination.Value); ok {
+		if !binding.IsVar {
+			return nil, compiler.customError(destination, "cannot assign to const symbol `%q`", destination.Value)
+		}
+	}
+
+	expectedType, ok := compiler.symbolTable.Get(destination.Value)
+	if !ok {
+		return nil, compiler.customError(node, "cannot assign to undeclared symbol `%s`", destination.Value)
+	} else if !compiler.checkType(expectedType, eType) {
+		return nil, compiler.customError(node, "wrong expression type in assignment to `%s`", destination.Value)
+	}
+
+	code = append(code, &bytecode.StoreName{destination.Value})
+	return code, nil
 }
 
 func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.CompiledProgram, node *ast.ClassDeclarationNode) error {
