@@ -3,9 +3,9 @@
 # END OUTPUT
 
 fn fibonacci(n: int) -> int {
-  let i = 1
-  let fib_i = 1
-  let fib_i_minus_1 = 0
+  var i = 1
+  var fib_i = 1
+  var fib_i_minus_1 = 0
 
   while i < n {
     let tmp = fib_i

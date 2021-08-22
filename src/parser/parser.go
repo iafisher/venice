@@ -551,7 +551,7 @@ func (p *Parser) matchLetStatement(isVar bool) (*ast.LetStatementNode, error) {
 		return nil, err
 	}
 
-	return &ast.LetStatementNode{Symbol: symbol, Var: isVar, Expr: expr, Location: location}, nil
+	return &ast.LetStatementNode{Symbol: symbol, IsVar: isVar, Expr: expr, Location: location}, nil
 }
 
 func (p *Parser) matchMatchStatement() (*ast.MatchStatementNode, error) {

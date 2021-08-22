@@ -139,7 +139,7 @@ type ImportStatementNode struct {
 
 type LetStatementNode struct {
 	Symbol   string
-	Var      bool
+	IsVar    bool
 	Expr     ExpressionNode
 	Location *lexer.Location
 }
@@ -679,7 +679,7 @@ func (n *IntegerNode) String() string {
 
 func (n *LetStatementNode) String() string {
 	var keyword string
-	if n.Var {
+	if n.IsVar {
 		keyword = "var"
 	} else {
 		keyword = "let"

@@ -20,7 +20,7 @@ func TestBreakStatement(t *testing.T) {
 	assertEqual(
 		t,
 		`
-		let i = 41
+		var i = 41
 		while true {
 			i = i + 1
 			break
@@ -129,7 +129,7 @@ func TestContinueStatement(t *testing.T) {
 	assertEqual(
 		t,
 		`
-		let i = 41
+		var i = 41
 		while i != 42 {
 			i = i + 1
 			continue

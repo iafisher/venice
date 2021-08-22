@@ -110,7 +110,11 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 		if err != nil {
 			return nil, err
 		}
-		compiler.symbolTable.Put(node.Symbol, eType)
+		if node.IsVar {
+			compiler.symbolTable.PutVar(node.Symbol, eType)
+		} else {
+			compiler.symbolTable.Put(node.Symbol, eType)
+		}
 		return append(code, &bytecode.StoreName{node.Symbol}), nil
 	case *ast.ReturnStatementNode:
 		if compiler.functionInfo == nil {
@@ -222,6 +226,12 @@ func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) 
 		code = append(code, &bytecode.StoreIndex{})
 		return code, nil
 	case *ast.SymbolNode:
+		if binding, ok := compiler.symbolTable.GetBinding(destination.Value); ok {
+			if !binding.IsVar {
+				return nil, compiler.customError(destination, "cannot assign to const symbol `%q`", destination.Value)
+			}
+		}
+
 		expectedType, ok := compiler.symbolTable.Get(destination.Value)
 		if !ok {
 			return nil, compiler.customError(node, "cannot assign to undeclared symbol `%s`", destination.Value)
@@ -238,13 +248,11 @@ func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) 
 
 func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.CompiledProgram, node *ast.ClassDeclarationNode) error {
 	if node.GenericTypeParameter != "" {
-		subTypeSymbolTable := &SymbolTable{
-			compiler.typeSymbolTable,
-			map[string]vtype.VeniceType{
-				node.GenericTypeParameter: &vtype.VeniceSymbolType{node.GenericTypeParameter},
-			},
-		}
-		compiler.typeSymbolTable = subTypeSymbolTable
+		compiler.typeSymbolTable = compiler.typeSymbolTable.SpawnChild()
+		compiler.typeSymbolTable.Put(
+			node.GenericTypeParameter,
+			&vtype.VeniceSymbolType{node.GenericTypeParameter},
+		)
 	}
 
 	fields := []*vtype.VeniceClassField{}
@@ -311,11 +319,10 @@ func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.Comp
 	for i := 0; i < len(methods); i++ {
 		method := node.Methods[i]
 		methodType := methods[i]
-		bodySymbolTableMap := map[string]vtype.VeniceType{}
+		bodySymbolTable := compiler.symbolTable.SpawnChild()
 		for j := 0; j < len(method.Params); j++ {
-			bodySymbolTableMap[method.Params[j].Name] = methodType.ParamTypes[j]
+			bodySymbolTable.Put(method.Params[j].Name, methodType.ParamTypes[j])
 		}
-		bodySymbolTable := &SymbolTable{compiler.symbolTable, bodySymbolTableMap}
 
 		declaredReturnType := methodType.ReturnType
 
@@ -359,13 +366,11 @@ func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.Comp
 
 func (compiler *Compiler) compileEnumDeclaration(node *ast.EnumDeclarationNode) error {
 	if node.GenericTypeParameter != "" {
-		subTypeSymbolTable := &SymbolTable{
-			compiler.typeSymbolTable,
-			map[string]vtype.VeniceType{
-				node.GenericTypeParameter: &vtype.VeniceSymbolType{node.GenericTypeParameter},
-			},
-		}
-		compiler.typeSymbolTable = subTypeSymbolTable
+		compiler.typeSymbolTable = compiler.typeSymbolTable.SpawnChild()
+		compiler.typeSymbolTable.Put(
+			node.GenericTypeParameter,
+			&vtype.VeniceSymbolType{node.GenericTypeParameter},
+		)
 	}
 
 	caseTypes := []*vtype.VeniceCaseType{}
@@ -407,34 +412,26 @@ func (compiler *Compiler) compileForLoop(node *ast.ForLoopNode) ([]bytecode.Byte
 		return nil, err
 	}
 
-	var symbolTable *SymbolTable
+	loopSymbolTable := compiler.symbolTable.SpawnChild()
 	switch iterableType := iterableTypeAny.(type) {
 	case *vtype.VeniceListType:
 		if len(node.Variables) != 1 {
 			return nil, compiler.customError(node, "too many for loop variables")
 		}
 
-		symbolTable = &SymbolTable{
-			Parent:  compiler.symbolTable,
-			Symbols: map[string]vtype.VeniceType{node.Variables[0]: iterableType.ItemType},
-		}
+		loopSymbolTable.Put(node.Variables[0], iterableType.ItemType)
 	case *vtype.VeniceMapType:
 		if len(node.Variables) != 2 {
 			return nil, compiler.customError(node, "too many for loop variables")
 		}
 
-		symbolTable = &SymbolTable{
-			Parent: compiler.symbolTable,
-			Symbols: map[string]vtype.VeniceType{
-				node.Variables[0]: iterableType.KeyType,
-				node.Variables[1]: iterableType.ValueType,
-			},
-		}
+		loopSymbolTable.Put(node.Variables[0], iterableType.KeyType)
+		loopSymbolTable.Put(node.Variables[1], iterableType.ValueType)
 	default:
 		return nil, compiler.customError(node.Iterable, "for loop must be of list")
 	}
 
-	compiler.symbolTable = symbolTable
+	compiler.symbolTable = loopSymbolTable
 	compiler.nestedLoopCount += 1
 	bodyCode, err := compiler.compileBlock(node.Body)
 	compiler.nestedLoopCount -= 1
@@ -458,7 +455,7 @@ func (compiler *Compiler) compileForLoop(node *ast.ForLoopNode) ([]bytecode.Byte
 func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarationNode) ([]bytecode.Bytecode, error) {
 	params := []string{}
 	paramTypes := []vtype.VeniceType{}
-	bodySymbolTableMap := map[string]vtype.VeniceType{}
+	bodySymbolTable := compiler.symbolTable.SpawnChild()
 	for _, param := range node.Params {
 		paramType, err := compiler.resolveType(param.ParamType)
 		if err != nil {
@@ -468,9 +465,8 @@ func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarati
 		params = append(params, param.Name)
 		paramTypes = append(paramTypes, paramType)
 
-		bodySymbolTableMap[param.Name] = paramType
+		bodySymbolTable.Put(param.Name, paramType)
 	}
-	bodySymbolTable := &SymbolTable{compiler.symbolTable, bodySymbolTableMap}
 
 	declaredReturnType, err := compiler.resolveType(node.ReturnType)
 	if err != nil {
@@ -1318,7 +1314,7 @@ var stringBuiltins = map[string]vtype.VeniceType{
 }
 
 /**
- * Symbol table methods
+ * Miscellaneous types and methods
  */
 
 type FunctionInfo struct {
@@ -1326,72 +1322,15 @@ type FunctionInfo struct {
 	seenReturnStatement bool
 }
 
-type SymbolTable struct {
-	Parent  *SymbolTable
-	Symbols map[string]vtype.VeniceType
-}
-
-func NewBuiltinSymbolTable() *SymbolTable {
-	symbols := map[string]vtype.VeniceType{
-		"length": &vtype.VeniceFunctionType{
-			Name: "length",
-			ParamTypes: []vtype.VeniceType{
-				&vtype.VeniceUnionType{
-					[]vtype.VeniceType{
-						vtype.VENICE_TYPE_STRING,
-						&vtype.VeniceListType{vtype.VENICE_TYPE_ANY},
-						&vtype.VeniceMapType{vtype.VENICE_TYPE_ANY, vtype.VENICE_TYPE_ANY},
-					},
-				},
-			},
-			ReturnType: vtype.VENICE_TYPE_INTEGER,
-			IsBuiltin:  true,
-		},
-		"print": &vtype.VeniceFunctionType{
-			Name:       "print",
-			ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_ANY},
-			ReturnType: nil,
-			IsBuiltin:  true,
-		},
-	}
-	return &SymbolTable{nil, symbols}
-}
-
-func NewBuiltinTypeSymbolTable() *SymbolTable {
-	symbols := map[string]vtype.VeniceType{
-		"bool":     vtype.VENICE_TYPE_BOOLEAN,
-		"int":      vtype.VENICE_TYPE_INTEGER,
-		"string":   vtype.VENICE_TYPE_STRING,
-		"Optional": vtype.VENICE_TYPE_OPTIONAL,
-	}
-	return &SymbolTable{nil, symbols}
-}
-
-func (symtab *SymbolTable) Get(symbol string) (vtype.VeniceType, bool) {
-	value, ok := symtab.Symbols[symbol]
-	if !ok {
-		if symtab.Parent != nil {
-			return symtab.Parent.Get(symbol)
-		} else {
-			return nil, false
-		}
-	}
-	return value, true
-}
-
-func (symtab *SymbolTable) Put(symbol string, value vtype.VeniceType) {
-	symtab.Symbols[symbol] = value
-}
-
 func (compiler *Compiler) PrintSymbolTable() {
 	for key, value := range compiler.symbolTable.Symbols {
-		fmt.Printf("%s: %s\n", key, value.String())
+		fmt.Printf("%s: %s\n", key, value.Type.String())
 	}
 }
 
 func (compiler *Compiler) PrintTypeSymbolTable() {
 	for key, value := range compiler.typeSymbolTable.Symbols {
-		fmt.Printf("%s: %s\n", key, value.String())
+		fmt.Printf("%s: %s\n", key, value.Type.String())
 	}
 }
 
