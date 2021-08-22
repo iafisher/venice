@@ -112,6 +112,20 @@ func (p *Parser) matchStatement() (ast.StatementNode, error) {
 			}
 
 			tree = &ast.AssignStatementNode{Destination: expr, Expr: assignExpr, Location: location}
+		} else if operator, ok := compoundAssignOperators[p.currentToken.Type]; ok {
+			p.nextToken()
+			assignExpr, err := p.matchExpression(PRECEDENCE_LOWEST)
+			if err != nil {
+				return nil, err
+			}
+
+			fullAssignExpr := &ast.InfixNode{
+				Operator: operator,
+				Left:     expr,
+				Right:    assignExpr,
+				Location: assignExpr.GetLocation(),
+			}
+			tree = &ast.AssignStatementNode{Destination: expr, Expr: fullAssignExpr, Location: location}
 		} else {
 			tree = &ast.ExpressionStatementNode{expr, expr.GetLocation()}
 		}
@@ -1081,6 +1095,13 @@ var comparisonOperators = map[string]bool{
 	"<=": true,
 	">":  true,
 	">=": true,
+}
+
+var compoundAssignOperators = map[string]string{
+	lexer_mod.TOKEN_ASSIGN_ADD: "+",
+	lexer_mod.TOKEN_ASSIGN_DIV: "/",
+	lexer_mod.TOKEN_ASSIGN_MUL: "*",
+	lexer_mod.TOKEN_ASSIGN_SUB: "-",
 }
 
 type ParseError struct {

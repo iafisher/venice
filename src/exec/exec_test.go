@@ -16,13 +16,65 @@ func TestAndOr(t *testing.T) {
 	assertEqual(t, `true or [0][1] == 10`, B(true))
 }
 
+func TestAssignStatements(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		var i = 0
+		i = 42
+		i
+		`,
+		I(42),
+	)
+
+	assertEqual(
+		t,
+		`
+		var i = 41
+		i += 1
+		i
+		`,
+		I(42),
+	)
+
+	assertEqual(
+		t,
+		`
+		var i = 21
+		i *= 2
+		i
+		`,
+		I(42),
+	)
+
+	assertEqual(
+		t,
+		`
+		var i = 44
+		i -= 2
+		i
+		`,
+		I(42),
+	)
+
+	assertEqual(
+		t,
+		`
+		var i = 126
+		i /= 3
+		i
+		`,
+		I(42),
+	)
+}
+
 func TestBreakStatement(t *testing.T) {
 	assertEqual(
 		t,
 		`
 		var i = 41
 		while true {
-			i = i + 1
+			i += 1
 			break
 		}
 		i
@@ -131,7 +183,7 @@ func TestContinueStatement(t *testing.T) {
 		`
 		var i = 41
 		while i != 42 {
-			i = i + 1
+			i += 1
 			continue
 			i = 666
 		}
@@ -278,7 +330,7 @@ func TestVarStatements(t *testing.T) {
 		t,
 		`
 		var i = 0
-		i = i + 1
+		i += 1
 		i
 		`,
 		I(1),

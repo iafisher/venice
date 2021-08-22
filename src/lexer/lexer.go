@@ -310,6 +310,10 @@ const (
 	TOKEN_AND                    = "TOKEN_AND"
 	TOKEN_ARROW                  = "TOKEN_ARROW"
 	TOKEN_ASSIGN                 = "TOKEN_ASSIGN"
+	TOKEN_ASSIGN_ADD             = "TOKEN_ASSIGN_ADD"
+	TOKEN_ASSIGN_DIV             = "TOKEN_ASSIGN_DIV"
+	TOKEN_ASSIGN_MUL             = "TOKEN_ASSIGN_MUL"
+	TOKEN_ASSIGN_SUB             = "TOKEN_ASSIGN_SUB"
 	TOKEN_ASTERISK               = "TOKEN_ASTERISK"
 	TOKEN_BREAK                  = "TOKEN_BREAK"
 	TOKEN_CASE                   = "TOKEN_CASE"
@@ -418,6 +422,10 @@ var one_char_tokens = map[byte]string{
 
 var two_char_tokens = map[string]string{
 	"->": TOKEN_ARROW,
+	"+=": TOKEN_ASSIGN_ADD,
+	"/=": TOKEN_ASSIGN_DIV,
+	"*=": TOKEN_ASSIGN_MUL,
+	"-=": TOKEN_ASSIGN_SUB,
 	"::": TOKEN_DOUBLE_COLON,
 	"++": TOKEN_DOUBLE_PLUS,
 	"==": TOKEN_EQUALS,
