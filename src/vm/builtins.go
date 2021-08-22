@@ -39,6 +39,21 @@ func builtinListAppend(args ...vval.VeniceValue) vval.VeniceValue {
 	return nil
 }
 
+func builtinListExtend(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	listArg1, ok1 := args[0].(*vval.VeniceList)
+	listArg2, ok2 := args[1].(*vval.VeniceList)
+	if !ok1 || !ok2 {
+		return nil
+	}
+
+	listArg1.Values = append(listArg1.Values, listArg2.Values...)
+	return nil
+}
+
 func builtinPrint(args ...vval.VeniceValue) vval.VeniceValue {
 	if len(args) != 1 {
 		return nil
@@ -109,6 +124,7 @@ var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
 	"print":  builtinPrint,
 	// List built-ins
 	"list__append": builtinListAppend,
+	"list__extend": builtinListExtend,
 	"list__length": builtinLength,
 	// String built-ins
 	"string__find":     builtinStringFind,

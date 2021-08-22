@@ -1270,6 +1270,16 @@ var listBuiltins = map[string]vtype.VeniceType{
 		ReturnType: nil,
 		IsBuiltin:  true,
 	},
+	"extend": &vtype.VeniceFunctionType{
+		Name:              "extend",
+		GenericParameters: []string{"T"},
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceListType{&vtype.VeniceSymbolType{"T"}},
+			&vtype.VeniceListType{&vtype.VeniceSymbolType{"T"}},
+		},
+		ReturnType: nil,
+		IsBuiltin:  true,
+	},
 	"length": &vtype.VeniceFunctionType{
 		Name: "length",
 		ParamTypes: []vtype.VeniceType{
