@@ -118,16 +118,12 @@ func repl() {
 					}
 					continue
 				case "!symbolTypes":
-					for key, value := range compiler.SymbolTable.Symbols {
-						fmt.Printf("%s: %s\n", key, value.String())
-					}
+					compiler.PrintSymbolTable()
 					continue
 				case "!type":
 					operation = "type"
 				case "!types":
-					for key, value := range compiler.TypeSymbolTable.Symbols {
-						fmt.Printf("%s: %s\n", key, value.String())
-					}
+					compiler.PrintTypeSymbolTable()
 					continue
 				default:
 					fmt.Printf("Error: unknown command %q\n", line)
