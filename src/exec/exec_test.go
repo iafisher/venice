@@ -309,6 +309,18 @@ func TestListIndexAssignment(t *testing.T) {
 	assertEqual(t, `let l = [1]; l[0] = 42; l[0]`, I(42))
 }
 
+func TestMapIndexAssignment(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		let m = {"one": 1}
+		m["forty two"] = 42
+		m["forty two"]
+		`,
+		I(42),
+	)
+}
+
 func TestStringBuiltins(t *testing.T) {
 	assertEqual(t, `let s = "123"; s.length()`, I(3))
 	assertEqual(t, `"123".length()`, I(3))

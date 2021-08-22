@@ -147,13 +147,7 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 				}
 			}
 		case *vval.VeniceMap:
-			result = false
-			for _, pair := range right.Pairs {
-				if pair.Key.Equals(leftAny) {
-					result = true
-					break
-				}
-			}
+			result = right.Get(leftAny) != nil
 		default:
 			return -1, &ExecutionError{"BINARY_IN requires list, map, or string"}
 		}
@@ -196,15 +190,13 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 			return -1, &ExecutionError{fmt.Sprintf("BINARY_MAP_INDEX requires map on top of stack, got %s (%T)", vMapAny.String(), vMapAny)}
 		}
 
-		for _, pair := range vMap.Pairs {
-			if pair.Key.Equals(index) {
-				vm.pushStack(pair.Value)
-				return 1, nil
-			}
+		result := vMap.Get(index)
+		if result == nil {
+			// TODO(2021-08-03): Return a proper error value.
+			result = &vval.VeniceInteger{-1}
 		}
 
-		// TODO(2021-08-03): Return a proper error value.
-		vm.pushStack(&vval.VeniceInteger{-1})
+		vm.pushStack(result)
 	case *bytecode.BinaryMul:
 		left, right, err := vm.popTwoInts()
 		if err != nil {
@@ -451,6 +443,17 @@ func (vm *VirtualMachine) executeOne(bcodeAny bytecode.Bytecode, compiledProgram
 		}
 
 		destination.Values[index.Value] = value
+	case *bytecode.StoreMapIndex:
+		destinationAny := vm.popStack()
+		key := vm.popStack()
+		value := vm.popStack()
+
+		destination, ok := destinationAny.(*vval.VeniceMap)
+		if !ok {
+			return -1, &ExecutionError{"expected map object at top of virtual machine stack for STORE_MAP_INDEX"}
+		}
+
+		destination.Put(key, value)
 	case *bytecode.StoreName:
 		topOfStack := vm.popStack()
 		vm.Env.Put(bcode.Name, topOfStack)

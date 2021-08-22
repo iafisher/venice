@@ -218,37 +218,60 @@ func (compiler *Compiler) compileAssignStatementToIndex(
 		return nil, err
 	}
 
-	listType, ok := destinationTypeAny.(*vtype.VeniceListType)
-	if !ok {
+	switch destinationType := destinationTypeAny.(type) {
+	case *vtype.VeniceListType:
+		if !compiler.checkType(destinationType.ItemType, eType) {
+			return nil, compiler.customError(
+				node.Expr,
+				"expected type %s, got %s",
+				destinationType.ItemType.String(),
+				eType.String(),
+			)
+		}
+
+		indexCode, indexType, err := compiler.compileExpression(destination.Index)
+		if err != nil {
+			return nil, err
+		}
+
+		if !compiler.checkType(vtype.VENICE_TYPE_INTEGER, indexType) {
+			return nil, compiler.customError(node, "list index must be of type integer, not %s", indexType.String())
+		}
+
+		code = append(code, indexCode...)
+		code = append(code, destinationCode...)
+		code = append(code, &bytecode.StoreIndex{})
+		return code, nil
+	case *vtype.VeniceMapType:
+		if !compiler.checkType(destinationType.ValueType, eType) {
+			return nil, compiler.customError(
+				node.Expr,
+				"expected type %s, got %s",
+				destinationType.ValueType.String(),
+				eType.String(),
+			)
+		}
+
+		indexCode, indexType, err := compiler.compileExpression(destination.Index)
+		if err != nil {
+			return nil, err
+		}
+
+		if !compiler.checkType(destinationType.KeyType, indexType) {
+			return nil, compiler.customError(node, "map index must be of type integer, not %s", indexType.String())
+		}
+
+		code = append(code, indexCode...)
+		code = append(code, destinationCode...)
+		code = append(code, &bytecode.StoreMapIndex{})
+		return code, nil
+	default:
 		return nil, compiler.customError(
 			node,
 			"cannot assign to index on type %s",
 			destinationTypeAny.String(),
 		)
 	}
-
-	if !compiler.checkType(listType.ItemType, eType) {
-		return nil, compiler.customError(
-			node.Expr,
-			"expected type %s, got %s",
-			listType.ItemType.String(),
-			eType.String(),
-		)
-	}
-
-	indexCode, indexType, err := compiler.compileExpression(destination.Index)
-	if err != nil {
-		return nil, err
-	}
-
-	if !compiler.checkType(vtype.VENICE_TYPE_INTEGER, indexType) {
-		return nil, compiler.customError(node, "list index must be of type integer, not %s", indexType.String())
-	}
-
-	code = append(code, indexCode...)
-	code = append(code, destinationCode...)
-	code = append(code, &bytecode.StoreIndex{})
-	return code, nil
 }
 
 func (compiler *Compiler) compileAssignStatementToSymbol(

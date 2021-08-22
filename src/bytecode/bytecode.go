@@ -152,6 +152,8 @@ type StoreField struct {
 
 type StoreIndex struct{}
 
+type StoreMapIndex struct{}
+
 type StoreName struct {
 	Name string
 }
@@ -336,6 +338,10 @@ func (b *StoreIndex) String() string {
 	return "STORE_INDEX"
 }
 
+func (b *StoreMapIndex) String() string {
+	return "STORE_MAP_INDEX"
+}
+
 func (b *StoreName) String() string {
 	return fmt.Sprintf("STORE_NAME %q", b.Name)
 }
@@ -391,6 +397,7 @@ func (b *RelJumpIfTrueOrPop) bytecode()  {}
 func (b *Return) bytecode()              {}
 func (b *StoreField) bytecode()          {}
 func (b *StoreIndex) bytecode()          {}
+func (b *StoreMapIndex) bytecode()       {}
 func (b *StoreName) bytecode()           {}
 func (b *UnaryMinus) bytecode()          {}
 func (b *UnaryNot) bytecode()            {}

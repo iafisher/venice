@@ -364,6 +364,31 @@ func (v *VeniceMapIterator) Next() []VeniceValue {
 	}
 }
 
+/**
+ * Miscellaneous methods
+ */
+
+func (v *VeniceMap) Get(key VeniceValue) VeniceValue {
+	for _, pair := range v.Pairs {
+		if pair.Key.Equals(key) {
+			return pair.Value
+		}
+	}
+
+	return nil
+}
+
+func (v *VeniceMap) Put(key VeniceValue, value VeniceValue) {
+	for _, pair := range v.Pairs {
+		if pair.Key.Equals(key) {
+			pair.Value = value
+			return
+		}
+	}
+
+	v.Pairs = append(v.Pairs, &VeniceMapPair{Key: key, Value: value})
+}
+
 func (v *VeniceBoolean) veniceValue()      {}
 func (v *VeniceCharacter) veniceValue()    {}
 func (v *VeniceClassObject) veniceValue()  {}
