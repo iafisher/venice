@@ -144,6 +144,7 @@ type ImportStatementNode struct {
 
 type LetStatementNode struct {
 	Symbol   string
+	Type     TypeNode
 	IsVar    bool
 	Expr     ExpressionNode
 	Location *lexer.Location
@@ -686,7 +687,15 @@ func (n *LetStatementNode) String() string {
 	} else {
 		keyword = "let"
 	}
-	return fmt.Sprintf("(%s %s %s)", keyword, n.Symbol, n.Expr.String())
+
+	var typeString string
+	if n.Type != nil {
+		typeString = n.Type.String()
+	} else {
+		typeString = "nil"
+	}
+
+	return fmt.Sprintf("(%s %s %s %s)", keyword, typeString, n.Symbol, n.Expr.String())
 }
 
 func (n *ListNode) String() string {

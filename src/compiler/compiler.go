@@ -110,6 +110,18 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 		if err != nil {
 			return nil, err
 		}
+
+		if node.Type != nil {
+			declaredType, err := compiler.resolveType(node.Type)
+			if err != nil {
+				return nil, err
+			}
+
+			if !compiler.checkType(declaredType, eType) {
+				return nil, compiler.customError(node.Expr, "expected %s, got %s", declaredType.String(), eType.String())
+			}
+		}
+
 		if node.IsVar {
 			compiler.symbolTable.PutVar(node.Symbol, eType)
 		} else {

@@ -555,6 +555,16 @@ func (p *Parser) matchLetStatement(isVar bool) (*ast.LetStatementNode, error) {
 	symbol := p.currentToken.Value
 
 	p.nextToken()
+	var typeNode ast.TypeNode
+	if p.currentToken.Type == lexer_mod.TOKEN_COLON {
+		var err error
+		p.nextToken()
+		typeNode, err = p.matchTypeNode()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if p.currentToken.Type != lexer_mod.TOKEN_ASSIGN {
 		return nil, p.unexpectedToken("equals sign")
 	}
@@ -565,7 +575,7 @@ func (p *Parser) matchLetStatement(isVar bool) (*ast.LetStatementNode, error) {
 		return nil, err
 	}
 
-	return &ast.LetStatementNode{Symbol: symbol, IsVar: isVar, Expr: expr, Location: location}, nil
+	return &ast.LetStatementNode{Symbol: symbol, Type: typeNode, IsVar: isVar, Expr: expr, Location: location}, nil
 }
 
 func (p *Parser) matchMatchStatement() (*ast.MatchStatementNode, error) {

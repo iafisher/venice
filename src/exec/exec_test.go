@@ -308,6 +308,22 @@ func TestLetStatement(t *testing.T) {
 		`,
 		"re-declaration of symbol",
 	)
+
+	assertEqual(
+		t,
+		`
+		let x: int = 42
+		x
+		`,
+		I(42),
+	)
+	assertTypecheckError(
+		t,
+		`
+		let x: string = 42
+		`,
+		"expected string, got int",
+	)
 }
 
 func TestListBuiltins(t *testing.T) {
