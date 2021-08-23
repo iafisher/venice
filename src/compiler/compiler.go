@@ -959,6 +959,12 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 			return nil, nil, compiler.customError(node, "no such field or method `%s` on list type", node.Name)
 		}
 		return code, methodType, nil
+	case *vtype.VeniceMapType:
+		methodType, ok := mapBuiltins[node.Name]
+		if !ok {
+			return nil, nil, compiler.customError(node, "no such field or method `%s` on map type", node.Name)
+		}
+		return code, methodType, nil
 	case *vtype.VeniceStringType:
 		methodType, ok := stringBuiltins[node.Name]
 		if !ok {

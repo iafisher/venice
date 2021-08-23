@@ -389,6 +389,15 @@ func (v *VeniceMap) Put(key VeniceValue, value VeniceValue) {
 	v.Pairs = append(v.Pairs, &VeniceMapPair{Key: key, Value: value})
 }
 
+func (v *VeniceMap) Remove(key VeniceValue) {
+	for i, pair := range v.Pairs {
+		if pair.Key.Equals(key) {
+			v.Pairs = append(v.Pairs[:i], v.Pairs[i+1:]...)
+			return
+		}
+	}
+}
+
 func (v *VeniceBoolean) veniceValue()      {}
 func (v *VeniceCharacter) veniceValue()    {}
 func (v *VeniceClassObject) veniceValue()  {}

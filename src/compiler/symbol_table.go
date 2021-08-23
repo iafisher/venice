@@ -102,6 +102,21 @@ var listBuiltins = map[string]vtype.VeniceType{
 	},
 }
 
+var mapBuiltins = map[string]vtype.VeniceType{
+	"remove": &vtype.VeniceFunctionType{
+		Name: "remove",
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceMapType{
+				KeyType:   &vtype.VeniceSymbolType{"T"},
+				ValueType: vtype.VENICE_TYPE_ANY,
+			},
+			&vtype.VeniceSymbolType{"T"},
+		},
+		ReturnType: nil,
+		IsBuiltin:  true,
+	},
+}
+
 var stringBuiltins = map[string]vtype.VeniceType{
 	"find": &vtype.VeniceFunctionType{
 		Name:       "find",
