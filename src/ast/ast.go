@@ -184,11 +184,6 @@ type CompoundPatternNode struct {
 	Location *lexer.Location
 }
 
-type SymbolPatternNode struct {
-	Symbol   string
-	Location *lexer.Location
-}
-
 /**
  * Expression nodes
  */
@@ -300,11 +295,6 @@ type ParameterizedTypeNode struct {
 	Location  *lexer.Location
 }
 
-type SimpleTypeNode struct {
-	Symbol   string
-	Location *lexer.Location
-}
-
 /**
  * GetLocation() implementations
  */
@@ -413,19 +403,11 @@ func (n *ReturnStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *SimpleTypeNode) GetLocation() *lexer.Location {
-	return n.Location
-}
-
 func (n *StringNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
 func (n *SymbolNode) GetLocation() *lexer.Location {
-	return n.Location
-}
-
-func (n *SymbolPatternNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -780,16 +762,8 @@ func (n *ReturnStatementNode) String() string {
 	}
 }
 
-func (n *SimpleTypeNode) String() string {
-	return n.Symbol
-}
-
 func (n *StringNode) String() string {
 	return strconv.Quote(n.Value)
-}
-
-func (n *SymbolPatternNode) String() string {
-	return n.Symbol
 }
 
 func (n *SymbolNode) String() string {
@@ -856,7 +830,7 @@ func (n *TupleNode) expressionNode()            {}
 func (n *UnaryNode) expressionNode()            {}
 
 func (n *CompoundPatternNode) patternNode() {}
-func (n *SymbolPatternNode) patternNode()   {}
+func (n *SymbolNode) patternNode()          {}
 
 func (n *AssignStatementNode) statementNode()     {}
 func (n *BreakStatementNode) statementNode()      {}
@@ -875,4 +849,4 @@ func (n *ReturnStatementNode) statementNode()     {}
 func (n *WhileLoopNode) statementNode()           {}
 
 func (n *ParameterizedTypeNode) typeNode() {}
-func (n *SimpleTypeNode) typeNode()        {}
+func (n *SymbolNode) typeNode()            {}

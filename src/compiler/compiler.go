@@ -719,10 +719,10 @@ func (compiler *Compiler) compilePattern(patternAny ast.PatternNode, exprType vt
 		}
 
 		return code, nil
-	case *ast.SymbolPatternNode:
-		compiler.symbolTable.Put(pattern.Symbol, exprType)
+	case *ast.SymbolNode:
+		compiler.symbolTable.Put(pattern.Value, exprType)
 		code := []bytecode.Bytecode{
-			&bytecode.StoreName{pattern.Symbol},
+			&bytecode.StoreName{pattern.Value},
 			&bytecode.PushConstBool{true},
 		}
 		return code, nil
@@ -871,7 +871,7 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 }
 
 func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.EnumSymbolNode, callNode *ast.CallNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
-	enumTypeAny, err := compiler.resolveType(&ast.SimpleTypeNode{enumSymbolNode.Enum, nil})
+	enumTypeAny, err := compiler.resolveType(&ast.SymbolNode{enumSymbolNode.Enum, nil})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -899,7 +899,7 @@ func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.EnumSymbolNode
 }
 
 func (compiler *Compiler) compileEnumSymbolNode(node *ast.EnumSymbolNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
-	enumTypeAny, err := compiler.resolveType(&ast.SimpleTypeNode{node.Enum, nil})
+	enumTypeAny, err := compiler.resolveType(&ast.SymbolNode{node.Enum, nil})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1464,10 +1464,10 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 		default:
 			return nil, compiler.customError(typeNodeAny, "unknown type `%s`", typeNode.Symbol)
 		}
-	case *ast.SimpleTypeNode:
-		resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Symbol)
+	case *ast.SymbolNode:
+		resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Value)
 		if !ok {
-			return nil, compiler.customError(typeNodeAny, "unknown type `%s`", typeNode.Symbol)
+			return nil, compiler.customError(typeNodeAny, "unknown type `%s`", typeNode.Value)
 		}
 		return resolvedType, nil
 	default:

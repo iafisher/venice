@@ -954,7 +954,7 @@ func (p *Parser) matchTypeNode() (ast.TypeNode, error) {
 
 		return &ast.ParameterizedTypeNode{Symbol: name, TypeNodes: typeNodes, Location: location}, nil
 	} else {
-		return &ast.SimpleTypeNode{name, location}, nil
+		return &ast.SymbolNode{name, location}, nil
 	}
 }
 
@@ -1003,7 +1003,7 @@ func (p *Parser) matchPatternNode() (ast.PatternNode, error) {
 			}
 			return &ast.CompoundPatternNode{Label: value, Patterns: patterns, Location: location}, nil
 		} else {
-			return &ast.SymbolPatternNode{Symbol: value, Location: location}, nil
+			return &ast.SymbolNode{Value: value, Location: location}, nil
 		}
 	} else {
 		return nil, p.unexpectedToken("match pattern")
