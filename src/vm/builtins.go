@@ -54,6 +54,27 @@ func builtinListExtend(args ...vval.VeniceValue) vval.VeniceValue {
 	return nil
 }
 
+func builtinListRemove(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	listArg, ok1 := args[0].(*vval.VeniceList)
+	intArg, ok2 := args[1].(*vval.VeniceInteger)
+	if !ok1 || !ok2 {
+		return nil
+	}
+
+	index := intArg.Value
+	if index < 0 || index >= len(listArg.Values) {
+		// TODO(2021-08-23): Handle this better.
+		panic("index out of bounds for list.remove")
+	}
+
+	listArg.Values = append(listArg.Values[:index], listArg.Values[index+1:]...)
+	return nil
+}
+
 func builtinPrint(args ...vval.VeniceValue) vval.VeniceValue {
 	if len(args) != 1 {
 		return nil
@@ -126,6 +147,7 @@ var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
 	"list__append": builtinListAppend,
 	"list__extend": builtinListExtend,
 	"list__length": builtinLength,
+	"list__remove": builtinListRemove,
 	// String built-ins
 	"string__find":     builtinStringFind,
 	"string__length":   builtinLength,

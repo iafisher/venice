@@ -62,6 +62,73 @@ func NewBuiltinTypeSymbolTable() *SymbolTable {
 	return &SymbolTable{Parent: nil, Symbols: symbols}
 }
 
+var listBuiltins = map[string]vtype.VeniceType{
+	"append": &vtype.VeniceFunctionType{
+		Name:              "append",
+		GenericParameters: []string{"T"},
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceListType{&vtype.VeniceSymbolType{"T"}},
+			&vtype.VeniceSymbolType{"T"},
+		},
+		ReturnType: nil,
+		IsBuiltin:  true,
+	},
+	"extend": &vtype.VeniceFunctionType{
+		Name:              "extend",
+		GenericParameters: []string{"T"},
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceListType{&vtype.VeniceSymbolType{"T"}},
+			&vtype.VeniceListType{&vtype.VeniceSymbolType{"T"}},
+		},
+		ReturnType: nil,
+		IsBuiltin:  true,
+	},
+	"length": &vtype.VeniceFunctionType{
+		Name: "length",
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceListType{vtype.VENICE_TYPE_ANY},
+		},
+		ReturnType: vtype.VENICE_TYPE_INTEGER,
+		IsBuiltin:  true,
+	},
+	"remove": &vtype.VeniceFunctionType{
+		Name: "remove",
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceListType{vtype.VENICE_TYPE_ANY},
+			vtype.VENICE_TYPE_INTEGER,
+		},
+		ReturnType: nil,
+		IsBuiltin:  true,
+	},
+}
+
+var stringBuiltins = map[string]vtype.VeniceType{
+	"find": &vtype.VeniceFunctionType{
+		Name:       "find",
+		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING, vtype.VENICE_TYPE_CHARACTER},
+		ReturnType: vtype.VeniceOptionalTypeOf(vtype.VENICE_TYPE_INTEGER),
+		IsBuiltin:  true,
+	},
+	"length": &vtype.VeniceFunctionType{
+		Name:       "length",
+		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING},
+		ReturnType: vtype.VENICE_TYPE_INTEGER,
+		IsBuiltin:  true,
+	},
+	"to_lower": &vtype.VeniceFunctionType{
+		Name:       "to_lower",
+		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING},
+		ReturnType: vtype.VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"to_upper": &vtype.VeniceFunctionType{
+		Name:       "to_upper",
+		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING},
+		ReturnType: vtype.VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+}
+
 func (symtab *SymbolTable) SpawnChild() *SymbolTable {
 	return &SymbolTable{
 		Parent:  symtab,

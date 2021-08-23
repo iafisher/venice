@@ -303,6 +303,15 @@ func TestListBuiltins(t *testing.T) {
 	assertEqual(t, `let l = [1, 2, 3]; l.length()`, I(3))
 	assertEqual(t, `let l = [1, 2]; l.append(3); l[2]`, I(3))
 	assertEqual(t, `let l = [1, 2]; l.extend([3, 4]); l`, L(I(1), I(2), I(3), I(4)))
+	assertEqual(
+		t,
+		`
+		let l = [1, 2, 3];
+		l.remove(1);
+		l
+		`,
+		L(I(1), I(3)),
+	)
 }
 
 func TestListIndexAssignment(t *testing.T) {
