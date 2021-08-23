@@ -368,6 +368,22 @@ func (v *VeniceMapIterator) Next() []VeniceValue {
  * Miscellaneous methods
  */
 
+func (v *VeniceMap) Entries() VeniceValue {
+	values := []VeniceValue{}
+	for _, pair := range v.Pairs {
+		values = append(
+			values,
+			&VeniceTuple{
+				[]VeniceValue{
+					pair.Key,
+					pair.Value,
+				},
+			},
+		)
+	}
+	return &VeniceList{values}
+}
+
 func (v *VeniceMap) Get(key VeniceValue) VeniceValue {
 	for _, pair := range v.Pairs {
 		if pair.Key.Equals(key) {
@@ -376,6 +392,14 @@ func (v *VeniceMap) Get(key VeniceValue) VeniceValue {
 	}
 
 	return nil
+}
+
+func (v *VeniceMap) Keys() VeniceValue {
+	values := []VeniceValue{}
+	for _, pair := range v.Pairs {
+		values = append(values, pair.Key)
+	}
+	return &VeniceList{values}
 }
 
 func (v *VeniceMap) Put(key VeniceValue, value VeniceValue) {
@@ -396,6 +420,14 @@ func (v *VeniceMap) Remove(key VeniceValue) {
 			return
 		}
 	}
+}
+
+func (v *VeniceMap) Values() VeniceValue {
+	values := []VeniceValue{}
+	for _, pair := range v.Pairs {
+		values = append(values, pair.Value)
+	}
+	return &VeniceList{values}
 }
 
 func (v *VeniceBoolean) veniceValue()      {}

@@ -103,6 +103,35 @@ var listBuiltins = map[string]vtype.VeniceType{
 }
 
 var mapBuiltins = map[string]vtype.VeniceType{
+	"entries": &vtype.VeniceFunctionType{
+		Name: "entries",
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceMapType{
+				KeyType:   &vtype.VeniceSymbolType{"K"},
+				ValueType: &vtype.VeniceSymbolType{"V"},
+			},
+		},
+		ReturnType: &vtype.VeniceListType{
+			&vtype.VeniceTupleType{
+				[]vtype.VeniceType{
+					&vtype.VeniceSymbolType{"K"},
+					&vtype.VeniceSymbolType{"V"},
+				},
+			},
+		},
+		IsBuiltin: true,
+	},
+	"keys": &vtype.VeniceFunctionType{
+		Name: "keys",
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceMapType{
+				KeyType:   &vtype.VeniceSymbolType{"K"},
+				ValueType: vtype.VENICE_TYPE_ANY,
+			},
+		},
+		ReturnType: &vtype.VeniceListType{&vtype.VeniceSymbolType{"K"}},
+		IsBuiltin:  true,
+	},
 	"remove": &vtype.VeniceFunctionType{
 		Name: "remove",
 		ParamTypes: []vtype.VeniceType{
@@ -113,6 +142,17 @@ var mapBuiltins = map[string]vtype.VeniceType{
 			&vtype.VeniceSymbolType{"T"},
 		},
 		ReturnType: nil,
+		IsBuiltin:  true,
+	},
+	"values": &vtype.VeniceFunctionType{
+		Name: "values",
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceMapType{
+				KeyType:   vtype.VENICE_TYPE_ANY,
+				ValueType: &vtype.VeniceSymbolType{"V"},
+			},
+		},
+		ReturnType: &vtype.VeniceListType{&vtype.VeniceSymbolType{"V"}},
 		IsBuiltin:  true,
 	},
 }

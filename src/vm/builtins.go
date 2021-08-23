@@ -75,6 +75,32 @@ func builtinListRemove(args ...vval.VeniceValue) vval.VeniceValue {
 	return nil
 }
 
+func builtinMapEntries(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	mapArg, ok := args[0].(*vval.VeniceMap)
+	if !ok {
+		return nil
+	}
+
+	return mapArg.Entries()
+}
+
+func builtinMapKeys(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	mapArg, ok := args[0].(*vval.VeniceMap)
+	if !ok {
+		return nil
+	}
+
+	return mapArg.Keys()
+}
+
 func builtinMapRemove(args ...vval.VeniceValue) vval.VeniceValue {
 	if len(args) != 2 {
 		return nil
@@ -87,6 +113,19 @@ func builtinMapRemove(args ...vval.VeniceValue) vval.VeniceValue {
 
 	mapArg.Remove(args[1])
 	return nil
+}
+
+func builtinMapValues(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	mapArg, ok := args[0].(*vval.VeniceMap)
+	if !ok {
+		return nil
+	}
+
+	return mapArg.Values()
 }
 
 func builtinPrint(args ...vval.VeniceValue) vval.VeniceValue {
@@ -163,7 +202,10 @@ var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
 	"list__length": builtinLength,
 	"list__remove": builtinListRemove,
 	// Map built-ins
-	"map__remove": builtinMapRemove,
+	"map__entries": builtinMapEntries,
+	"map__keys":    builtinMapKeys,
+	"map__remove":  builtinMapRemove,
+	"map__values":  builtinMapValues,
 	// String built-ins
 	"string__find":     builtinStringFind,
 	"string__length":   builtinLength,

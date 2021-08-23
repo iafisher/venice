@@ -328,6 +328,33 @@ func TestMapBuiltins(t *testing.T) {
 		`,
 		B(false),
 	)
+
+	assertEqual(
+		t,
+		`
+		let m = {1: "one", 2: "two"}
+		m.keys()
+		`,
+		L(I(1), I(2)),
+	)
+
+	assertEqual(
+		t,
+		`
+		let m = {1: "one", 2: "two"}
+		m.values()
+		`,
+		L(S("one"), S("two")),
+	)
+
+	assertEqual(
+		t,
+		`
+		let m = {1: "one", 2: "two"}
+		m.entries()
+		`,
+		L(Tup(I(1), S("one")), Tup(I(2), S("two"))),
+	)
 }
 
 func TestMapIndexAssignment(t *testing.T) {
