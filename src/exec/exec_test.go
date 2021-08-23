@@ -255,6 +255,17 @@ func TestFunctionCall(t *testing.T) {
 }
 
 func TestFunctionDeclaration(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		fn f() -> list<int> {
+			return [1, 2, 3]
+		}
+		f()
+		`,
+		L(I(1), I(2), I(3)),
+	)
+
 	assertTypecheckError(
 		t,
 		`

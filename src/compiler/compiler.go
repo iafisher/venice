@@ -1422,6 +1422,48 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 	}
 
 	switch typeNode := typeNodeAny.(type) {
+	case *ast.ParameterizedTypeNode:
+		switch typeNode.Symbol {
+		case "map":
+			if len(typeNode.TypeNodes) != 2 {
+				return nil, compiler.customError(typeNodeAny, "map type requires 2 type parameters")
+			}
+
+			keyType, err := compiler.resolveType(typeNode.TypeNodes[0])
+			if err != nil {
+				return nil, err
+			}
+
+			valueType, err := compiler.resolveType(typeNode.TypeNodes[1])
+			if err != nil {
+				return nil, err
+			}
+
+			return &vtype.VeniceMapType{KeyType: keyType, ValueType: valueType}, nil
+		case "list":
+			if len(typeNode.TypeNodes) != 1 {
+				return nil, compiler.customError(typeNodeAny, "list type requires 1 type parameter")
+			}
+
+			itemType, err := compiler.resolveType(typeNode.TypeNodes[0])
+			if err != nil {
+				return nil, err
+			}
+
+			return &vtype.VeniceListType{itemType}, nil
+		case "tuple":
+			types := []vtype.VeniceType{}
+			for _, subTypeNode := range typeNode.TypeNodes {
+				subType, err := compiler.resolveType(subTypeNode)
+				if err != nil {
+					return nil, err
+				}
+				types = append(types, subType)
+			}
+			return &vtype.VeniceTupleType{types}, nil
+		default:
+			return nil, compiler.customError(typeNodeAny, "unknown type `%s`", typeNode.Symbol)
+		}
 	case *ast.SimpleTypeNode:
 		resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Symbol)
 		if !ok {

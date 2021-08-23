@@ -924,8 +924,38 @@ func (p *Parser) matchTypeNode() (ast.TypeNode, error) {
 
 	name := p.currentToken.Value
 	location := p.currentToken.Location
+
 	p.nextToken()
-	return &ast.SimpleTypeNode{name, location}, nil
+	if p.currentToken.Type == lexer_mod.TOKEN_LESS_THAN {
+		p.nextToken()
+		typeNodes := []ast.TypeNode{}
+
+		firstType, err := p.matchTypeNode()
+		if err != nil {
+			return nil, err
+		}
+		typeNodes = append(typeNodes, firstType)
+
+		for {
+			if p.currentToken.Type == lexer_mod.TOKEN_GREATER_THAN {
+				p.nextToken()
+				break
+			} else if p.currentToken.Type != lexer_mod.TOKEN_COMMA {
+				return nil, p.unexpectedToken("comma or right angle bracket")
+			}
+
+			p.nextToken()
+			subType, err := p.matchTypeNode()
+			if err != nil {
+				return nil, err
+			}
+			typeNodes = append(typeNodes, subType)
+		}
+
+		return &ast.ParameterizedTypeNode{Symbol: name, TypeNodes: typeNodes, Location: location}, nil
+	} else {
+		return &ast.SimpleTypeNode{name, location}, nil
+	}
 }
 
 /**

@@ -294,6 +294,12 @@ type UnaryNode struct {
  * Type nodes
  */
 
+type ParameterizedTypeNode struct {
+	Symbol    string
+	TypeNodes []TypeNode
+	Location  *lexer.Location
+}
+
 type SimpleTypeNode struct {
 	Symbol   string
 	Location *lexer.Location
@@ -396,6 +402,10 @@ func (n *MapNode) GetLocation() *lexer.Location {
 }
 
 func (n *MatchStatementNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *ParameterizedTypeNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -750,6 +760,18 @@ func (n *MatchStatementNode) String() string {
 	return sb.String()
 }
 
+func (n *ParameterizedTypeNode) String() string {
+	var sb strings.Builder
+	sb.WriteString("(type ")
+	sb.WriteString(n.Symbol)
+	for _, subTypeNode := range n.TypeNodes {
+		sb.WriteByte(' ')
+		sb.WriteString(subTypeNode.String())
+	}
+	sb.WriteByte(')')
+	return sb.String()
+}
+
 func (n *ReturnStatementNode) String() string {
 	if n.Expr != nil {
 		return fmt.Sprintf("(return %s)", n.Expr.String())
@@ -852,4 +874,5 @@ func (n *MatchStatementNode) statementNode()      {}
 func (n *ReturnStatementNode) statementNode()     {}
 func (n *WhileLoopNode) statementNode()           {}
 
-func (n *SimpleTypeNode) typeNode() {}
+func (n *ParameterizedTypeNode) typeNode() {}
+func (n *SimpleTypeNode) typeNode()        {}
