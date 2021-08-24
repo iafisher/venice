@@ -56,7 +56,7 @@ func TestParseFunctionDeclarationStatements(t *testing.T) {
 }
 
 func TestParseImportStatements(t *testing.T) {
-	// checkParseStatement(t, "import \"./lib.vn\" as lib", "(import lib \"./lib.vn\")")
+	checkParseStatement(t, "import \"./lib.vn\" as lib", "(import lib \"./lib.vn\")")
 }
 
 func TestParseIfStatements(t *testing.T) {

@@ -88,6 +88,8 @@ func (p *Parser) matchStatement() (ast.StatementNode, error) {
 		return p.matchForLoop()
 	case lexer_mod.TOKEN_IF:
 		return p.matchIfStatement()
+	case lexer_mod.TOKEN_IMPORT:
+		tree, err = p.matchImportStatement()
 	case lexer_mod.TOKEN_LET:
 		tree, err = p.matchLetStatement(false)
 	case lexer_mod.TOKEN_MATCH:
@@ -135,7 +137,10 @@ func (p *Parser) matchStatement() (ast.StatementNode, error) {
 		return nil, err
 	}
 
-	if p.currentToken.Type != lexer_mod.TOKEN_NEWLINE && p.currentToken.Type != lexer_mod.TOKEN_SEMICOLON && p.currentToken.Type != lexer_mod.TOKEN_EOF && p.currentToken.Type != lexer_mod.TOKEN_RIGHT_CURLY {
+	if p.currentToken.Type != lexer_mod.TOKEN_NEWLINE &&
+		p.currentToken.Type != lexer_mod.TOKEN_SEMICOLON &&
+		p.currentToken.Type != lexer_mod.TOKEN_EOF &&
+		p.currentToken.Type != lexer_mod.TOKEN_RIGHT_CURLY {
 		return nil, p.customError("statement must be followed by newline or semicolon (got %s)", p.currentToken.Type)
 	}
 
@@ -544,6 +549,29 @@ func (p *Parser) matchIfStatement() (*ast.IfStatementNode, error) {
 	}
 
 	return &ast.IfStatementNode{clauses, elseClause, location}, nil
+}
+
+func (p *Parser) matchImportStatement() (*ast.ImportStatementNode, error) {
+	location := p.currentToken.Location
+	p.nextToken()
+	if p.currentToken.Type != lexer_mod.TOKEN_STRING {
+		return nil, p.unexpectedToken("string")
+	}
+	path := p.currentToken.Value
+
+	p.nextToken()
+	if p.currentToken.Type != lexer_mod.TOKEN_AS {
+		return nil, p.unexpectedToken("keyword `as`")
+	}
+
+	p.nextToken()
+	if p.currentToken.Type != lexer_mod.TOKEN_SYMBOL {
+		return nil, p.unexpectedToken("string")
+	}
+	name := p.currentToken.Value
+
+	p.nextToken()
+	return &ast.ImportStatementNode{Path: path, Name: name, Location: location}, nil
 }
 
 func (p *Parser) matchLetStatement(isVar bool) (*ast.LetStatementNode, error) {

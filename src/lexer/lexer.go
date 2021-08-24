@@ -309,6 +309,7 @@ func isWhitespace(ch byte) bool {
 const (
 	TOKEN_AND                    = "TOKEN_AND"
 	TOKEN_ARROW                  = "TOKEN_ARROW"
+	TOKEN_AS                     = "TOKEN_AS"
 	TOKEN_ASSIGN                 = "TOKEN_ASSIGN"
 	TOKEN_ASSIGN_ADD             = "TOKEN_ASSIGN_ADD"
 	TOKEN_ASSIGN_DIV             = "TOKEN_ASSIGN_DIV"
@@ -374,6 +375,7 @@ const (
 
 var keywords = map[string]string{
 	"and":      TOKEN_AND,
+	"as":       TOKEN_AS,
 	"break":    TOKEN_BREAK,
 	"case":     TOKEN_CASE,
 	"class":    TOKEN_CLASS,
