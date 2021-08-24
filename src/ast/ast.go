@@ -205,12 +205,6 @@ type CharacterNode struct {
 	Location *lexer.Location
 }
 
-type EnumSymbolNode struct {
-	Enum     string
-	Case     string
-	Location *lexer.Location
-}
-
 type FieldAccessNode struct {
 	Expr     ExpressionNode
 	Name     string
@@ -249,6 +243,12 @@ type MapNode struct {
 type MapPairNode struct {
 	Key      ExpressionNode
 	Value    ExpressionNode
+	Location *lexer.Location
+}
+
+type QualifiedSymbolNode struct {
+	Enum     string
+	Case     string
 	Location *lexer.Location
 }
 
@@ -340,10 +340,6 @@ func (n *EnumDeclarationNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
-func (n *EnumSymbolNode) GetLocation() *lexer.Location {
-	return n.Location
-}
-
 func (n *ExpressionStatementNode) GetLocation() *lexer.Location {
 	return n.Location
 }
@@ -397,6 +393,10 @@ func (n *MatchStatementNode) GetLocation() *lexer.Location {
 }
 
 func (n *ParameterizedTypeNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *QualifiedSymbolNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -581,10 +581,6 @@ func (n *EnumDeclarationNode) String() string {
 	return sb.String()
 }
 
-func (n *EnumSymbolNode) String() string {
-	return fmt.Sprintf("(enum-case %s %s)", n.Enum, n.Case)
-}
-
 func (n *ExpressionStatementNode) String() string {
 	return fmt.Sprintf("(expression-statement %s)", n.Expr.String())
 }
@@ -763,6 +759,10 @@ func (n *ParameterizedTypeNode) String() string {
 	return sb.String()
 }
 
+func (n *QualifiedSymbolNode) String() string {
+	return fmt.Sprintf("(enum-case %s %s)", n.Enum, n.Case)
+}
+
 func (n *ReturnStatementNode) String() string {
 	if n.Expr != nil {
 		return fmt.Sprintf("(return %s)", n.Expr.String())
@@ -824,13 +824,13 @@ func writeBlock(sb *strings.Builder, block []StatementNode) {
 func (n *BooleanNode) expressionNode()          {}
 func (n *CallNode) expressionNode()             {}
 func (n *CharacterNode) expressionNode()        {}
-func (n *EnumSymbolNode) expressionNode()       {}
 func (n *FieldAccessNode) expressionNode()      {}
 func (n *IndexNode) expressionNode()            {}
 func (n *InfixNode) expressionNode()            {}
 func (n *IntegerNode) expressionNode()          {}
 func (n *ListNode) expressionNode()             {}
 func (n *MapNode) expressionNode()              {}
+func (n *QualifiedSymbolNode) expressionNode()  {}
 func (n *StringNode) expressionNode()           {}
 func (n *SymbolNode) expressionNode()           {}
 func (n *TernaryIfNode) expressionNode()        {}

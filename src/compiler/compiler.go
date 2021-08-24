@@ -834,8 +834,6 @@ func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytec
 		return compiler.compileCallNode(node)
 	case *ast.CharacterNode:
 		return []bytecode.Bytecode{&bytecode.PushConstChar{node.Value}}, vtype.VENICE_TYPE_CHARACTER, nil
-	case *ast.EnumSymbolNode:
-		return compiler.compileEnumSymbolNode(node)
 	case *ast.FieldAccessNode:
 		return compiler.compileFieldAccessNode(node)
 	case *ast.IndexNode:
@@ -848,6 +846,8 @@ func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytec
 		return compiler.compileListNode(node)
 	case *ast.MapNode:
 		return compiler.compileMapNode(node)
+	case *ast.QualifiedSymbolNode:
+		return compiler.compileQualifiedSymbolNode(node)
 	case *ast.StringNode:
 		return []bytecode.Bytecode{&bytecode.PushConstStr{node.Value}}, vtype.VENICE_TYPE_STRING, nil
 	case *ast.SymbolNode:
@@ -870,7 +870,7 @@ func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytec
 }
 
 func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
-	if nodeAsEnumSymbol, ok := node.Function.(*ast.EnumSymbolNode); ok {
+	if nodeAsEnumSymbol, ok := node.Function.(*ast.QualifiedSymbolNode); ok {
 		return compiler.compileEnumCallNode(nodeAsEnumSymbol, node)
 	}
 
@@ -911,7 +911,7 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 	return code, returnType, nil
 }
 
-func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.EnumSymbolNode, callNode *ast.CallNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.QualifiedSymbolNode, callNode *ast.CallNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	enumTypeAny, err := compiler.resolveType(&ast.SymbolNode{enumSymbolNode.Enum, nil})
 	if err != nil {
 		return nil, nil, err
@@ -939,7 +939,7 @@ func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.EnumSymbolNode
 	return nil, nil, compiler.customError(callNode, "enum %s does not have case %s", enumSymbolNode.Enum, enumSymbolNode.Case)
 }
 
-func (compiler *Compiler) compileEnumSymbolNode(node *ast.EnumSymbolNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileQualifiedSymbolNode(node *ast.QualifiedSymbolNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	enumTypeAny, err := compiler.resolveType(&ast.SymbolNode{node.Enum, nil})
 	if err != nil {
 		return nil, nil, err

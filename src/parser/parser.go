@@ -944,7 +944,7 @@ func (p *Parser) matchPrefix() (ast.ExpressionNode, error) {
 			}
 			secondValue := p.currentToken.Value
 			p.nextToken()
-			return &ast.EnumSymbolNode{value, secondValue, location}, nil
+			return &ast.QualifiedSymbolNode{value, secondValue, location}, nil
 		} else {
 			return &ast.SymbolNode{value, location}, nil
 		}
