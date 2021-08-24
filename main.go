@@ -10,7 +10,6 @@ import (
 	lexer_mod "github.com/iafisher/venice/src/lexer"
 	"github.com/iafisher/venice/src/parser"
 	vm_mod "github.com/iafisher/venice/src/vm"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -278,19 +277,13 @@ func executeProgram(filePath string) {
 		filePath = filePath + "b"
 	}
 
-	fileContentsBytes, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		fatalError("Error while opening %s: %v", filePath, err)
-	}
-
-	fileContents := string(fileContentsBytes)
-	bytecodeList, err := bytecode_mod.ReadCompiledProgramFromString(fileContents)
+	compiledProgram, err := bytecode_mod.ReadCompiledProgramFromFile(filePath)
 	if err != nil {
 		fatalError("Error while reading %s: %v", filePath, err)
 	}
 
 	vm := vm_mod.NewVirtualMachine()
-	_, err = vm.Execute(bytecodeList, false)
+	_, err = vm.Execute(compiledProgram, false)
 	if err != nil {
 		fatalError("Execution error: %s", err)
 	}

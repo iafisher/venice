@@ -11,6 +11,13 @@ import (
 func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram *CompiledProgram) {
 	writer.WriteString(fmt.Sprintf("version %d\n\n", compiledProgram.Version))
 
+	if len(compiledProgram.Imports) > 0 {
+		for _, importObject := range compiledProgram.Imports {
+			writer.WriteString(fmt.Sprintf("import %q %q\n", importObject.Path, importObject.Name))
+		}
+		writer.WriteByte('\n')
+	}
+
 	for functionName, functionCode := range compiledProgram.Code {
 		writer.WriteString(functionName)
 		writer.WriteString(":\n")
@@ -31,7 +38,17 @@ func ReadCompiledProgramFromFile(filePath string) (*CompiledProgram, error) {
 	}
 
 	p := bytecodeParser{lexer: lexer_mod.NewLexer(filePath, string(fileContentsBytes))}
-	return p.parse()
+	compiledProgram, err := p.parse()
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.resolveImports(compiledProgram)
+	if err != nil {
+		return nil, err
+	}
+
+	return compiledProgram, nil
 }
 
 func ReadCompiledProgramFromString(programString string) (*CompiledProgram, error) {
@@ -57,6 +74,27 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 
 	p.nextToken()
 	compiledProgram.Version, _ = p.expectInt()
+
+	if p.currentToken.Type != lexer_mod.TOKEN_NEWLINE {
+		p.newError("expected newline after version declaration")
+	}
+
+	p.nextTokenSkipNewlines()
+	for p.currentToken.Type == lexer_mod.TOKEN_IMPORT {
+		p.nextToken()
+		path, _ := p.expectString()
+		name, _ := p.expectString()
+
+		if p.currentToken.Type != lexer_mod.TOKEN_NEWLINE {
+			p.newError("expected newline after import statement")
+		}
+		p.nextTokenSkipNewlines()
+
+		compiledProgram.Imports = append(
+			compiledProgram.Imports, &CompiledProgramImport{Path: path, Name: name},
+		)
+	}
+
 	if len(p.errors) > 0 {
 		return nil, p.errors[0]
 	}
@@ -294,6 +332,10 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 
 		compiledProgram.Code[p.currentFunctionName] = append(compiledProgram.Code[p.currentFunctionName], bytecode)
 		p.expect(lexer_mod.TOKEN_NEWLINE)
+
+		if len(p.errors) > 0 {
+			return nil, p.errors[0]
+		}
 	}
 
 	if len(p.errors) == 0 {
@@ -301,6 +343,49 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 	} else {
 		return nil, p.errors[0]
 	}
+}
+
+func (p *bytecodeParser) resolveImports(compiledProgram *CompiledProgram) error {
+	visited := map[string]bool{}
+	return p.resolveImportsRecursive(compiledProgram, compiledProgram, visited)
+}
+
+func (p *bytecodeParser) resolveImportsRecursive(
+	original *CompiledProgram, compiledProgram *CompiledProgram, visited map[string]bool,
+) error {
+	for _, importObject := range compiledProgram.Imports {
+		if _, ok := visited[importObject.Path]; ok {
+			// TODO(2021-08-24): Better error message.
+			return &BytecodeParseError{Message: "recursive imports", Location: nil}
+		}
+
+		// TODO(2021-08-24): This duplicates code in ReadCompiledProgramFromFile.
+		fileContentsBytes, err := ioutil.ReadFile(importObject.Path)
+		if err != nil {
+			return err
+		}
+
+		subParser := bytecodeParser{lexer: lexer_mod.NewLexer(importObject.Path, string(fileContentsBytes))}
+		importedProgram, err := subParser.parse()
+		if err != nil {
+			return err
+		}
+
+		for functionName, functionCode := range importedProgram.Code {
+			// TODO(2021-08-24): How should this be handled?
+			if functionName == "main" {
+				continue
+			}
+
+			qualifiedName := fmt.Sprintf("%s::%s", importObject.Name, functionName)
+			original.Code[qualifiedName] = functionCode
+		}
+
+		visited[importObject.Path] = true
+		p.resolveImportsRecursive(original, importedProgram, visited)
+	}
+
+	return nil
 }
 
 func (p *bytecodeParser) expectInt() (int, bool) {
@@ -380,5 +465,9 @@ type BytecodeParseError struct {
 }
 
 func (e *BytecodeParseError) Error() string {
-	return fmt.Sprintf("%s at %s", e.Message, e.Location.String())
+	if e.Location != nil {
+		return fmt.Sprintf("%s at %s", e.Message, e.Location.String())
+	} else {
+		return e.Message
+	}
 }

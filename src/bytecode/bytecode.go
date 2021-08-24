@@ -6,7 +6,13 @@ import (
 
 type CompiledProgram struct {
 	Version int
+	Imports []*CompiledProgramImport
 	Code    map[string][]Bytecode
+}
+
+type CompiledProgramImport struct {
+	Path string
+	Name string
 }
 
 func NewCompiledProgram() *CompiledProgram {

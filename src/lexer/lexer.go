@@ -337,6 +337,7 @@ const (
 	TOKEN_GREATER_THAN           = "TOKEN_GREATER_THAN"
 	TOKEN_GREATER_THAN_OR_EQUALS = "TOKEN_GREATER_THAN_OR_EQUALS"
 	TOKEN_IF                     = "TOKEN_IF"
+	TOKEN_IMPORT                 = "TOKEN_IMPORT"
 	TOKEN_IN                     = "TOKEN_IN"
 	TOKEN_INT                    = "TOKEN_INT"
 	TOKEN_EOF                    = "TOKEN_EOF"
@@ -384,6 +385,7 @@ var keywords = map[string]string{
 	"fn":       TOKEN_FN,
 	"for":      TOKEN_FOR,
 	"if":       TOKEN_IF,
+	"import":   TOKEN_IMPORT,
 	"in":       TOKEN_IN,
 	"let":      TOKEN_LET,
 	"match":    TOKEN_MATCH,
