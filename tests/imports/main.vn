@@ -1,0 +1,6 @@
+# OUTPUT
+# hello
+# END OUTPUT
+import "./lib.vn" as lib
+
+lib::hello()

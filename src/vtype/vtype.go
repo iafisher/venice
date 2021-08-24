@@ -68,6 +68,11 @@ type VeniceMapType struct {
 	ValueType VeniceType
 }
 
+type VeniceModuleType struct {
+	Name  string
+	Types map[string]VeniceType
+}
+
 type VeniceStringType struct{}
 
 type VeniceSymbolType struct {
@@ -162,6 +167,10 @@ func (t *VeniceListType) String() string {
 
 func (t *VeniceMapType) String() string {
 	return fmt.Sprintf("map<%s, %s>", t.KeyType.String(), t.ValueType.String())
+}
+
+func (t *VeniceModuleType) String() string {
+	return t.Name
 }
 
 func (t *VeniceStringType) String() string {
@@ -272,6 +281,11 @@ func (t *VeniceMapType) SubstituteGenerics(genericParameterMap map[string]Venice
 	}
 }
 
+func (t *VeniceModuleType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+	// TODO(2021-08-24): Is this right?
+	return t
+}
+
 func (t *VeniceStringType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
 	return &VeniceStringType{}
 }
@@ -372,6 +386,11 @@ func (t *VeniceMapType) MatchGenerics(genericParameterMap map[string]VeniceType,
 	return nil
 }
 
+func (t *VeniceModuleType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+	// TODO(2021-08-24): Is this right?
+	return nil
+}
+
 func (t *VeniceStringType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
 	return nil
 }
@@ -430,6 +449,7 @@ func (t *VeniceFunctionType) veniceType()  {}
 func (t *VeniceIntegerType) veniceType()   {}
 func (t *VeniceListType) veniceType()      {}
 func (t *VeniceMapType) veniceType()       {}
+func (t *VeniceModuleType) veniceType()    {}
 func (t *VeniceStringType) veniceType()    {}
 func (t *VeniceSymbolType) veniceType()    {}
 func (t *VeniceTupleType) veniceType()     {}

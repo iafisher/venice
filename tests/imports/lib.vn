@@ -1,0 +1,6 @@
+# OUTPUT
+# END OUTPUT
+
+fn hello() {
+  print("Hello")
+}

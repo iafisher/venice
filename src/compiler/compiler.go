@@ -12,6 +12,7 @@ import (
 	"github.com/iafisher/venice/src/ast"
 	"github.com/iafisher/venice/src/bytecode"
 	"github.com/iafisher/venice/src/lexer"
+	"github.com/iafisher/venice/src/parser"
 	"github.com/iafisher/venice/src/vtype"
 )
 
@@ -32,34 +33,62 @@ func NewCompiler() *Compiler {
 }
 
 func (compiler *Compiler) Compile(file *ast.File) (*bytecode.CompiledProgram, error) {
+	compiledProgram, _, err := compiler.compileModule("", file)
+	return compiledProgram, err
+}
+
+func (compiler *Compiler) compileModule(moduleName string, file *ast.File) (*bytecode.CompiledProgram, vtype.VeniceType, error) {
 	compiledProgram := bytecode.NewCompiledProgram()
 	for _, statementAny := range file.Statements {
 		switch statement := statementAny.(type) {
 		case *ast.ClassDeclarationNode:
 			err := compiler.compileClassDeclaration(compiledProgram, statement)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 		case *ast.EnumDeclarationNode:
 			err := compiler.compileEnumDeclaration(statement)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 		case *ast.FunctionDeclarationNode:
 			code, err := compiler.compileFunctionDeclaration(statement)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			compiledProgram.Code[statement.Name] = code
+		case *ast.ImportStatementNode:
+			importedFile, err := parser.NewParser().ParseFile(statement.Path)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			subCompiler := NewCompiler()
+			importedProgram, moduleType, err := subCompiler.compileModule(statement.Name, importedFile)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			for functionName, functionCode := range importedProgram.Code {
+				// TODO(2021-08-24): How should I handle this?
+				if functionName == "main" {
+					continue
+				}
+
+				qualifiedName := fmt.Sprintf("%s::%s", functionName, functionCode)
+				compiledProgram.Code[qualifiedName] = functionCode
+			}
+
+			compiler.symbolTable.Put(statement.Name, moduleType)
 		default:
 			code, err := compiler.compileStatement(statementAny)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			compiledProgram.Code["main"] = append(compiledProgram.Code["main"], code...)
 		}
 	}
-	return compiledProgram, nil
+	return compiledProgram, moduleTypeFromSymbolTable(moduleName, compiler.symbolTable), nil
 }
 
 func (compiler *Compiler) GetType(expr ast.ExpressionNode) (vtype.VeniceType, error) {
@@ -1506,6 +1535,10 @@ func (compiler *Compiler) PrintTypeSymbolTable() {
 	for key, value := range compiler.typeSymbolTable.Symbols {
 		fmt.Printf("%s: %s\n", key, value.Type.String())
 	}
+}
+
+func moduleTypeFromSymbolTable(name string, symbolTable *SymbolTable) *vtype.VeniceModuleType {
+	return nil
 }
 
 type CompileError struct {

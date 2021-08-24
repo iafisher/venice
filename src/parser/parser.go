@@ -12,6 +12,7 @@ import (
 	"github.com/iafisher/venice/src/ast"
 	lexer_mod "github.com/iafisher/venice/src/lexer"
 	"io/ioutil"
+	pathlib "path"
 	"strconv"
 )
 
@@ -558,6 +559,10 @@ func (p *Parser) matchImportStatement() (*ast.ImportStatementNode, error) {
 		return nil, p.unexpectedToken("string")
 	}
 	path := p.currentToken.Value
+
+	if p.currentToken.Location.FilePath != "" {
+		path = pathlib.Join(pathlib.Dir(p.currentToken.Location.FilePath), path)
+	}
 
 	p.nextToken()
 	if p.currentToken.Type != lexer_mod.TOKEN_AS {
