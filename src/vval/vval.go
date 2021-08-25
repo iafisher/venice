@@ -243,8 +243,26 @@ func (v *VeniceClassObject) Equals(otherAny VeniceValue) bool {
 }
 
 func (v *VeniceEnumObject) Equals(otherAny VeniceValue) bool {
-	// TODO(2021-08-09): Implement.
-	return false
+	other, ok := otherAny.(*VeniceEnumObject)
+	if !ok {
+		return false
+	}
+
+	if v.Label != other.Label {
+		return false
+	}
+
+	if len(v.Values) != len(other.Values) {
+		return false
+	}
+
+	for i := 0; i < len(v.Values); i++ {
+		if !v.Values[i].Equals(other.Values[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (v *VeniceInteger) Equals(otherAny VeniceValue) bool {

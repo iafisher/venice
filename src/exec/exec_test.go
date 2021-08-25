@@ -279,7 +279,7 @@ func TestFunctionDeclaration(t *testing.T) {
 
 func TestIndexing(t *testing.T) {
 	assertEqual(t, `let l = [1, 2, 3]; l[1]`, I(2))
-	assertEqual(t, `{1: "one", 2: "two", 3: "three"}[3]`, S("three"))
+	assertEqual(t, `{1: "one", 2: "two", 3: "three"}[3]`, Some(S("three")))
 	assertEqual(t, `let s = "123"; s[1]`, C('2'))
 }
 
@@ -392,7 +392,7 @@ func TestMapIndexAssignment(t *testing.T) {
 		m["forty two"] = 42
 		m["forty two"]
 		`,
-		I(42),
+		Some(I(42)),
 	)
 }
 
@@ -490,6 +490,13 @@ func S(s string) *vval.VeniceString {
 	return &vval.VeniceString{s}
 }
 
+func Some(v vval.VeniceValue) *vval.VeniceEnumObject {
+	return &vval.VeniceEnumObject{
+		Label:  "Some",
+		Values: []vval.VeniceValue{v},
+	}
+}
+
 func Tup(values ...vval.VeniceValue) *vval.VeniceTuple {
 	return &vval.VeniceTuple{values}
 }
@@ -517,7 +524,12 @@ func assertEqual(t *testing.T, program string, result vval.VeniceValue) {
 	}
 
 	if !value.Equals(result) {
-		t.Fatalf("Expected %s, got %s\n\nInput:\n\n%s", result.String(), value.String(), program)
+		t.Fatalf(
+			"Expected %s, got %s\n\nInput:\n\n%s",
+			result.String(),
+			value.String(),
+			program,
+		)
 	}
 }
 
@@ -530,7 +542,10 @@ func assertTypecheckError(t *testing.T, program string, errorMessage string) {
 	compiler := compiler.NewCompiler()
 	_, err = compiler.Compile(parsedFile)
 	if err == nil {
-		t.Fatalf("Expected compile error, but program compiled without error\n\nInput:\n\n%s", program)
+		t.Fatalf(
+			"Expected compile error, but program compiled without error\n\nInput:\n\n%s",
+			program,
+		)
 	}
 
 	if !strings.Contains(err.Error(), errorMessage) {

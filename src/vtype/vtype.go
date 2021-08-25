@@ -215,19 +215,27 @@ func (t *VeniceUnionType) String() string {
  * - Generic parameter types substitute the concrete type if the parameter matches.
  */
 
-func (t *VeniceAnyType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceAnyType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	return &VeniceAnyType{}
 }
 
-func (t *VeniceBooleanType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceBooleanType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	return &VeniceBooleanType{}
 }
 
-func (t *VeniceCharacterType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceCharacterType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	return &VeniceCharacterType{}
 }
 
-func (t *VeniceClassType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceClassType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	fields := []*VeniceClassField{}
 	for _, field := range t.Fields {
 		fields = append(fields, &VeniceClassField{
@@ -239,7 +247,9 @@ func (t *VeniceClassType) SubstituteGenerics(genericParameterMap map[string]Veni
 	return &VeniceClassType{Name: t.Name, Fields: fields, Methods: t.Methods}
 }
 
-func (t *VeniceEnumType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceEnumType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	cases := []*VeniceCaseType{}
 	for _, enumCase := range t.Cases {
 		caseTypes := []VeniceType{}
@@ -251,7 +261,9 @@ func (t *VeniceEnumType) SubstituteGenerics(genericParameterMap map[string]Venic
 	return &VeniceEnumType{Name: t.Name, Cases: cases}
 }
 
-func (t *VeniceFunctionType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceFunctionType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	paramTypes := []VeniceType{}
 	for _, paramType := range t.ParamTypes {
 		paramTypes = append(paramTypes, paramType.SubstituteGenerics(genericParameterMap))
@@ -264,33 +276,45 @@ func (t *VeniceFunctionType) SubstituteGenerics(genericParameterMap map[string]V
 	}
 }
 
-func (t *VeniceIntegerType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceIntegerType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	return &VeniceIntegerType{}
 }
 
-func (t *VeniceListType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceListType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	return &VeniceListType{
 		t.ItemType.SubstituteGenerics(genericParameterMap),
 	}
 }
 
-func (t *VeniceMapType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceMapType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	return &VeniceMapType{
 		t.KeyType.SubstituteGenerics(genericParameterMap),
 		t.ValueType.SubstituteGenerics(genericParameterMap),
 	}
 }
 
-func (t *VeniceModuleType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceModuleType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	// TODO(2021-08-24): Is this right?
 	return t
 }
 
-func (t *VeniceStringType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceStringType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	return &VeniceStringType{}
 }
 
-func (t *VeniceSymbolType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceSymbolType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	if concreteType, ok := genericParameterMap[t.Label]; ok {
 		return concreteType
 	} else {
@@ -298,7 +322,9 @@ func (t *VeniceSymbolType) SubstituteGenerics(genericParameterMap map[string]Ven
 	}
 }
 
-func (t *VeniceTupleType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceTupleType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	newItemTypes := []VeniceType{}
 	for _, itemType := range t.ItemTypes {
 		newItemTypes = append(newItemTypes, itemType.SubstituteGenerics(genericParameterMap))
@@ -306,7 +332,9 @@ func (t *VeniceTupleType) SubstituteGenerics(genericParameterMap map[string]Veni
 	return &VeniceTupleType{newItemTypes}
 }
 
-func (t *VeniceUnionType) SubstituteGenerics(genericParameterMap map[string]VeniceType) VeniceType {
+func (t *VeniceUnionType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
 	newTypes := []VeniceType{}
 	for _, subType := range t.Types {
 		newTypes = append(newTypes, subType.SubstituteGenerics(genericParameterMap))
@@ -318,24 +346,34 @@ func (t *VeniceUnionType) SubstituteGenerics(genericParameterMap map[string]Veni
  * MatchGenerics() implementations
  */
 
-func (t *VeniceAnyType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceAnyType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	return nil
 }
 
-func (t *VeniceBooleanType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceBooleanType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	return nil
 }
 
-func (t *VeniceCharacterType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceCharacterType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	return nil
 }
 
-func (t *VeniceClassType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceClassType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	// TODO(2021-08-20): Is this right?
 	return nil
 }
 
-func (t *VeniceEnumType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceEnumType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	if enumType, ok := concreteType.(*VeniceEnumType); ok {
 		for i, enumCase := range t.Cases {
 			if i >= len(enumType.Cases) {
@@ -354,7 +392,9 @@ func (t *VeniceEnumType) MatchGenerics(genericParameterMap map[string]VeniceType
 	return nil
 }
 
-func (t *VeniceFunctionType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceFunctionType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	if functionType, ok := concreteType.(*VeniceFunctionType); ok {
 		for i, paramType := range t.ParamTypes {
 			if i >= len(functionType.ParamTypes) {
@@ -367,18 +407,24 @@ func (t *VeniceFunctionType) MatchGenerics(genericParameterMap map[string]Venice
 	return nil
 }
 
-func (t *VeniceIntegerType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceIntegerType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	return nil
 }
 
-func (t *VeniceListType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceListType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	if listType, ok := concreteType.(*VeniceListType); ok {
 		t.ItemType.MatchGenerics(genericParameterMap, listType.ItemType)
 	}
 	return nil
 }
 
-func (t *VeniceMapType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceMapType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	if mapType, ok := concreteType.(*VeniceMapType); ok {
 		t.KeyType.MatchGenerics(genericParameterMap, mapType.KeyType)
 		t.ValueType.MatchGenerics(genericParameterMap, mapType.ValueType)
@@ -386,22 +432,30 @@ func (t *VeniceMapType) MatchGenerics(genericParameterMap map[string]VeniceType,
 	return nil
 }
 
-func (t *VeniceModuleType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceModuleType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	// TODO(2021-08-24): Is this right?
 	return nil
 }
 
-func (t *VeniceStringType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceStringType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	return nil
 }
 
-func (t *VeniceSymbolType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceSymbolType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	// TODO(2021-08-20): Check for existing type.
 	genericParameterMap[t.Label] = concreteType
 	return nil
 }
 
-func (t *VeniceTupleType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceTupleType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	if tupleType, ok := concreteType.(*VeniceTupleType); ok {
 		for i, itemType := range t.ItemTypes {
 			if i >= len(tupleType.ItemTypes) {
@@ -413,7 +467,9 @@ func (t *VeniceTupleType) MatchGenerics(genericParameterMap map[string]VeniceTyp
 	return nil
 }
 
-func (t *VeniceUnionType) MatchGenerics(genericParameterMap map[string]VeniceType, concreteType VeniceType) error {
+func (t *VeniceUnionType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
 	if unionType, ok := concreteType.(*VeniceUnionType); ok {
 		for i, subType := range t.Types {
 			if i >= len(unionType.Types) {

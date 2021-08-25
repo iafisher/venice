@@ -46,12 +46,24 @@ func TestParseContinueStatements(t *testing.T) {
 }
 
 func TestParseEnumDeclarationStatements(t *testing.T) {
-	checkParseStatement(t, "enum Operator { Plus, Minus }", "(enum-declaration Operator ((enum-case Plus) (enum-case Minus)))")
-	checkParseStatement(t, "enum Optional { Some(int), None }", "(enum-declaration Optional ((enum-case Some int) (enum-case None)))")
+	checkParseStatement(
+		t,
+		"enum Operator { Plus, Minus }",
+		"(enum-declaration Operator ((enum-case Plus) (enum-case Minus)))",
+	)
+	checkParseStatement(
+		t,
+		"enum Optional { Some(int), None }",
+		"(enum-declaration Optional ((enum-case Some int) (enum-case None)))",
+	)
 }
 
 func TestParseFunctionDeclarationStatements(t *testing.T) {
-	checkParseStatement(t, "fn f(x: int) -> int { return x }", "(function-declaration f ((function-param x int)) int (block (return x)))")
+	checkParseStatement(
+		t,
+		"fn f(x: int) -> int { return x }",
+		"(function-declaration f ((function-param x int)) int (block (return x)))",
+	)
 	// checkParseStatement(t, "export fn f(x: int) -> int { return x }", "(exported-function-declaration f ((function-param x int)) int (block (return x)))")
 }
 

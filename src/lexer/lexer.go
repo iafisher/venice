@@ -25,7 +25,15 @@ type Location struct {
 }
 
 func NewLexer(filePath string, program string) *Lexer {
-	return &Lexer{program: program, index: 0, location: Location{Line: 1, Column: 1, FilePath: filePath}}
+	return &Lexer{
+		program: program,
+		index:   0,
+		location: Location{
+			Line:     1,
+			Column:   1,
+			FilePath: filePath,
+		},
+	}
 }
 
 func (l *Lexer) NextToken() *Token {
@@ -101,13 +109,21 @@ func (l *Lexer) nextToken() *Token {
 	case ch == '"':
 		value, err := l.readString('"')
 		if err != nil {
-			return &Token{Type: TOKEN_ERROR, Value: "invalid string literal", Location: location}
+			return &Token{
+				Type:     TOKEN_ERROR,
+				Value:    "invalid string literal",
+				Location: location,
+			}
 		}
 		return &Token{Type: TOKEN_STRING, Value: value, Location: location}
 	case ch == '\'':
 		value, err := l.readString('\'')
 		if err != nil {
-			return &Token{Type: TOKEN_ERROR, Value: "invalid character literal", Location: location}
+			return &Token{
+				Type:     TOKEN_ERROR,
+				Value:    "invalid character literal",
+				Location: location,
+			}
 		}
 		return &Token{Type: TOKEN_CHARACTER, Value: value, Location: location}
 	default:
@@ -190,7 +206,9 @@ func (l *Lexer) readInteger() (string, error) {
 			ch := l.program[l.index]
 			if strings.IndexByte(binaryDigits, ch) == -1 {
 				l.advance()
-				return "", &LexerError{fmt.Sprintf("invalid character in binary integer literal: '%c'", ch)}
+				return "", &LexerError{
+					fmt.Sprintf("invalid character in binary integer literal: '%c'", ch),
+				}
 			}
 			l.advance()
 		}
@@ -202,7 +220,9 @@ func (l *Lexer) readInteger() (string, error) {
 			ch := l.program[l.index]
 			if strings.IndexByte(octalDigits, ch) == -1 {
 				l.advance()
-				return "", &LexerError{fmt.Sprintf("invalid character in octal integer literal: '%c'", ch)}
+				return "", &LexerError{
+					fmt.Sprintf("invalid character in octal integer literal: '%c'", ch),
+				}
 			}
 			l.advance()
 		}
@@ -214,7 +234,9 @@ func (l *Lexer) readInteger() (string, error) {
 			ch := l.program[l.index]
 			if strings.IndexByte(hexadecimalDigits, ch) == -1 {
 				l.advance()
-				return "", &LexerError{fmt.Sprintf("invalid character in hexadecimal integer literal: '%c'", ch)}
+				return "", &LexerError{
+					fmt.Sprintf("invalid character in hexadecimal integer literal: '%c'", ch),
+				}
 			}
 			l.advance()
 		}
@@ -225,14 +247,18 @@ func (l *Lexer) readInteger() (string, error) {
 			ch := l.program[l.index]
 			if strings.IndexByte(decimalDigits, ch) == -1 {
 				l.advance()
-				return "", &LexerError{fmt.Sprintf("invalid character in integer literal: '%c'", ch)}
+				return "", &LexerError{
+					fmt.Sprintf("invalid character in integer literal: '%c'", ch),
+				}
 			}
 			l.advance()
 		}
 
 		// Check the first character afterwards so that the whole literal is read as a
 		// single token.
-		if l.index-start > 1 && (l.program[start] == '0' || (l.program[start] == '-' && l.program[start+1] == '0')) {
+		if l.index-start > 1 &&
+			(l.program[start] == '0' ||
+				(l.program[start] == '-' && l.program[start+1] == '0')) {
 			return "", &LexerError{"integer literal cannot start with '0'"}
 		}
 
@@ -283,11 +309,21 @@ func (l *Lexer) startsWith(prefix string) bool {
 }
 
 func (l *Lexer) copyLocation() *Location {
-	return &Location{Line: l.location.Line, Column: l.location.Column, FilePath: l.location.FilePath}
+	return &Location{
+		Line:     l.location.Line,
+		Column:   l.location.Column,
+		FilePath: l.location.FilePath,
+	}
 }
 
 func (token *Token) String() string {
-	return fmt.Sprintf("%s (%q) at line %d, column %d", token.Type, token.Value, token.Location.Line, token.Location.Column)
+	return fmt.Sprintf(
+		"%s (%q) at line %d, column %d",
+		token.Type,
+		token.Value,
+		token.Location.Line,
+		token.Location.Column,
+	)
 }
 
 func isDigit(ch byte) bool {

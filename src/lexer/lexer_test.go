@@ -40,17 +40,33 @@ func TestIntegerLiterals(t *testing.T) {
 
 func TestInvalidIntegerLiterals(t *testing.T) {
 	tokens := getTokens("12a 0b12 0o9 0xg 01 -01")
-	checkToken(t, tokens[0], TOKEN_ERROR, "invalid character in integer literal: 'a'", 1, 1)
-	checkToken(t, tokens[1], TOKEN_ERROR, "invalid character in binary integer literal: '2'", 1, 5)
-	checkToken(t, tokens[2], TOKEN_ERROR, "invalid character in octal integer literal: '9'", 1, 10)
-	checkToken(t, tokens[3], TOKEN_ERROR, "invalid character in hexadecimal integer literal: 'g'", 1, 14)
+
+	checkToken(
+		t, tokens[0], TOKEN_ERROR, "invalid character in integer literal: 'a'", 1, 1,
+	)
+	checkToken(
+		t, tokens[1], TOKEN_ERROR, "invalid character in binary integer literal: '2'", 1, 5,
+	)
+	checkToken(
+		t, tokens[2], TOKEN_ERROR, "invalid character in octal integer literal: '9'", 1, 10,
+	)
+	checkToken(
+		t,
+		tokens[3],
+		TOKEN_ERROR,
+		"invalid character in hexadecimal integer literal: 'g'",
+		1,
+		14,
+	)
 	checkToken(t, tokens[4], TOKEN_ERROR, "integer literal cannot start with '0'", 1, 18)
 	checkToken(t, tokens[5], TOKEN_ERROR, "integer literal cannot start with '0'", 1, 21)
 	checkTokensLength(t, tokens, 6)
 }
 
 func TestKeywordTokens(t *testing.T) {
-	tokens := getTokens("and break class continue else enum false fn for if in let or private public return true while void")
+	tokens := getTokens(
+		"and break class continue else enum false fn for if in let or private public return true while void",
+	)
 	checkToken(t, tokens[0], TOKEN_AND, "and", 1, 1)
 	checkToken(t, tokens[1], TOKEN_BREAK, "break", 1, 5)
 	checkToken(t, tokens[2], TOKEN_CLASS, "class", 1, 11)
@@ -146,13 +162,33 @@ func checkTokensLength(t *testing.T, tokens []*Token, expectedLength int) {
 func checkToken(t *testing.T, token *Token, ttype string, value string, line int, column int) {
 	if token.Value != value {
 		if token.Type != ttype {
-			t.Fatalf("Wrong token value and type (line %d, col %d): got %q (%q), expected %q (%q)", token.Location.Line, token.Location.Column, token.Value, token.Type, value, ttype)
+			t.Fatalf(
+				"Wrong token value and type (line %d, col %d): got %q (%q), expected %q (%q)",
+				token.Location.Line,
+				token.Location.Column,
+				token.Value,
+				token.Type,
+				value,
+				ttype,
+			)
 		} else {
-			t.Fatalf("Wrong token value (line %d, col %d): got %q, expected %q", token.Location.Line, token.Location.Column, token.Value, value)
+			t.Fatalf(
+				"Wrong token value (line %d, col %d): got %q, expected %q",
+				token.Location.Line,
+				token.Location.Column,
+				token.Value,
+				value,
+			)
 		}
 	}
 	if token.Type != ttype {
-		t.Fatalf("Wrong token type (line %d, col %d): got %q, expected %q", token.Location.Line, token.Location.Column, token.Type, ttype)
+		t.Fatalf(
+			"Wrong token type (line %d, col %d): got %q, expected %q",
+			token.Location.Line,
+			token.Location.Column,
+			token.Type,
+			ttype,
+		)
 	}
 	if token.Location.Line != line {
 		t.Fatalf("Wrong line: got %d, expected %d", token.Location.Line, line)

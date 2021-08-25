@@ -780,7 +780,12 @@ func (n *SymbolNode) String() string {
 }
 
 func (n *TernaryIfNode) String() string {
-	return fmt.Sprintf("(ternary-if %s %s %s)", n.Condition.String(), n.TrueClause.String(), n.FalseClause.String())
+	return fmt.Sprintf(
+		"(ternary-if %s %s %s)",
+		n.Condition.String(),
+		n.TrueClause.String(),
+		n.FalseClause.String(),
+	)
 }
 
 func (n *TupleFieldAccessNode) String() string {

@@ -13,7 +13,13 @@ func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram *CompiledP
 
 	if len(compiledProgram.Imports) > 0 {
 		for _, importObject := range compiledProgram.Imports {
-			writer.WriteString(fmt.Sprintf("import %q %q\n", importObject.Path, importObject.Name))
+			writer.WriteString(
+				fmt.Sprintf(
+					"import %q %q\n",
+					importObject.Path,
+					importObject.Name,
+				),
+			)
 		}
 		writer.WriteByte('\n')
 	}
@@ -330,7 +336,10 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			continue
 		}
 
-		compiledProgram.Code[p.currentFunctionName] = append(compiledProgram.Code[p.currentFunctionName], bytecode)
+		compiledProgram.Code[p.currentFunctionName] = append(
+			compiledProgram.Code[p.currentFunctionName],
+			bytecode,
+		)
 		p.expect(lexer_mod.TOKEN_NEWLINE)
 
 		if len(p.errors) > 0 {
@@ -365,7 +374,9 @@ func (p *bytecodeParser) resolveImportsRecursive(
 			return err
 		}
 
-		subParser := bytecodeParser{lexer: lexer_mod.NewLexer(importObject.Path, string(fileContentsBytes))}
+		subParser := bytecodeParser{
+			lexer: lexer_mod.NewLexer(importObject.Path, string(fileContentsBytes)),
+		}
 		importedProgram, err := subParser.parse()
 		if err != nil {
 			return err

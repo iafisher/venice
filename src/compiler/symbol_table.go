@@ -32,7 +32,10 @@ func NewBuiltinSymbolTable() *SymbolTable {
 						[]vtype.VeniceType{
 							vtype.VENICE_TYPE_STRING,
 							&vtype.VeniceListType{vtype.VENICE_TYPE_ANY},
-							&vtype.VeniceMapType{vtype.VENICE_TYPE_ANY, vtype.VENICE_TYPE_ANY},
+							&vtype.VeniceMapType{
+								KeyType:   vtype.VENICE_TYPE_ANY,
+								ValueType: vtype.VENICE_TYPE_ANY,
+							},
 						},
 					},
 				},

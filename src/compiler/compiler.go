@@ -37,7 +37,9 @@ func (compiler *Compiler) Compile(file *ast.File) (*bytecode.CompiledProgram, er
 	return compiledProgram, err
 }
 
-func (compiler *Compiler) compileModule(moduleName string, file *ast.File) (*bytecode.CompiledProgram, vtype.VeniceType, error) {
+func (compiler *Compiler) compileModule(
+	moduleName string, file *ast.File,
+) (*bytecode.CompiledProgram, vtype.VeniceType, error) {
 	compiledProgram := bytecode.NewCompiledProgram()
 	for _, statementAny := range file.Statements {
 		switch statement := statementAny.(type) {
@@ -64,7 +66,9 @@ func (compiler *Compiler) compileModule(moduleName string, file *ast.File) (*byt
 			}
 
 			subCompiler := NewCompiler()
-			importedProgram, moduleType, err := subCompiler.compileModule(statement.Name, importedFile)
+			importedProgram, moduleType, err := subCompiler.compileModule(
+				statement.Name, importedFile,
+			)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -100,90 +104,29 @@ func (compiler *Compiler) GetType(expr ast.ExpressionNode) (vtype.VeniceType, er
  * Compile statements
  */
 
-func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compileStatement(
+	treeAny ast.StatementNode,
+) ([]bytecode.Bytecode, error) {
 	switch node := treeAny.(type) {
 	case *ast.AssignStatementNode:
 		return compiler.compileAssignStatement(node)
 	case *ast.BreakStatementNode:
-		if compiler.nestedLoopCount == 0 {
-			return nil, compiler.customError(treeAny, "break statement outside of loop")
-		}
-
-		// Return a placeholder bytecode instruction that the compiler will later convert
-		// to a REL_JUMP instruction.
-		return []bytecode.Bytecode{&bytecode.Placeholder{"break"}}, nil
+		return compiler.compileBreakStatement(node)
 	case *ast.ContinueStatementNode:
-		if compiler.nestedLoopCount == 0 {
-			return nil, compiler.customError(treeAny, "continue statement outside of loop")
-		}
-
-		// Return a placeholder bytecode instruction that the compiler will later convert
-		// to a REL_JUMP instruction.
-		return []bytecode.Bytecode{&bytecode.Placeholder{"continue"}}, nil
+		return compiler.compileContinueStatement(node)
 	case *ast.ExpressionStatementNode:
 		code, _, err := compiler.compileExpression(node.Expr)
-		if err != nil {
-			return nil, err
-		}
-		return code, nil
+		return code, err
 	case *ast.ForLoopNode:
 		return compiler.compileForLoop(node)
 	case *ast.IfStatementNode:
 		return compiler.compileIfStatement(node)
 	case *ast.LetStatementNode:
-		if _, ok := compiler.symbolTable.Get(node.Symbol); ok {
-			return nil, compiler.customError(treeAny, "re-declaration of symbol `%q`", node.Symbol)
-		}
-
-		code, eType, err := compiler.compileExpression(node.Expr)
-		if err != nil {
-			return nil, err
-		}
-
-		if node.Type != nil {
-			declaredType, err := compiler.resolveType(node.Type)
-			if err != nil {
-				return nil, err
-			}
-
-			if !compiler.checkType(declaredType, eType) {
-				return nil, compiler.customError(node.Expr, "expected %s, got %s", declaredType.String(), eType.String())
-			}
-		}
-
-		if node.IsVar {
-			compiler.symbolTable.PutVar(node.Symbol, eType)
-		} else {
-			compiler.symbolTable.Put(node.Symbol, eType)
-		}
-		return append(code, &bytecode.StoreName{node.Symbol}), nil
+		return compiler.compileLetStatement(node)
 	case *ast.MatchStatementNode:
 		return compiler.compileMatchStatement(node)
 	case *ast.ReturnStatementNode:
-		if compiler.functionInfo == nil {
-			return nil, compiler.customError(treeAny, "return statement outside of function definition")
-		}
-
-		if node.Expr != nil {
-			code, exprType, err := compiler.compileExpression(node.Expr)
-			if err != nil {
-				return nil, err
-			}
-
-			if !compiler.checkType(compiler.functionInfo.declaredReturnType, exprType) {
-				return nil, compiler.customError(treeAny, "conflicting function return types")
-			}
-
-			compiler.functionInfo.seenReturnStatement = true
-			code = append(code, &bytecode.Return{})
-			return code, err
-		} else {
-			if compiler.functionInfo.declaredReturnType != nil {
-				return nil, compiler.customError(treeAny, "function cannot return void")
-			}
-
-			return []bytecode.Bytecode{&bytecode.Return{}}, nil
-		}
+		return compiler.compileReturnStatement(node)
 	case *ast.WhileLoopNode:
 		return compiler.compileWhileLoop(node)
 	default:
@@ -191,7 +134,9 @@ func (compiler *Compiler) compileStatement(treeAny ast.StatementNode) ([]bytecod
 	}
 }
 
-func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compileAssignStatement(
+	node *ast.AssignStatementNode,
+) ([]bytecode.Bytecode, error) {
 	switch destination := node.Destination.(type) {
 	case *ast.FieldAccessNode:
 		return compiler.compileAssignStatementToField(node, destination)
@@ -202,6 +147,30 @@ func (compiler *Compiler) compileAssignStatement(node *ast.AssignStatementNode) 
 	default:
 		return nil, compiler.customError(destination, "cannot assign to non-symbol")
 	}
+}
+
+func (compiler *Compiler) compileBreakStatement(
+	node *ast.BreakStatementNode,
+) ([]bytecode.Bytecode, error) {
+	if compiler.nestedLoopCount == 0 {
+		return nil, compiler.customError(node, "break statement outside of loop")
+	}
+
+	// Return a placeholder bytecode instruction that the compiler will later convert
+	// to a REL_JUMP instruction.
+	return []bytecode.Bytecode{&bytecode.Placeholder{"break"}}, nil
+}
+
+func (compiler *Compiler) compileContinueStatement(
+	node *ast.ContinueStatementNode,
+) ([]bytecode.Bytecode, error) {
+	if compiler.nestedLoopCount == 0 {
+		return nil, compiler.customError(node, "continue statement outside of loop")
+	}
+
+	// Return a placeholder bytecode instruction that the compiler will later convert
+	// to a REL_JUMP instruction.
+	return []bytecode.Bytecode{&bytecode.Placeholder{"continue"}}, nil
 }
 
 func (compiler *Compiler) compileAssignStatementToField(
@@ -220,7 +189,9 @@ func (compiler *Compiler) compileAssignStatementToField(
 
 	classType, ok := destinationTypeAny.(*vtype.VeniceClassType)
 	if !ok {
-		return nil, compiler.customError(node, "cannot assign to field on type %s", destinationTypeAny.String())
+		return nil, compiler.customError(
+			node, "cannot assign to field on type %s", destinationTypeAny.String(),
+		)
 	}
 
 	for i, field := range classType.Fields {
@@ -244,7 +215,9 @@ func (compiler *Compiler) compileAssignStatementToField(
 		}
 	}
 
-	return nil, compiler.customError(node, "field `%s` does not exist on %s", destination.Name, classType.String())
+	return nil, compiler.customError(
+		node, "field `%s` does not exist on %s", destination.Name, classType.String(),
+	)
 }
 
 func (compiler *Compiler) compileAssignStatementToIndex(
@@ -278,7 +251,9 @@ func (compiler *Compiler) compileAssignStatementToIndex(
 		}
 
 		if !compiler.checkType(vtype.VENICE_TYPE_INTEGER, indexType) {
-			return nil, compiler.customError(node, "list index must be of type integer, not %s", indexType.String())
+			return nil, compiler.customError(
+				node, "list index must be of type integer, not %s", indexType.String(),
+			)
 		}
 
 		code = append(code, indexCode...)
@@ -301,7 +276,9 @@ func (compiler *Compiler) compileAssignStatementToIndex(
 		}
 
 		if !compiler.checkType(destinationType.KeyType, indexType) {
-			return nil, compiler.customError(node, "map index must be of type integer, not %s", indexType.String())
+			return nil, compiler.customError(
+				node, "map index must be of type integer, not %s", indexType.String(),
+			)
 		}
 
 		code = append(code, indexCode...)
@@ -328,22 +305,30 @@ func (compiler *Compiler) compileAssignStatementToSymbol(
 
 	if binding, ok := compiler.symbolTable.GetBinding(destination.Value); ok {
 		if !binding.IsVar {
-			return nil, compiler.customError(destination, "cannot assign to const symbol `%q`", destination.Value)
+			return nil, compiler.customError(
+				destination, "cannot assign to const symbol `%q`", destination.Value,
+			)
 		}
 	}
 
 	expectedType, ok := compiler.symbolTable.Get(destination.Value)
 	if !ok {
-		return nil, compiler.customError(node, "cannot assign to undeclared symbol `%s`", destination.Value)
+		return nil, compiler.customError(
+			node, "cannot assign to undeclared symbol `%s`", destination.Value,
+		)
 	} else if !compiler.checkType(expectedType, eType) {
-		return nil, compiler.customError(node, "wrong expression type in assignment to `%s`", destination.Value)
+		return nil, compiler.customError(
+			node, "wrong expression type in assignment to `%s`", destination.Value,
+		)
 	}
 
 	code = append(code, &bytecode.StoreName{destination.Value})
 	return code, nil
 }
 
-func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.CompiledProgram, node *ast.ClassDeclarationNode) error {
+func (compiler *Compiler) compileClassDeclaration(
+	compiledProgram *bytecode.CompiledProgram, node *ast.ClassDeclarationNode,
+) error {
 	if node.GenericTypeParameter != "" {
 		compiler.typeSymbolTable = compiler.typeSymbolTable.SpawnChild()
 		compiler.typeSymbolTable.Put(
@@ -360,7 +345,12 @@ func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.Comp
 			return err
 		}
 		paramTypes = append(paramTypes, paramType)
-		fields = append(fields, &vtype.VeniceClassField{field.Name, field.Public, paramType})
+		fields = append(
+			fields,
+			&vtype.VeniceClassField{
+				field.Name, field.Public, paramType,
+			},
+		)
 	}
 
 	methods := []*vtype.VeniceFunctionType{}
@@ -394,7 +384,9 @@ func (compiler *Compiler) compileClassDeclaration(compiledProgram *bytecode.Comp
 
 	var classType vtype.VeniceType
 	if node.GenericTypeParameter == "" {
-		classType = &vtype.VeniceClassType{Name: node.Name, Fields: fields, Methods: methods}
+		classType = &vtype.VeniceClassType{
+			Name: node.Name, Fields: fields, Methods: methods,
+		}
 	} else {
 		classType = &vtype.VeniceClassType{
 			Name:              node.Name,
@@ -503,7 +495,9 @@ func (compiler *Compiler) compileEnumDeclaration(node *ast.EnumDeclarationNode) 
 	return nil
 }
 
-func (compiler *Compiler) compileForLoop(node *ast.ForLoopNode) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compileForLoop(
+	node *ast.ForLoopNode,
+) ([]bytecode.Bytecode, error) {
 	iterableCode, iterableTypeAny, err := compiler.compileExpression(node.Iterable)
 	if err != nil {
 		return nil, err
@@ -549,7 +543,9 @@ func (compiler *Compiler) compileForLoop(node *ast.ForLoopNode) ([]bytecode.Byte
 	return code, nil
 }
 
-func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarationNode) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compileFunctionDeclaration(
+	node *ast.FunctionDeclarationNode,
+) ([]bytecode.Bytecode, error) {
 	params := []string{}
 	paramTypes := []vtype.VeniceType{}
 	bodySymbolTable := compiler.symbolTable.SpawnChild()
@@ -610,7 +606,9 @@ func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarati
 	return bodyCode, nil
 }
 
-func (compiler *Compiler) compileIfStatement(node *ast.IfStatementNode) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compileIfStatement(
+	node *ast.IfStatementNode,
+) ([]bytecode.Bytecode, error) {
 	if len(node.Clauses) == 0 {
 		return nil, compiler.customError(node, "`if` statement with no clauses")
 	}
@@ -623,7 +621,9 @@ func (compiler *Compiler) compileIfStatement(node *ast.IfStatementNode) ([]bytec
 		}
 
 		if !compiler.checkType(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
-			return nil, compiler.customError(clause.Condition, "condition of `if` statement must be a boolean")
+			return nil, compiler.customError(
+				clause.Condition, "condition of `if` statement must be a boolean",
+			)
 		}
 
 		bodyCode, err := compiler.compileBlock(clause.Body)
@@ -658,7 +658,42 @@ func (compiler *Compiler) compileIfStatement(node *ast.IfStatementNode) ([]bytec
 	return code, nil
 }
 
-func (compiler *Compiler) compileMatchStatement(node *ast.MatchStatementNode) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compileLetStatement(
+	node *ast.LetStatementNode,
+) ([]bytecode.Bytecode, error) {
+	if _, ok := compiler.symbolTable.Get(node.Symbol); ok {
+		return nil, compiler.customError(node, "re-declaration of symbol `%q`", node.Symbol)
+	}
+
+	code, eType, err := compiler.compileExpression(node.Expr)
+	if err != nil {
+		return nil, err
+	}
+
+	if node.Type != nil {
+		declaredType, err := compiler.resolveType(node.Type)
+		if err != nil {
+			return nil, err
+		}
+
+		if !compiler.checkType(declaredType, eType) {
+			return nil, compiler.customError(
+				node.Expr, "expected %s, got %s", declaredType.String(), eType.String(),
+			)
+		}
+	}
+
+	if node.IsVar {
+		compiler.symbolTable.PutVar(node.Symbol, eType)
+	} else {
+		compiler.symbolTable.Put(node.Symbol, eType)
+	}
+	return append(code, &bytecode.StoreName{node.Symbol}), nil
+}
+
+func (compiler *Compiler) compileMatchStatement(
+	node *ast.MatchStatementNode,
+) ([]bytecode.Bytecode, error) {
 	exprCode, exprType, err := compiler.compileExpression(node.Expr)
 	if err != nil {
 		return nil, err
@@ -704,7 +739,9 @@ func (compiler *Compiler) compileMatchStatement(node *ast.MatchStatementNode) ([
 	return code, nil
 }
 
-func (compiler *Compiler) compilePattern(patternAny ast.PatternNode, exprType vtype.VeniceType) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compilePattern(
+	patternAny ast.PatternNode, exprType vtype.VeniceType,
+) ([]bytecode.Bytecode, error) {
 	switch pattern := patternAny.(type) {
 	case *ast.CompoundPatternNode:
 		enumType, ok := exprType.(*vtype.VeniceEnumType)
@@ -722,7 +759,9 @@ func (compiler *Compiler) compilePattern(patternAny ast.PatternNode, exprType vt
 		}
 
 		if index == -1 {
-			return nil, compiler.customError(patternAny, "enum case `%s` not found", pattern.Label)
+			return nil, compiler.customError(
+				patternAny, "enum case `%s` not found", pattern.Label,
+			)
 		}
 
 		caseType := enumType.Cases[index]
@@ -754,7 +793,8 @@ func (compiler *Compiler) compilePattern(patternAny ast.PatternNode, exprType vt
 		}
 
 		for i, bcode := range code {
-			if placeholder, ok := bcode.(*bytecode.Placeholder); ok && placeholder.Name == "pattern" {
+			if placeholder, ok := bcode.(*bytecode.Placeholder); ok &&
+				placeholder.Name == "pattern" {
 				code[i] = &bytecode.RelJumpIfFalseOrPop{len(code) - i}
 			}
 		}
@@ -772,14 +812,49 @@ func (compiler *Compiler) compilePattern(patternAny ast.PatternNode, exprType vt
 	}
 }
 
-func (compiler *Compiler) compileWhileLoop(node *ast.WhileLoopNode) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compileReturnStatement(
+	node *ast.ReturnStatementNode,
+) ([]bytecode.Bytecode, error) {
+	if compiler.functionInfo == nil {
+		return nil, compiler.customError(
+			node, "return statement outside of function definition",
+		)
+	}
+
+	if node.Expr != nil {
+		code, exprType, err := compiler.compileExpression(node.Expr)
+		if err != nil {
+			return nil, err
+		}
+
+		if !compiler.checkType(compiler.functionInfo.declaredReturnType, exprType) {
+			return nil, compiler.customError(node, "conflicting function return types")
+		}
+
+		compiler.functionInfo.seenReturnStatement = true
+		code = append(code, &bytecode.Return{})
+		return code, err
+	} else {
+		if compiler.functionInfo.declaredReturnType != nil {
+			return nil, compiler.customError(node, "function cannot return void")
+		}
+
+		return []bytecode.Bytecode{&bytecode.Return{}}, nil
+	}
+}
+
+func (compiler *Compiler) compileWhileLoop(
+	node *ast.WhileLoopNode,
+) ([]bytecode.Bytecode, error) {
 	conditionCode, conditionType, err := compiler.compileExpression(node.Condition)
 	if err != nil {
 		return nil, err
 	}
 
 	if !compiler.checkType(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
-		return nil, compiler.customError(node.Condition, "condition of `while` loop must be a boolean")
+		return nil, compiler.customError(
+			node.Condition, "condition of `while` loop must be a boolean",
+		)
 	}
 
 	compiler.nestedLoopCount += 1
@@ -809,7 +884,9 @@ func (compiler *Compiler) compileWhileLoop(node *ast.WhileLoopNode) ([]bytecode.
 	return code, nil
 }
 
-func (compiler *Compiler) compileBlock(block []ast.StatementNode) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compileBlock(
+	block []ast.StatementNode,
+) ([]bytecode.Bytecode, error) {
 	code := []bytecode.Bytecode{}
 	for _, statement := range block {
 		statementCode, err := compiler.compileStatement(statement)
@@ -826,14 +903,20 @@ func (compiler *Compiler) compileBlock(block []ast.StatementNode) ([]bytecode.By
  * Compile expressions
  */
 
-func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileExpression(
+	nodeAny ast.ExpressionNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	switch node := nodeAny.(type) {
 	case *ast.BooleanNode:
-		return []bytecode.Bytecode{&bytecode.PushConstBool{node.Value}}, vtype.VENICE_TYPE_BOOLEAN, nil
+		return []bytecode.Bytecode{
+			&bytecode.PushConstBool{node.Value},
+		}, vtype.VENICE_TYPE_BOOLEAN, nil
 	case *ast.CallNode:
 		return compiler.compileCallNode(node)
 	case *ast.CharacterNode:
-		return []bytecode.Bytecode{&bytecode.PushConstChar{node.Value}}, vtype.VENICE_TYPE_CHARACTER, nil
+		return []bytecode.Bytecode{
+			&bytecode.PushConstChar{node.Value},
+		}, vtype.VENICE_TYPE_CHARACTER, nil
 	case *ast.FieldAccessNode:
 		return compiler.compileFieldAccessNode(node)
 	case *ast.IndexNode:
@@ -841,7 +924,9 @@ func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytec
 	case *ast.InfixNode:
 		return compiler.compileInfixNode(node)
 	case *ast.IntegerNode:
-		return []bytecode.Bytecode{&bytecode.PushConstInt{node.Value}}, vtype.VENICE_TYPE_INTEGER, nil
+		return []bytecode.Bytecode{
+			&bytecode.PushConstInt{node.Value},
+		}, vtype.VENICE_TYPE_INTEGER, nil
 	case *ast.ListNode:
 		return compiler.compileListNode(node)
 	case *ast.MapNode:
@@ -849,11 +934,15 @@ func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytec
 	case *ast.QualifiedSymbolNode:
 		return compiler.compileQualifiedSymbolNode(node)
 	case *ast.StringNode:
-		return []bytecode.Bytecode{&bytecode.PushConstStr{node.Value}}, vtype.VENICE_TYPE_STRING, nil
+		return []bytecode.Bytecode{
+			&bytecode.PushConstStr{node.Value},
+		}, vtype.VENICE_TYPE_STRING, nil
 	case *ast.SymbolNode:
 		symbolType, ok := compiler.symbolTable.Get(node.Value)
 		if !ok {
-			return nil, nil, compiler.customError(nodeAny, "undefined symbol: %s", node.Value)
+			return nil, nil, compiler.customError(
+				nodeAny, "undefined symbol: %s", node.Value,
+			)
 		}
 		return []bytecode.Bytecode{&bytecode.PushName{node.Value}}, symbolType, nil
 	case *ast.TernaryIfNode:
@@ -865,11 +954,15 @@ func (compiler *Compiler) compileExpression(nodeAny ast.ExpressionNode) ([]bytec
 	case *ast.UnaryNode:
 		return compiler.compileUnaryNode(node)
 	default:
-		return nil, nil, compiler.customError(nodeAny, "unknown expression type: %T", nodeAny)
+		return nil, nil, compiler.customError(
+			nodeAny, "unknown expression type: %T", nodeAny,
+		)
 	}
 }
 
-func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileCallNode(
+	node *ast.CallNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	if nodeAsEnumSymbol, ok := node.Function.(*ast.QualifiedSymbolNode); ok {
 		return compiler.compileEnumCallNode(nodeAsEnumSymbol, node)
 	}
@@ -881,7 +974,11 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 
 	functionType, ok := functionTypeAny.(*vtype.VeniceFunctionType)
 	if !ok {
-		return nil, nil, compiler.customError(node.Function, "type %s cannot be used as a function", functionTypeAny.String())
+		return nil, nil, compiler.customError(
+			node.Function,
+			"type %s cannot be used as a function",
+			functionTypeAny.String(),
+		)
 	}
 
 	_, isClassMethod := node.Function.(*ast.FieldAccessNode)
@@ -911,7 +1008,9 @@ func (compiler *Compiler) compileCallNode(node *ast.CallNode) ([]bytecode.Byteco
 	return code, returnType, nil
 }
 
-func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.QualifiedSymbolNode, callNode *ast.CallNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileEnumCallNode(
+	enumSymbolNode *ast.QualifiedSymbolNode, callNode *ast.CallNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	enumTypeAny, err := compiler.resolveType(&ast.SymbolNode{enumSymbolNode.Enum, nil})
 	if err != nil {
 		return nil, nil, err
@@ -919,7 +1018,9 @@ func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.QualifiedSymbo
 
 	enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
 	if !ok {
-		return nil, nil, compiler.customError(callNode, "cannot use double colon after non-enum type")
+		return nil, nil, compiler.customError(
+			callNode, "cannot use double colon after non-enum type",
+		)
 	}
 
 	for _, enumCase := range enumType.Cases {
@@ -936,10 +1037,17 @@ func (compiler *Compiler) compileEnumCallNode(enumSymbolNode *ast.QualifiedSymbo
 		}
 	}
 
-	return nil, nil, compiler.customError(callNode, "enum %s does not have case %s", enumSymbolNode.Enum, enumSymbolNode.Case)
+	return nil, nil, compiler.customError(
+		callNode,
+		"enum %s does not have case %s",
+		enumSymbolNode.Enum,
+		enumSymbolNode.Case,
+	)
 }
 
-func (compiler *Compiler) compileQualifiedSymbolNode(node *ast.QualifiedSymbolNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileQualifiedSymbolNode(
+	node *ast.QualifiedSymbolNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	enumTypeAny, err := compiler.resolveType(&ast.SymbolNode{node.Enum, nil})
 	if err != nil {
 		return nil, nil, err
@@ -947,23 +1055,34 @@ func (compiler *Compiler) compileQualifiedSymbolNode(node *ast.QualifiedSymbolNo
 
 	enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
 	if !ok {
-		return nil, nil, compiler.customError(node, "cannot use double colon after non-enum type")
+		return nil, nil, compiler.customError(
+			node, "cannot use double colon after non-enum type",
+		)
 	}
 
 	for _, enumCase := range enumType.Cases {
 		if enumCase.Label == node.Case {
 			if len(enumCase.Types) != 0 {
-				return nil, nil, compiler.customError(node, "%s takes %d argument(s)", enumCase.Label, len(enumCase.Types))
+				return nil, nil, compiler.customError(
+					node,
+					"%s takes %d argument(s)",
+					enumCase.Label,
+					len(enumCase.Types),
+				)
 			}
 
 			return []bytecode.Bytecode{&bytecode.PushEnum{node.Case, 0}}, enumType, nil
 		}
 	}
 
-	return nil, nil, compiler.customError(node, "enum %s does not have case %s", node.Enum, node.Case)
+	return nil, nil, compiler.customError(
+		node, "enum %s does not have case %s", node.Enum, node.Case,
+	)
 }
 
-func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileFieldAccessNode(
+	node *ast.FieldAccessNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	code, typeAny, err := compiler.compileExpression(node.Expr)
 	if err != nil {
 		return nil, nil, err
@@ -993,27 +1112,37 @@ func (compiler *Compiler) compileFieldAccessNode(node *ast.FieldAccessNode) ([]b
 			}
 		}
 
-		return nil, nil, compiler.customError(node, "no such field or method `%s`", node.Name)
+		return nil, nil, compiler.customError(
+			node, "no such field or method `%s`", node.Name,
+		)
 	case *vtype.VeniceListType:
 		methodType, ok := listBuiltins[node.Name]
 		if !ok {
-			return nil, nil, compiler.customError(node, "no such field or method `%s` on list type", node.Name)
+			return nil, nil, compiler.customError(
+				node, "no such field or method `%s` on list type", node.Name,
+			)
 		}
 		return code, methodType, nil
 	case *vtype.VeniceMapType:
 		methodType, ok := mapBuiltins[node.Name]
 		if !ok {
-			return nil, nil, compiler.customError(node, "no such field or method `%s` on map type", node.Name)
+			return nil, nil, compiler.customError(
+				node, "no such field or method `%s` on map type", node.Name,
+			)
 		}
 		return code, methodType, nil
 	case *vtype.VeniceStringType:
 		methodType, ok := stringBuiltins[node.Name]
 		if !ok {
-			return nil, nil, compiler.customError(node, "no such field or method `%s` on string type", node.Name)
+			return nil, nil, compiler.customError(
+				node, "no such field or method `%s` on string type", node.Name,
+			)
 		}
 		return code, methodType, nil
 	default:
-		return nil, nil, compiler.customError(node, "no such field or method `%s` on type %s", node.Name, typeAny.String())
+		return nil, nil, compiler.customError(
+			node, "no such field or method `%s` on type %s", node.Name, typeAny.String(),
+		)
 	}
 }
 
@@ -1056,7 +1185,9 @@ func (compiler *Compiler) compileFunctionArguments(
 			paramType = functionType.ParamTypes[i]
 		}
 
-		err = compiler.checkFunctionArgType(args[i], paramType, argType, genericParameterMap)
+		err = compiler.checkFunctionArgType(
+			args[i], paramType, argType, genericParameterMap,
+		)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1066,7 +1197,9 @@ func (compiler *Compiler) compileFunctionArguments(
 
 	for key, value := range genericParameterMap {
 		if value == nil {
-			return nil, nil, compiler.customError(node, "unsubstituted generic parameter `%s`", key)
+			return nil, nil, compiler.customError(
+				node, "unsubstituted generic parameter `%s`", key,
+			)
 		}
 	}
 
@@ -1095,7 +1228,9 @@ func (compiler *Compiler) checkFunctionArgType(
 	return nil
 }
 
-func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileIndexNode(
+	node *ast.IndexNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	exprCode, exprTypeAny, err := compiler.compileExpression(node.Expr)
 	if err != nil {
 		return nil, nil, err
@@ -1118,11 +1253,13 @@ func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Byte
 		return code, exprType.ItemType, nil
 	case *vtype.VeniceMapType:
 		if !compiler.checkType(exprType.KeyType, indexType) {
-			return nil, nil, compiler.customError(node.Expr, "wrong map key type in index expression")
+			return nil, nil, compiler.customError(
+				node.Expr, "wrong map key type in index expression",
+			)
 		}
 
 		code = append(code, &bytecode.BinaryMapIndex{})
-		return code, exprType.KeyType, nil
+		return code, vtype.VeniceOptionalTypeOf(exprType.ValueType), nil
 	case *vtype.VeniceStringType:
 		if !compiler.checkType(vtype.VENICE_TYPE_INTEGER, indexType) {
 			return nil, nil, compiler.customError(node.Expr, "string index must be integer")
@@ -1135,7 +1272,9 @@ func (compiler *Compiler) compileIndexNode(node *ast.IndexNode) ([]bytecode.Byte
 	}
 }
 
-func (compiler *Compiler) compileInfixNode(node *ast.InfixNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileInfixNode(
+	node *ast.InfixNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	// TODO(2021-08-07): Boolean operators should short-circuit.
 	opBytecode, ok := opsToBytecodes[node.Operator]
 	if !ok {
@@ -1148,7 +1287,9 @@ func (compiler *Compiler) compileInfixNode(node *ast.InfixNode) ([]bytecode.Byte
 	}
 
 	if !compiler.checkInfixLeftType(node.Operator, leftType) {
-		return nil, nil, compiler.customError(node.Left, "invalid type for left operand of %s", node.Operator)
+		return nil, nil, compiler.customError(
+			node.Left, "invalid type for left operand of %s", node.Operator,
+		)
 	}
 
 	rightCode, rightType, err := compiler.compileExpression(node.Right)
@@ -1158,7 +1299,9 @@ func (compiler *Compiler) compileInfixNode(node *ast.InfixNode) ([]bytecode.Byte
 
 	resultType, ok := compiler.checkInfixRightType(node.Operator, leftType, rightType)
 	if !ok {
-		return nil, nil, compiler.customError(node.Right, "invalid type for right operand of %s", node.Operator)
+		return nil, nil, compiler.customError(
+			node.Right, "invalid type for right operand of %s", node.Operator,
+		)
 	}
 
 	var code []bytecode.Bytecode
@@ -1178,7 +1321,9 @@ func (compiler *Compiler) compileInfixNode(node *ast.InfixNode) ([]bytecode.Byte
 	return code, resultType, nil
 }
 
-func (compiler *Compiler) compileListNode(node *ast.ListNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileListNode(
+	node *ast.ListNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	code := []bytecode.Bytecode{}
 	var itemType vtype.VeniceType
 	for i := len(node.Values) - 1; i >= 0; i-- {
@@ -1191,7 +1336,9 @@ func (compiler *Compiler) compileListNode(node *ast.ListNode) ([]bytecode.Byteco
 		if itemType == nil {
 			itemType = valueType
 		} else if !compiler.checkType(itemType, valueType) {
-			return nil, nil, compiler.customError(value, "list elements must all be of same type")
+			return nil, nil, compiler.customError(
+				value, "list elements must all be of same type",
+			)
 		}
 
 		code = append(code, valueCode...)
@@ -1200,7 +1347,9 @@ func (compiler *Compiler) compileListNode(node *ast.ListNode) ([]bytecode.Byteco
 	return code, &vtype.VeniceListType{itemType}, nil
 }
 
-func (compiler *Compiler) compileMapNode(node *ast.MapNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileMapNode(
+	node *ast.MapNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	code := []bytecode.Bytecode{}
 	var keyType vtype.VeniceType
 	var valueType vtype.VeniceType
@@ -1214,7 +1363,9 @@ func (compiler *Compiler) compileMapNode(node *ast.MapNode) ([]bytecode.Bytecode
 		if keyType == nil {
 			keyType = thisKeyType
 		} else if !compiler.checkType(keyType, thisKeyType) {
-			return nil, nil, compiler.customError(pair.Key, "map keys must all be of the same type")
+			return nil, nil, compiler.customError(
+				pair.Key, "map keys must all be of the same type",
+			)
 		}
 
 		code = append(code, keyCode...)
@@ -1227,7 +1378,9 @@ func (compiler *Compiler) compileMapNode(node *ast.MapNode) ([]bytecode.Bytecode
 		if valueType == nil {
 			valueType = thisValueType
 		} else if !compiler.checkType(valueType, thisValueType) {
-			return nil, nil, compiler.customError(pair.Value, "map values must all be of the same type")
+			return nil, nil, compiler.customError(
+				pair.Value, "map values must all be of the same type",
+			)
 		}
 
 		code = append(code, valueCode...)
@@ -1236,14 +1389,18 @@ func (compiler *Compiler) compileMapNode(node *ast.MapNode) ([]bytecode.Bytecode
 	return code, &vtype.VeniceMapType{keyType, valueType}, nil
 }
 
-func (compiler *Compiler) compileTernaryIfNode(node *ast.TernaryIfNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileTernaryIfNode(
+	node *ast.TernaryIfNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	conditionCode, conditionType, err := compiler.compileExpression(node.Condition)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	if !compiler.checkType(vtype.VENICE_TYPE_BOOLEAN, conditionType) {
-		return nil, nil, compiler.customError(node, "condition of `if` expression must be a boolean")
+		return nil, nil, compiler.customError(
+			node, "condition of `if` expression must be a boolean",
+		)
 	}
 
 	trueClauseCode, trueClauseType, err := compiler.compileExpression(node.TrueClause)
@@ -1257,7 +1414,9 @@ func (compiler *Compiler) compileTernaryIfNode(node *ast.TernaryIfNode) ([]bytec
 	}
 
 	if !compiler.checkType(trueClauseType, falseClauseType) {
-		return nil, nil, compiler.customError(node, "branches of `if` expression are of different types")
+		return nil, nil, compiler.customError(
+			node, "branches of `if` expression are of different types",
+		)
 	}
 
 	code := conditionCode
@@ -1268,7 +1427,9 @@ func (compiler *Compiler) compileTernaryIfNode(node *ast.TernaryIfNode) ([]bytec
 	return code, trueClauseType, nil
 }
 
-func (compiler *Compiler) compileTupleFieldAccessNode(node *ast.TupleFieldAccessNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileTupleFieldAccessNode(
+	node *ast.TupleFieldAccessNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	code, typeAny, err := compiler.compileExpression(node.Expr)
 	if err != nil {
 		return nil, nil, err
@@ -1276,7 +1437,9 @@ func (compiler *Compiler) compileTupleFieldAccessNode(node *ast.TupleFieldAccess
 
 	tupleType, ok := typeAny.(*vtype.VeniceTupleType)
 	if !ok {
-		return nil, nil, compiler.customError(node, "left-hand side of dot must be a tuple object")
+		return nil, nil, compiler.customError(
+			node, "left-hand side of dot must be a tuple object",
+		)
 	}
 
 	if node.Index < 0 || node.Index >= len(tupleType.ItemTypes) {
@@ -1287,7 +1450,9 @@ func (compiler *Compiler) compileTupleFieldAccessNode(node *ast.TupleFieldAccess
 	return code, tupleType.ItemTypes[node.Index], nil
 }
 
-func (compiler *Compiler) compileTupleNode(node *ast.TupleNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileTupleNode(
+	node *ast.TupleNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	code := []bytecode.Bytecode{}
 	itemTypes := []vtype.VeniceType{}
 	for i := len(node.Values) - 1; i >= 0; i-- {
@@ -1309,7 +1474,9 @@ func (compiler *Compiler) compileTupleNode(node *ast.TupleNode) ([]bytecode.Byte
 	return code, &vtype.VeniceTupleType{itemTypes}, nil
 }
 
-func (compiler *Compiler) compileUnaryNode(node *ast.UnaryNode) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+func (compiler *Compiler) compileUnaryNode(
+	node *ast.UnaryNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	switch node.Operator {
 	case "-":
 		code, exprType, err := compiler.compileExpression(node.Expr)
@@ -1318,7 +1485,11 @@ func (compiler *Compiler) compileUnaryNode(node *ast.UnaryNode) ([]bytecode.Byte
 		}
 
 		if exprType != vtype.VENICE_TYPE_INTEGER {
-			return nil, nil, compiler.customError(node, "argument to unary minus must be integer, not %s", exprType.String())
+			return nil, nil, compiler.customError(
+				node,
+				"argument to unary minus must be integer, not %s",
+				exprType.String(),
+			)
 		}
 
 		code = append(code, &bytecode.UnaryMinus{})
@@ -1330,13 +1501,19 @@ func (compiler *Compiler) compileUnaryNode(node *ast.UnaryNode) ([]bytecode.Byte
 		}
 
 		if exprType != vtype.VENICE_TYPE_BOOLEAN {
-			return nil, nil, compiler.customError(node, "argument to `not` must be boolean, not %s", exprType.String())
+			return nil, nil, compiler.customError(
+				node,
+				"argument to `not` must be boolean, not %s",
+				exprType.String(),
+			)
 		}
 
 		code = append(code, &bytecode.UnaryNot{})
 		return code, vtype.VENICE_TYPE_BOOLEAN, nil
 	default:
-		return nil, nil, compiler.customError(node, "unknown unary operator `%s`", node.Operator)
+		return nil, nil, compiler.customError(
+			node, "unknown unary operator `%s`", node.Operator,
+		)
 	}
 }
 
@@ -1378,37 +1555,49 @@ func (compiler *Compiler) checkInfixLeftType(operator string, leftType vtype.Ven
 	}
 }
 
-func (compiler *Compiler) checkInfixRightType(operator string, leftType vtype.VeniceType, rightType vtype.VeniceType) (vtype.VeniceType, bool) {
+func (compiler *Compiler) checkInfixRightType(
+	operator string, leftType vtype.VeniceType, rightType vtype.VeniceType,
+) (vtype.VeniceType, bool) {
 	switch operator {
 	case "==", "!=":
 		return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(leftType, rightType)
 	case "and", "or":
-		return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(vtype.VENICE_TYPE_BOOLEAN, rightType)
+		return vtype.VENICE_TYPE_BOOLEAN,
+			compiler.checkType(vtype.VENICE_TYPE_BOOLEAN, rightType)
 	case ">", ">=", "<", "<=":
-		return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(vtype.VENICE_TYPE_INTEGER, rightType)
+		return vtype.VENICE_TYPE_BOOLEAN,
+			compiler.checkType(vtype.VENICE_TYPE_INTEGER, rightType)
 	case "++":
 		if compiler.checkType(vtype.VENICE_TYPE_STRING, leftType) {
-			return vtype.VENICE_TYPE_STRING, compiler.checkType(vtype.VENICE_TYPE_STRING, rightType)
+			return vtype.VENICE_TYPE_STRING,
+				compiler.checkType(vtype.VENICE_TYPE_STRING, rightType)
 		} else {
 			return leftType, compiler.checkType(leftType, rightType)
 		}
 	case "in":
 		switch rightConcreteType := rightType.(type) {
 		case *vtype.VeniceStringType:
-			return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(vtype.VENICE_TYPE_CHARACTER, leftType) || compiler.checkType(vtype.VENICE_TYPE_STRING, leftType)
+			return vtype.VENICE_TYPE_BOOLEAN,
+				compiler.checkType(vtype.VENICE_TYPE_CHARACTER, leftType) ||
+					compiler.checkType(vtype.VENICE_TYPE_STRING, leftType)
 		case *vtype.VeniceListType:
-			return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(rightConcreteType.ItemType, leftType)
+			return vtype.VENICE_TYPE_BOOLEAN,
+				compiler.checkType(rightConcreteType.ItemType, leftType)
 		case *vtype.VeniceMapType:
-			return vtype.VENICE_TYPE_BOOLEAN, compiler.checkType(rightConcreteType.KeyType, leftType)
+			return vtype.VENICE_TYPE_BOOLEAN,
+				compiler.checkType(rightConcreteType.KeyType, leftType)
 		default:
 			return nil, false
 		}
 	default:
-		return vtype.VENICE_TYPE_INTEGER, compiler.checkType(vtype.VENICE_TYPE_INTEGER, rightType)
+		return vtype.VENICE_TYPE_INTEGER,
+			compiler.checkType(vtype.VENICE_TYPE_INTEGER, rightType)
 	}
 }
 
-func (compiler *Compiler) checkType(expectedTypeAny vtype.VeniceType, actualTypeAny vtype.VeniceType) bool {
+func (compiler *Compiler) checkType(
+	expectedTypeAny vtype.VeniceType, actualTypeAny vtype.VeniceType,
+) bool {
 	switch expectedType := expectedTypeAny.(type) {
 	case *vtype.VeniceAnyType:
 		return true
@@ -1417,7 +1606,9 @@ func (compiler *Compiler) checkType(expectedTypeAny vtype.VeniceType, actualType
 		return ok && compiler.checkType(expectedType.ItemType, actualType.ItemType)
 	case *vtype.VeniceMapType:
 		actualType, ok := actualTypeAny.(*vtype.VeniceMapType)
-		return ok && compiler.checkType(expectedType.KeyType, actualType.KeyType) && compiler.checkType(expectedType.ValueType, actualType.ValueType)
+		return ok &&
+			compiler.checkType(expectedType.KeyType, actualType.KeyType) &&
+			compiler.checkType(expectedType.ValueType, actualType.ValueType)
 	case *vtype.VeniceSymbolType:
 		return true
 		// TODO(2021-08-21)
@@ -1467,7 +1658,9 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 		switch typeNode.Symbol {
 		case "map":
 			if len(typeNode.TypeNodes) != 2 {
-				return nil, compiler.customError(typeNodeAny, "map type requires 2 type parameters")
+				return nil, compiler.customError(
+					typeNodeAny, "map type requires 2 type parameters",
+				)
 			}
 
 			keyType, err := compiler.resolveType(typeNode.TypeNodes[0])
@@ -1483,7 +1676,9 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 			return &vtype.VeniceMapType{KeyType: keyType, ValueType: valueType}, nil
 		case "list":
 			if len(typeNode.TypeNodes) != 1 {
-				return nil, compiler.customError(typeNodeAny, "list type requires 1 type parameter")
+				return nil, compiler.customError(
+					typeNodeAny, "list type requires 1 type parameter",
+				)
 			}
 
 			itemType, err := compiler.resolveType(typeNode.TypeNodes[0])
@@ -1503,16 +1698,22 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 			}
 			return &vtype.VeniceTupleType{types}, nil
 		default:
-			return nil, compiler.customError(typeNodeAny, "unknown type `%s`", typeNode.Symbol)
+			return nil, compiler.customError(
+				typeNodeAny, "unknown type `%s`", typeNode.Symbol,
+			)
 		}
 	case *ast.SymbolNode:
 		resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Value)
 		if !ok {
-			return nil, compiler.customError(typeNodeAny, "unknown type `%s`", typeNode.Value)
+			return nil, compiler.customError(
+				typeNodeAny, "unknown type `%s`", typeNode.Value,
+			)
 		}
 		return resolvedType, nil
 	default:
-		return nil, compiler.customError(typeNodeAny, "unknown type node: %T", typeNodeAny)
+		return nil, compiler.customError(
+			typeNodeAny, "unknown type node: %T", typeNodeAny,
+		)
 	}
 }
 
@@ -1554,6 +1755,8 @@ func (e *CompileError) Error() string {
 	}
 }
 
-func (compiler *Compiler) customError(node ast.Node, message string, args ...interface{}) *CompileError {
+func (compiler *Compiler) customError(
+	node ast.Node, message string, args ...interface{},
+) *CompileError {
 	return &CompileError{fmt.Sprintf(message, args...), node.GetLocation()}
 }
