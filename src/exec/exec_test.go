@@ -459,6 +459,8 @@ func TestStringBuiltins(t *testing.T) {
 	assertEqual(t, `"abc".to_upper()`, S("ABC"))
 	assertEqual(t, `"ABC".to_lower()`, S("abc"))
 	assertEqual(t, `"ABCDE".slice(1, 3)`, S("BC"))
+	assertEqual(t, `"colorless green ideas".split_space()`, L(S("colorless"), S("green"), S("ideas")))
+	assertEqual(t, `"colorless green ideas".split(" ")`, L(S("colorless"), S("green"), S("ideas")))
 }
 
 func TestTernaryIf(t *testing.T) {

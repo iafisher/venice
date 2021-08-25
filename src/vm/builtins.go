@@ -3,6 +3,7 @@ package vm
 import (
 	"fmt"
 	"github.com/iafisher/venice/src/vval"
+	"strconv"
 	"strings"
 )
 
@@ -160,18 +161,41 @@ func builtinPrint(args ...vval.VeniceValue) vval.VeniceValue {
 	return nil
 }
 
+func builtinString(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	switch arg := args[0].(type) {
+	case *vval.VeniceBoolean:
+		if arg.Value {
+			return &vval.VeniceString{"true"}
+		} else {
+			return &vval.VeniceString{"false"}
+		}
+	case *vval.VeniceCharacter:
+		return &vval.VeniceString{string(arg.Value)}
+	case *vval.VeniceInteger:
+		return &vval.VeniceString{strconv.Itoa(arg.Value)}
+	case *vval.VeniceString:
+		return arg
+	default:
+		return nil
+	}
+}
+
 func builtinStringFind(args ...vval.VeniceValue) vval.VeniceValue {
 	if len(args) != 2 {
 		return nil
 	}
 
 	stringArg, ok1 := args[0].(*vval.VeniceString)
-	charArg, ok2 := args[1].(*vval.VeniceCharacter)
+	searchArg, ok2 := args[1].(*vval.VeniceString)
 	if !ok1 || !ok2 {
 		return nil
 	}
 
-	index := strings.IndexByte(stringArg.Value, charArg.Value)
+	index := strings.Index(stringArg.Value, searchArg.Value)
 	if index == -1 {
 		return vval.VENICE_OPTIONAL_NONE
 	} else {
@@ -193,6 +217,41 @@ func builtinStringSlice(args ...vval.VeniceValue) vval.VeniceValue {
 
 	// TODO(2021-08-25): Handle out-of-bounds error.
 	return &vval.VeniceString{stringArg.Value[startIndexArg.Value:endIndexArg.Value]}
+}
+
+func builtinStringSplit(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	stringArg, ok1 := args[0].(*vval.VeniceString)
+	splitterArg, ok2 := args[1].(*vval.VeniceString)
+	if !ok1 || !ok2 {
+		return nil
+	}
+
+	list := &vval.VeniceList{}
+	for _, word := range strings.Split(stringArg.Value, splitterArg.Value) {
+		list.Values = append(list.Values, &vval.VeniceString{word})
+	}
+	return list
+}
+
+func builtinStringSplitSpace(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*vval.VeniceString)
+	if !ok {
+		return nil
+	}
+
+	list := &vval.VeniceList{}
+	for _, word := range strings.Fields(stringArg.Value) {
+		list.Values = append(list.Values, &vval.VeniceString{word})
+	}
+	return list
 }
 
 func builtinStringToUpper(args ...vval.VeniceValue) vval.VeniceValue {
@@ -228,6 +287,7 @@ var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
 	// Global built-ins
 	"length": builtinLength,
 	"print":  builtinPrint,
+	"string": builtinString,
 	// List built-ins
 	"list__append": builtinListAppend,
 	"list__extend": builtinListExtend,
@@ -240,9 +300,11 @@ var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
 	"map__remove":  builtinMapRemove,
 	"map__values":  builtinMapValues,
 	// String built-ins
-	"string__find":     builtinStringFind,
-	"string__length":   builtinLength,
-	"string__slice":    builtinStringSlice,
-	"string__to_lower": builtinStringToLower,
-	"string__to_upper": builtinStringToUpper,
+	"string__find":        builtinStringFind,
+	"string__length":      builtinLength,
+	"string__slice":       builtinStringSlice,
+	"string__split_space": builtinStringSplitSpace,
+	"string__split":       builtinStringSplit,
+	"string__to_lower":    builtinStringToLower,
+	"string__to_upper":    builtinStringToUpper,
 }

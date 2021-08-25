@@ -51,6 +51,23 @@ func NewBuiltinSymbolTable() *SymbolTable {
 				IsBuiltin:  true,
 			},
 		),
+		"string": NewConstBinding(
+			&vtype.VeniceFunctionType{
+				Name: "string",
+				ParamTypes: []vtype.VeniceType{
+					&vtype.VeniceUnionType{
+						[]vtype.VeniceType{
+							vtype.VENICE_TYPE_BOOLEAN,
+							vtype.VENICE_TYPE_CHARACTER,
+							vtype.VENICE_TYPE_INTEGER,
+							vtype.VENICE_TYPE_STRING,
+						},
+					},
+				},
+				ReturnType: vtype.VENICE_TYPE_STRING,
+				IsBuiltin:  true,
+			},
+		),
 	}
 	return &SymbolTable{Parent: nil, Symbols: symbols}
 }
@@ -173,7 +190,7 @@ var mapBuiltins = map[string]vtype.VeniceType{
 var stringBuiltins = map[string]vtype.VeniceType{
 	"find": &vtype.VeniceFunctionType{
 		Name:       "find",
-		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING, vtype.VENICE_TYPE_CHARACTER},
+		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING, vtype.VENICE_TYPE_STRING},
 		ReturnType: vtype.VeniceOptionalTypeOf(vtype.VENICE_TYPE_INTEGER),
 		IsBuiltin:  true,
 	},
@@ -191,6 +208,23 @@ var stringBuiltins = map[string]vtype.VeniceType{
 			vtype.VENICE_TYPE_INTEGER,
 		},
 		ReturnType: vtype.VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"split": &vtype.VeniceFunctionType{
+		Name: "split",
+		ParamTypes: []vtype.VeniceType{
+			vtype.VENICE_TYPE_STRING,
+			vtype.VENICE_TYPE_STRING,
+		},
+		ReturnType: &vtype.VeniceListType{vtype.VENICE_TYPE_STRING},
+		IsBuiltin:  true,
+	},
+	"split_space": &vtype.VeniceFunctionType{
+		Name: "split_space",
+		ParamTypes: []vtype.VeniceType{
+			vtype.VENICE_TYPE_STRING,
+		},
+		ReturnType: &vtype.VeniceListType{vtype.VENICE_TYPE_STRING},
 		IsBuiltin:  true,
 	},
 	"to_lower": &vtype.VeniceFunctionType{
