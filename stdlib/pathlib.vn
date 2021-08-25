@@ -1,0 +1,21 @@
+fn basename(path: string) -> string {
+  match path.find_last("/") {
+    case Some(index) {
+      return path.slice(index + 1, length(path))
+    }
+    case None {
+      return path
+    }
+  }
+}
+
+fn dirname(path: string) -> Optional<string> {
+  match path.find_last("/") {
+    case Some(index) {
+      return Optional::Some(path.slice(0, index))
+    }
+    case None {
+      return Optional::None
+    }
+  }
+}

@@ -194,6 +194,12 @@ var stringBuiltins = map[string]vtype.VeniceType{
 		ReturnType: vtype.VeniceOptionalTypeOf(vtype.VENICE_TYPE_INTEGER),
 		IsBuiltin:  true,
 	},
+	"find_last": &vtype.VeniceFunctionType{
+		Name:       "find_last",
+		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING, vtype.VENICE_TYPE_STRING},
+		ReturnType: vtype.VeniceOptionalTypeOf(vtype.VENICE_TYPE_INTEGER),
+		IsBuiltin:  true,
+	},
 	"length": &vtype.VeniceFunctionType{
 		Name:       "length",
 		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING},

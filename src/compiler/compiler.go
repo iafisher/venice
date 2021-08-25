@@ -424,6 +424,9 @@ func (compiler *Compiler) compileClassDeclaration(
 			seenReturnStatement: false,
 		}
 		bodyCode, err := compiler.compileBlock(method.Body)
+		if err != nil {
+			return err
+		}
 
 		if declaredReturnType != nil && !compiler.functionInfo.seenReturnStatement {
 			return compiler.customError(node, "non-void function has no return statement")
@@ -440,10 +443,6 @@ func (compiler *Compiler) compileClassDeclaration(
 			paramLoadCode = append(paramLoadCode, &bytecode.StoreName{param.Name})
 		}
 		bodyCode = append(paramLoadCode, bodyCode...)
-
-		if err != nil {
-			return err
-		}
 
 		compiledProgram.Code[fmt.Sprintf("%s__%s", node.Name, method.Name)] = bodyCode
 	}
@@ -584,6 +583,9 @@ func (compiler *Compiler) compileFunctionDeclaration(
 		seenReturnStatement: false,
 	}
 	bodyCode, err := compiler.compileBlock(node.Body)
+	if err != nil {
+		return nil, err
+	}
 
 	if declaredReturnType != nil && !compiler.functionInfo.seenReturnStatement {
 		return nil, compiler.customError(node, "non-void function has no return statement")
@@ -598,10 +600,6 @@ func (compiler *Compiler) compileFunctionDeclaration(
 		paramLoadCode = append(paramLoadCode, &bytecode.StoreName{param.Name})
 	}
 	bodyCode = append(paramLoadCode, bodyCode...)
-
-	if err != nil {
-		return nil, err
-	}
 
 	return bodyCode, nil
 }
@@ -828,7 +826,12 @@ func (compiler *Compiler) compileReturnStatement(
 		}
 
 		if !compiler.checkType(compiler.functionInfo.declaredReturnType, exprType) {
-			return nil, compiler.customError(node, "conflicting function return types")
+			return nil, compiler.customError(
+				node,
+				"conflicting function return types: got %s, expected %s",
+				exprType.String(),
+				compiler.functionInfo.declaredReturnType.String(),
+			)
 		}
 
 		compiler.functionInfo.seenReturnStatement = true
@@ -1638,6 +1641,42 @@ func (compiler *Compiler) checkType(
 	switch expectedType := expectedTypeAny.(type) {
 	case *vtype.VeniceAnyType:
 		return true
+	case *vtype.VeniceEnumType:
+		actualType, ok := actualTypeAny.(*vtype.VeniceEnumType)
+		if !ok {
+			return false
+		}
+
+		if expectedType.Name != actualType.Name {
+			return false
+		}
+
+		if len(expectedType.Cases) != len(actualType.Cases) {
+			return false
+		}
+
+		for i := 0; i < len(expectedType.Cases); i++ {
+			if expectedType.Cases[i].Label != actualType.Cases[i].Label {
+				return false
+			}
+
+			if len(expectedType.Cases[i].Types) != len(actualType.Cases[i].Types) {
+				return false
+			}
+
+			for j := 0; j < len(expectedType.Cases[i].Types); j++ {
+				// TODO(2021-08-25): Fix this dirty hack.
+				if _, isSymbolType := actualType.Cases[i].Types[j].(*vtype.VeniceSymbolType); isSymbolType {
+					continue
+				}
+
+				if !compiler.checkType(expectedType.Cases[i].Types[j], actualType.Cases[i].Types[j]) {
+					return false
+				}
+			}
+		}
+
+		return true
 	case *vtype.VeniceListType:
 		actualType, ok := actualTypeAny.(*vtype.VeniceListType)
 		return ok && compiler.checkType(expectedType.ItemType, actualType.ItemType)
@@ -1735,9 +1774,19 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 			}
 			return &vtype.VeniceTupleType{types}, nil
 		default:
-			return nil, compiler.customError(
-				typeNodeAny, "unknown type `%s`", typeNode.Symbol,
-			)
+			resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Symbol)
+			if !ok {
+				return nil, compiler.customError(
+					typeNodeAny, "unknown type `%s`", typeNode.Symbol,
+				)
+			}
+			// TODO(2021-08-25): This is hard-coded to work only for Optional.
+			subType, err := compiler.resolveType(typeNode.TypeNodes[0])
+			if err != nil {
+				return nil, err
+			}
+			genericsMap := map[string]vtype.VeniceType{"T": subType}
+			return resolvedType.SubstituteGenerics(genericsMap), nil
 		}
 	case *ast.SymbolNode:
 		resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Value)

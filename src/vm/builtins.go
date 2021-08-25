@@ -203,6 +203,25 @@ func builtinStringFind(args ...vval.VeniceValue) vval.VeniceValue {
 	}
 }
 
+func builtinStringFindLast(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	stringArg, ok1 := args[0].(*vval.VeniceString)
+	searchArg, ok2 := args[1].(*vval.VeniceString)
+	if !ok1 || !ok2 {
+		return nil
+	}
+
+	index := strings.LastIndex(stringArg.Value, searchArg.Value)
+	if index == -1 {
+		return vval.VENICE_OPTIONAL_NONE
+	} else {
+		return vval.VeniceOptionalOf(&vval.VeniceInteger{index})
+	}
+}
+
 func builtinStringSlice(args ...vval.VeniceValue) vval.VeniceValue {
 	if len(args) != 3 {
 		return nil
@@ -301,6 +320,7 @@ var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
 	"map__values":  builtinMapValues,
 	// String built-ins
 	"string__find":        builtinStringFind,
+	"string__find_last":   builtinStringFindLast,
 	"string__length":      builtinLength,
 	"string__slice":       builtinStringSlice,
 	"string__split_space": builtinStringSplitSpace,
