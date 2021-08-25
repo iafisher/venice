@@ -1,5 +1,5 @@
 # OUTPUT
-# hello
+# Hello
 # END OUTPUT
 import "./lib.vn" as lib
 

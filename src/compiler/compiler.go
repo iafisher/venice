@@ -79,7 +79,7 @@ func (compiler *Compiler) compileModule(
 					continue
 				}
 
-				qualifiedName := fmt.Sprintf("%s::%s", functionName, functionCode)
+				qualifiedName := fmt.Sprintf("%s::%s", statement.Name, functionName)
 				compiledProgram.Code[qualifiedName] = functionCode
 			}
 
@@ -1011,16 +1011,53 @@ func (compiler *Compiler) compileCallNode(
 func (compiler *Compiler) compileEnumCallNode(
 	enumSymbolNode *ast.QualifiedSymbolNode, callNode *ast.CallNode,
 ) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+	// TODO(2021-08-25): Clean this method up - enum calls and module calls should be separate.
 	enumTypeAny, err := compiler.resolveType(&ast.SymbolNode{enumSymbolNode.Enum, nil})
 	if err != nil {
-		return nil, nil, err
+		moduleTypeAny, ok1 := compiler.symbolTable.Get(enumSymbolNode.Enum)
+		moduleType, ok2 := moduleTypeAny.(*vtype.VeniceModuleType)
+		if !ok1 || !ok2 {
+			// TODO(2021-08-25): Better error message.
+			return nil, nil, compiler.customError(callNode, "invalid use of qualified symbol")
+		}
+
+		functionTypeAny, ok := moduleType.Types[enumSymbolNode.Case]
+		if !ok {
+			return nil, nil, compiler.customError(
+				callNode,
+				"module `%s` has no member `%s`",
+				enumSymbolNode.Enum,
+				enumSymbolNode.Case,
+			)
+		}
+
+		functionType, ok := functionTypeAny.(*vtype.VeniceFunctionType)
+		if !ok {
+			return nil, nil, compiler.customError(
+				callNode.Function,
+				"type %s cannot be used as a function",
+				functionTypeAny.String(),
+			)
+		}
+
+		code, returnType, err := compiler.compileFunctionArguments(
+			callNode,
+			callNode.Args,
+			functionType,
+			false,
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		code = append(code, &bytecode.PushConstStr{fmt.Sprintf("%s::%s", enumSymbolNode.Enum, functionType.Name)})
+		code = append(code, &bytecode.CallFunction{len(functionType.ParamTypes)})
+		return code, returnType, nil
 	}
 
 	enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
 	if !ok {
-		return nil, nil, compiler.customError(
-			callNode, "cannot use double colon after non-enum type",
-		)
+		return nil, nil, compiler.customError(callNode, "cannot use double colon after non-enum type")
 	}
 
 	for _, enumCase := range enumType.Cases {
@@ -1739,7 +1776,11 @@ func (compiler *Compiler) PrintTypeSymbolTable() {
 }
 
 func moduleTypeFromSymbolTable(name string, symbolTable *SymbolTable) *vtype.VeniceModuleType {
-	return nil
+	moduleTypes := map[string]vtype.VeniceType{}
+	for key, value := range symbolTable.Symbols {
+		moduleTypes[key] = value.Type
+	}
+	return &vtype.VeniceModuleType{Name: name, Types: moduleTypes}
 }
 
 type CompileError struct {

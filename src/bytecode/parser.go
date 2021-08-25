@@ -122,6 +122,15 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			p.nextToken()
 			p.expect(lexer_mod.TOKEN_NEWLINE)
 			continue
+		} else if p.currentToken.Type == lexer_mod.TOKEN_DOUBLE_COLON {
+			p.nextToken()
+			symbolToken, ok := p.expect(lexer_mod.TOKEN_SYMBOL)
+			if !ok {
+				continue
+			}
+			p.currentFunctionName = fmt.Sprintf("%s::%s", symbol, symbolToken.Value)
+			p.expect(lexer_mod.TOKEN_COLON)
+			continue
 		}
 
 		var bytecode Bytecode
