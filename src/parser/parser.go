@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	pathlib "path"
 	"strconv"
+	"strings"
 )
 
 type Parser struct {
@@ -570,7 +571,9 @@ func (p *Parser) matchImportStatement() (*ast.ImportStatementNode, error) {
 	}
 	path := p.currentToken.Value
 
-	if p.currentToken.Location.FilePath != "" {
+	if !strings.HasPrefix(path, "./") {
+		path = pathlib.Join("/usr/lib/venice0.1", path) + ".vn"
+	} else if p.currentToken.Location.FilePath != "" {
 		path = pathlib.Join(pathlib.Dir(p.currentToken.Location.FilePath), path)
 	}
 
