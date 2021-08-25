@@ -339,6 +339,17 @@ func TestListBuiltins(t *testing.T) {
 		`,
 		L(I(1), I(3)),
 	)
+	assertEqual(t, `[1, 2, 3].slice(1, 2)`, L(I(2)))
+	assertEqual(
+		t,
+		`
+		let l = [1, 2, 3];
+		let l2 = l.slice(0, 3);
+		l2.remove(2);
+		(l, l2)
+		`,
+		Tup(L(I(1), I(2), I(3)), L(I(1), I(2))),
+	)
 }
 
 func TestListIndexAssignment(t *testing.T) {
@@ -447,6 +458,7 @@ func TestStringBuiltins(t *testing.T) {
 	assertEqual(t, `"123".length()`, I(3))
 	assertEqual(t, `"abc".to_upper()`, S("ABC"))
 	assertEqual(t, `"ABC".to_lower()`, S("abc"))
+	assertEqual(t, `"ABCDE".slice(1, 3)`, S("BC"))
 }
 
 func TestTernaryIf(t *testing.T) {

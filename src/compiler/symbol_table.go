@@ -103,6 +103,16 @@ var listBuiltins = map[string]vtype.VeniceType{
 		ReturnType: nil,
 		IsBuiltin:  true,
 	},
+	"slice": &vtype.VeniceFunctionType{
+		Name: "slice",
+		ParamTypes: []vtype.VeniceType{
+			&vtype.VeniceListType{&vtype.VeniceSymbolType{"T"}},
+			vtype.VENICE_TYPE_INTEGER,
+			vtype.VENICE_TYPE_INTEGER,
+		},
+		ReturnType: &vtype.VeniceListType{&vtype.VeniceSymbolType{"T"}},
+		IsBuiltin:  true,
+	},
 }
 
 var mapBuiltins = map[string]vtype.VeniceType{
@@ -171,6 +181,16 @@ var stringBuiltins = map[string]vtype.VeniceType{
 		Name:       "length",
 		ParamTypes: []vtype.VeniceType{vtype.VENICE_TYPE_STRING},
 		ReturnType: vtype.VENICE_TYPE_INTEGER,
+		IsBuiltin:  true,
+	},
+	"slice": &vtype.VeniceFunctionType{
+		Name: "slice",
+		ParamTypes: []vtype.VeniceType{
+			vtype.VENICE_TYPE_STRING,
+			vtype.VENICE_TYPE_INTEGER,
+			vtype.VENICE_TYPE_INTEGER,
+		},
+		ReturnType: vtype.VENICE_TYPE_STRING,
 		IsBuiltin:  true,
 	},
 	"to_lower": &vtype.VeniceFunctionType{

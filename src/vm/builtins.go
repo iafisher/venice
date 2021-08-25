@@ -75,6 +75,22 @@ func builtinListRemove(args ...vval.VeniceValue) vval.VeniceValue {
 	return nil
 }
 
+func builtinListSlice(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 3 {
+		return nil
+	}
+
+	listArg, ok1 := args[0].(*vval.VeniceList)
+	startIndexArg, ok2 := args[1].(*vval.VeniceInteger)
+	endIndexArg, ok3 := args[2].(*vval.VeniceInteger)
+	if !ok1 || !ok2 || !ok3 {
+		return nil
+	}
+
+	// TODO(2021-08-25): Handle out-of-bounds error.
+	return &vval.VeniceList{listArg.Values[startIndexArg.Value:endIndexArg.Value]}
+}
+
 func builtinMapEntries(args ...vval.VeniceValue) vval.VeniceValue {
 	if len(args) != 1 {
 		return nil
@@ -163,6 +179,22 @@ func builtinStringFind(args ...vval.VeniceValue) vval.VeniceValue {
 	}
 }
 
+func builtinStringSlice(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 3 {
+		return nil
+	}
+
+	stringArg, ok1 := args[0].(*vval.VeniceString)
+	startIndexArg, ok2 := args[1].(*vval.VeniceInteger)
+	endIndexArg, ok3 := args[2].(*vval.VeniceInteger)
+	if !ok1 || !ok2 || !ok3 {
+		return nil
+	}
+
+	// TODO(2021-08-25): Handle out-of-bounds error.
+	return &vval.VeniceString{stringArg.Value[startIndexArg.Value:endIndexArg.Value]}
+}
+
 func builtinStringToUpper(args ...vval.VeniceValue) vval.VeniceValue {
 	if len(args) != 1 {
 		return nil
@@ -201,6 +233,7 @@ var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
 	"list__extend": builtinListExtend,
 	"list__length": builtinLength,
 	"list__remove": builtinListRemove,
+	"list__slice":  builtinListSlice,
 	// Map built-ins
 	"map__entries": builtinMapEntries,
 	"map__keys":    builtinMapKeys,
@@ -209,6 +242,7 @@ var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
 	// String built-ins
 	"string__find":     builtinStringFind,
 	"string__length":   builtinLength,
+	"string__slice":    builtinStringSlice,
 	"string__to_lower": builtinStringToLower,
 	"string__to_upper": builtinStringToUpper,
 }
