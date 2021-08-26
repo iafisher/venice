@@ -18,7 +18,13 @@ type CompiledProgramImport struct {
 func NewCompiledProgram() *CompiledProgram {
 	return &CompiledProgram{
 		Version: 1,
-		Code:    map[string][]Bytecode{"main": []Bytecode{}},
+		Code: map[string][]Bytecode{
+			"main": []Bytecode{},
+			// TODO(2021-08-26): Think of a better way to do this.
+			"Optional__Some": []Bytecode{
+				&PushEnum{"Some", 1},
+			},
+		},
 	}
 }
 

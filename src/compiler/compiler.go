@@ -20,6 +20,7 @@ type Compiler struct {
 	symbolTable     *SymbolTable
 	typeSymbolTable *SymbolTable
 	functionInfo    *FunctionInfo
+	compiledProgram *bytecode.CompiledProgram
 	nestedLoopCount int
 }
 
@@ -27,6 +28,7 @@ func NewCompiler() *Compiler {
 	return &Compiler{
 		symbolTable:     NewBuiltinSymbolTable(),
 		typeSymbolTable: NewBuiltinTypeSymbolTable(),
+		compiledProgram: bytecode.NewCompiledProgram(),
 		functionInfo:    nil,
 		nestedLoopCount: 0,
 	}
@@ -40,11 +42,10 @@ func (compiler *Compiler) Compile(file *ast.File) (*bytecode.CompiledProgram, er
 func (compiler *Compiler) compileModule(
 	moduleName string, file *ast.File,
 ) (*bytecode.CompiledProgram, vtype.VeniceType, error) {
-	compiledProgram := bytecode.NewCompiledProgram()
 	for _, statementAny := range file.Statements {
 		switch statement := statementAny.(type) {
 		case *ast.ClassDeclarationNode:
-			err := compiler.compileClassDeclaration(compiledProgram, statement)
+			err := compiler.compileClassDeclaration(statement)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -54,11 +55,10 @@ func (compiler *Compiler) compileModule(
 				return nil, nil, err
 			}
 		case *ast.FunctionDeclarationNode:
-			code, err := compiler.compileFunctionDeclaration(statement)
+			err := compiler.compileFunctionDeclaration(statement)
 			if err != nil {
 				return nil, nil, err
 			}
-			compiledProgram.Code[statement.Name] = code
 		case *ast.ImportStatementNode:
 			importedFile, err := parser.NewParser().ParseFile(statement.Path)
 			if err != nil {
@@ -80,7 +80,7 @@ func (compiler *Compiler) compileModule(
 				}
 
 				qualifiedName := fmt.Sprintf("%s::%s", statement.Name, functionName)
-				compiledProgram.Code[qualifiedName] = functionCode
+				compiler.compiledProgram.Code[qualifiedName] = functionCode
 			}
 
 			compiler.symbolTable.Put(statement.Name, moduleType)
@@ -89,10 +89,10 @@ func (compiler *Compiler) compileModule(
 			if err != nil {
 				return nil, nil, err
 			}
-			compiledProgram.Code["main"] = append(compiledProgram.Code["main"], code...)
+			compiler.compiledProgram.Code["main"] = append(compiler.compiledProgram.Code["main"], code...)
 		}
 	}
-	return compiledProgram, moduleTypeFromSymbolTable(moduleName, compiler.symbolTable), nil
+	return compiler.compiledProgram, moduleTypeFromSymbolTable(moduleName, compiler.symbolTable), nil
 }
 
 func (compiler *Compiler) GetType(expr ast.ExpressionNode) (vtype.VeniceType, error) {
@@ -326,9 +326,7 @@ func (compiler *Compiler) compileAssignStatementToSymbol(
 	return code, nil
 }
 
-func (compiler *Compiler) compileClassDeclaration(
-	compiledProgram *bytecode.CompiledProgram, node *ast.ClassDeclarationNode,
-) error {
+func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode) error {
 	if node.GenericTypeParameter != "" {
 		compiler.typeSymbolTable = compiler.typeSymbolTable.SpawnChild()
 		compiler.typeSymbolTable.Put(
@@ -444,11 +442,11 @@ func (compiler *Compiler) compileClassDeclaration(
 		}
 		bodyCode = append(paramLoadCode, bodyCode...)
 
-		compiledProgram.Code[fmt.Sprintf("%s__%s", node.Name, method.Name)] = bodyCode
+		compiler.compiledProgram.Code[fmt.Sprintf("%s__%s", node.Name, method.Name)] = bodyCode
 	}
 
 	constructorBytecode := []bytecode.Bytecode{&bytecode.BuildClass{node.Name, len(fields)}}
-	compiledProgram.Code[node.Name] = constructorBytecode
+	compiler.compiledProgram.Code[node.Name] = constructorBytecode
 	return nil
 }
 
@@ -481,6 +479,11 @@ func (compiler *Compiler) compileEnumDeclaration(node *ast.EnumDeclarationNode) 
 			types = append(types, veniceType)
 		}
 		caseTypes = append(caseTypes, &vtype.VeniceCaseType{caseNode.Label, types})
+
+		functionName := fmt.Sprintf("%s__%s", node.Name, caseNode.Label)
+		compiler.compiledProgram.Code[functionName] = []bytecode.Bytecode{
+			&bytecode.PushEnum{caseNode.Label, len(caseNode.Types)},
+		}
 	}
 
 	if node.GenericTypeParameter != "" {
@@ -540,16 +543,14 @@ func (compiler *Compiler) compileForLoop(
 	return code, nil
 }
 
-func (compiler *Compiler) compileFunctionDeclaration(
-	node *ast.FunctionDeclarationNode,
-) ([]bytecode.Bytecode, error) {
+func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarationNode) error {
 	params := []string{}
 	paramTypes := []vtype.VeniceType{}
 	bodySymbolTable := compiler.symbolTable.SpawnChild()
 	for _, param := range node.Params {
 		paramType, err := compiler.resolveType(param.ParamType)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		params = append(params, param.Name)
@@ -560,7 +561,7 @@ func (compiler *Compiler) compileFunctionDeclaration(
 
 	declaredReturnType, err := compiler.resolveType(node.ReturnType)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Put the function's entry in the symbol table before compiling the body so that
@@ -582,11 +583,11 @@ func (compiler *Compiler) compileFunctionDeclaration(
 	}
 	bodyCode, err := compiler.compileBlock(node.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if declaredReturnType != nil && !compiler.functionInfo.seenReturnStatement {
-		return nil, compiler.customError(node, "non-void function has no return statement")
+		return compiler.customError(node, "non-void function has no return statement")
 	}
 
 	compiler.functionInfo = nil
@@ -598,8 +599,8 @@ func (compiler *Compiler) compileFunctionDeclaration(
 		paramLoadCode = append(paramLoadCode, &bytecode.StoreName{param.Name})
 	}
 	bodyCode = append(paramLoadCode, bodyCode...)
-
-	return bodyCode, nil
+	compiler.compiledProgram.Code[node.Name] = bodyCode
+	return nil
 }
 
 func (compiler *Compiler) compileIfStatement(
@@ -981,10 +982,6 @@ func (compiler *Compiler) compileExpression(
 func (compiler *Compiler) compileCallNode(
 	node *ast.CallNode,
 ) ([]bytecode.Bytecode, vtype.VeniceType, error) {
-	if nodeAsEnumSymbol, ok := node.Function.(*ast.QualifiedSymbolNode); ok {
-		return compiler.compileEnumCallNode(nodeAsEnumSymbol, node)
-	}
-
 	functionCode, functionTypeAny, err := compiler.compileExpression(node.Function)
 	if err != nil {
 		return nil, nil, err
@@ -1015,92 +1012,38 @@ func (compiler *Compiler) compileCallNode(
 	return code, returnType, nil
 }
 
-func (compiler *Compiler) compileEnumCallNode(
-	enumSymbolNode *ast.QualifiedSymbolNode, callNode *ast.CallNode,
-) ([]bytecode.Bytecode, vtype.VeniceType, error) {
-	// TODO(2021-08-25): Clean this method up - enum calls and module calls should be separate.
-	enumTypeAny, err := compiler.resolveType(&ast.SymbolNode{enumSymbolNode.Enum, nil})
-	if err != nil {
-		moduleTypeAny, ok1 := compiler.symbolTable.Get(enumSymbolNode.Enum)
-		moduleType, ok2 := moduleTypeAny.(*vtype.VeniceModuleType)
-		if !ok1 || !ok2 {
-			// TODO(2021-08-25): Better error message.
-			return nil, nil, compiler.customError(callNode, "invalid use of qualified symbol")
-		}
-
-		functionTypeAny, ok := moduleType.Types[enumSymbolNode.Case]
-		if !ok {
-			return nil, nil, compiler.customError(
-				callNode,
-				"module `%s` has no member `%s`",
-				enumSymbolNode.Enum,
-				enumSymbolNode.Case,
-			)
-		}
-
-		functionType, ok := functionTypeAny.(*vtype.VeniceFunctionType)
-		if !ok {
-			return nil, nil, compiler.customError(
-				callNode.Function,
-				"type %s cannot be used as a function",
-				functionTypeAny.String(),
-			)
-		}
-
-		code, returnType, err := compiler.compileFunctionArguments(
-			callNode,
-			callNode.Args,
-			functionType,
-			false,
-		)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		code = append(
-			code,
-			&bytecode.PushConstFunction{
-				Name:      fmt.Sprintf("%s::%s", enumSymbolNode.Enum, functionType.Name),
-				IsBuiltin: functionType.IsBuiltin,
-			},
-		)
-		code = append(code, &bytecode.CallFunction{len(functionType.ParamTypes)})
-		return code, returnType, nil
-	}
-
-	enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
-	if !ok {
-		return nil, nil, compiler.customError(callNode, "cannot use double colon after non-enum type")
-	}
-
-	for _, enumCase := range enumType.Cases {
-		if enumCase.Label == enumSymbolNode.Case {
-			code, returnType, err := compiler.compileFunctionArguments(
-				callNode, callNode.Args, enumCase.AsFunctionType(enumType), false,
-			)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			code = append(code, &bytecode.PushEnum{enumSymbolNode.Case, len(callNode.Args)})
-			return code, returnType, nil
-		}
-	}
-
-	return nil, nil, compiler.customError(
-		callNode,
-		"enum %s does not have case %s",
-		enumSymbolNode.Enum,
-		enumSymbolNode.Case,
-	)
-}
-
 func (compiler *Compiler) compileQualifiedSymbolNode(
 	node *ast.QualifiedSymbolNode,
 ) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	enumTypeAny, err := compiler.resolveType(&ast.SymbolNode{node.Enum, nil})
 	if err != nil {
-		return nil, nil, err
+		otherType, ok := compiler.symbolTable.Get(node.Enum)
+		if ok {
+			moduleType, ok := otherType.(*vtype.VeniceModuleType)
+			if !ok {
+				return nil, nil, compiler.customError(node, "%s is not a module", node.Enum)
+			}
+
+			memberType, ok := moduleType.Types[node.Case]
+			if !ok {
+				return nil, nil, compiler.customError(node, "module %s has no member %s", node.Enum, node.Case)
+			}
+
+			memberFunctionType, ok := memberType.(*vtype.VeniceFunctionType)
+			if !ok {
+				return nil, nil, compiler.customError(
+					node, "cannot only access functions from modules, not %s", memberType.String(),
+				)
+			}
+
+			functionName := fmt.Sprintf("%s::%s", node.Enum, node.Case)
+			code := []bytecode.Bytecode{
+				&bytecode.PushConstFunction{Name: functionName, IsBuiltin: memberFunctionType.IsBuiltin},
+			}
+			return code, memberFunctionType, nil
+		} else {
+			return nil, nil, err
+		}
 	}
 
 	enumType, ok := enumTypeAny.(*vtype.VeniceEnumType)
@@ -1112,20 +1055,10 @@ func (compiler *Compiler) compileQualifiedSymbolNode(
 
 	for _, enumCase := range enumType.Cases {
 		if enumCase.Label == node.Case {
-			if len(enumCase.Types) != 0 {
-				return nil, nil, compiler.customError(
-					node,
-					"%s takes %d argument(s)",
-					enumCase.Label,
-					len(enumCase.Types),
-				)
-			}
-
 			if len(enumCase.Types) > 0 {
 				functionName := fmt.Sprintf("%s__%s", enumType.Name, enumCase.Label)
-				return []bytecode.Bytecode{&bytecode.PushConstFunction{functionName, false}},
-					enumCase.AsFunctionType(enumType),
-					nil
+				code := []bytecode.Bytecode{&bytecode.PushConstFunction{functionName, false}}
+				return code, enumCase.AsFunctionType(enumType), nil
 			} else {
 				return []bytecode.Bytecode{&bytecode.PushEnum{node.Case, 0}}, enumType, nil
 			}
