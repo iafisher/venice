@@ -323,54 +323,49 @@ func (vm *VirtualMachine) executeOne(
 			values = append(values, topOfStack)
 		}
 		vm.pushStack(&vval.VeniceTuple{values})
-	case *bytecode.CallBuiltin:
-		functionName, ok := vm.popStack().(*vval.VeniceString)
-		if !ok {
-			return -1, &ExecutionError{
-				"expected string at top of virtual machine stack for CALL_BUILTIN",
-			}
-		}
-
-		builtin, ok := builtins[functionName.Value]
-		if !ok {
-			return -1, &ExecutionError{
-				fmt.Sprintf("unknown builtin `%s`", functionName.Value),
-			}
-		}
-
-		args := []vval.VeniceValue{}
-		for i := 0; i < bcode.N; i++ {
-			topOfStack := vm.popStack()
-			args = append(args, topOfStack)
-		}
-
-		result := builtin(args...)
-		if result != nil {
-			vm.pushStack(result)
-		}
 	case *bytecode.CallFunction:
-		functionName, ok := vm.popStack().(*vval.VeniceString)
+		functionObject, ok := vm.popStack().(*vval.VeniceFunctionObject)
 		if !ok {
 			return -1, &ExecutionError{
-				"expected string at top of virtual machine stack for CALL_FUNCTION",
+				"expected function at top of virtual machine stack for CALL_FUNCTION",
 			}
 		}
 
-		functionEnv := &Environment{vm.Env, map[string]vval.VeniceValue{}}
-		functionStack := vm.Stack[len(vm.Stack)-bcode.N:]
-		vm.Stack = vm.Stack[:len(vm.Stack)-bcode.N]
+		if functionObject.IsBuiltin {
+			builtin, ok := builtins[functionObject.Name]
+			if !ok {
+				return -1, &ExecutionError{
+					fmt.Sprintf("unknown builtin `%s`", functionObject.Name),
+				}
+			}
 
-		if debug {
-			fmt.Println("DEBUG: Calling function in child virtual machine")
+			args := []vval.VeniceValue{}
+			for i := 0; i < bcode.N; i++ {
+				topOfStack := vm.popStack()
+				args = append(args, topOfStack)
+			}
+
+			result := builtin(args...)
+			if result != nil {
+				vm.pushStack(result)
+			}
+		} else {
+			functionEnv := &Environment{vm.Env, map[string]vval.VeniceValue{}}
+			functionStack := vm.Stack[len(vm.Stack)-bcode.N:]
+			vm.Stack = vm.Stack[:len(vm.Stack)-bcode.N]
+
+			if debug {
+				fmt.Println("DEBUG: Calling function in child virtual machine")
+			}
+
+			functionVm := &VirtualMachine{functionStack, functionEnv}
+			value, err := functionVm.executeFunction(compiledProgram, functionObject.Name, debug)
+			if err != nil {
+				return -1, err
+			}
+
+			vm.pushStack(value)
 		}
-
-		functionVm := &VirtualMachine{functionStack, functionEnv}
-		value, err := functionVm.executeFunction(compiledProgram, functionName.Value, debug)
-		if err != nil {
-			return -1, err
-		}
-
-		vm.pushStack(value)
 	case *bytecode.CheckLabel:
 		enum := vm.peekStack().(*vval.VeniceEnumObject)
 		vm.pushStack(&vval.VeniceBoolean{enum.Label == bcode.Name})
@@ -398,16 +393,17 @@ func (vm *VirtualMachine) executeOne(
 		switch topOfStack := vm.peekStack().(type) {
 		case *vval.VeniceClassObject:
 			vm.pushStack(
-				&vval.VeniceString{
+				&vval.VeniceFunctionObject{
 					fmt.Sprintf("%s__%s", topOfStack.ClassName, bcode.Name),
+					false,
 				},
 			)
 		case *vval.VeniceList:
-			vm.pushStack(&vval.VeniceString{fmt.Sprintf("list__%s", bcode.Name)})
+			vm.pushStack(&vval.VeniceFunctionObject{fmt.Sprintf("list__%s", bcode.Name), true})
 		case *vval.VeniceMap:
-			vm.pushStack(&vval.VeniceString{fmt.Sprintf("map__%s", bcode.Name)})
+			vm.pushStack(&vval.VeniceFunctionObject{fmt.Sprintf("map__%s", bcode.Name), true})
 		case *vval.VeniceString:
-			vm.pushStack(&vval.VeniceString{fmt.Sprintf("string__%s", bcode.Name)})
+			vm.pushStack(&vval.VeniceFunctionObject{fmt.Sprintf("string__%s", bcode.Name), true})
 		default:
 			return -1, &ExecutionError{
 				"expected class, list, map, or string object at top of virtual machine stack for LOOKUP_METHOD",
@@ -417,6 +413,8 @@ func (vm *VirtualMachine) executeOne(
 		vm.pushStack(&vval.VeniceBoolean{bcode.Value})
 	case *bytecode.PushConstChar:
 		vm.pushStack(&vval.VeniceCharacter{bcode.Value})
+	case *bytecode.PushConstFunction:
+		vm.pushStack(&vval.VeniceFunctionObject{bcode.Name, bcode.IsBuiltin})
 	case *bytecode.PushConstInt:
 		vm.pushStack(&vval.VeniceInteger{bcode.Value})
 	case *bytecode.PushConstStr:

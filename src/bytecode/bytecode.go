@@ -112,6 +112,11 @@ type PushConstChar struct {
 	Value byte
 }
 
+type PushConstFunction struct {
+	Name      string
+	IsBuiltin bool
+}
+
 type PushConstInt struct {
 	Value int
 }
@@ -299,6 +304,17 @@ func (b *PushConstChar) String() string {
 	return fmt.Sprintf("PUSH_CONST_CHAR %q", string(b.Value))
 }
 
+func (b *PushConstFunction) String() string {
+	var x string
+	if b.IsBuiltin {
+		x = "1"
+	} else {
+		x = "0"
+	}
+
+	return fmt.Sprintf("PUSH_CONST_FUNCTION %q %s", b.Name, x)
+}
+
 func (b *PushConstInt) String() string {
 	return fmt.Sprintf("PUSH_CONST_INT %d", b.Value)
 }
@@ -402,6 +418,7 @@ func (b *Placeholder) bytecode()         {}
 func (b *PushConstBool) bytecode()       {}
 func (b *PushConstChar) bytecode()       {}
 func (b *PushConstInt) bytecode()        {}
+func (b *PushConstFunction) bytecode()   {}
 func (b *PushConstStr) bytecode()        {}
 func (b *PushEnum) bytecode()            {}
 func (b *PushEnumIndex) bytecode()       {}

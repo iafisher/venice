@@ -252,6 +252,15 @@ func TestFunctionCall(t *testing.T) {
 		"undefined symbol",
 	)
 	assertTypecheckError(t, "int::y", "cannot use double colon after non-enum type")
+
+	assertEqual(
+		t,
+		`
+		let f = length
+		f([1, 2, 3])
+		`,
+		I(3),
+	)
 }
 
 func TestFunctionDeclaration(t *testing.T) {

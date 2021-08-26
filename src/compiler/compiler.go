@@ -949,6 +949,19 @@ func (compiler *Compiler) compileExpression(
 				nodeAny, "undefined symbol: %s", node.Value,
 			)
 		}
+		// TODO(2021-08-26): Do we need to handle function types separately?
+		if functionType, isFunctionType := symbolType.(*vtype.VeniceFunctionType); isFunctionType {
+			return []bytecode.Bytecode{
+					&bytecode.PushConstFunction{
+						Name:      functionType.Name,
+						IsBuiltin: functionType.IsBuiltin,
+					},
+				},
+				symbolType,
+				nil
+		} else {
+			return []bytecode.Bytecode{&bytecode.PushName{node.Value}}, symbolType, nil
+		}
 		return []bytecode.Bytecode{&bytecode.PushName{node.Value}}, symbolType, nil
 	case *ast.TernaryIfNode:
 		return compiler.compileTernaryIfNode(node)
@@ -997,19 +1010,8 @@ func (compiler *Compiler) compileCallNode(
 		return nil, nil, err
 	}
 
-	if isClassMethod {
-		code = append(code, functionCode...)
-		code = append(code, &bytecode.LookupMethod{functionType.Name})
-	} else {
-		code = append(code, &bytecode.PushConstStr{functionType.Name})
-	}
-
-	if functionType.IsBuiltin {
-		code = append(code, &bytecode.CallBuiltin{len(functionType.ParamTypes)})
-	} else {
-		code = append(code, &bytecode.CallFunction{len(functionType.ParamTypes)})
-	}
-
+	code = append(code, functionCode...)
+	code = append(code, &bytecode.CallFunction{len(functionType.ParamTypes)})
 	return code, returnType, nil
 }
 
@@ -1055,7 +1057,13 @@ func (compiler *Compiler) compileEnumCallNode(
 			return nil, nil, err
 		}
 
-		code = append(code, &bytecode.PushConstStr{fmt.Sprintf("%s::%s", enumSymbolNode.Enum, functionType.Name)})
+		code = append(
+			code,
+			&bytecode.PushConstFunction{
+				Name:      fmt.Sprintf("%s::%s", enumSymbolNode.Enum, functionType.Name),
+				IsBuiltin: functionType.IsBuiltin,
+			},
+		)
 		code = append(code, &bytecode.CallFunction{len(functionType.ParamTypes)})
 		return code, returnType, nil
 	}
@@ -1113,7 +1121,14 @@ func (compiler *Compiler) compileQualifiedSymbolNode(
 				)
 			}
 
-			return []bytecode.Bytecode{&bytecode.PushEnum{node.Case, 0}}, enumType, nil
+			if len(enumCase.Types) > 0 {
+				functionName := fmt.Sprintf("%s__%s", enumType.Name, enumCase.Label)
+				return []bytecode.Bytecode{&bytecode.PushConstFunction{functionName, false}},
+					enumCase.AsFunctionType(enumType),
+					nil
+			} else {
+				return []bytecode.Bytecode{&bytecode.PushEnum{node.Case, 0}}, enumType, nil
+			}
 		}
 	}
 
@@ -1150,6 +1165,7 @@ func (compiler *Compiler) compileFieldAccessNode(
 				if !methodType.Public {
 					return nil, nil, compiler.customError(node, "use of private method")
 				}
+				code = append(code, &bytecode.LookupMethod{methodType.Name})
 				return code, methodType, nil
 			}
 		}
@@ -1164,6 +1180,7 @@ func (compiler *Compiler) compileFieldAccessNode(
 				node, "no such field or method `%s` on list type", node.Name,
 			)
 		}
+		code = append(code, &bytecode.LookupMethod{node.Name})
 		return code, methodType, nil
 	case *vtype.VeniceMapType:
 		methodType, ok := mapBuiltins[node.Name]
@@ -1172,6 +1189,7 @@ func (compiler *Compiler) compileFieldAccessNode(
 				node, "no such field or method `%s` on map type", node.Name,
 			)
 		}
+		code = append(code, &bytecode.LookupMethod{node.Name})
 		return code, methodType, nil
 	case *vtype.VeniceStringType:
 		methodType, ok := stringBuiltins[node.Name]
@@ -1180,6 +1198,7 @@ func (compiler *Compiler) compileFieldAccessNode(
 				node, "no such field or method `%s` on string type", node.Name,
 			)
 		}
+		code = append(code, &bytecode.LookupMethod{node.Name})
 		return code, methodType, nil
 	default:
 		return nil, nil, compiler.customError(

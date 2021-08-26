@@ -29,9 +29,8 @@ type VeniceEnumObject struct {
 }
 
 type VeniceFunctionObject struct {
-	Name       string
-	Parameters int
-	IsBuiltin  bool
+	Name      string
+	IsBuiltin bool
 }
 
 type VeniceList struct {

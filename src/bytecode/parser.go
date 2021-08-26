@@ -246,6 +246,17 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 				continue
 			}
 			bytecode = &PushConstChar{value[0]}
+		case "PUSH_CONST_FUNCTION":
+			name, ok := p.expectString()
+			if !ok {
+				continue
+			}
+
+			n, ok := p.expectInt()
+			if !ok {
+				continue
+			}
+			bytecode = &PushConstFunction{name, n == 1}
 		case "PUSH_CONST_INT":
 			n, ok := p.expectInt()
 			if !ok {
