@@ -28,6 +28,12 @@ type VeniceEnumObject struct {
 	Values []VeniceValue
 }
 
+type VeniceFunctionObject struct {
+	Name       string
+	Parameters int
+	IsBuiltin  bool
+}
+
 type VeniceList struct {
 	Values []VeniceValue
 }
@@ -139,6 +145,10 @@ func (v *VeniceEnumObject) String() string {
 	}
 	sb.WriteByte(')')
 	return sb.String()
+}
+
+func (v *VeniceFunctionObject) String() string {
+	return fmt.Sprintf("<function %q>", v.Name)
 }
 
 func (v *VeniceInteger) String() string {
@@ -263,6 +273,10 @@ func (v *VeniceEnumObject) Equals(otherAny VeniceValue) bool {
 	}
 
 	return true
+}
+
+func (v *VeniceFunctionObject) Equals(otherAny VeniceValue) bool {
+	return false
 }
 
 func (v *VeniceInteger) Equals(otherAny VeniceValue) bool {
@@ -448,14 +462,15 @@ func (v *VeniceMap) Values() VeniceValue {
 	return &VeniceList{values}
 }
 
-func (v *VeniceBoolean) veniceValue()      {}
-func (v *VeniceCharacter) veniceValue()    {}
-func (v *VeniceClassObject) veniceValue()  {}
-func (v *VeniceEnumObject) veniceValue()   {}
-func (v *VeniceInteger) veniceValue()      {}
-func (v *VeniceList) veniceValue()         {}
-func (v *VeniceListIterator) veniceValue() {}
-func (v *VeniceMap) veniceValue()          {}
-func (v *VeniceMapIterator) veniceValue()  {}
-func (v *VeniceString) veniceValue()       {}
-func (v *VeniceTuple) veniceValue()        {}
+func (v *VeniceBoolean) veniceValue()        {}
+func (v *VeniceCharacter) veniceValue()      {}
+func (v *VeniceClassObject) veniceValue()    {}
+func (v *VeniceEnumObject) veniceValue()     {}
+func (v *VeniceFunctionObject) veniceValue() {}
+func (v *VeniceInteger) veniceValue()        {}
+func (v *VeniceList) veniceValue()           {}
+func (v *VeniceListIterator) veniceValue()   {}
+func (v *VeniceMap) veniceValue()            {}
+func (v *VeniceMapIterator) veniceValue()    {}
+func (v *VeniceString) veniceValue()         {}
+func (v *VeniceTuple) veniceValue()          {}

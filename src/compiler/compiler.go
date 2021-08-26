@@ -453,6 +453,15 @@ func (compiler *Compiler) compileClassDeclaration(
 }
 
 func (compiler *Compiler) compileEnumDeclaration(node *ast.EnumDeclarationNode) error {
+	// Put in a dummy entry for the enum in the type symbol table so that recursive enum
+	// types will type-check properly.
+	enumType := &vtype.VeniceEnumType{
+		Name:              node.Name,
+		GenericParameters: nil,
+		Cases:             nil,
+	}
+	compiler.typeSymbolTable.Put(node.Name, enumType)
+
 	if node.GenericTypeParameter != "" {
 		compiler.typeSymbolTable = compiler.typeSymbolTable.SpawnChild()
 		compiler.typeSymbolTable.Put(
@@ -476,20 +485,9 @@ func (compiler *Compiler) compileEnumDeclaration(node *ast.EnumDeclarationNode) 
 
 	if node.GenericTypeParameter != "" {
 		compiler.typeSymbolTable = compiler.typeSymbolTable.Parent
-		compiler.typeSymbolTable.Put(
-			node.Name,
-			&vtype.VeniceEnumType{
-				Name:              node.Name,
-				GenericParameters: []string{node.GenericTypeParameter},
-				Cases:             caseTypes,
-			},
-		)
-	} else {
-		compiler.typeSymbolTable.Put(
-			node.Name,
-			&vtype.VeniceEnumType{Name: node.Name, Cases: caseTypes},
-		)
+		enumType.GenericParameters = []string{node.GenericTypeParameter}
 	}
+	enumType.Cases = caseTypes
 
 	return nil
 }
@@ -699,7 +697,11 @@ func (compiler *Compiler) compileMatchStatement(
 
 	enumType, ok := exprType.(*vtype.VeniceEnumType)
 	if !ok {
-		return nil, compiler.customError(node.Expr, "cannot match a non-enum type")
+		return nil, compiler.customError(
+			node.Expr,
+			"cannot match a non-enum type (%s)",
+			exprType.String(),
+		)
 	}
 
 	// TODO(2021-08-22): Ensure matches are exhaustive.
