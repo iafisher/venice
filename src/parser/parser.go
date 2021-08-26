@@ -186,6 +186,16 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 		p.nextToken()
 	}
 
+	noConstructor := false
+	if p.currentToken.Type == lexer_mod.TOKEN_NO {
+		p.nextToken()
+		if p.currentToken.Type != lexer_mod.TOKEN_CONSTRUCTOR {
+			return nil, p.unexpectedToken("keyword `constructor`")
+		}
+		noConstructor = true
+		p.nextToken()
+	}
+
 	if p.currentToken.Type != lexer_mod.TOKEN_LEFT_CURLY {
 		return nil, p.unexpectedToken("left curly brace")
 	}
@@ -204,6 +214,14 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 			public = true
 		} else if p.currentToken.Type == lexer_mod.TOKEN_PRIVATE {
 			public = false
+		} else if p.currentToken.Type == lexer_mod.TOKEN_CONSTRUCTOR {
+			constructorNode, err := p.matchClassMethod(true)
+			if err != nil {
+				return nil, err
+			}
+
+			methodNodes = append(methodNodes, constructorNode)
+			continue
 		} else {
 			return nil, p.unexpectedToken("`public` or `private`")
 		}
@@ -229,6 +247,7 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 
 			fieldNodes = append(fieldNodes, &ast.ClassFieldNode{name, public, fieldType})
 		} else if p.currentToken.Type == lexer_mod.TOKEN_FN {
+			p.nextToken()
 			methodNode, err := p.matchClassMethod(public)
 			if err != nil {
 				return nil, err
@@ -243,6 +262,7 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 	return &ast.ClassDeclarationNode{
 		Name:                 name,
 		GenericTypeParameter: genericTypeParameter,
+		NoConstructor:        noConstructor,
 		Fields:               fieldNodes,
 		Methods:              methodNodes,
 		Location:             location,
@@ -251,14 +271,15 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 
 func (p *Parser) matchClassMethod(public bool) (*ast.ClassMethodNode, error) {
 	location := p.currentToken.Location
-	p.nextToken()
-	if p.currentToken.Type != lexer_mod.TOKEN_SYMBOL {
+
+	var name string
+	if p.currentToken.Type == lexer_mod.TOKEN_SYMBOL || p.currentToken.Type == lexer_mod.TOKEN_CONSTRUCTOR {
+		name = p.currentToken.Value
+	} else {
 		return nil, p.unexpectedToken("function name")
 	}
 
-	name := p.currentToken.Value
 	p.nextToken()
-
 	if p.currentToken.Type != lexer_mod.TOKEN_LEFT_PAREN {
 		return nil, p.unexpectedToken("left parenthesis")
 	}
@@ -1104,6 +1125,7 @@ func (p *Parser) matchArglist(terminator string) ([]ast.ExpressionNode, error) {
 	arglist := []ast.ExpressionNode{}
 	for {
 		if p.currentToken.Type == terminator {
+			p.brackets--
 			p.nextToken()
 			break
 		}

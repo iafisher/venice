@@ -58,6 +58,7 @@ type BreakStatementNode struct {
 type ClassDeclarationNode struct {
 	Name                 string
 	GenericTypeParameter string
+	NoConstructor        bool
 	Fields               []*ClassFieldNode
 	Methods              []*ClassMethodNode
 	Location             *lexer.Location
@@ -475,6 +476,9 @@ func (n *ClassDeclarationNode) String() string {
 	if n.GenericTypeParameter != "" {
 		sb.WriteByte(' ')
 		sb.WriteString(n.GenericTypeParameter)
+	}
+	if n.NoConstructor {
+		sb.WriteString(" no-constructor")
 	}
 	sb.WriteString(" (")
 	for i, field := range n.Fields {

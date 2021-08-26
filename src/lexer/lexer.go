@@ -358,6 +358,7 @@ const (
 	TOKEN_CLASS                  = "TOKEN_CLASS"
 	TOKEN_COLON                  = "TOKEN_COLON"
 	TOKEN_COMMA                  = "TOKEN_COMMA"
+	TOKEN_CONSTRUCTOR            = "TOKEN_CONSTRUCTOR"
 	TOKEN_CONTINUE               = "TOKEN_CONTINUE"
 	TOKEN_DEFAULT                = "TOKEN_DEFAULT"
 	TOKEN_DOT                    = "TOKEN_DOT"
@@ -387,6 +388,7 @@ const (
 	TOKEN_MATCH                  = "TOKEN_MATCH"
 	TOKEN_MINUS                  = "TOKEN_MINUS"
 	TOKEN_NEWLINE                = "TOKEN_NEWLINE"
+	TOKEN_NO                     = "TOKEN_NO"
 	TOKEN_NOT                    = "TOKEN_NOT"
 	TOKEN_NOT_EQUALS             = "TOKEN_NOT_EQUALS"
 	TOKEN_OR                     = "TOKEN_OR"
@@ -410,33 +412,35 @@ const (
 )
 
 var keywords = map[string]string{
-	"and":      TOKEN_AND,
-	"as":       TOKEN_AS,
-	"break":    TOKEN_BREAK,
-	"case":     TOKEN_CASE,
-	"class":    TOKEN_CLASS,
-	"continue": TOKEN_CONTINUE,
-	"default":  TOKEN_DEFAULT,
-	"else":     TOKEN_ELSE,
-	"enum":     TOKEN_ENUM,
-	"false":    TOKEN_FALSE,
-	"fn":       TOKEN_FN,
-	"for":      TOKEN_FOR,
-	"if":       TOKEN_IF,
-	"import":   TOKEN_IMPORT,
-	"in":       TOKEN_IN,
-	"let":      TOKEN_LET,
-	"match":    TOKEN_MATCH,
-	"not":      TOKEN_NOT,
-	"or":       TOKEN_OR,
-	"private":  TOKEN_PRIVATE,
-	"public":   TOKEN_PUBLIC,
-	"return":   TOKEN_RETURN,
-	"self":     TOKEN_SELF,
-	"true":     TOKEN_TRUE,
-	"var":      TOKEN_VAR,
-	"void":     TOKEN_VOID,
-	"while":    TOKEN_WHILE,
+	"and":         TOKEN_AND,
+	"as":          TOKEN_AS,
+	"break":       TOKEN_BREAK,
+	"case":        TOKEN_CASE,
+	"class":       TOKEN_CLASS,
+	"constructor": TOKEN_CONSTRUCTOR,
+	"continue":    TOKEN_CONTINUE,
+	"default":     TOKEN_DEFAULT,
+	"else":        TOKEN_ELSE,
+	"enum":        TOKEN_ENUM,
+	"false":       TOKEN_FALSE,
+	"fn":          TOKEN_FN,
+	"for":         TOKEN_FOR,
+	"if":          TOKEN_IF,
+	"import":      TOKEN_IMPORT,
+	"in":          TOKEN_IN,
+	"let":         TOKEN_LET,
+	"match":       TOKEN_MATCH,
+	"no":          TOKEN_NO,
+	"not":         TOKEN_NOT,
+	"or":          TOKEN_OR,
+	"private":     TOKEN_PRIVATE,
+	"public":      TOKEN_PUBLIC,
+	"return":      TOKEN_RETURN,
+	"self":        TOKEN_SELF,
+	"true":        TOKEN_TRUE,
+	"var":         TOKEN_VAR,
+	"void":        TOKEN_VOID,
+	"while":       TOKEN_WHILE,
 }
 
 var one_char_tokens = map[byte]string{

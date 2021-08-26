@@ -41,6 +41,17 @@ func TestParseClassDeclarationStatements(t *testing.T) {
 	)
 }
 
+func TestParseBlock(t *testing.T) {
+	checkParseStatements(
+		t,
+		`
+		let box = Box()
+		box.get_value()
+		`,
+		"(block (let nil box (call Box)) (expression-statement (call (field-access box get_value))))",
+	)
+}
+
 func TestParseContinueStatements(t *testing.T) {
 	checkParseStatement(t, "continue", "(continue)")
 }
