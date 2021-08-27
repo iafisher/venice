@@ -5,7 +5,8 @@ extern VeniceObject* return42(VeniceObject* args) {
 }
 
 extern VeniceObject* double_it(VeniceObject* args) {
-    return NewVeniceIntObject(args->value.int_value * 2);
+    VeniceIntObject* int_obj = args->object.list_object->items[0]->object.int_object;
+    return NewVeniceIntObject(int_obj->value * 2);
 }
 
 extern VeniceObject* return42string(VeniceObject* args) {
