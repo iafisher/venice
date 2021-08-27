@@ -1,0 +1,4 @@
+#!/bin/bash
+
+gcc -Wall -Werror -shared -fPIC -Wl,-soname,libvenice.so -o libvenice.so venice.c -lc
+gcc -Wall -Werror -shared -fPIC -Wl,-soname,libreturn42.so -o libreturn42.so return_42.c -lc -L . -lvenice
