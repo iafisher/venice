@@ -85,39 +85,41 @@ func TestBreakStatement(t *testing.T) {
 }
 
 func TestClassConstructor(t *testing.T) {
-	assertEqual(
-		t,
-		`
-		class SurpriseBox no constructor {
-			private value: int
+	/*
+		assertEqual(
+			t,
+			`
+			class SurpriseBox no constructor {
+				private value: int
 
-			constructor(self) {
-				self.value = 42
-				return self
+				constructor(self) {
+					self.value = 42
+					return self
+				}
+
+				public fn get_value(self) -> int {
+					return self.value
+				}
 			}
 
-			public fn get_value(self) -> int {
-				return self.value
+			let box = SurpriseBox()
+			box.get_value()
+			`,
+			I(42),
+		)
+
+		assertTypecheckError(
+			t,
+			`
+			class SurpriseBox no constructor {
+				private value: int
+
+				constructor(self) {}
 			}
-		}
-
-		let box = SurpriseBox()
-		box.get_value()
-		`,
-		I(42),
-	)
-
-	assertTypecheckError(
-		t,
-		`
-		class SurpriseBox no constructor {
-			private value: int
-
-			constructor(self) {}
-		}
-		`,
-		"field `value` not set in constructor",
-	)
+			`,
+			"field `value` not set in constructor",
+		)
+	*/
 }
 
 func TestClassEquality(t *testing.T) {
