@@ -39,7 +39,7 @@ fn serialize_json(j: Json) -> string {
 }
 ```
 
-For a comprehensive description of the language, see `docs/reference.md`.
+For a full introduction to the language, read the [tutorial](https://github.com/iafisher/venice/blob/master/docs/tutorial.md).
 
 
 ## Installation

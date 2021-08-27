@@ -1,10 +1,8 @@
-# The Venice programming language
-- Author: Ian Fisher (iafisher@fastmail.com)
-- Status: draft
-- Last updated: July 25, 2021
+# The Venice Language Reference
+This manual describes the syntax and semantics of the Venice programming language. If you are new to Venice, you should read the [tutorial](https://github.com/iafisher/venice/blob/master/docs/tutorial.md) instead.
 
 
-**NOTE**: Nothing described in this document has been implemented yet.
+**NOTE:** Venice is currently in the early stages of development, and not all of the features described in this document have been implemented.
 
 
 ## Atomic values
@@ -382,10 +380,3 @@ argument_list_with_keywords := (argument_list COMMA)? (SYMBOL EQ expression COMM
 type := SYMBOL type_parameter_list?
 type_paramater_list := LANGLE symbol_list RANGLE
 ```
-
-
-## Implementation
-The reference implementation of Venice comprises two programs: `vnc`, which compiles Venice programs to bytecode, and `vnvm`, which runs bytecode programs.
-
-### The Venice bytecode format
-TODO(2021-07-04)
