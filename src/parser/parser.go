@@ -202,7 +202,6 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 	p.nextTokenSkipNewlines()
 
 	fieldNodes := []*ast.ClassFieldNode{}
-	methodNodes := []*ast.ClassMethodNode{}
 	for {
 		if p.currentToken.Type == lexer_mod.TOKEN_RIGHT_CURLY {
 			p.nextTokenSkipNewlines()
@@ -214,14 +213,6 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 			public = true
 		} else if p.currentToken.Type == lexer_mod.TOKEN_PRIVATE {
 			public = false
-		} else if p.currentToken.Type == lexer_mod.TOKEN_CONSTRUCTOR {
-			constructorNode, err := p.matchClassMethod(true)
-			if err != nil {
-				return nil, err
-			}
-
-			methodNodes = append(methodNodes, constructorNode)
-			continue
 		} else {
 			return nil, p.unexpectedToken("`public` or `private`")
 		}
@@ -246,14 +237,6 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 			}
 
 			fieldNodes = append(fieldNodes, &ast.ClassFieldNode{name, public, fieldType})
-		} else if p.currentToken.Type == lexer_mod.TOKEN_FN {
-			p.nextToken()
-			methodNode, err := p.matchClassMethod(public)
-			if err != nil {
-				return nil, err
-			}
-
-			methodNodes = append(methodNodes, methodNode)
 		} else {
 			return nil, p.unexpectedToken("symbol")
 		}
@@ -264,58 +247,7 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 		GenericTypeParameter: genericTypeParameter,
 		NoConstructor:        noConstructor,
 		Fields:               fieldNodes,
-		Methods:              methodNodes,
 		Location:             location,
-	}, nil
-}
-
-func (p *Parser) matchClassMethod(public bool) (*ast.ClassMethodNode, error) {
-	location := p.currentToken.Location
-
-	var name string
-	if p.currentToken.Type == lexer_mod.TOKEN_SYMBOL || p.currentToken.Type == lexer_mod.TOKEN_CONSTRUCTOR {
-		name = p.currentToken.Value
-	} else {
-		return nil, p.unexpectedToken("function name")
-	}
-
-	p.nextToken()
-	if p.currentToken.Type != lexer_mod.TOKEN_LEFT_PAREN {
-		return nil, p.unexpectedToken("left parenthesis")
-	}
-
-	p.nextToken()
-	params, err := p.matchFunctionParams(true)
-	if err != nil {
-		return nil, err
-	}
-
-	if p.currentToken.Type != lexer_mod.TOKEN_RIGHT_PAREN {
-		return nil, p.unexpectedToken("right parenthesis")
-	}
-
-	p.nextToken()
-	var returnType ast.TypeNode
-	if p.currentToken.Type == lexer_mod.TOKEN_ARROW {
-		p.nextToken()
-		returnType, err = p.matchTypeNode()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	body, err := p.matchBlock()
-	if err != nil {
-		return nil, err
-	}
-
-	return &ast.ClassMethodNode{
-		Name:       name,
-		Public:     public,
-		Params:     params,
-		ReturnType: returnType,
-		Body:       body,
-		Location:   location,
 	}, nil
 }
 
@@ -464,7 +396,7 @@ func (p *Parser) matchFunctionDeclaration() (*ast.FunctionDeclarationNode, error
 	}
 
 	p.nextToken()
-	params, err := p.matchFunctionParams(false)
+	params, err := p.matchFunctionParams()
 	if err != nil {
 		return nil, err
 	}
@@ -491,22 +423,7 @@ func (p *Parser) matchFunctionDeclaration() (*ast.FunctionDeclarationNode, error
 	return &ast.FunctionDeclarationNode{name, params, returnType, body, location}, nil
 }
 
-func (p *Parser) matchFunctionParams(classMethod bool) ([]*ast.FunctionParamNode, error) {
-	if classMethod {
-		if p.currentToken.Type != lexer_mod.TOKEN_SELF {
-			return nil, p.unexpectedToken("`self` keyword")
-		}
-
-		p.nextToken()
-		if p.currentToken.Type == lexer_mod.TOKEN_COMMA {
-			p.nextToken()
-		} else if p.currentToken.Type == lexer_mod.TOKEN_RIGHT_PAREN {
-			return []*ast.FunctionParamNode{}, nil
-		} else {
-			return nil, p.unexpectedToken("comma or right parenthesis")
-		}
-	}
-
+func (p *Parser) matchFunctionParams() ([]*ast.FunctionParamNode, error) {
 	params := []*ast.FunctionParamNode{}
 	for p.currentToken.Type != lexer_mod.TOKEN_RIGHT_PAREN {
 		if p.currentToken.Type != lexer_mod.TOKEN_SYMBOL {

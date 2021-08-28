@@ -25,20 +25,22 @@ func TestParseClassDeclarationStatements(t *testing.T) {
 		"(class-declaration Point ((class-field public x int) (class-field public y int)))",
 	)
 
-	checkParseStatement(
-		t,
-		`
-		  class Point {
-			public x: int
-			public y: int
+	/*
+		checkParseStatement(
+			t,
+			`
+			  class Point {
+				public x: int
+				public y: int
 
-			public fn f(self, x: int) {
-			  x
-		    }
-		  }
-		`,
-		"(class-declaration Point ((class-field public x int) (class-field public y int) (class-method public f ((function-param x int)) void (block (expression-statement x)))))",
-	)
+				public fn f(self, x: int) {
+				  x
+			    }
+			  }
+			`,
+			"(class-declaration Point ((class-field public x int) (class-field public y int) (class-method public f ((function-param x int)) void (block (expression-statement x)))))",
+		)
+	*/
 }
 
 func TestParseBlock(t *testing.T) {

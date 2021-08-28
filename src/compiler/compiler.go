@@ -351,46 +351,17 @@ func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode
 		)
 	}
 
-	methods := []*vtype.VeniceFunctionType{}
-	for _, method := range node.Methods {
-		methodParams := []string{}
-		methodParamTypes := []vtype.VeniceType{}
-		for _, param := range method.Params {
-			paramType, err := compiler.resolveType(param.ParamType)
-			if err != nil {
-				return err
-			}
-
-			methodParams = append(methodParams, param.Name)
-			methodParamTypes = append(methodParamTypes, paramType)
-		}
-
-		declaredReturnType, err := compiler.resolveType(method.ReturnType)
-		if err != nil {
-			return err
-		}
-
-		methodType := &vtype.VeniceFunctionType{
-			Name:       method.Name,
-			Public:     method.Public,
-			ParamTypes: paramTypes,
-			ReturnType: declaredReturnType,
-			IsBuiltin:  false,
-		}
-		methods = append(methods, methodType)
-	}
-
 	var classType vtype.VeniceType
 	if node.GenericTypeParameter == "" {
 		classType = &vtype.VeniceClassType{
-			Name: node.Name, Fields: fields, Methods: methods,
+			Name:   node.Name,
+			Fields: fields,
 		}
 	} else {
 		classType = &vtype.VeniceClassType{
 			Name:              node.Name,
 			GenericParameters: []string{node.GenericTypeParameter},
 			Fields:            fields,
-			Methods:           methods,
 		}
 		compiler.typeSymbolTable = compiler.typeSymbolTable.Parent
 	}
@@ -402,48 +373,6 @@ func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode
 		IsBuiltin:  false,
 	}
 	compiler.symbolTable.Put(node.Name, constructorType)
-
-	for i := 0; i < len(methods); i++ {
-		method := node.Methods[i]
-		methodType := methods[i]
-		bodySymbolTable := compiler.symbolTable.SpawnChild()
-		for j := 0; j < len(method.Params); j++ {
-			bodySymbolTable.Put(method.Params[j].Name, methodType.ParamTypes[j])
-		}
-
-		declaredReturnType := methodType.ReturnType
-
-		// Put `self` in the symbol table.
-		bodySymbolTable.Put("self", classType)
-
-		compiler.symbolTable = bodySymbolTable
-		compiler.functionInfo = &FunctionInfo{
-			declaredReturnType:  declaredReturnType,
-			seenReturnStatement: false,
-		}
-		bodyCode, err := compiler.compileBlock(method.Body)
-		if err != nil {
-			return err
-		}
-
-		if declaredReturnType != nil && !compiler.functionInfo.seenReturnStatement {
-			return compiler.customError(node, "non-void function has no return statement")
-		}
-
-		compiler.functionInfo = nil
-		compiler.symbolTable = bodySymbolTable.Parent
-
-		paramLoadCode := []bytecode.Bytecode{
-			&bytecode.StoreName{"self"},
-		}
-		for i := len(method.Params) - 1; i >= 0; i-- {
-			param := method.Params[i]
-			paramLoadCode = append(paramLoadCode, &bytecode.StoreName{param.Name})
-		}
-		bodyCode = append(paramLoadCode, bodyCode...)
-
-		compiler.compiledProgram.Code[fmt.Sprintf("%s__%s", node.Name, method.Name)] = bodyCode
-	}
 
 	constructorBytecode := []bytecode.Bytecode{&bytecode.BuildClass{node.Name, len(fields)}}
 	compiler.compiledProgram.Code[node.Name] = constructorBytecode
