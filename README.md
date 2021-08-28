@@ -41,6 +41,8 @@ fn serialize_json(j: Json) -> string {
 
 For a full introduction to the language, read the [tutorial](https://github.com/iafisher/venice/blob/master/docs/tutorial.md).
 
+**NOTE**: Venice is in the early stages of development, and not yet ready for production use.
+
 
 ## Installation
 Install Venice with Go:

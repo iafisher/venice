@@ -1,5 +1,5 @@
 # An Introduction to the Venice Programming Language
-Venice is a modern, high-level, statically-typed programming language. It is designed to be powerful, intuitive, and easy to learn. This tutorial introduces the reader to the fundamental concepts and features of Venice. It assumes that the reader has a working knowledge of at least one other programming language.
+Venice is a modern, high-level, statically-typed programming language. It is designed to be powerful, intuitive, and easy to learn. This tutorial introduces the reader to the fundamental concepts and features of Venice. It assumes that the reader has working knowledge of at least one other programming language.
 
 **NOTE:** Venice is currently in the early stages of development, and not all of the features described in this tutorial have been implemented.
 
