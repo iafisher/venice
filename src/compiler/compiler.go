@@ -327,14 +327,6 @@ func (compiler *Compiler) compileAssignStatementToSymbol(
 }
 
 func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode) error {
-	if node.GenericTypeParameter != "" {
-		compiler.typeSymbolTable = compiler.typeSymbolTable.SpawnChild()
-		compiler.typeSymbolTable.Put(
-			node.GenericTypeParameter,
-			&vtype.VeniceSymbolType{node.GenericTypeParameter},
-		)
-	}
-
 	fields := []*vtype.VeniceClassField{}
 	paramTypes := []vtype.VeniceType{}
 	for _, field := range node.Fields {
@@ -351,19 +343,10 @@ func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode
 		)
 	}
 
-	var classType vtype.VeniceType
-	if node.GenericTypeParameter == "" {
-		classType = &vtype.VeniceClassType{
-			Name:   node.Name,
-			Fields: fields,
-		}
-	} else {
-		classType = &vtype.VeniceClassType{
-			Name:              node.Name,
-			GenericParameters: []string{node.GenericTypeParameter},
-			Fields:            fields,
-		}
-		compiler.typeSymbolTable = compiler.typeSymbolTable.Parent
+	classType := &vtype.VeniceClassType{
+		Name:              node.Name,
+		GenericParameters: []string{},
+		Fields:            fields,
 	}
 	compiler.typeSymbolTable.Put(node.Name, classType)
 	constructorType := &vtype.VeniceFunctionType{

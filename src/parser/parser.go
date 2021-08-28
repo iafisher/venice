@@ -170,22 +170,7 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 
 	name := p.currentToken.Value
 
-	var genericTypeParameter string
 	p.nextToken()
-	if p.currentToken.Type == lexer_mod.TOKEN_LESS_THAN {
-		p.nextToken()
-		if p.currentToken.Type != lexer_mod.TOKEN_SYMBOL {
-			return nil, p.unexpectedToken("type parameter")
-		}
-		genericTypeParameter = p.currentToken.Value
-
-		p.nextToken()
-		if p.currentToken.Type != lexer_mod.TOKEN_GREATER_THAN {
-			return nil, p.unexpectedToken("right angle bracket")
-		}
-		p.nextToken()
-	}
-
 	noConstructor := false
 	if p.currentToken.Type == lexer_mod.TOKEN_NO {
 		p.nextToken()
@@ -243,11 +228,10 @@ func (p *Parser) matchClassDeclaration() (*ast.ClassDeclarationNode, error) {
 	}
 
 	return &ast.ClassDeclarationNode{
-		Name:                 name,
-		GenericTypeParameter: genericTypeParameter,
-		NoConstructor:        noConstructor,
-		Fields:               fieldNodes,
-		Location:             location,
+		Name:          name,
+		NoConstructor: noConstructor,
+		Fields:        fieldNodes,
+		Location:      location,
 	}, nil
 }
 

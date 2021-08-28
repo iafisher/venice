@@ -196,18 +196,20 @@ func TestClassFieldAssignment(t *testing.T) {
 		`,
 		"expected type int, got string",
 	)
-	assertTypecheckError(
-		t,
-		`
-		class Box<T> {
-		  public object: T
-		}
+	/*
+		assertTypecheckError(
+			t,
+			`
+			class Box<T> {
+			  public object: T
+			}
 
-		let x = Box("41")
-		x + 1
-		`,
-		"invalid type for left operand of +",
-	)
+			let x = Box("41")
+			x + 1
+			`,
+			"invalid type for left operand of +",
+		)
+	*/
 }
 
 func TestConcat(t *testing.T) {
