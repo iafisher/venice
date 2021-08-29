@@ -168,20 +168,24 @@ func TestParseUnaryOperators(t *testing.T) {
 func checkParseExpression(t *testing.T, input string, expectedOutput string) {
 	parsedFile, err := NewParser().ParseString(input)
 	if err != nil {
+		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
 
 	if len(parsedFile.Statements) != 1 {
+		t.Helper()
 		t.Fatalf("Expected exactly 1 statement, got %d", len(parsedFile.Statements))
 	}
 
 	expressionStatement, ok := parsedFile.Statements[0].(*ast.ExpressionStatementNode)
 	if !ok {
+		t.Helper()
 		t.Fatalf("Expected expression, got %s", parsedFile.Statements[0].String())
 	}
 
 	actualOutput := expressionStatement.Expr.String()
 	if actualOutput != expectedOutput {
+		t.Helper()
 		t.Fatalf("Expected %q, got %q", expectedOutput, actualOutput)
 	}
 }
@@ -189,15 +193,18 @@ func checkParseExpression(t *testing.T, input string, expectedOutput string) {
 func checkParseStatement(t *testing.T, input string, expectedOutput string) {
 	parsedFile, err := NewParser().ParseString(input)
 	if err != nil {
+		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
 
 	if len(parsedFile.Statements) != 1 {
+		t.Helper()
 		t.Fatalf("Expected exactly 1 statement, got %d", len(parsedFile.Statements))
 	}
 
 	actualOutput := parsedFile.Statements[0].String()
 	if actualOutput != expectedOutput {
+		t.Helper()
 		t.Fatalf("Expected %q, got %q", expectedOutput, actualOutput)
 	}
 }
@@ -205,11 +212,13 @@ func checkParseStatement(t *testing.T, input string, expectedOutput string) {
 func checkParseStatements(t *testing.T, input string, expectedOutput string) {
 	parsedFile, err := NewParser().ParseString(input)
 	if err != nil {
+		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
 	}
 
 	actualOutput := parsedFile.String()
 	if actualOutput != expectedOutput {
+		t.Helper()
 		t.Fatalf("Expected %q, got %q", expectedOutput, actualOutput)
 	}
 }

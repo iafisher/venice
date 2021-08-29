@@ -584,18 +584,21 @@ func Tup(values ...vval.VeniceValue) *vval.VeniceTuple {
 func assertEqual(t *testing.T, program string, result vval.VeniceValue) {
 	parsedFile, err := parser.NewParser().ParseString(program)
 	if err != nil {
+		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput:\n\n%s", err, program)
 	}
 
 	compiler := compiler.NewCompiler()
 	compiledProgram, err := compiler.Compile(parsedFile)
 	if err != nil {
+		t.Helper()
 		t.Fatalf("Compile error: %s\n\nInput:\n\n%s", err, program)
 	}
 
 	vm := vm_mod.NewVirtualMachine()
 	value, err := vm.Execute(compiledProgram, false)
 	if err != nil {
+		t.Helper()
 		t.Fatalf("Execution error: %s\n\nInput:\n\n%s", err, program)
 	}
 
@@ -604,6 +607,7 @@ func assertEqual(t *testing.T, program string, result vval.VeniceValue) {
 	}
 
 	if !value.Equals(result) {
+		t.Helper()
 		t.Fatalf(
 			"Expected %s, got %s\n\nInput:\n\n%s",
 			result.String(),
@@ -616,12 +620,14 @@ func assertEqual(t *testing.T, program string, result vval.VeniceValue) {
 func assertTypecheckError(t *testing.T, program string, errorMessage string) {
 	parsedFile, err := parser.NewParser().ParseString(program)
 	if err != nil {
+		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput:\n\n%s", err, program)
 	}
 
 	compiler := compiler.NewCompiler()
 	_, err = compiler.Compile(parsedFile)
 	if err == nil {
+		t.Helper()
 		t.Fatalf(
 			"Expected compile error, but program compiled without error\n\nInput:\n\n%s",
 			program,
@@ -629,6 +635,7 @@ func assertTypecheckError(t *testing.T, program string, errorMessage string) {
 	}
 
 	if !strings.Contains(err.Error(), errorMessage) {
+		t.Helper()
 		t.Fatalf(
 			"Expected compile error to contain substring %q, but it did not\n\nError: %s\n\nInput:\n\n%s",
 			errorMessage,

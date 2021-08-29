@@ -168,12 +168,14 @@ func getTokens(program string) []*Token {
 
 func checkTokensLength(t *testing.T, tokens []*Token, expectedLength int) {
 	if len(tokens) != expectedLength {
+		t.Helper()
 		t.Fatalf("expected %d token(s), got %d", expectedLength, len(tokens))
 	}
 }
 
 func checkToken(t *testing.T, token *Token, ttype string, value string, line int, column int) {
 	if token.Value != value {
+		t.Helper()
 		if token.Type != ttype {
 			t.Fatalf(
 				"Wrong token value and type (line %d, col %d): got %q (%q), expected %q (%q)",
@@ -195,6 +197,7 @@ func checkToken(t *testing.T, token *Token, ttype string, value string, line int
 		}
 	}
 	if token.Type != ttype {
+		t.Helper()
 		t.Fatalf(
 			"Wrong token type (line %d, col %d): got %q, expected %q",
 			token.Location.Line,
@@ -204,9 +207,11 @@ func checkToken(t *testing.T, token *Token, ttype string, value string, line int
 		)
 	}
 	if token.Location.Line != line {
+		t.Helper()
 		t.Fatalf("Wrong line: got %d, expected %d", token.Location.Line, line)
 	}
 	if token.Location.Column != column {
+		t.Helper()
 		t.Fatalf("Wrong column: got %d, expected %d", token.Location.Column, column)
 	}
 }
