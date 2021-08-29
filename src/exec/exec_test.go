@@ -314,7 +314,7 @@ func TestFunctionDeclaration(t *testing.T) {
 	assertEqual(
 		t,
 		`
-		fn f() -> list<int> {
+		fn f() -> [int] {
 			return [1, 2, 3]
 		}
 		f()

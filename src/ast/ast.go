@@ -285,8 +285,24 @@ type UnaryNode struct {
  * Type nodes
  */
 
+type ListTypeNode struct {
+	ItemTypeNode TypeNode
+	Location     *lexer.Location
+}
+
+type MapTypeNode struct {
+	KeyTypeNode   TypeNode
+	ValueTypeNode TypeNode
+	Location      *lexer.Location
+}
+
 type ParameterizedTypeNode struct {
 	Symbol    string
+	TypeNodes []TypeNode
+	Location  *lexer.Location
+}
+
+type TupleTypeNode struct {
 	TypeNodes []TypeNode
 	Location  *lexer.Location
 }
@@ -375,7 +391,15 @@ func (n *ListNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
+func (n *ListTypeNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
 func (n *MapNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *MapTypeNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -416,6 +440,10 @@ func (n *TupleFieldAccessNode) GetLocation() *lexer.Location {
 }
 
 func (n *TupleNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *TupleTypeNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -661,6 +689,10 @@ func (n *ListNode) String() string {
 	return sb.String()
 }
 
+func (n *ListTypeNode) String() string {
+	return fmt.Sprintf("(list-type %s)", n.ItemTypeNode.String())
+}
+
 func (n *MapNode) String() string {
 	var sb strings.Builder
 	sb.WriteString("(map")
@@ -673,6 +705,10 @@ func (n *MapNode) String() string {
 	}
 	sb.WriteByte(')')
 	return sb.String()
+}
+
+func (n *MapTypeNode) String() string {
+	return fmt.Sprintf("(map-type %s %s)", n.KeyTypeNode.String(), n.ValueTypeNode.String())
 }
 
 func (n *MatchClause) String() string {
@@ -763,6 +799,17 @@ func (n *TupleNode) String() string {
 	return sb.String()
 }
 
+func (n *TupleTypeNode) String() string {
+	var sb strings.Builder
+	sb.WriteString("(tuple-type")
+	for _, typeNode := range n.TypeNodes {
+		sb.WriteByte(' ')
+		sb.WriteString(typeNode.String())
+	}
+	sb.WriteByte(')')
+	return sb.String()
+}
+
 func (n *UnaryNode) String() string {
 	return fmt.Sprintf("(unary %s %s)", n.Operator, n.Expr.String())
 }
@@ -822,5 +869,8 @@ func (n *MatchStatementNode) statementNode()      {}
 func (n *ReturnStatementNode) statementNode()     {}
 func (n *WhileLoopNode) statementNode()           {}
 
+func (n *ListTypeNode) typeNode()          {}
+func (n *MapTypeNode) typeNode()           {}
 func (n *ParameterizedTypeNode) typeNode() {}
 func (n *SymbolNode) typeNode()            {}
+func (n *TupleTypeNode) typeNode()         {}

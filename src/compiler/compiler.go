@@ -1628,64 +1628,39 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 	}
 
 	switch typeNode := typeNodeAny.(type) {
-	case *ast.ParameterizedTypeNode:
-		switch typeNode.Symbol {
-		case "map":
-			if len(typeNode.TypeNodes) != 2 {
-				return nil, compiler.customError(
-					typeNodeAny, "map type requires 2 type parameters",
-				)
-			}
-
-			keyType, err := compiler.resolveType(typeNode.TypeNodes[0])
-			if err != nil {
-				return nil, err
-			}
-
-			valueType, err := compiler.resolveType(typeNode.TypeNodes[1])
-			if err != nil {
-				return nil, err
-			}
-
-			return &vtype.VeniceMapType{KeyType: keyType, ValueType: valueType}, nil
-		case "list":
-			if len(typeNode.TypeNodes) != 1 {
-				return nil, compiler.customError(
-					typeNodeAny, "list type requires 1 type parameter",
-				)
-			}
-
-			itemType, err := compiler.resolveType(typeNode.TypeNodes[0])
-			if err != nil {
-				return nil, err
-			}
-
-			return &vtype.VeniceListType{itemType}, nil
-		case "tuple":
-			types := []vtype.VeniceType{}
-			for _, subTypeNode := range typeNode.TypeNodes {
-				subType, err := compiler.resolveType(subTypeNode)
-				if err != nil {
-					return nil, err
-				}
-				types = append(types, subType)
-			}
-			return &vtype.VeniceTupleType{types}, nil
-		default:
-			resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Symbol)
-			if !ok {
-				return nil, compiler.customError(
-					typeNodeAny, "unknown type `%s`", typeNode.Symbol,
-				)
-			}
-			// TODO(2021-08-25): This is hard-coded to work only for Optional.
-			subType, err := compiler.resolveType(typeNode.TypeNodes[0])
-			if err != nil {
-				return nil, err
-			}
-			genericsMap := map[string]vtype.VeniceType{"T": subType}
-			return resolvedType.SubstituteGenerics(genericsMap), nil
+	case *ast.ListTypeNode:
+		itemType, err := compiler.resolveType(typeNode.ItemTypeNode)
+		if err != nil {
+			return nil, err
 		}
+
+		return &vtype.VeniceListType{itemType}, nil
+	case *ast.MapTypeNode:
+		keyType, err := compiler.resolveType(typeNode.KeyTypeNode)
+		if err != nil {
+			return nil, err
+		}
+
+		valueType, err := compiler.resolveType(typeNode.ValueTypeNode)
+		if err != nil {
+			return nil, err
+		}
+
+		return &vtype.VeniceMapType{KeyType: keyType, ValueType: valueType}, nil
+	case *ast.ParameterizedTypeNode:
+		resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Symbol)
+		if !ok {
+			return nil, compiler.customError(
+				typeNodeAny, "unknown type `%s`", typeNode.Symbol,
+			)
+		}
+		// TODO(2021-08-25): This is hard-coded to work only for Optional.
+		subType, err := compiler.resolveType(typeNode.TypeNodes[0])
+		if err != nil {
+			return nil, err
+		}
+		genericsMap := map[string]vtype.VeniceType{"T": subType}
+		return resolvedType.SubstituteGenerics(genericsMap), nil
 	case *ast.SymbolNode:
 		resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Value)
 		if !ok {
@@ -1694,6 +1669,16 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 			)
 		}
 		return resolvedType, nil
+	case *ast.TupleTypeNode:
+		types := []vtype.VeniceType{}
+		for _, subTypeNode := range typeNode.TypeNodes {
+			subType, err := compiler.resolveType(subTypeNode)
+			if err != nil {
+				return nil, err
+			}
+			types = append(types, subType)
+		}
+		return &vtype.VeniceTupleType{types}, nil
 	default:
 		return nil, compiler.customError(
 			typeNodeAny, "unknown type node: %T", typeNodeAny,

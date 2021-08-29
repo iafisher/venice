@@ -6,8 +6,8 @@ Venice is a modern, high-level, statically-typed programming language. It pairs 
 import map, join from "itertools"
 
 enum Json {
-  JsonObject(map<string, Json>),
-  JsonArray(list<Json>),
+  JsonObject({string: Json}),
+  JsonArray([Json]),
   JsonString(string),
   JsonNumber(real),
   JsonBoolean(bool),
@@ -77,7 +77,7 @@ A few other packages define critical data structures:
 
 - `ast`: Abstract syntax trees
 - `bytecode`: Venice bytecode instructions
-- `vtype`: Representation of Venice types (e.g., `int`, `string`, `list<int>`)
+- `vtype`: Representation of Venice types (e.g., `int`, `string`, `[int]`)
 - `vval` Representation of Venice objects (e.g., `42`, `"hello"`, `[1, 2, 3]`)
 
 Finally, there are a couple of miscellaneous packages:

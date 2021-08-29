@@ -137,7 +137,7 @@ while i < 10 {
 The `for` loop is used to iterate over the elements of a sequence.
 
 ```venice
-let letters: list<string> = ["a", "b", "c"];
+let letters: [string] = ["a", "b", "c"];
 for letter in letters {
   print(letter)
 }

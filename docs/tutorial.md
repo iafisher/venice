@@ -115,9 +115,9 @@ Using the `!type` command in the REPL, we can discover the type of any expressio
 >>> !type 1
 int
 >>> !type [1, 2, 3]
-list<int>
+[int]
 >>> !type ("one", 2)
-tuple<string, int>
+(string, int)
 ```
 
 
@@ -310,8 +310,8 @@ Unlike in C, each label can be associated with data:
 
 ```
 >>> enum Json {
-...   JsonObject(map<string, Json>),
-...   JsonArray(list<Json>),
+...   JsonObject({string: Json}),
+...   JsonArray([Json]),
 ...   JsonString(string),
 ...   JsonNumber(int),
 ...   JsonBool(bool),

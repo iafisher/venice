@@ -923,47 +923,100 @@ func (p *Parser) matchPrefix() (ast.ExpressionNode, error) {
  */
 
 func (p *Parser) matchTypeNode() (ast.TypeNode, error) {
-	if p.currentToken.Type != lexer_mod.TOKEN_SYMBOL {
-		return nil, p.unexpectedToken("type name")
-	}
-
-	name := p.currentToken.Value
 	location := p.currentToken.Location
-
-	p.nextToken()
-	if p.currentToken.Type == lexer_mod.TOKEN_LESS_THAN {
+	if p.currentToken.Type == lexer_mod.TOKEN_LEFT_SQUARE {
 		p.nextToken()
-		typeNodes := []ast.TypeNode{}
-
-		firstType, err := p.matchTypeNode()
+		itemTypeNode, err := p.matchTypeNode()
 		if err != nil {
 			return nil, err
 		}
-		typeNodes = append(typeNodes, firstType)
 
-		for {
-			if p.currentToken.Type == lexer_mod.TOKEN_GREATER_THAN {
-				p.nextToken()
-				break
-			} else if p.currentToken.Type != lexer_mod.TOKEN_COMMA {
-				return nil, p.unexpectedToken("comma or right angle bracket")
-			}
+		if p.currentToken.Type != lexer_mod.TOKEN_RIGHT_SQUARE {
+			return nil, p.unexpectedToken("right square bracket")
+		}
 
-			p.nextToken()
-			subType, err := p.matchTypeNode()
+		p.nextToken()
+		return &ast.ListTypeNode{itemTypeNode, location}, nil
+	} else if p.currentToken.Type == lexer_mod.TOKEN_LEFT_CURLY {
+		p.nextToken()
+		keyTypeNode, err := p.matchTypeNode()
+		if err != nil {
+			return nil, err
+		}
+
+		if p.currentToken.Type != lexer_mod.TOKEN_COMMA {
+			return nil, p.unexpectedToken("comma")
+		}
+
+		p.nextToken()
+		valueTypeNode, err := p.matchTypeNode()
+		if err != nil {
+			return nil, err
+		}
+
+		if p.currentToken.Type != lexer_mod.TOKEN_RIGHT_CURLY {
+			return nil, p.unexpectedToken("right curly bracket")
+		}
+
+		p.nextToken()
+		return &ast.MapTypeNode{keyTypeNode, valueTypeNode, location}, nil
+	} else if p.currentToken.Type == lexer_mod.TOKEN_LEFT_PAREN {
+		p.nextToken()
+		typeNodes := []ast.TypeNode{}
+		for p.currentToken.Type != lexer_mod.TOKEN_RIGHT_PAREN {
+			typeNode, err := p.matchTypeNode()
 			if err != nil {
 				return nil, err
 			}
-			typeNodes = append(typeNodes, subType)
-		}
+			typeNodes = append(typeNodes, typeNode)
 
-		return &ast.ParameterizedTypeNode{
-			Symbol:    name,
-			TypeNodes: typeNodes,
-			Location:  location,
-		}, nil
+			// TODO(2021-08-29): Disallow trailing comma.
+			if p.currentToken.Type == lexer_mod.TOKEN_COMMA {
+				p.nextToken()
+			} else if p.currentToken.Type != lexer_mod.TOKEN_RIGHT_PAREN {
+				return nil, p.unexpectedToken("comma or right parenthesis")
+			}
+		}
+		return &ast.TupleTypeNode{typeNodes, location}, nil
+	} else if p.currentToken.Type == lexer_mod.TOKEN_SYMBOL {
+		name := p.currentToken.Value
+		p.nextToken()
+		if p.currentToken.Type == lexer_mod.TOKEN_LESS_THAN {
+			p.nextToken()
+			typeNodes := []ast.TypeNode{}
+
+			firstType, err := p.matchTypeNode()
+			if err != nil {
+				return nil, err
+			}
+			typeNodes = append(typeNodes, firstType)
+
+			for {
+				if p.currentToken.Type == lexer_mod.TOKEN_GREATER_THAN {
+					p.nextToken()
+					break
+				} else if p.currentToken.Type != lexer_mod.TOKEN_COMMA {
+					return nil, p.unexpectedToken("comma or right angle bracket")
+				}
+
+				p.nextToken()
+				subType, err := p.matchTypeNode()
+				if err != nil {
+					return nil, err
+				}
+				typeNodes = append(typeNodes, subType)
+			}
+
+			return &ast.ParameterizedTypeNode{
+				Symbol:    name,
+				TypeNodes: typeNodes,
+				Location:  location,
+			}, nil
+		} else {
+			return &ast.SymbolNode{name, location}, nil
+		}
 	} else {
-		return &ast.SymbolNode{name, location}, nil
+		return nil, p.unexpectedToken("type name")
 	}
 }
 

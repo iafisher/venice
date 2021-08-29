@@ -165,11 +165,11 @@ func (t *VeniceIntegerType) String() string {
 }
 
 func (t *VeniceListType) String() string {
-	return fmt.Sprintf("list<%s>", t.ItemType.String())
+	return fmt.Sprintf("[%s]", t.ItemType.String())
 }
 
 func (t *VeniceMapType) String() string {
-	return fmt.Sprintf("map<%s, %s>", t.KeyType.String(), t.ValueType.String())
+	return fmt.Sprintf("{%s: %s}", t.KeyType.String(), t.ValueType.String())
 }
 
 func (t *VeniceModuleType) String() string {
@@ -190,14 +190,14 @@ func (t *VeniceSymbolType) String() string {
 
 func (t *VeniceTupleType) String() string {
 	var sb strings.Builder
-	sb.WriteString("tuple<")
+	sb.WriteByte('(')
 	for i, itemType := range t.ItemTypes {
 		sb.WriteString(itemType.String())
 		if i != len(t.ItemTypes)-1 {
 			sb.WriteString(", ")
 		}
 	}
-	sb.WriteByte('>')
+	sb.WriteByte(')')
 	return sb.String()
 }
 
