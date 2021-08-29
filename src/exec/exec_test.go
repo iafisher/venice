@@ -68,6 +68,11 @@ func TestAssignStatements(t *testing.T) {
 	)
 }
 
+func TestBuiltinFunctions(t *testing.T) {
+	assertEqual(t, `range(0, 5)`, L(I(0), I(1), I(2), I(3), I(4)))
+	assertEqual(t, `range(10, 5)`, L())
+}
+
 func TestBreakStatement(t *testing.T) {
 	assertEqual(
 		t,

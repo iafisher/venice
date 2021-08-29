@@ -51,6 +51,17 @@ func NewBuiltinSymbolTable() *SymbolTable {
 				IsBuiltin:  true,
 			},
 		),
+		"range": NewConstBinding(
+			&vtype.VeniceFunctionType{
+				Name: "range",
+				ParamTypes: []vtype.VeniceType{
+					vtype.VENICE_TYPE_INTEGER,
+					vtype.VENICE_TYPE_INTEGER,
+				},
+				ReturnType: &vtype.VeniceListType{vtype.VENICE_TYPE_INTEGER},
+				IsBuiltin:  true,
+			},
+		),
 		"string": NewConstBinding(
 			&vtype.VeniceFunctionType{
 				Name: "string",
