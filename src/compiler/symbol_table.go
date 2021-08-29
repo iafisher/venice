@@ -24,6 +24,16 @@ func NewVarBinding(sType vtype.VeniceType) *SymbolTableBinding {
 
 func NewBuiltinSymbolTable() *SymbolTable {
 	symbols := map[string]*SymbolTableBinding{
+		"int": NewConstBinding(
+			&vtype.VeniceFunctionType{
+				Name: "int",
+				ParamTypes: []vtype.VeniceType{
+					vtype.VENICE_TYPE_REAL_NUMBER,
+				},
+				ReturnType: vtype.VENICE_TYPE_INTEGER,
+				IsBuiltin:  true,
+			},
+		),
 		"length": NewConstBinding(
 			&vtype.VeniceFunctionType{
 				Name: "length",
@@ -62,6 +72,16 @@ func NewBuiltinSymbolTable() *SymbolTable {
 				IsBuiltin:  true,
 			},
 		),
+		"real": NewConstBinding(
+			&vtype.VeniceFunctionType{
+				Name: "real",
+				ParamTypes: []vtype.VeniceType{
+					vtype.VENICE_TYPE_INTEGER,
+				},
+				ReturnType: vtype.VENICE_TYPE_REAL_NUMBER,
+				IsBuiltin:  true,
+			},
+		),
 		"string": NewConstBinding(
 			&vtype.VeniceFunctionType{
 				Name: "string",
@@ -87,6 +107,7 @@ func NewBuiltinTypeSymbolTable() *SymbolTable {
 	symbols := map[string]*SymbolTableBinding{
 		"bool":     NewConstBinding(vtype.VENICE_TYPE_BOOLEAN),
 		"int":      NewConstBinding(vtype.VENICE_TYPE_INTEGER),
+		"real":     NewConstBinding(vtype.VENICE_TYPE_REAL_NUMBER),
 		"string":   NewConstBinding(vtype.VENICE_TYPE_STRING),
 		"Optional": NewConstBinding(vtype.VENICE_TYPE_OPTIONAL),
 	}

@@ -75,15 +75,16 @@ func (l *Lexer) nextToken() *Token {
 
 	ch := l.program[l.index]
 
-	// To simplify parsing, integer literals beginning with a minus sign are lexed as a
-	// single TOKEN_INT instead of a TOKEN_MINUS followed by a TOKEN_INT, so we have to
-	// check this case before we look at the one-character tokens in the next block.
+	// To simplify parsing, numeric literals beginning with a minus sign are lexed as a
+	// single TOKEN_INT instead of a TOKEN_MINUS followed by a TOKEN_INT or
+	// TOKEN_REAL_NUMBER, so we have to check this case before we look at the one-
+	// character tokens in the next block.
 	if ch == '-' && l.index+1 < len(l.program) && isDigit(l.program[l.index+1]) {
-		value, err := l.readInteger()
+		value, ttype, err := l.readNumber()
 		if err != nil {
 			return &Token{Type: TOKEN_ERROR, Value: err.Error(), Location: location}
 		}
-		return &Token{Type: TOKEN_INT, Value: value, Location: location}
+		return &Token{Type: ttype, Value: value, Location: location}
 	}
 
 	token_type, ok := one_char_tokens[ch]
@@ -94,11 +95,11 @@ func (l *Lexer) nextToken() *Token {
 
 	switch {
 	case isDigit(ch):
-		value, err := l.readInteger()
+		value, ttype, err := l.readNumber()
 		if err != nil {
 			return &Token{Type: TOKEN_ERROR, Value: err.Error(), Location: location}
 		}
-		return &Token{Type: TOKEN_INT, Value: value, Location: location}
+		return &Token{Type: ttype, Value: value, Location: location}
 	case isSymbolFirstCharacter(ch):
 		value := l.readSymbol()
 		if keywordType, ok := keywords[value]; ok {
@@ -192,77 +193,127 @@ const octalDigits = "01234567"
 const decimalDigits = "0123456789"
 const hexadecimalDigits = "0123456789abcdefABCDEF"
 
-func (l *Lexer) readInteger() (string, error) {
+func (l *Lexer) readNumber() (string, string, error) {
 	start := l.index
 
 	if l.program[l.index] == '-' {
 		l.advance()
 	}
 
+	// TODO(2021-08-29): Refactor.
 	if l.startsWith("0b") {
 		l.advance()
 		l.advance()
-		for l.index < len(l.program) && isSymbolCharacter(l.program[l.index]) {
+		invalidMessage := ""
+		for l.index < len(l.program) && isNumericCharacter(l.program[l.index]) {
 			ch := l.program[l.index]
-			if strings.IndexByte(binaryDigits, ch) == -1 {
-				l.advance()
-				return "", &LexerError{
-					fmt.Sprintf("invalid character in binary integer literal: '%c'", ch),
+			if strings.IndexByte(binaryDigits, ch) == -1 && invalidMessage == "" {
+				if ch == '.' {
+					invalidMessage = "real numbers must be in base 10"
+				} else {
+					invalidMessage = fmt.Sprintf(
+						"invalid character in binary integer literal: '%c'",
+						ch,
+					)
 				}
 			}
 			l.advance()
 		}
-		return l.program[start:l.index], nil
+
+		if invalidMessage != "" {
+			return "", "", &LexerError{invalidMessage}
+		}
+
+		return l.program[start:l.index], TOKEN_INT, nil
 	} else if l.startsWith("0o") {
 		l.advance()
 		l.advance()
-		for l.index < len(l.program) && isSymbolCharacter(l.program[l.index]) {
+		invalidMessage := ""
+		for l.index < len(l.program) && isNumericCharacter(l.program[l.index]) {
 			ch := l.program[l.index]
-			if strings.IndexByte(octalDigits, ch) == -1 {
-				l.advance()
-				return "", &LexerError{
-					fmt.Sprintf("invalid character in octal integer literal: '%c'", ch),
+			if strings.IndexByte(octalDigits, ch) == -1 && invalidMessage == "" {
+				if ch == '.' {
+					invalidMessage = "real numbers must be in base 10"
+				} else {
+					invalidMessage = fmt.Sprintf(
+						"invalid character in octal integer literal: '%c'",
+						ch,
+					)
 				}
 			}
 			l.advance()
 		}
-		return l.program[start:l.index], nil
+
+		if invalidMessage != "" {
+			return "", "", &LexerError{invalidMessage}
+		}
+
+		return l.program[start:l.index], TOKEN_INT, nil
 	} else if l.startsWith("0x") {
 		l.advance()
 		l.advance()
-		for l.index < len(l.program) && isSymbolCharacter(l.program[l.index]) {
+		invalidMessage := ""
+		for l.index < len(l.program) && isNumericCharacter(l.program[l.index]) {
 			ch := l.program[l.index]
-			if strings.IndexByte(hexadecimalDigits, ch) == -1 {
-				l.advance()
-				return "", &LexerError{
-					fmt.Sprintf("invalid character in hexadecimal integer literal: '%c'", ch),
+			if strings.IndexByte(hexadecimalDigits, ch) == -1 && invalidMessage == "" {
+				if ch == '.' {
+					invalidMessage = "real numbers must be in base 10"
+				} else {
+					invalidMessage = fmt.Sprintf(
+						"invalid character in hexadecimal integer literal: '%c'",
+						ch,
+					)
 				}
 			}
 			l.advance()
 		}
-		return l.program[start:l.index], nil
+
+		if invalidMessage != "" {
+			return "", "", &LexerError{invalidMessage}
+		}
+
+		return l.program[start:l.index], TOKEN_INT, nil
 	} else {
 		l.advance()
-		for l.index < len(l.program) && isSymbolCharacter(l.program[l.index]) {
+		invalidMessage := ""
+		seenPeriod := false
+		for l.index < len(l.program) && isNumericCharacter(l.program[l.index]) {
 			ch := l.program[l.index]
-			if strings.IndexByte(decimalDigits, ch) == -1 {
-				l.advance()
-				return "", &LexerError{
-					fmt.Sprintf("invalid character in integer literal: '%c'", ch),
+			if strings.IndexByte(decimalDigits, ch) == -1 && invalidMessage == "" {
+				if ch == '.' {
+					if seenPeriod {
+						invalidMessage = "numeric literal may not contain multiple periods"
+					} else {
+						seenPeriod = true
+					}
+				} else {
+					invalidMessage = fmt.Sprintf(
+						"invalid character in integer literal: '%c'",
+						ch,
+					)
 				}
 			}
 			l.advance()
 		}
 
-		// Check the first character afterwards so that the whole literal is read as a
-		// single token.
-		if l.index-start > 1 &&
-			(l.program[start] == '0' ||
-				(l.program[start] == '-' && l.program[start+1] == '0')) {
-			return "", &LexerError{"integer literal cannot start with '0'"}
+		if invalidMessage != "" {
+			return "", "", &LexerError{invalidMessage}
 		}
 
-		return l.program[start:l.index], nil
+		// We check the first character here and not at the beginning because we still
+		// want to read the whole literal as a single token even if it is invalid.
+		if l.index-start > 1 &&
+			(l.program[start] == '0' ||
+				(l.program[start] == '-' && l.program[start+1] == '0')) &&
+			!(l.program[start+1] == '.') {
+			return "", "", &LexerError{"numeric literal cannot start with '0'"}
+		}
+
+		if seenPeriod {
+			return l.program[start:l.index], TOKEN_REAL_NUMBER, nil
+		} else {
+			return l.program[start:l.index], TOKEN_INT, nil
+		}
 	}
 }
 
@@ -338,6 +389,10 @@ func isSymbolCharacter(ch byte) bool {
 	return isSymbolFirstCharacter(ch) || isDigit(ch)
 }
 
+func isNumericCharacter(ch byte) bool {
+	return isSymbolCharacter(ch) || ch == '.'
+}
+
 func isWhitespace(ch byte) bool {
 	return ch == ' ' || ch == '\n' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r'
 }
@@ -395,6 +450,7 @@ const (
 	TOKEN_PRIVATE                = "TOKEN_PRIVATE"
 	TOKEN_PLUS                   = "TOKEN_PLUS"
 	TOKEN_PUBLIC                 = "TOKEN_PUBLIC"
+	TOKEN_REAL_NUMBER            = "TOKEN_REAL_NUMBER"
 	TOKEN_RETURN                 = "TOKEN_RETURN"
 	TOKEN_RIGHT_CURLY            = "TOKEN_RIGHT_CURLY"
 	TOKEN_RIGHT_PAREN            = "TOKEN_RIGHT_PAREN"

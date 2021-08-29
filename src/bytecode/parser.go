@@ -141,8 +141,6 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			bytecode = &BinaryAnd{}
 		case "BINARY_CONCAT":
 			bytecode = &BinaryConcat{}
-		case "BINARY_DIV":
-			bytecode = &BinaryDiv{}
 		case "BINARY_EQ":
 			bytecode = &BinaryEq{}
 		case "BINARY_GT":
@@ -165,6 +163,14 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			bytecode = &BinaryNotEq{}
 		case "BINARY_OR":
 			bytecode = &BinaryOr{}
+		case "BINARY_REAL_ADD":
+			bytecode = &BinaryRealAdd{}
+		case "BINARY_REAL_DIV":
+			bytecode = &BinaryRealDiv{}
+		case "BINARY_REAL_MUL":
+			bytecode = &BinaryRealMul{}
+		case "BINARY_REAL_SUB":
+			bytecode = &BinaryRealSub{}
 		case "BINARY_STRING_INDEX":
 			bytecode = &BinaryStringIndex{}
 		case "BINARY_SUB":
@@ -263,6 +269,12 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 				continue
 			}
 			bytecode = &PushConstInt{n}
+		case "PUSH_CONST_REAL_NUMBER":
+			n, ok := p.expectRealNumber()
+			if !ok {
+				continue
+			}
+			bytecode = &PushConstRealNumber{n}
 		case "PUSH_CONST_STR":
 			value, ok := p.expectString()
 			if !ok {
@@ -429,11 +441,28 @@ func (p *bytecodeParser) expectInt() (int, bool) {
 	if err != nil {
 		// TODO(2021-08-15): This will have the wrong location because the previous call
 		// to `bytecodeParser.expect` advances past the integer token.
-		p.newError("could not parse integer token")
+		p.newError("invalid integer literal")
 		return 0, false
 	}
 
 	return int(n), true
+}
+
+func (p *bytecodeParser) expectRealNumber() (float64, bool) {
+	token, ok := p.expect(lexer_mod.TOKEN_REAL_NUMBER)
+	if !ok {
+		return 0, false
+	}
+
+	n, err := strconv.ParseFloat(token.Value, 64)
+	if err != nil {
+		// TODO(2021-08-15): This will have the wrong location because the previous call
+		// to `bytecodeParser.expect` advances past the integer token.
+		p.newError("invalid real number literal")
+		return 0, false
+	}
+
+	return n, true
 }
 
 func (p *bytecodeParser) expectString() (string, bool) {

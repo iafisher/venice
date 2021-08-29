@@ -844,7 +844,7 @@ func (p *Parser) matchPrefix() (ast.ExpressionNode, error) {
 		p.nextToken()
 		value, err := strconv.ParseInt(token.Value, 0, 0)
 		if err != nil {
-			return nil, p.customError("could not convert integer token")
+			return nil, p.customError("invalid integer literal")
 		}
 		return &ast.IntegerNode{int(value), location}, nil
 	case lexer_mod.TOKEN_LEFT_CURLY:
@@ -880,6 +880,14 @@ func (p *Parser) matchPrefix() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 		return &ast.UnaryNode{operator, expr, location}, nil
+	case lexer_mod.TOKEN_REAL_NUMBER:
+		token := p.currentToken
+		p.nextToken()
+		value, err := strconv.ParseFloat(token.Value, 64)
+		if err != nil {
+			return nil, p.customError("invalid real number literal")
+		}
+		return &ast.RealNumberNode{value, location}, nil
 	case lexer_mod.TOKEN_SELF:
 		p.nextToken()
 		return &ast.SymbolNode{"self", location}, nil

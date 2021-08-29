@@ -60,17 +60,19 @@ func TestAssignStatements(t *testing.T) {
 	assertEqual(
 		t,
 		`
-		var i = 126
+		var i = 126.0
 		i /= 3
 		i
 		`,
-		I(42),
+		F(42.0),
 	)
 }
 
 func TestBuiltinFunctions(t *testing.T) {
 	assertEqual(t, `range(0, 5)`, L(I(0), I(1), I(2), I(3), I(4)))
 	assertEqual(t, `range(10, 5)`, L())
+	assertEqual(t, `int(1.0)`, I(1))
+	assertEqual(t, `real(1)`, F(1.0))
 }
 
 func TestBreakStatement(t *testing.T) {
@@ -507,6 +509,12 @@ func TestMatchStatements(t *testing.T) {
 	)
 }
 
+func TestRealNumbers(t *testing.T) {
+	assertEqual(t, `1 / 2`, F(0.5))
+	assertEqual(t, `1 + 2.0`, F(3.0))
+	assertEqual(t, `3.0 * 2.0`, F(6.0))
+}
+
 func TestStringBuiltins(t *testing.T) {
 	assertEqual(t, `let s = "123"; s.length()`, I(3))
 	assertEqual(t, `"123".length()`, I(3))
@@ -544,6 +552,10 @@ func B(b bool) *vval.VeniceBoolean {
 
 func C(ch byte) *vval.VeniceCharacter {
 	return &vval.VeniceCharacter{ch}
+}
+
+func F(n float64) *vval.VeniceRealNumber {
+	return &vval.VeniceRealNumber{n}
 }
 
 func L(values ...vval.VeniceValue) *vval.VeniceList {

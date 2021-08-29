@@ -73,6 +73,8 @@ type VeniceModuleType struct {
 	Types map[string]VeniceType
 }
 
+type VeniceRealNumberType struct{}
+
 type VeniceStringType struct{}
 
 type VeniceSymbolType struct {
@@ -92,12 +94,13 @@ type VeniceUnionType struct {
  */
 
 var (
-	VENICE_TYPE_ANY       = &VeniceAnyType{}
-	VENICE_TYPE_BOOLEAN   = &VeniceBooleanType{}
-	VENICE_TYPE_CHARACTER = &VeniceCharacterType{}
-	VENICE_TYPE_INTEGER   = &VeniceIntegerType{}
-	VENICE_TYPE_STRING    = &VeniceStringType{}
-	VENICE_TYPE_OPTIONAL  = &VeniceEnumType{
+	VENICE_TYPE_ANY         = &VeniceAnyType{}
+	VENICE_TYPE_BOOLEAN     = &VeniceBooleanType{}
+	VENICE_TYPE_CHARACTER   = &VeniceCharacterType{}
+	VENICE_TYPE_INTEGER     = &VeniceIntegerType{}
+	VENICE_TYPE_REAL_NUMBER = &VeniceRealNumberType{}
+	VENICE_TYPE_STRING      = &VeniceStringType{}
+	VENICE_TYPE_OPTIONAL    = &VeniceEnumType{
 		Name:              "Optional",
 		GenericParameters: []string{"T"},
 		Cases: []*VeniceCaseType{
@@ -171,6 +174,10 @@ func (t *VeniceMapType) String() string {
 
 func (t *VeniceModuleType) String() string {
 	return t.Name
+}
+
+func (t *VeniceRealNumberType) String() string {
+	return "real"
 }
 
 func (t *VeniceStringType) String() string {
@@ -306,6 +313,12 @@ func (t *VeniceModuleType) SubstituteGenerics(
 	return t
 }
 
+func (t *VeniceRealNumberType) SubstituteGenerics(
+	genericParameterMap map[string]VeniceType,
+) VeniceType {
+	return &VeniceRealNumberType{}
+}
+
 func (t *VeniceStringType) SubstituteGenerics(
 	genericParameterMap map[string]VeniceType,
 ) VeniceType {
@@ -439,6 +452,12 @@ func (t *VeniceModuleType) MatchGenerics(
 	return nil
 }
 
+func (t *VeniceRealNumberType) MatchGenerics(
+	genericParameterMap map[string]VeniceType, concreteType VeniceType,
+) error {
+	return nil
+}
+
 func (t *VeniceStringType) MatchGenerics(
 	genericParameterMap map[string]VeniceType, concreteType VeniceType,
 ) error {
@@ -496,17 +515,18 @@ func (t *VeniceCaseType) AsFunctionType(enumType *VeniceEnumType) *VeniceFunctio
 	}
 }
 
-func (t *VeniceAnyType) veniceType()       {}
-func (t *VeniceBooleanType) veniceType()   {}
-func (t *VeniceCharacterType) veniceType() {}
-func (t *VeniceClassType) veniceType()     {}
-func (t *VeniceEnumType) veniceType()      {}
-func (t *VeniceFunctionType) veniceType()  {}
-func (t *VeniceIntegerType) veniceType()   {}
-func (t *VeniceListType) veniceType()      {}
-func (t *VeniceMapType) veniceType()       {}
-func (t *VeniceModuleType) veniceType()    {}
-func (t *VeniceStringType) veniceType()    {}
-func (t *VeniceSymbolType) veniceType()    {}
-func (t *VeniceTupleType) veniceType()     {}
-func (t *VeniceUnionType) veniceType()     {}
+func (t *VeniceAnyType) veniceType()        {}
+func (t *VeniceBooleanType) veniceType()    {}
+func (t *VeniceCharacterType) veniceType()  {}
+func (t *VeniceClassType) veniceType()      {}
+func (t *VeniceEnumType) veniceType()       {}
+func (t *VeniceFunctionType) veniceType()   {}
+func (t *VeniceIntegerType) veniceType()    {}
+func (t *VeniceListType) veniceType()       {}
+func (t *VeniceMapType) veniceType()        {}
+func (t *VeniceModuleType) veniceType()     {}
+func (t *VeniceRealNumberType) veniceType() {}
+func (t *VeniceStringType) veniceType()     {}
+func (t *VeniceSymbolType) veniceType()     {}
+func (t *VeniceTupleType) veniceType()      {}
+func (t *VeniceUnionType) veniceType()      {}

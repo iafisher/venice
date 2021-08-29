@@ -156,6 +156,7 @@ func TestParseMatchStatements(t *testing.T) {
 func TestParseSimpleExpressions(t *testing.T) {
 	checkParseExpression(t, "123", "123")
 	checkParseExpression(t, "abc", "abc")
+	checkParseExpression(t, "3.14", "3.140000")
 }
 
 func TestParseUnaryOperators(t *testing.T) {

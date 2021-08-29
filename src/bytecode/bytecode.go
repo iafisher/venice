@@ -39,8 +39,6 @@ type BinaryAnd struct{}
 
 type BinaryConcat struct{}
 
-type BinaryDiv struct{}
-
 type BinaryEq struct{}
 
 type BinaryGt struct{}
@@ -62,6 +60,14 @@ type BinaryMul struct{}
 type BinaryNotEq struct{}
 
 type BinaryOr struct{}
+
+type BinaryRealAdd struct{}
+
+type BinaryRealDiv struct{}
+
+type BinaryRealMul struct{}
+
+type BinaryRealSub struct{}
 
 type BinaryStringIndex struct{}
 
@@ -125,6 +131,10 @@ type PushConstFunction struct {
 
 type PushConstInt struct {
 	Value int
+}
+
+type PushConstRealNumber struct {
+	Value float64
 }
 
 type PushConstStr struct {
@@ -198,10 +208,6 @@ func (b *BinaryConcat) String() string {
 	return "BINARY_CONCAT"
 }
 
-func (b *BinaryDiv) String() string {
-	return "BINARY_DIV"
-}
-
 func (b *BinaryEq) String() string {
 	return "BINARY_EQ"
 }
@@ -244,6 +250,22 @@ func (b *BinaryNotEq) String() string {
 
 func (b *BinaryOr) String() string {
 	return "BINARY_OR"
+}
+
+func (b *BinaryRealAdd) String() string {
+	return "BINARY_REAL_ADD"
+}
+
+func (b *BinaryRealDiv) String() string {
+	return "BINARY_REAL_DIV"
+}
+
+func (b *BinaryRealMul) String() string {
+	return "BINARY_REAL_MUL"
+}
+
+func (b *BinaryRealSub) String() string {
+	return "BINARY_REAL_SUB"
 }
 
 func (b *BinaryStringIndex) String() string {
@@ -325,6 +347,10 @@ func (b *PushConstInt) String() string {
 	return fmt.Sprintf("PUSH_CONST_INT %d", b.Value)
 }
 
+func (b *PushConstRealNumber) String() string {
+	return fmt.Sprintf("PUSH_CONST_REAL_NUMBER %f", b.Value)
+}
+
 func (b *PushConstStr) String() string {
 	return fmt.Sprintf("PUSH_CONST_STR %q", b.Value)
 }
@@ -396,7 +422,6 @@ func (b *UnaryNot) String() string {
 func (b *BinaryAdd) bytecode()           {}
 func (b *BinaryAnd) bytecode()           {}
 func (b *BinaryConcat) bytecode()        {}
-func (b *BinaryDiv) bytecode()           {}
 func (b *BinaryEq) bytecode()            {}
 func (b *BinaryGt) bytecode()            {}
 func (b *BinaryGtEq) bytecode()          {}
@@ -408,6 +433,10 @@ func (b *BinaryMapIndex) bytecode()      {}
 func (b *BinaryMul) bytecode()           {}
 func (b *BinaryNotEq) bytecode()         {}
 func (b *BinaryOr) bytecode()            {}
+func (b *BinaryRealAdd) bytecode()       {}
+func (b *BinaryRealDiv) bytecode()       {}
+func (b *BinaryRealMul) bytecode()       {}
+func (b *BinaryRealSub) bytecode()       {}
 func (b *BinaryStringIndex) bytecode()   {}
 func (b *BinarySub) bytecode()           {}
 func (b *BuildClass) bytecode()          {}
@@ -425,6 +454,7 @@ func (b *PushConstBool) bytecode()       {}
 func (b *PushConstChar) bytecode()       {}
 func (b *PushConstInt) bytecode()        {}
 func (b *PushConstFunction) bytecode()   {}
+func (b *PushConstRealNumber) bytecode() {}
 func (b *PushConstStr) bytecode()        {}
 func (b *PushEnum) bytecode()            {}
 func (b *PushEnumIndex) bytecode()       {}

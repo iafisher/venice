@@ -242,6 +242,11 @@ type QualifiedSymbolNode struct {
 	Location *lexer.Location
 }
 
+type RealNumberNode struct {
+	Value    float64
+	Location *lexer.Location
+}
+
 type StringNode struct {
 	Value    string
 	Location *lexer.Location
@@ -383,6 +388,10 @@ func (n *ParameterizedTypeNode) GetLocation() *lexer.Location {
 }
 
 func (n *QualifiedSymbolNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *RealNumberNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -710,6 +719,10 @@ func (n *QualifiedSymbolNode) String() string {
 	return fmt.Sprintf("(enum-case %s %s)", n.Enum, n.Case)
 }
 
+func (n *RealNumberNode) String() string {
+	return fmt.Sprintf("%f", n.Value)
+}
+
 func (n *ReturnStatementNode) String() string {
 	if n.Expr != nil {
 		return fmt.Sprintf("(return %s)", n.Expr.String())
@@ -783,6 +796,7 @@ func (n *IntegerNode) expressionNode()          {}
 func (n *ListNode) expressionNode()             {}
 func (n *MapNode) expressionNode()              {}
 func (n *QualifiedSymbolNode) expressionNode()  {}
+func (n *RealNumberNode) expressionNode()       {}
 func (n *StringNode) expressionNode()           {}
 func (n *SymbolNode) expressionNode()           {}
 func (n *TernaryIfNode) expressionNode()        {}

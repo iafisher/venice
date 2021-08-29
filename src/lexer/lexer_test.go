@@ -27,42 +27,6 @@ func TestCharacterLiterals(t *testing.T) {
 	checkToken(t, tokens[0], TOKEN_ERROR, "invalid character literal", 1, 1)
 }
 
-func TestIntegerLiterals(t *testing.T) {
-	tokens := getTokens("100 -12 0xabc 0o123 0b101011 0")
-	checkToken(t, tokens[0], TOKEN_INT, "100", 1, 1)
-	checkToken(t, tokens[1], TOKEN_INT, "-12", 1, 5)
-	checkToken(t, tokens[2], TOKEN_INT, "0xabc", 1, 9)
-	checkToken(t, tokens[3], TOKEN_INT, "0o123", 1, 15)
-	checkToken(t, tokens[4], TOKEN_INT, "0b101011", 1, 21)
-	checkToken(t, tokens[5], TOKEN_INT, "0", 1, 30)
-	checkTokensLength(t, tokens, 6)
-}
-
-func TestInvalidIntegerLiterals(t *testing.T) {
-	tokens := getTokens("12a 0b12 0o9 0xg 01 -01")
-
-	checkToken(
-		t, tokens[0], TOKEN_ERROR, "invalid character in integer literal: 'a'", 1, 1,
-	)
-	checkToken(
-		t, tokens[1], TOKEN_ERROR, "invalid character in binary integer literal: '2'", 1, 5,
-	)
-	checkToken(
-		t, tokens[2], TOKEN_ERROR, "invalid character in octal integer literal: '9'", 1, 10,
-	)
-	checkToken(
-		t,
-		tokens[3],
-		TOKEN_ERROR,
-		"invalid character in hexadecimal integer literal: 'g'",
-		1,
-		14,
-	)
-	checkToken(t, tokens[4], TOKEN_ERROR, "integer literal cannot start with '0'", 1, 18)
-	checkToken(t, tokens[5], TOKEN_ERROR, "integer literal cannot start with '0'", 1, 21)
-	checkTokensLength(t, tokens, 6)
-}
-
 func TestKeywordTokens(t *testing.T) {
 	tokens := getTokens(
 		"and break class continue else enum false fn for if in let or private public return true while void",
@@ -87,6 +51,55 @@ func TestKeywordTokens(t *testing.T) {
 	checkToken(t, tokens[17], TOKEN_WHILE, "while", 1, 89)
 	checkToken(t, tokens[18], TOKEN_VOID, "void", 1, 95)
 	checkTokensLength(t, tokens, 19)
+}
+
+func TestNumericLiterals(t *testing.T) {
+	// Integers
+	tokens := getTokens("100 -12 0xabc 0o123 0b101011 0")
+	checkToken(t, tokens[0], TOKEN_INT, "100", 1, 1)
+	checkToken(t, tokens[1], TOKEN_INT, "-12", 1, 5)
+	checkToken(t, tokens[2], TOKEN_INT, "0xabc", 1, 9)
+	checkToken(t, tokens[3], TOKEN_INT, "0o123", 1, 15)
+	checkToken(t, tokens[4], TOKEN_INT, "0b101011", 1, 21)
+	checkToken(t, tokens[5], TOKEN_INT, "0", 1, 30)
+	checkTokensLength(t, tokens, 6)
+
+	// Real numbers
+	tokens = getTokens("0.0 3.14")
+	checkToken(t, tokens[0], TOKEN_REAL_NUMBER, "0.0", 1, 1)
+	checkToken(t, tokens[1], TOKEN_REAL_NUMBER, "3.14", 1, 5)
+	checkTokensLength(t, tokens, 2)
+}
+
+func TestInvalidNumericLiterals(t *testing.T) {
+	tokens := getTokens("1a2 0b12 0o9 0xg 01 -01")
+
+	checkToken(
+		t, tokens[0], TOKEN_ERROR, "invalid character in integer literal: 'a'", 1, 1,
+	)
+	checkToken(
+		t, tokens[1], TOKEN_ERROR, "invalid character in binary integer literal: '2'", 1, 5,
+	)
+	checkToken(
+		t, tokens[2], TOKEN_ERROR, "invalid character in octal integer literal: '9'", 1, 10,
+	)
+	checkToken(
+		t,
+		tokens[3],
+		TOKEN_ERROR,
+		"invalid character in hexadecimal integer literal: 'g'",
+		1,
+		14,
+	)
+	checkToken(t, tokens[4], TOKEN_ERROR, "numeric literal cannot start with '0'", 1, 18)
+	checkToken(t, tokens[5], TOKEN_ERROR, "numeric literal cannot start with '0'", 1, 21)
+	checkTokensLength(t, tokens, 6)
+
+	tokens = getTokens("0x0.0 1.1.1 00.1")
+	checkToken(t, tokens[0], TOKEN_ERROR, "real numbers must be in base 10", 1, 1)
+	checkToken(t, tokens[1], TOKEN_ERROR, "numeric literal may not contain multiple periods", 1, 7)
+	checkToken(t, tokens[2], TOKEN_ERROR, "numeric literal cannot start with '0'", 1, 13)
+	checkTokensLength(t, tokens, 3)
 }
 
 func TestOneCharTokens(t *testing.T) {

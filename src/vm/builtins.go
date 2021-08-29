@@ -11,6 +11,19 @@ import (
  * Global built-in functions
  */
 
+func builtinInt(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	realArg, ok := args[0].(*vval.VeniceRealNumber)
+	if !ok {
+		return nil
+	}
+
+	return &vval.VeniceInteger{int(realArg.Value)}
+}
+
 func builtinLength(args ...vval.VeniceValue) vval.VeniceValue {
 	if len(args) != 1 {
 		return nil
@@ -67,6 +80,19 @@ func builtinRange(args ...vval.VeniceValue) vval.VeniceValue {
 		numbers = append(numbers, &vval.VeniceInteger{i})
 	}
 	return &vval.VeniceList{numbers}
+}
+
+func builtinReal(args ...vval.VeniceValue) vval.VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	intArg, ok := args[0].(*vval.VeniceInteger)
+	if !ok {
+		return nil
+	}
+
+	return &vval.VeniceRealNumber{float64(intArg.Value)}
 }
 
 func builtinString(args ...vval.VeniceValue) vval.VeniceValue {
@@ -343,9 +369,11 @@ func builtinStringToLower(args ...vval.VeniceValue) vval.VeniceValue {
 // `stringBuiltins` if it is a string built-in, etc.
 var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
 	// Global built-ins
+	"int":    builtinInt,
 	"length": builtinLength,
 	"print":  builtinPrint,
 	"range":  builtinRange,
+	"real":   builtinReal,
 	"string": builtinString,
 	// List built-ins
 	"list__append": builtinListAppend,

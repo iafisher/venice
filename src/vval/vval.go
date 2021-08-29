@@ -86,6 +86,10 @@ type VeniceInteger struct {
 	Value int
 }
 
+type VeniceRealNumber struct {
+	Value float64
+}
+
 type VeniceString struct {
 	Value string
 }
@@ -188,6 +192,10 @@ func (v *VeniceMap) String() string {
 
 func (v *VeniceMapIterator) String() string {
 	return "<map iterator>"
+}
+
+func (v *VeniceRealNumber) String() string {
+	return fmt.Sprintf("%g", v.Value)
 }
 
 func (v *VeniceString) String() string {
@@ -344,6 +352,17 @@ func (v *VeniceMapIterator) Equals(otherAny VeniceValue) bool {
 	return false
 }
 
+func (v *VeniceRealNumber) Equals(otherAny VeniceValue) bool {
+	switch other := otherAny.(type) {
+	case *VeniceInteger:
+		return v.Value == float64(other.Value)
+	case *VeniceRealNumber:
+		return v.Value == other.Value
+	default:
+		return false
+	}
+}
+
 func (v *VeniceString) Equals(otherAny VeniceValue) bool {
 	other, ok := otherAny.(*VeniceString)
 	if !ok {
@@ -471,5 +490,6 @@ func (v *VeniceList) veniceValue()           {}
 func (v *VeniceListIterator) veniceValue()   {}
 func (v *VeniceMap) veniceValue()            {}
 func (v *VeniceMapIterator) veniceValue()    {}
+func (v *VeniceRealNumber) veniceValue()     {}
 func (v *VeniceString) veniceValue()         {}
 func (v *VeniceTuple) veniceValue()          {}

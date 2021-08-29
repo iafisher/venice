@@ -851,6 +851,10 @@ func (compiler *Compiler) compileExpression(
 		return compiler.compileMapNode(node)
 	case *ast.QualifiedSymbolNode:
 		return compiler.compileQualifiedSymbolNode(node)
+	case *ast.RealNumberNode:
+		return []bytecode.Bytecode{
+			&bytecode.PushConstRealNumber{node.Value},
+		}, vtype.VENICE_TYPE_REAL_NUMBER, nil
 	case *ast.StringNode:
 		return []bytecode.Bytecode{
 			&bytecode.PushConstStr{node.Value},
@@ -1182,7 +1186,7 @@ func (compiler *Compiler) compileInfixNode(
 	node *ast.InfixNode,
 ) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	// TODO(2021-08-07): Boolean operators should short-circuit.
-	opBytecode, ok := opsToBytecodes[node.Operator]
+	_, ok := opsToBytecodes[node.Operator]
 	if !ok {
 		return nil, nil, compiler.customError(node, "unknown operator `%s`", node.Operator)
 	}
@@ -1221,6 +1225,13 @@ func (compiler *Compiler) compileInfixNode(
 		code = append(code, rightCode...)
 	} else {
 		code = append(leftCode, rightCode...)
+
+		var opBytecode bytecode.Bytecode
+		if _, ok := resultType.(*vtype.VeniceRealNumberType); ok {
+			opBytecode = opsToBytecodesReal[node.Operator]
+		} else {
+			opBytecode = opsToBytecodes[node.Operator]
+		}
 		code = append(code, opBytecode)
 	}
 
@@ -1431,7 +1442,6 @@ var opsToBytecodes = map[string]bytecode.Bytecode{
 	"+":   &bytecode.BinaryAdd{},
 	"and": &bytecode.BinaryAnd{},
 	"++":  &bytecode.BinaryConcat{},
-	"/":   &bytecode.BinaryDiv{},
 	"==":  &bytecode.BinaryEq{},
 	">":   &bytecode.BinaryGt{},
 	">=":  &bytecode.BinaryGtEq{},
@@ -1442,6 +1452,14 @@ var opsToBytecodes = map[string]bytecode.Bytecode{
 	"!=":  &bytecode.BinaryNotEq{},
 	"or":  &bytecode.BinaryOr{},
 	"-":   &bytecode.BinarySub{},
+	"/":   nil,
+}
+
+var opsToBytecodesReal = map[string]bytecode.Bytecode{
+	"+": &bytecode.BinaryRealAdd{},
+	"/": &bytecode.BinaryRealDiv{},
+	"*": &bytecode.BinaryRealMul{},
+	"-": &bytecode.BinaryRealSub{},
 }
 
 func (compiler *Compiler) checkInfixLeftType(operator string, leftType vtype.VeniceType) bool {
@@ -1457,7 +1475,8 @@ func (compiler *Compiler) checkInfixLeftType(operator string, leftType vtype.Ven
 			return compiler.checkType(vtype.VENICE_TYPE_STRING, leftType)
 		}
 	default:
-		return compiler.checkType(vtype.VENICE_TYPE_INTEGER, leftType)
+		return compiler.checkType(vtype.VENICE_TYPE_INTEGER, leftType) ||
+			compiler.checkType(vtype.VENICE_TYPE_REAL_NUMBER, leftType)
 	}
 }
 
@@ -1495,9 +1514,22 @@ func (compiler *Compiler) checkInfixRightType(
 		default:
 			return nil, false
 		}
+	case "/":
+		return vtype.VENICE_TYPE_REAL_NUMBER,
+			compiler.checkType(vtype.VENICE_TYPE_INTEGER, rightType) ||
+				compiler.checkType(vtype.VENICE_TYPE_REAL_NUMBER, rightType)
 	default:
-		return vtype.VENICE_TYPE_INTEGER,
-			compiler.checkType(vtype.VENICE_TYPE_INTEGER, rightType)
+		_, leftIsRealNumber := leftType.(*vtype.VeniceRealNumberType)
+		_, rightIsRealNumber := rightType.(*vtype.VeniceRealNumberType)
+
+		var returnType vtype.VeniceType
+		if leftIsRealNumber || rightIsRealNumber {
+			returnType = vtype.VENICE_TYPE_REAL_NUMBER
+		} else {
+			returnType = vtype.VENICE_TYPE_INTEGER
+		}
+		return returnType, compiler.checkType(vtype.VENICE_TYPE_INTEGER, rightType) ||
+			compiler.checkType(vtype.VENICE_TYPE_REAL_NUMBER, rightType)
 	}
 }
 
