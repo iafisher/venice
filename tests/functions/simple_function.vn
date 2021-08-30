@@ -2,7 +2,7 @@
 # 42
 # END OUTPUT
 
-fn add_one(x: int) -> int {
+func add_one(x: int) -> int {
   return x + 1
 }
 

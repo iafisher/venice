@@ -33,7 +33,7 @@ func TestParseClassDeclarationStatements(t *testing.T) {
 				public x: int
 				public y: int
 
-				public fn f(self, x: int) {
+				public func f(self, x: int) {
 				  x
 			    }
 			  }
@@ -74,10 +74,10 @@ func TestParseEnumDeclarationStatements(t *testing.T) {
 func TestParseFunctionDeclarationStatements(t *testing.T) {
 	checkParseStatement(
 		t,
-		"fn f(x: int) -> int { return x }",
+		"func f(x: int) -> int { return x }",
 		"(function-declaration f ((function-param x int)) int (block (return x)))",
 	)
-	// checkParseStatement(t, "export fn f(x: int) -> int { return x }", "(exported-function-declaration f ((function-param x int)) int (block (return x)))")
+	// checkParseStatement(t, "export func f(x: int) -> int { return x }", "(exported-function-declaration f ((function-param x int)) int (block (return x)))")
 }
 
 func TestParseImportStatements(t *testing.T) {

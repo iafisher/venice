@@ -425,8 +425,8 @@ const (
 	TOKEN_EQUALS                 = "TOKEN_EQUALS"
 	TOKEN_ERROR                  = "TOKEN_ERROR"
 	TOKEN_FALSE                  = "TOKEN_FALSE"
-	TOKEN_FN                     = "TOKEN_FN"
 	TOKEN_FOR                    = "TOKEN_FOR"
+	TOKEN_FUNC                   = "TOKEN_FUNC"
 	TOKEN_GREATER_THAN           = "TOKEN_GREATER_THAN"
 	TOKEN_GREATER_THAN_OR_EQUALS = "TOKEN_GREATER_THAN_OR_EQUALS"
 	TOKEN_IF                     = "TOKEN_IF"
@@ -479,8 +479,8 @@ var keywords = map[string]string{
 	"else":        TOKEN_ELSE,
 	"enum":        TOKEN_ENUM,
 	"false":       TOKEN_FALSE,
-	"fn":          TOKEN_FN,
 	"for":         TOKEN_FOR,
+	"func":        TOKEN_FUNC,
 	"if":          TOKEN_IF,
 	"import":      TOKEN_IMPORT,
 	"in":          TOKEN_IN,

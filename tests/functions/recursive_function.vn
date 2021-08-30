@@ -6,7 +6,7 @@
 # 1
 # END OUTPUT
 
-fn countdown(n: int) {
+func countdown(n: int) {
   if n == 0 {
     return
   }

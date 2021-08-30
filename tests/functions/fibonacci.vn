@@ -2,7 +2,7 @@
 # 144
 # END OUTPUT
 
-fn fibonacci(n: int) -> int {
+func fibonacci(n: int) -> int {
   var i = 1
   var fib_i = 1
   var fib_i_minus_1 = 0

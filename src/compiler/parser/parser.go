@@ -84,7 +84,7 @@ func (p *Parser) matchStatement() (ast.StatementNode, error) {
 		p.nextToken()
 	case lexer_mod.TOKEN_ENUM:
 		return p.matchEnumDeclaration()
-	case lexer_mod.TOKEN_FN:
+	case lexer_mod.TOKEN_FUNC:
 		return p.matchFunctionDeclaration()
 	case lexer_mod.TOKEN_FOR:
 		return p.matchForLoop()

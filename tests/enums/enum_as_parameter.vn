@@ -8,7 +8,7 @@ enum MyResult {
   None,
 }
 
-fn print_enum(r: MyResult) {
+func print_enum(r: MyResult) {
   print(r)
 }
 

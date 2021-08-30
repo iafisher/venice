@@ -1,6 +1,6 @@
 # OUTPUT
 # END OUTPUT
 
-fn hello() {
+func hello() {
   print("Hello")
 }

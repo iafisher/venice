@@ -103,7 +103,7 @@ func TestClassConstructor(t *testing.T) {
 					return self
 				}
 
-				public fn get_value(self) -> int {
+				public func get_value(self) -> int {
 					return self.value
 				}
 			}
@@ -267,7 +267,7 @@ func TestFunctionCall(t *testing.T) {
 	assertEqual(
 		t,
 		`
-		fn add_one(x: int) -> int {
+		func add_one(x: int) -> int {
 			return x + 1
 		}
 
@@ -278,7 +278,7 @@ func TestFunctionCall(t *testing.T) {
 	assertTypecheckError(
 		t,
 		`
-		fn f(x: int) -> int {
+		func f(x: int) -> int {
 			return x + 1
 		}
 
@@ -289,7 +289,7 @@ func TestFunctionCall(t *testing.T) {
 	assertTypecheckError(
 		t,
 		`
-		fn add_one(x: int) -> int {
+		func add_one(x: int) -> int {
 			return x + 1
 		}
 
@@ -313,7 +313,7 @@ func TestFunctionDeclaration(t *testing.T) {
 	assertEqual(
 		t,
 		`
-		fn f() -> [int] {
+		func f() -> [int] {
 			return [1, 2, 3]
 		}
 		f()
@@ -324,7 +324,7 @@ func TestFunctionDeclaration(t *testing.T) {
 	assertTypecheckError(
 		t,
 		`
-		fn f() -> int {
+		func f() -> int {
 			let x = 42
 		}
 		`,
@@ -357,7 +357,7 @@ func TestLetStatement(t *testing.T) {
 	assertTypecheckError(
 		t,
 		`
-		fn f(x: int) {
+		func f(x: int) {
 		  let x = 10
 		}
 		`,

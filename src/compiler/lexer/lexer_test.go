@@ -29,7 +29,7 @@ func TestCharacterLiterals(t *testing.T) {
 
 func TestKeywordTokens(t *testing.T) {
 	tokens := getTokens(
-		"and break class continue else enum false fn for if in let or private public return true while void",
+		"and break class continue else enum false for func if in let or private public return true while void",
 	)
 	checkToken(t, tokens[0], TOKEN_AND, "and")
 	checkToken(t, tokens[1], TOKEN_BREAK, "break")
@@ -38,8 +38,8 @@ func TestKeywordTokens(t *testing.T) {
 	checkToken(t, tokens[4], TOKEN_ELSE, "else")
 	checkToken(t, tokens[5], TOKEN_ENUM, "enum")
 	checkToken(t, tokens[6], TOKEN_FALSE, "false")
-	checkToken(t, tokens[7], TOKEN_FN, "fn")
-	checkToken(t, tokens[8], TOKEN_FOR, "for")
+	checkToken(t, tokens[7], TOKEN_FOR, "for")
+	checkToken(t, tokens[8], TOKEN_FUNC, "func")
 	checkToken(t, tokens[9], TOKEN_IF, "if")
 	checkToken(t, tokens[10], TOKEN_IN, "in")
 	checkToken(t, tokens[11], TOKEN_LET, "let")
