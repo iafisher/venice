@@ -4,12 +4,10 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	bytecode_mod "github.com/iafisher/venice/src/common/bytecode"
-	"github.com/iafisher/venice/src/compiler/ast"
-	"github.com/iafisher/venice/src/compiler/compiler"
-	lexer_mod "github.com/iafisher/venice/src/compiler/lexer"
-	"github.com/iafisher/venice/src/compiler/parser"
-	vm_mod "github.com/iafisher/venice/src/vm"
+	"github.com/iafisher/venice/src/common/bytecode"
+	"github.com/iafisher/venice/src/common/lex"
+	compilerPkg "github.com/iafisher/venice/src/compiler"
+	"github.com/iafisher/venice/src/vm"
 	"os"
 	"path"
 	"strings"
@@ -41,10 +39,10 @@ func repl() {
 	fmt.Print("The Venice programming language.\n\n")
 	fmt.Print("Type !help to view available commands.\n\n\n")
 
-	vm := vm_mod.NewVirtualMachine()
-	compiler := compiler.NewCompiler()
+	virtualMachine := vm.NewVirtualMachine()
+	compiler := compilerPkg.NewCompiler()
 	scanner := bufio.NewScanner(os.Stdin)
-	compiledProgram := bytecode_mod.NewCompiledProgram()
+	compiledProgram := bytecode.NewCompiledProgram()
 	for {
 		fmt.Print(">>> ")
 		ok := scanner.Scan()
@@ -102,17 +100,17 @@ func repl() {
 				case "!parse":
 					operation = "parse"
 				case "!stack":
-					if len(vm.Stack) == 0 {
+					if len(virtualMachine.Stack) == 0 {
 						fmt.Println("Stack is empty")
 					} else {
 						fmt.Println("Stack (bottom to top)")
-						for _, value := range vm.Stack {
+						for _, value := range virtualMachine.Stack {
 							fmt.Println(value.String())
 						}
 					}
 					continue
 				case "!symbols":
-					for key, value := range vm.Env.Symbols {
+					for key, value := range virtualMachine.Env.Symbols {
 						fmt.Printf("%s: %s\n", key, value.String())
 					}
 					continue
@@ -131,17 +129,17 @@ func repl() {
 			}
 		}
 
-		lexer := lexer_mod.NewLexer("", line)
+		lexer := lex.NewLexer("", line)
 		if operation == "lex" {
 			token := lexer.NextToken()
-			for token.Type != lexer_mod.TOKEN_EOF {
+			for token.Type != lex.TOKEN_EOF {
 				fmt.Println(token.String())
 				token = lexer.NextToken()
 			}
 			continue
 		}
 
-		parsedFile, err := parser.NewParser().ParseString(line)
+		parsedFile, err := compilerPkg.NewParser().ParseString(line)
 		if err != nil && strings.HasPrefix(err.Error(), "premature end of input") {
 			var sb strings.Builder
 			sb.WriteString(line)
@@ -162,7 +160,7 @@ func repl() {
 				}
 			}
 
-			parsedFile, err = parser.NewParser().ParseString(sb.String())
+			parsedFile, err = compilerPkg.NewParser().ParseString(sb.String())
 		}
 
 		if err != nil {
@@ -184,7 +182,7 @@ func repl() {
 				continue
 			}
 
-			exprStmt, ok := parsedFile.Statements[0].(*ast.ExpressionStatementNode)
+			exprStmt, ok := parsedFile.Statements[0].(*compilerPkg.ExpressionStatementNode)
 			if !ok {
 				fmt.Println("Compile error: can only get type of expression, not statement")
 				continue
@@ -212,15 +210,15 @@ func repl() {
 		if operation == "compile" {
 			for functionName, code := range compiledProgram.Code {
 				fmt.Printf("%s:\n", functionName)
-				for _, bytecode := range code {
-					fmt.Printf("  %s\n", bytecode)
+				for _, bcode := range code {
+					fmt.Printf("  %s\n", bcode)
 				}
 			}
 			continue
 		}
 
 		debug := (operation == "debug")
-		value, err := vm.Execute(compiledProgram, debug)
+		value, err := virtualMachine.Execute(compiledProgram, debug)
 		if err != nil {
 			fmt.Printf("Execution error: %v\n", err)
 			continue
@@ -243,12 +241,12 @@ const helpString = `!compile <code>   Compile the Venice code into bytecode.
 !types            Print all types in the current environment.`
 
 func compileProgram(filePath string, toStdout bool) {
-	parsedFile, err := parser.NewParser().ParseFile(filePath)
+	parsedFile, err := compilerPkg.NewParser().ParseFile(filePath)
 	if err != nil {
 		fatalError("Parse error: %v", err)
 	}
 
-	code, err := compiler.NewCompiler().Compile(parsedFile)
+	code, err := compilerPkg.NewCompiler().Compile(parsedFile)
 	if err != nil {
 		fatalError("Compile error: %v", err)
 	}
@@ -268,7 +266,7 @@ func compileProgram(filePath string, toStdout bool) {
 		writer = bufio.NewWriter(f)
 	}
 
-	bytecode_mod.WriteCompiledProgramToFile(writer, code)
+	bytecode.WriteCompiledProgramToFile(writer, code)
 }
 
 func executeProgram(filePath string) {
@@ -277,13 +275,13 @@ func executeProgram(filePath string) {
 		filePath = filePath + "b"
 	}
 
-	compiledProgram, err := bytecode_mod.ReadCompiledProgramFromFile(filePath)
+	compiledProgram, err := bytecode.ReadCompiledProgramFromFile(filePath)
 	if err != nil {
 		fatalError("Error while reading %s: %v", filePath, err)
 	}
 
-	vm := vm_mod.NewVirtualMachine()
-	_, err = vm.Execute(compiledProgram, false)
+	virtualMachine := vm.NewVirtualMachine()
+	_, err = virtualMachine.Execute(compiledProgram, false)
 	if err != nil {
 		fatalError("Execution error: %s", err)
 	}

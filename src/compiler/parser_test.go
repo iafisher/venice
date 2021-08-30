@@ -1,7 +1,6 @@
-package parser
+package compiler
 
 import (
-	"github.com/iafisher/venice/src/compiler/ast"
 	"testing"
 )
 
@@ -190,7 +189,7 @@ func checkParseExpression(t *testing.T, input string, expectedOutput string) {
 		t.Fatalf("Expected exactly 1 statement, got %d", len(parsedFile.Statements))
 	}
 
-	expressionStatement, ok := parsedFile.Statements[0].(*ast.ExpressionStatementNode)
+	expressionStatement, ok := parsedFile.Statements[0].(*ExpressionStatementNode)
 	if !ok {
 		t.Helper()
 		t.Fatalf("Expected expression, got %s", parsedFile.Statements[0].String())

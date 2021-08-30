@@ -3,7 +3,7 @@ package bytecode
 import (
 	"bufio"
 	"fmt"
-	lexer_mod "github.com/iafisher/venice/src/compiler/lexer"
+	"github.com/iafisher/venice/src/common/lex"
 	"io/ioutil"
 	"strconv"
 )
@@ -43,7 +43,7 @@ func ReadCompiledProgramFromFile(filePath string) (*CompiledProgram, error) {
 		return nil, err
 	}
 
-	p := bytecodeParser{lexer: lexer_mod.NewLexer(filePath, string(fileContentsBytes))}
+	p := bytecodeParser{lexer: lex.NewLexer(filePath, string(fileContentsBytes))}
 	compiledProgram, err := p.parse()
 	if err != nil {
 		return nil, err
@@ -58,13 +58,13 @@ func ReadCompiledProgramFromFile(filePath string) (*CompiledProgram, error) {
 }
 
 func ReadCompiledProgramFromString(programString string) (*CompiledProgram, error) {
-	p := bytecodeParser{lexer: lexer_mod.NewLexer("", programString)}
+	p := bytecodeParser{lexer: lex.NewLexer("", programString)}
 	return p.parse()
 }
 
 type bytecodeParser struct {
-	lexer               *lexer_mod.Lexer
-	currentToken        *lexer_mod.Token
+	lexer               *lex.Lexer
+	currentToken        *lex.Token
 	currentFunctionName string
 	errors              []error
 }
@@ -74,24 +74,24 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 
 	p.nextTokenSkipNewlines()
 
-	if p.currentToken.Type != lexer_mod.TOKEN_SYMBOL && p.currentToken.Value != "version" {
+	if p.currentToken.Type != lex.TOKEN_SYMBOL && p.currentToken.Value != "version" {
 		p.newError("expected version declaration at beginning of file")
 	}
 
 	p.nextToken()
 	compiledProgram.Version, _ = p.expectInt()
 
-	if p.currentToken.Type != lexer_mod.TOKEN_NEWLINE {
+	if p.currentToken.Type != lex.TOKEN_NEWLINE {
 		p.newError("expected newline after version declaration")
 	}
 
 	p.nextTokenSkipNewlines()
-	for p.currentToken.Type == lexer_mod.TOKEN_IMPORT {
+	for p.currentToken.Type == lex.TOKEN_IMPORT {
 		p.nextToken()
 		path, _ := p.expectString()
 		name, _ := p.expectString()
 
-		if p.currentToken.Type != lexer_mod.TOKEN_NEWLINE {
+		if p.currentToken.Type != lex.TOKEN_NEWLINE {
 			p.newError("expected newline after import statement")
 		}
 		p.nextTokenSkipNewlines()
@@ -105,31 +105,31 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 		return nil, p.errors[0]
 	}
 
-	for p.currentToken.Type != lexer_mod.TOKEN_EOF {
-		if p.currentToken.Type == lexer_mod.TOKEN_NEWLINE {
+	for p.currentToken.Type != lex.TOKEN_EOF {
+		if p.currentToken.Type == lex.TOKEN_NEWLINE {
 			p.nextTokenSkipNewlines()
 		}
 
-		symbolToken, ok := p.expect(lexer_mod.TOKEN_SYMBOL)
+		symbolToken, ok := p.expect(lex.TOKEN_SYMBOL)
 		if !ok {
 			continue
 		}
 
 		symbol := symbolToken.Value
 
-		if p.currentToken.Type == lexer_mod.TOKEN_COLON {
+		if p.currentToken.Type == lex.TOKEN_COLON {
 			p.currentFunctionName = symbol
 			p.nextToken()
-			p.expect(lexer_mod.TOKEN_NEWLINE)
+			p.expect(lex.TOKEN_NEWLINE)
 			continue
-		} else if p.currentToken.Type == lexer_mod.TOKEN_DOUBLE_COLON {
+		} else if p.currentToken.Type == lex.TOKEN_DOUBLE_COLON {
 			p.nextToken()
-			symbolToken, ok := p.expect(lexer_mod.TOKEN_SYMBOL)
+			symbolToken, ok := p.expect(lex.TOKEN_SYMBOL)
 			if !ok {
 				continue
 			}
 			p.currentFunctionName = fmt.Sprintf("%s::%s", symbol, symbolToken.Value)
-			p.expect(lexer_mod.TOKEN_COLON)
+			p.expect(lex.TOKEN_COLON)
 			continue
 		}
 
@@ -372,7 +372,7 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			compiledProgram.Code[p.currentFunctionName],
 			bytecode,
 		)
-		p.expect(lexer_mod.TOKEN_NEWLINE)
+		p.expect(lex.TOKEN_NEWLINE)
 
 		if len(p.errors) > 0 {
 			return nil, p.errors[0]
@@ -407,7 +407,7 @@ func (p *bytecodeParser) resolveImportsRecursive(
 		}
 
 		subParser := bytecodeParser{
-			lexer: lexer_mod.NewLexer(importObject.Path, string(fileContentsBytes)),
+			lexer: lex.NewLexer(importObject.Path, string(fileContentsBytes)),
 		}
 		importedProgram, err := subParser.parse()
 		if err != nil {
@@ -432,7 +432,7 @@ func (p *bytecodeParser) resolveImportsRecursive(
 }
 
 func (p *bytecodeParser) expectInt() (int, bool) {
-	token, ok := p.expect(lexer_mod.TOKEN_INT)
+	token, ok := p.expect(lex.TOKEN_INT)
 	if !ok {
 		return 0, false
 	}
@@ -449,7 +449,7 @@ func (p *bytecodeParser) expectInt() (int, bool) {
 }
 
 func (p *bytecodeParser) expectRealNumber() (float64, bool) {
-	token, ok := p.expect(lexer_mod.TOKEN_REAL_NUMBER)
+	token, ok := p.expect(lex.TOKEN_REAL_NUMBER)
 	if !ok {
 		return 0, false
 	}
@@ -466,17 +466,17 @@ func (p *bytecodeParser) expectRealNumber() (float64, bool) {
 }
 
 func (p *bytecodeParser) expectString() (string, bool) {
-	token, ok := p.expect(lexer_mod.TOKEN_STRING)
+	token, ok := p.expect(lex.TOKEN_STRING)
 	if !ok {
 		return "", false
 	}
 	return token.Value, true
 }
 
-func (p *bytecodeParser) expect(tokenType string) (*lexer_mod.Token, bool) {
+func (p *bytecodeParser) expect(tokenType string) (*lex.Token, bool) {
 	if p.currentToken.Type == tokenType {
 		token := p.currentToken
-		if tokenType == lexer_mod.TOKEN_NEWLINE {
+		if tokenType == lex.TOKEN_NEWLINE {
 			p.nextTokenSkipNewlines()
 		} else {
 			p.nextToken()
@@ -492,9 +492,9 @@ func (p *bytecodeParser) expect(tokenType string) (*lexer_mod.Token, bool) {
 
 func (p *bytecodeParser) skipToNextLine() {
 	for {
-		if p.currentToken.Type == lexer_mod.TOKEN_EOF {
+		if p.currentToken.Type == lex.TOKEN_EOF {
 			break
-		} else if p.currentToken.Type == lexer_mod.TOKEN_NEWLINE {
+		} else if p.currentToken.Type == lex.TOKEN_NEWLINE {
 			p.nextTokenSkipNewlines()
 			break
 		} else {
@@ -507,13 +507,13 @@ func (p *bytecodeParser) newError(message string) {
 	p.errors = append(p.errors, &BytecodeParseError{message, p.currentToken.Location})
 }
 
-func (p *bytecodeParser) nextToken() *lexer_mod.Token {
+func (p *bytecodeParser) nextToken() *lex.Token {
 	token := p.lexer.NextToken()
 	p.currentToken = token
 	return token
 }
 
-func (p *bytecodeParser) nextTokenSkipNewlines() *lexer_mod.Token {
+func (p *bytecodeParser) nextTokenSkipNewlines() *lex.Token {
 	token := p.lexer.NextTokenSkipNewlines()
 	p.currentToken = token
 	return token
@@ -521,7 +521,7 @@ func (p *bytecodeParser) nextTokenSkipNewlines() *lexer_mod.Token {
 
 type BytecodeParseError struct {
 	Message  string
-	Location *lexer_mod.Location
+	Location *lex.Location
 }
 
 func (e *BytecodeParseError) Error() string {

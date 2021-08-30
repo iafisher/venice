@@ -1,4 +1,4 @@
-package vtype
+package compiler
 
 import (
 	"fmt"

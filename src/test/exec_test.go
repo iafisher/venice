@@ -1,9 +1,8 @@
 package test
 
 import (
-	"github.com/iafisher/venice/src/compiler/compiler"
-	"github.com/iafisher/venice/src/compiler/parser"
-	vm_mod "github.com/iafisher/venice/src/vm"
+	compilerPkg "github.com/iafisher/venice/src/compiler"
+	"github.com/iafisher/venice/src/vm"
 	"strings"
 	"testing"
 )
@@ -558,57 +557,57 @@ func TestVarStatements(t *testing.T) {
 	)
 }
 
-func B(b bool) *vm_mod.VeniceBoolean {
-	return &vm_mod.VeniceBoolean{b}
+func B(b bool) *vm.VeniceBoolean {
+	return &vm.VeniceBoolean{b}
 }
 
-func C(ch byte) *vm_mod.VeniceCharacter {
-	return &vm_mod.VeniceCharacter{ch}
+func C(ch byte) *vm.VeniceCharacter {
+	return &vm.VeniceCharacter{ch}
 }
 
-func F(n float64) *vm_mod.VeniceRealNumber {
-	return &vm_mod.VeniceRealNumber{n}
+func F(n float64) *vm.VeniceRealNumber {
+	return &vm.VeniceRealNumber{n}
 }
 
-func L(values ...vm_mod.VeniceValue) *vm_mod.VeniceList {
-	return &vm_mod.VeniceList{values}
+func L(values ...vm.VeniceValue) *vm.VeniceList {
+	return &vm.VeniceList{values}
 }
 
-func I(n int) *vm_mod.VeniceInteger {
-	return &vm_mod.VeniceInteger{n}
+func I(n int) *vm.VeniceInteger {
+	return &vm.VeniceInteger{n}
 }
 
-func S(s string) *vm_mod.VeniceString {
-	return &vm_mod.VeniceString{s}
+func S(s string) *vm.VeniceString {
+	return &vm.VeniceString{s}
 }
 
-func Some(v vm_mod.VeniceValue) *vm_mod.VeniceEnumObject {
-	return &vm_mod.VeniceEnumObject{
+func Some(v vm.VeniceValue) *vm.VeniceEnumObject {
+	return &vm.VeniceEnumObject{
 		Label:  "Some",
-		Values: []vm_mod.VeniceValue{v},
+		Values: []vm.VeniceValue{v},
 	}
 }
 
-func Tup(values ...vm_mod.VeniceValue) *vm_mod.VeniceTuple {
-	return &vm_mod.VeniceTuple{values}
+func Tup(values ...vm.VeniceValue) *vm.VeniceTuple {
+	return &vm.VeniceTuple{values}
 }
 
-func assertEqual(t *testing.T, program string, result vm_mod.VeniceValue) {
-	parsedFile, err := parser.NewParser().ParseString(program)
+func assertEqual(t *testing.T, program string, result vm.VeniceValue) {
+	parsedFile, err := compilerPkg.NewParser().ParseString(program)
 	if err != nil {
 		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput:\n\n%s", err, program)
 	}
 
-	compiler := compiler.NewCompiler()
+	compiler := compilerPkg.NewCompiler()
 	compiledProgram, err := compiler.Compile(parsedFile)
 	if err != nil {
 		t.Helper()
 		t.Fatalf("Compile error: %s\n\nInput:\n\n%s", err, program)
 	}
 
-	vm := vm_mod.NewVirtualMachine()
-	value, err := vm.Execute(compiledProgram, false)
+	virtualMachine := vm.NewVirtualMachine()
+	value, err := virtualMachine.Execute(compiledProgram, false)
 	if err != nil {
 		t.Helper()
 		t.Fatalf("Execution error: %s\n\nInput:\n\n%s", err, program)
@@ -630,13 +629,13 @@ func assertEqual(t *testing.T, program string, result vm_mod.VeniceValue) {
 }
 
 func assertTypecheckError(t *testing.T, program string, errorMessage string) {
-	parsedFile, err := parser.NewParser().ParseString(program)
+	parsedFile, err := compilerPkg.NewParser().ParseString(program)
 	if err != nil {
 		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput:\n\n%s", err, program)
 	}
 
-	compiler := compiler.NewCompiler()
+	compiler := compilerPkg.NewCompiler()
 	_, err = compiler.Compile(parsedFile)
 	if err == nil {
 		t.Helper()
