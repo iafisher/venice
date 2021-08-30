@@ -9,11 +9,11 @@ package compiler
 
 import (
 	"fmt"
-	"github.com/iafisher/venice/src/ast"
-	"github.com/iafisher/venice/src/bytecode"
-	"github.com/iafisher/venice/src/lexer"
-	"github.com/iafisher/venice/src/parser"
-	"github.com/iafisher/venice/src/vtype"
+	"github.com/iafisher/venice/src/common/bytecode"
+	"github.com/iafisher/venice/src/compiler/ast"
+	"github.com/iafisher/venice/src/compiler/lexer"
+	"github.com/iafisher/venice/src/compiler/parser"
+	"github.com/iafisher/venice/src/compiler/vtype"
 )
 
 type Compiler struct {

@@ -2,34 +2,33 @@ package vm
 
 import (
 	"fmt"
-	"github.com/iafisher/venice/src/bytecode"
-	"github.com/iafisher/venice/src/vval"
+	"github.com/iafisher/venice/src/common/bytecode"
 	"strings"
 )
 
 type Environment struct {
 	Parent  *Environment
-	Symbols map[string]vval.VeniceValue
+	Symbols map[string]VeniceValue
 }
 
 type VirtualMachine struct {
-	Stack []vval.VeniceValue
+	Stack []VeniceValue
 	Env   *Environment
 }
 
 func NewVirtualMachine() *VirtualMachine {
 	return &VirtualMachine{
-		Stack: []vval.VeniceValue{},
+		Stack: []VeniceValue{},
 		Env: &Environment{
 			Parent:  nil,
-			Symbols: make(map[string]vval.VeniceValue),
+			Symbols: make(map[string]VeniceValue),
 		},
 	}
 }
 
 func (vm *VirtualMachine) Execute(
 	compiledProgram *bytecode.CompiledProgram, debug bool,
-) (vval.VeniceValue, error) {
+) (VeniceValue, error) {
 	if compiledProgram.Version != 1 {
 		return nil, &ExecutionError{
 			fmt.Sprintf("unsupported bytecode version: %d", compiledProgram.Version),
@@ -41,7 +40,7 @@ func (vm *VirtualMachine) Execute(
 
 func (vm *VirtualMachine) executeFunction(
 	compiledProgram *bytecode.CompiledProgram, functionName string, debug bool,
-) (vval.VeniceValue, error) {
+) (VeniceValue, error) {
 	code, ok := compiledProgram.Code[functionName]
 	if !ok {
 		return nil, &ExecutionError{fmt.Sprintf("function %q not found", functionName)}
@@ -93,24 +92,24 @@ func (vm *VirtualMachine) executeOne(
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceInteger{left + right})
+		vm.pushStack(&VeniceInteger{left + right})
 	case *bytecode.BinaryAnd:
 		left, right, err := vm.popTwoBools()
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceBoolean{left.Value && right.Value})
+		vm.pushStack(&VeniceBoolean{left.Value && right.Value})
 	case *bytecode.BinaryConcat:
 		rightAny := vm.popStack()
 		leftAny := vm.popStack()
 
 		switch right := rightAny.(type) {
-		case *vval.VeniceList:
-			left := leftAny.(*vval.VeniceList)
-			vm.pushStack(&vval.VeniceList{append(left.Values, right.Values...)})
-		case *vval.VeniceString:
-			left := leftAny.(*vval.VeniceString)
-			vm.pushStack(&vval.VeniceString{left.Value + right.Value})
+		case *VeniceList:
+			left := leftAny.(*VeniceList)
+			vm.pushStack(&VeniceList{append(left.Values, right.Values...)})
+		case *VeniceString:
+			left := leftAny.(*VeniceString)
+			vm.pushStack(&VeniceString{left.Value + right.Value})
 		default:
 			return -1, &ExecutionError{
 				fmt.Sprintf(
@@ -124,35 +123,35 @@ func (vm *VirtualMachine) executeOne(
 		right := vm.popStack()
 		left := vm.popStack()
 		result := left.Equals(right)
-		vm.pushStack(&vval.VeniceBoolean{result})
+		vm.pushStack(&VeniceBoolean{result})
 	case *bytecode.BinaryGt:
 		left, right, err := vm.popTwoInts()
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceBoolean{left > right})
+		vm.pushStack(&VeniceBoolean{left > right})
 	case *bytecode.BinaryGtEq:
 		left, right, err := vm.popTwoInts()
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceBoolean{left >= right})
+		vm.pushStack(&VeniceBoolean{left >= right})
 	case *bytecode.BinaryIn:
 		rightAny := vm.popStack()
 		leftAny := vm.popStack()
 
 		var result bool
 		switch right := rightAny.(type) {
-		case *vval.VeniceString:
+		case *VeniceString:
 			switch left := leftAny.(type) {
-			case *vval.VeniceCharacter:
+			case *VeniceCharacter:
 				result = strings.IndexByte(right.Value, left.Value) != -1
-			case *vval.VeniceString:
+			case *VeniceString:
 				result = strings.Contains(right.Value, left.Value)
 			default:
 				return -1, &ExecutionError{"BINARY_IN expected character or string"}
 			}
-		case *vval.VeniceList:
+		case *VeniceList:
 			result = false
 			for _, value := range right.Values {
 				if value.Equals(leftAny) {
@@ -160,15 +159,15 @@ func (vm *VirtualMachine) executeOne(
 					break
 				}
 			}
-		case *vval.VeniceMap:
+		case *VeniceMap:
 			result = right.Get(leftAny) != nil
 		default:
 			return -1, &ExecutionError{"BINARY_IN requires list, map, or string"}
 		}
-		vm.pushStack(&vval.VeniceBoolean{result})
+		vm.pushStack(&VeniceBoolean{result})
 	case *bytecode.BinaryListIndex:
 		indexAny := vm.popStack()
-		index, ok := indexAny.(*vval.VeniceInteger)
+		index, ok := indexAny.(*VeniceInteger)
 		if !ok {
 			return -1, &ExecutionError{
 				fmt.Sprintf(
@@ -180,7 +179,7 @@ func (vm *VirtualMachine) executeOne(
 		}
 
 		listAny := vm.popStack()
-		list, ok := listAny.(*vval.VeniceList)
+		list, ok := listAny.(*VeniceList)
 		if !ok {
 			return -1, &ExecutionError{
 				fmt.Sprintf(
@@ -201,17 +200,17 @@ func (vm *VirtualMachine) executeOne(
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceBoolean{left < right})
+		vm.pushStack(&VeniceBoolean{left < right})
 	case *bytecode.BinaryLtEq:
 		left, right, err := vm.popTwoInts()
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceBoolean{left <= right})
+		vm.pushStack(&VeniceBoolean{left <= right})
 	case *bytecode.BinaryMapIndex:
 		index := vm.popStack()
 		vMapAny := vm.popStack()
-		vMap, ok := vMapAny.(*vval.VeniceMap)
+		vMap, ok := vMapAny.(*VeniceMap)
 		if !ok {
 			return -1, &ExecutionError{
 				fmt.Sprintf(
@@ -223,13 +222,13 @@ func (vm *VirtualMachine) executeOne(
 		}
 
 		result := vMap.Get(index)
-		var wrappedResult vval.VeniceValue
+		var wrappedResult VeniceValue
 		if result == nil {
-			wrappedResult = &vval.VeniceEnumObject{Label: "None"}
+			wrappedResult = &VeniceEnumObject{Label: "None"}
 		} else {
-			wrappedResult = &vval.VeniceEnumObject{
+			wrappedResult = &VeniceEnumObject{
 				Label:  "Some",
-				Values: []vval.VeniceValue{result},
+				Values: []VeniceValue{result},
 			}
 		}
 
@@ -239,45 +238,45 @@ func (vm *VirtualMachine) executeOne(
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceInteger{left * right})
+		vm.pushStack(&VeniceInteger{left * right})
 	case *bytecode.BinaryNotEq:
 		right := vm.popStack()
 		left := vm.popStack()
 		result := left.Equals(right)
-		vm.pushStack(&vval.VeniceBoolean{!result})
+		vm.pushStack(&VeniceBoolean{!result})
 	case *bytecode.BinaryOr:
 		left, right, err := vm.popTwoBools()
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceBoolean{left.Value || right.Value})
+		vm.pushStack(&VeniceBoolean{left.Value || right.Value})
 	case *bytecode.BinaryRealAdd:
 		left, right, err := vm.popTwoReals()
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceRealNumber{left + right})
+		vm.pushStack(&VeniceRealNumber{left + right})
 	case *bytecode.BinaryRealDiv:
 		left, right, err := vm.popTwoReals()
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceRealNumber{left / right})
+		vm.pushStack(&VeniceRealNumber{left / right})
 	case *bytecode.BinaryRealMul:
 		left, right, err := vm.popTwoReals()
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceRealNumber{left * right})
+		vm.pushStack(&VeniceRealNumber{left * right})
 	case *bytecode.BinaryRealSub:
 		left, right, err := vm.popTwoReals()
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceRealNumber{left - right})
+		vm.pushStack(&VeniceRealNumber{left - right})
 	case *bytecode.BinaryStringIndex:
 		indexAny := vm.popStack()
-		index, ok := indexAny.(*vval.VeniceInteger)
+		index, ok := indexAny.(*VeniceInteger)
 		if !ok {
 			return -1, &ExecutionError{
 				fmt.Sprintf(
@@ -289,7 +288,7 @@ func (vm *VirtualMachine) executeOne(
 		}
 
 		stringAny := vm.popStack()
-		str, ok := stringAny.(*vval.VeniceString)
+		str, ok := stringAny.(*VeniceString)
 		if !ok {
 			return -1, &ExecutionError{
 				fmt.Sprintf(
@@ -304,45 +303,45 @@ func (vm *VirtualMachine) executeOne(
 			return -1, &ExecutionError{"index out of bounds"}
 		}
 
-		vm.pushStack(&vval.VeniceCharacter{str.Value[index.Value]})
+		vm.pushStack(&VeniceCharacter{str.Value[index.Value]})
 	case *bytecode.BinarySub:
 		left, right, err := vm.popTwoInts()
 		if err != nil {
 			return -1, err
 		}
-		vm.pushStack(&vval.VeniceInteger{left - right})
+		vm.pushStack(&VeniceInteger{left - right})
 	case *bytecode.BuildClass:
-		values := make([]vval.VeniceValue, 0, bcode.N)
+		values := make([]VeniceValue, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
 			topOfStack := vm.popStack()
 			values = append(values, topOfStack)
 		}
 
-		vm.pushStack(&vval.VeniceClassObject{ClassName: bcode.Name, Values: values})
+		vm.pushStack(&VeniceClassObject{ClassName: bcode.Name, Values: values})
 	case *bytecode.BuildList:
-		values := make([]vval.VeniceValue, 0, bcode.N)
+		values := make([]VeniceValue, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
 			topOfStack := vm.popStack()
 			values = append(values, topOfStack)
 		}
-		vm.pushStack(&vval.VeniceList{values})
+		vm.pushStack(&VeniceList{values})
 	case *bytecode.BuildMap:
-		pairs := make([]*vval.VeniceMapPair, 0, bcode.N)
+		pairs := make([]*VeniceMapPair, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
 			value := vm.popStack()
 			key := vm.popStack()
-			pairs = append(pairs, &vval.VeniceMapPair{key, value})
+			pairs = append(pairs, &VeniceMapPair{key, value})
 		}
-		vm.pushStack(&vval.VeniceMap{pairs})
+		vm.pushStack(&VeniceMap{pairs})
 	case *bytecode.BuildTuple:
-		values := make([]vval.VeniceValue, 0, bcode.N)
+		values := make([]VeniceValue, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
 			topOfStack := vm.popStack()
 			values = append(values, topOfStack)
 		}
-		vm.pushStack(&vval.VeniceTuple{values})
+		vm.pushStack(&VeniceTuple{values})
 	case *bytecode.CallFunction:
-		functionObject, ok := vm.popStack().(*vval.VeniceFunctionObject)
+		functionObject, ok := vm.popStack().(*VeniceFunctionObject)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected function at top of virtual machine stack for CALL_FUNCTION",
@@ -357,7 +356,7 @@ func (vm *VirtualMachine) executeOne(
 				}
 			}
 
-			args := make([]vval.VeniceValue, 0, bcode.N)
+			args := make([]VeniceValue, 0, bcode.N)
 			for i := 0; i < bcode.N; i++ {
 				topOfStack := vm.popStack()
 				args = append(args, topOfStack)
@@ -368,7 +367,7 @@ func (vm *VirtualMachine) executeOne(
 				vm.pushStack(result)
 			}
 		} else {
-			functionEnv := &Environment{vm.Env, map[string]vval.VeniceValue{}}
+			functionEnv := &Environment{vm.Env, map[string]VeniceValue{}}
 			functionStack := vm.Stack[len(vm.Stack)-bcode.N:]
 			vm.Stack = vm.Stack[:len(vm.Stack)-bcode.N]
 
@@ -385,10 +384,10 @@ func (vm *VirtualMachine) executeOne(
 			vm.pushStack(value)
 		}
 	case *bytecode.CheckLabel:
-		enum := vm.peekStack().(*vval.VeniceEnumObject)
-		vm.pushStack(&vval.VeniceBoolean{enum.Label == bcode.Name})
+		enum := vm.peekStack().(*VeniceEnumObject)
+		vm.pushStack(&VeniceBoolean{enum.Label == bcode.Name})
 	case *bytecode.ForIter:
-		iter := vm.peekStack().(vval.VeniceIterator)
+		iter := vm.peekStack().(VeniceIterator)
 
 		next := iter.Next()
 		if next == nil {
@@ -402,45 +401,45 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.GetIter:
 		topOfStackAny := vm.popStack()
 		switch topOfStack := topOfStackAny.(type) {
-		case *vval.VeniceList:
-			vm.pushStack(&vval.VeniceListIterator{List: topOfStack, Index: 0})
-		case *vval.VeniceMap:
-			vm.pushStack(&vval.VeniceMapIterator{Map: topOfStack, Index: 0})
+		case *VeniceList:
+			vm.pushStack(&VeniceListIterator{List: topOfStack, Index: 0})
+		case *VeniceMap:
+			vm.pushStack(&VeniceMapIterator{Map: topOfStack, Index: 0})
 		}
 	case *bytecode.LookupMethod:
 		switch topOfStack := vm.peekStack().(type) {
-		case *vval.VeniceClassObject:
+		case *VeniceClassObject:
 			vm.pushStack(
-				&vval.VeniceFunctionObject{
+				&VeniceFunctionObject{
 					fmt.Sprintf("%s__%s", topOfStack.ClassName, bcode.Name),
 					false,
 				},
 			)
-		case *vval.VeniceList:
-			vm.pushStack(&vval.VeniceFunctionObject{fmt.Sprintf("list__%s", bcode.Name), true})
-		case *vval.VeniceMap:
-			vm.pushStack(&vval.VeniceFunctionObject{fmt.Sprintf("map__%s", bcode.Name), true})
-		case *vval.VeniceString:
-			vm.pushStack(&vval.VeniceFunctionObject{fmt.Sprintf("string__%s", bcode.Name), true})
+		case *VeniceList:
+			vm.pushStack(&VeniceFunctionObject{fmt.Sprintf("list__%s", bcode.Name), true})
+		case *VeniceMap:
+			vm.pushStack(&VeniceFunctionObject{fmt.Sprintf("map__%s", bcode.Name), true})
+		case *VeniceString:
+			vm.pushStack(&VeniceFunctionObject{fmt.Sprintf("string__%s", bcode.Name), true})
 		default:
 			return -1, &ExecutionError{
 				"expected class, list, map, or string object at top of virtual machine stack for LOOKUP_METHOD",
 			}
 		}
 	case *bytecode.PushConstBool:
-		vm.pushStack(&vval.VeniceBoolean{bcode.Value})
+		vm.pushStack(&VeniceBoolean{bcode.Value})
 	case *bytecode.PushConstChar:
-		vm.pushStack(&vval.VeniceCharacter{bcode.Value})
+		vm.pushStack(&VeniceCharacter{bcode.Value})
 	case *bytecode.PushConstFunction:
-		vm.pushStack(&vval.VeniceFunctionObject{bcode.Name, bcode.IsBuiltin})
+		vm.pushStack(&VeniceFunctionObject{bcode.Name, bcode.IsBuiltin})
 	case *bytecode.PushConstInt:
-		vm.pushStack(&vval.VeniceInteger{bcode.Value})
+		vm.pushStack(&VeniceInteger{bcode.Value})
 	case *bytecode.PushConstRealNumber:
-		vm.pushStack(&vval.VeniceRealNumber{bcode.Value})
+		vm.pushStack(&VeniceRealNumber{bcode.Value})
 	case *bytecode.PushConstStr:
-		vm.pushStack(&vval.VeniceString{bcode.Value})
+		vm.pushStack(&VeniceString{bcode.Value})
 	case *bytecode.PushEnum:
-		values := make([]vval.VeniceValue, 0, bcode.N)
+		values := make([]VeniceValue, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
 			topOfStack := vm.popStack()
 			values = append(values, topOfStack)
@@ -451,9 +450,9 @@ func (vm *VirtualMachine) executeOne(
 			values[i], values[j] = values[j], values[i]
 		}
 
-		vm.pushStack(&vval.VeniceEnumObject{bcode.Name, values})
+		vm.pushStack(&VeniceEnumObject{bcode.Name, values})
 	case *bytecode.PushEnumIndex:
-		topOfStack, ok := vm.peekStack().(*vval.VeniceEnumObject)
+		topOfStack, ok := vm.peekStack().(*VeniceEnumObject)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected enum object at top of virtual machine stack for PUSH_ENUM_INDEX",
@@ -461,7 +460,7 @@ func (vm *VirtualMachine) executeOne(
 		}
 		vm.pushStack(topOfStack.Values[bcode.Index])
 	case *bytecode.PushField:
-		topOfStack, ok := vm.popStack().(*vval.VeniceClassObject)
+		topOfStack, ok := vm.popStack().(*VeniceClassObject)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected class object at top of virtual machine stack for PUSH_FIELD",
@@ -476,7 +475,7 @@ func (vm *VirtualMachine) executeOne(
 		}
 		vm.pushStack(value)
 	case *bytecode.PushTupleField:
-		topOfStack, ok := vm.popStack().(*vval.VeniceTuple)
+		topOfStack, ok := vm.popStack().(*VeniceTuple)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected tuple at top of virtual machine stack for PUSH_TUPLE_FIELD",
@@ -487,7 +486,7 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.RelJump:
 		return bcode.N, nil
 	case *bytecode.RelJumpIfFalse:
-		topOfStack, ok := vm.popStack().(*vval.VeniceBoolean)
+		topOfStack, ok := vm.popStack().(*VeniceBoolean)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected boolean at top of virtual machine stack for REL_JUMP_IF_FALSE",
@@ -498,7 +497,7 @@ func (vm *VirtualMachine) executeOne(
 			return bcode.N, nil
 		}
 	case *bytecode.RelJumpIfFalseOrPop:
-		topOfStack, ok := vm.peekStack().(*vval.VeniceBoolean)
+		topOfStack, ok := vm.peekStack().(*VeniceBoolean)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected boolean at top of virtual machine stack for REL_JUMP_IF_FALSE_OR_POP",
@@ -511,7 +510,7 @@ func (vm *VirtualMachine) executeOne(
 			vm.popStack()
 		}
 	case *bytecode.RelJumpIfTrueOrPop:
-		topOfStack, ok := vm.peekStack().(*vval.VeniceBoolean)
+		topOfStack, ok := vm.peekStack().(*VeniceBoolean)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected boolean at top of virtual machine stack for REL_JUMP_IF_TRUE_OR_POP",
@@ -529,7 +528,7 @@ func (vm *VirtualMachine) executeOne(
 		destinationAny := vm.popStack()
 		value := vm.popStack()
 
-		destination, ok := destinationAny.(*vval.VeniceClassObject)
+		destination, ok := destinationAny.(*VeniceClassObject)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected class object at top of virtual machine stack for STORE_FIELD",
@@ -542,14 +541,14 @@ func (vm *VirtualMachine) executeOne(
 		indexAny := vm.popStack()
 		value := vm.popStack()
 
-		destination, ok := destinationAny.(*vval.VeniceList)
+		destination, ok := destinationAny.(*VeniceList)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected list object at top of virtual machine stack for STORE_INDEX",
 			}
 		}
 
-		index, ok := indexAny.(*vval.VeniceInteger)
+		index, ok := indexAny.(*VeniceInteger)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected integer at top of virtual machine stack for STORE_INDEX",
@@ -562,7 +561,7 @@ func (vm *VirtualMachine) executeOne(
 		key := vm.popStack()
 		value := vm.popStack()
 
-		destination, ok := destinationAny.(*vval.VeniceMap)
+		destination, ok := destinationAny.(*VeniceMap)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected map object at top of virtual machine stack for STORE_MAP_INDEX",
@@ -574,7 +573,7 @@ func (vm *VirtualMachine) executeOne(
 		topOfStack := vm.popStack()
 		vm.Env.Put(bcode.Name, topOfStack)
 	case *bytecode.UnaryMinus:
-		topOfStack, ok := vm.popStack().(*vval.VeniceInteger)
+		topOfStack, ok := vm.popStack().(*VeniceInteger)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected integer at top of virtual machine stack for UNARY_MINUS",
@@ -584,7 +583,7 @@ func (vm *VirtualMachine) executeOne(
 		topOfStack.Value = -topOfStack.Value
 		vm.pushStack(topOfStack)
 	case *bytecode.UnaryNot:
-		topOfStack, ok := vm.popStack().(*vval.VeniceBoolean)
+		topOfStack, ok := vm.popStack().(*VeniceBoolean)
 		if !ok {
 			return -1, &ExecutionError{
 				"expected boolean at top of virtual machine stack for UNARY_NOT",
@@ -599,17 +598,17 @@ func (vm *VirtualMachine) executeOne(
 	return 1, nil
 }
 
-func (vm *VirtualMachine) pushStack(values ...vval.VeniceValue) {
+func (vm *VirtualMachine) pushStack(values ...VeniceValue) {
 	vm.Stack = append(vm.Stack, values...)
 }
 
-func (vm *VirtualMachine) popStack() vval.VeniceValue {
+func (vm *VirtualMachine) popStack() VeniceValue {
 	ret := vm.Stack[len(vm.Stack)-1]
 	vm.Stack = vm.Stack[:len(vm.Stack)-1]
 	return ret
 }
 
-func (vm *VirtualMachine) peekStack() vval.VeniceValue {
+func (vm *VirtualMachine) peekStack() VeniceValue {
 	return vm.Stack[len(vm.Stack)-1]
 }
 
@@ -628,7 +627,7 @@ func (vm *VirtualMachine) popTwoInts() (int, int, error) {
 }
 
 func (vm *VirtualMachine) popInt() (int, error) {
-	topOfStack, ok := vm.popStack().(*vval.VeniceInteger)
+	topOfStack, ok := vm.popStack().(*VeniceInteger)
 	if !ok {
 		return 0, &ExecutionError{"expected integer at top of virtual machine stack"}
 	}
@@ -652,22 +651,22 @@ func (vm *VirtualMachine) popTwoReals() (float64, float64, error) {
 func (vm *VirtualMachine) popReal() (float64, error) {
 	topOfStackAny := vm.popStack()
 	switch topOfStack := topOfStackAny.(type) {
-	case *vval.VeniceInteger:
+	case *VeniceInteger:
 		return float64(topOfStack.Value), nil
-	case *vval.VeniceRealNumber:
+	case *VeniceRealNumber:
 		return topOfStack.Value, nil
 	default:
 		return 0, &ExecutionError{"expected real number at top of virtual machine stack"}
 	}
 }
 
-func (vm *VirtualMachine) popTwoBools() (*vval.VeniceBoolean, *vval.VeniceBoolean, error) {
-	right, ok := vm.popStack().(*vval.VeniceBoolean)
+func (vm *VirtualMachine) popTwoBools() (*VeniceBoolean, *VeniceBoolean, error) {
+	right, ok := vm.popStack().(*VeniceBoolean)
 	if !ok {
 		return nil, nil, &ExecutionError{"expected boolean at top of virtual machine stack"}
 	}
 
-	left, ok := vm.popStack().(*vval.VeniceBoolean)
+	left, ok := vm.popStack().(*VeniceBoolean)
 	if !ok {
 		return nil, nil, &ExecutionError{"expected boolean at top of virtual machine stack"}
 	}
@@ -675,7 +674,7 @@ func (vm *VirtualMachine) popTwoBools() (*vval.VeniceBoolean, *vval.VeniceBoolea
 	return left, right, nil
 }
 
-func (env *Environment) Get(symbol string) (vval.VeniceValue, bool) {
+func (env *Environment) Get(symbol string) (VeniceValue, bool) {
 	value, ok := env.Symbols[symbol]
 	if !ok {
 		if env.Parent != nil {
@@ -687,7 +686,7 @@ func (env *Environment) Get(symbol string) (vval.VeniceValue, bool) {
 	return value, true
 }
 
-func (env *Environment) Put(symbol string, value vval.VeniceValue) {
+func (env *Environment) Put(symbol string, value VeniceValue) {
 	env.Symbols[symbol] = value
 }
 

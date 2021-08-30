@@ -1,10 +1,9 @@
-package exec
+package test
 
 import (
-	"github.com/iafisher/venice/src/compiler"
-	"github.com/iafisher/venice/src/parser"
+	"github.com/iafisher/venice/src/compiler/compiler"
+	"github.com/iafisher/venice/src/compiler/parser"
 	vm_mod "github.com/iafisher/venice/src/vm"
-	"github.com/iafisher/venice/src/vval"
 	"strings"
 	"testing"
 )
@@ -546,42 +545,42 @@ func TestVarStatements(t *testing.T) {
 	)
 }
 
-func B(b bool) *vval.VeniceBoolean {
-	return &vval.VeniceBoolean{b}
+func B(b bool) *vm_mod.VeniceBoolean {
+	return &vm_mod.VeniceBoolean{b}
 }
 
-func C(ch byte) *vval.VeniceCharacter {
-	return &vval.VeniceCharacter{ch}
+func C(ch byte) *vm_mod.VeniceCharacter {
+	return &vm_mod.VeniceCharacter{ch}
 }
 
-func F(n float64) *vval.VeniceRealNumber {
-	return &vval.VeniceRealNumber{n}
+func F(n float64) *vm_mod.VeniceRealNumber {
+	return &vm_mod.VeniceRealNumber{n}
 }
 
-func L(values ...vval.VeniceValue) *vval.VeniceList {
-	return &vval.VeniceList{values}
+func L(values ...vm_mod.VeniceValue) *vm_mod.VeniceList {
+	return &vm_mod.VeniceList{values}
 }
 
-func I(n int) *vval.VeniceInteger {
-	return &vval.VeniceInteger{n}
+func I(n int) *vm_mod.VeniceInteger {
+	return &vm_mod.VeniceInteger{n}
 }
 
-func S(s string) *vval.VeniceString {
-	return &vval.VeniceString{s}
+func S(s string) *vm_mod.VeniceString {
+	return &vm_mod.VeniceString{s}
 }
 
-func Some(v vval.VeniceValue) *vval.VeniceEnumObject {
-	return &vval.VeniceEnumObject{
+func Some(v vm_mod.VeniceValue) *vm_mod.VeniceEnumObject {
+	return &vm_mod.VeniceEnumObject{
 		Label:  "Some",
-		Values: []vval.VeniceValue{v},
+		Values: []vm_mod.VeniceValue{v},
 	}
 }
 
-func Tup(values ...vval.VeniceValue) *vval.VeniceTuple {
-	return &vval.VeniceTuple{values}
+func Tup(values ...vm_mod.VeniceValue) *vm_mod.VeniceTuple {
+	return &vm_mod.VeniceTuple{values}
 }
 
-func assertEqual(t *testing.T, program string, result vval.VeniceValue) {
+func assertEqual(t *testing.T, program string, result vm_mod.VeniceValue) {
 	parsedFile, err := parser.NewParser().ParseString(program)
 	if err != nil {
 		t.Helper()

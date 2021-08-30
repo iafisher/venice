@@ -2,7 +2,7 @@ package ast
 
 import (
 	"fmt"
-	"github.com/iafisher/venice/src/lexer"
+	"github.com/iafisher/venice/src/compiler/lexer"
 	"strconv"
 	"strings"
 )

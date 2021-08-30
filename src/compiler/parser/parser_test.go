@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"github.com/iafisher/venice/src/ast"
+	"github.com/iafisher/venice/src/compiler/ast"
 	"testing"
 )
 

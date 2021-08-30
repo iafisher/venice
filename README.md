@@ -66,21 +66,11 @@ A Venice program goes through four stages during compilation:
 - Compilation: The abstract syntax tree is checked for type errors and compiled into bytecode.
 - Execution: The bytecode is executed by a virtual machine.
 
-Each of these four steps corresponds to a package under `src/`:
+The first three stages correspond to the packages under `src/compiler`: `src/compiler/lexer`, `src/compiler/parser`, and `src/compiler/compiler`. The last stage corresponds to the `src/vm` package.
 
-- `lexer`
-- `parser`
-- `compiler`
-- `vm`
+A few other packages and files define critical data structures:
 
-A few other packages define critical data structures:
-
-- `ast`: Abstract syntax trees
-- `bytecode`: Venice bytecode instructions
-- `vtype`: Representation of Venice types (e.g., `int`, `string`, `[int]`)
-- `vval` Representation of Venice objects (e.g., `42`, `"hello"`, `[1, 2, 3]`)
-
-Finally, there are a couple of miscellaneous packages:
-
-- `exec`: Contains most of the project's end-to-end tests.
-- `wasm`: A proof-of-concept for executing Venice code in a browser using Web Assembly.
+- `compiler/ast`: Abstract syntax trees
+- `common/bytecode`: Venice bytecode instructions
+- `compiler/vtype`: Representation of Venice types (e.g., `int`, `string`, `[int]`)
+- `vm/vval.go` Representation of Venice objects (e.g., `42`, `"hello"`, `[1, 2, 3]`)

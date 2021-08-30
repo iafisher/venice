@@ -2,7 +2,6 @@ package vm
 
 import (
 	"fmt"
-	"github.com/iafisher/venice/src/vval"
 	"strconv"
 	"strings"
 )
@@ -11,47 +10,47 @@ import (
  * Global built-in functions
  */
 
-func builtinInt(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinInt(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
-	realArg, ok := args[0].(*vval.VeniceRealNumber)
+	realArg, ok := args[0].(*VeniceRealNumber)
 	if !ok {
 		return nil
 	}
 
-	return &vval.VeniceInteger{int(realArg.Value)}
+	return &VeniceInteger{int(realArg.Value)}
 }
 
-func builtinLength(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinLength(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
 	var n int
 	switch arg := args[0].(type) {
-	case *vval.VeniceList:
+	case *VeniceList:
 		n = len(arg.Values)
-	case *vval.VeniceMap:
+	case *VeniceMap:
 		n = len(arg.Pairs)
-	case *vval.VeniceString:
+	case *VeniceString:
 		n = len(arg.Value)
 	default:
 		return nil
 	}
-	return &vval.VeniceInteger{n}
+	return &VeniceInteger{n}
 }
 
-func builtinPrint(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinPrint(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
 	switch arg := args[0].(type) {
-	case *vval.VeniceCharacter:
+	case *VeniceCharacter:
 		fmt.Println(string(arg.Value))
-	case *vval.VeniceString:
+	case *VeniceString:
 		fmt.Println(arg.Value)
 	default:
 		fmt.Println(args[0].String())
@@ -59,59 +58,59 @@ func builtinPrint(args ...vval.VeniceValue) vval.VeniceValue {
 	return nil
 }
 
-func builtinRange(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinRange(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
 	}
 
-	intArg1, ok1 := args[0].(*vval.VeniceInteger)
-	intArg2, ok2 := args[1].(*vval.VeniceInteger)
+	intArg1, ok1 := args[0].(*VeniceInteger)
+	intArg2, ok2 := args[1].(*VeniceInteger)
 	if !ok1 || !ok2 {
 		return nil
 	}
 
 	length := intArg2.Value - intArg1.Value
 	if length <= 0 {
-		return &vval.VeniceList{[]vval.VeniceValue{}}
+		return &VeniceList{[]VeniceValue{}}
 	}
 
-	numbers := make([]vval.VeniceValue, 0, intArg2.Value-intArg1.Value)
+	numbers := make([]VeniceValue, 0, intArg2.Value-intArg1.Value)
 	for i := intArg1.Value; i < intArg2.Value; i++ {
-		numbers = append(numbers, &vval.VeniceInteger{i})
+		numbers = append(numbers, &VeniceInteger{i})
 	}
-	return &vval.VeniceList{numbers}
+	return &VeniceList{numbers}
 }
 
-func builtinReal(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinReal(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
-	intArg, ok := args[0].(*vval.VeniceInteger)
+	intArg, ok := args[0].(*VeniceInteger)
 	if !ok {
 		return nil
 	}
 
-	return &vval.VeniceRealNumber{float64(intArg.Value)}
+	return &VeniceRealNumber{float64(intArg.Value)}
 }
 
-func builtinString(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinString(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
 	switch arg := args[0].(type) {
-	case *vval.VeniceBoolean:
+	case *VeniceBoolean:
 		if arg.Value {
-			return &vval.VeniceString{"true"}
+			return &VeniceString{"true"}
 		} else {
-			return &vval.VeniceString{"false"}
+			return &VeniceString{"false"}
 		}
-	case *vval.VeniceCharacter:
-		return &vval.VeniceString{string(arg.Value)}
-	case *vval.VeniceInteger:
-		return &vval.VeniceString{strconv.Itoa(arg.Value)}
-	case *vval.VeniceString:
+	case *VeniceCharacter:
+		return &VeniceString{string(arg.Value)}
+	case *VeniceInteger:
+		return &VeniceString{strconv.Itoa(arg.Value)}
+	case *VeniceString:
 		return arg
 	default:
 		return nil
@@ -122,12 +121,12 @@ func builtinString(args ...vval.VeniceValue) vval.VeniceValue {
  * List built-ins
  */
 
-func builtinListAppend(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinListAppend(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
 	}
 
-	listArg, ok := args[0].(*vval.VeniceList)
+	listArg, ok := args[0].(*VeniceList)
 	if !ok {
 		return nil
 	}
@@ -136,13 +135,13 @@ func builtinListAppend(args ...vval.VeniceValue) vval.VeniceValue {
 	return nil
 }
 
-func builtinListExtend(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinListExtend(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
 	}
 
-	listArg1, ok1 := args[0].(*vval.VeniceList)
-	listArg2, ok2 := args[1].(*vval.VeniceList)
+	listArg1, ok1 := args[0].(*VeniceList)
+	listArg2, ok2 := args[1].(*VeniceList)
 	if !ok1 || !ok2 {
 		return nil
 	}
@@ -151,13 +150,13 @@ func builtinListExtend(args ...vval.VeniceValue) vval.VeniceValue {
 	return nil
 }
 
-func builtinListRemove(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinListRemove(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
 	}
 
-	listArg, ok1 := args[0].(*vval.VeniceList)
-	intArg, ok2 := args[1].(*vval.VeniceInteger)
+	listArg, ok1 := args[0].(*VeniceList)
+	intArg, ok2 := args[1].(*VeniceInteger)
 	if !ok1 || !ok2 {
 		return nil
 	}
@@ -172,32 +171,32 @@ func builtinListRemove(args ...vval.VeniceValue) vval.VeniceValue {
 	return nil
 }
 
-func builtinListSlice(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinListSlice(args ...VeniceValue) VeniceValue {
 	if len(args) != 3 {
 		return nil
 	}
 
-	listArg, ok1 := args[0].(*vval.VeniceList)
-	startIndexArg, ok2 := args[1].(*vval.VeniceInteger)
-	endIndexArg, ok3 := args[2].(*vval.VeniceInteger)
+	listArg, ok1 := args[0].(*VeniceList)
+	startIndexArg, ok2 := args[1].(*VeniceInteger)
+	endIndexArg, ok3 := args[2].(*VeniceInteger)
 	if !ok1 || !ok2 || !ok3 {
 		return nil
 	}
 
 	// TODO(2021-08-25): Handle out-of-bounds error.
-	return &vval.VeniceList{listArg.Values[startIndexArg.Value:endIndexArg.Value]}
+	return &VeniceList{listArg.Values[startIndexArg.Value:endIndexArg.Value]}
 }
 
 /**
  * Map built-ins
  */
 
-func builtinMapEntries(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinMapEntries(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
-	mapArg, ok := args[0].(*vval.VeniceMap)
+	mapArg, ok := args[0].(*VeniceMap)
 	if !ok {
 		return nil
 	}
@@ -205,12 +204,12 @@ func builtinMapEntries(args ...vval.VeniceValue) vval.VeniceValue {
 	return mapArg.Entries()
 }
 
-func builtinMapKeys(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinMapKeys(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
-	mapArg, ok := args[0].(*vval.VeniceMap)
+	mapArg, ok := args[0].(*VeniceMap)
 	if !ok {
 		return nil
 	}
@@ -218,12 +217,12 @@ func builtinMapKeys(args ...vval.VeniceValue) vval.VeniceValue {
 	return mapArg.Keys()
 }
 
-func builtinMapRemove(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinMapRemove(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
 	}
 
-	mapArg, ok := args[0].(*vval.VeniceMap)
+	mapArg, ok := args[0].(*VeniceMap)
 	if !ok {
 		return nil
 	}
@@ -232,12 +231,12 @@ func builtinMapRemove(args ...vval.VeniceValue) vval.VeniceValue {
 	return nil
 }
 
-func builtinMapValues(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinMapValues(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
-	mapArg, ok := args[0].(*vval.VeniceMap)
+	mapArg, ok := args[0].(*VeniceMap)
 	if !ok {
 		return nil
 	}
@@ -249,125 +248,125 @@ func builtinMapValues(args ...vval.VeniceValue) vval.VeniceValue {
  * String built-ins
  */
 
-func builtinStringFind(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinStringFind(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
 	}
 
-	stringArg, ok1 := args[0].(*vval.VeniceString)
-	searchArg, ok2 := args[1].(*vval.VeniceString)
+	stringArg, ok1 := args[0].(*VeniceString)
+	searchArg, ok2 := args[1].(*VeniceString)
 	if !ok1 || !ok2 {
 		return nil
 	}
 
 	index := strings.Index(stringArg.Value, searchArg.Value)
 	if index == -1 {
-		return vval.VENICE_OPTIONAL_NONE
+		return VENICE_OPTIONAL_NONE
 	} else {
-		return vval.VeniceOptionalOf(&vval.VeniceInteger{index})
+		return VeniceOptionalOf(&VeniceInteger{index})
 	}
 }
 
-func builtinStringFindLast(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinStringFindLast(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
 	}
 
-	stringArg, ok1 := args[0].(*vval.VeniceString)
-	searchArg, ok2 := args[1].(*vval.VeniceString)
+	stringArg, ok1 := args[0].(*VeniceString)
+	searchArg, ok2 := args[1].(*VeniceString)
 	if !ok1 || !ok2 {
 		return nil
 	}
 
 	index := strings.LastIndex(stringArg.Value, searchArg.Value)
 	if index == -1 {
-		return vval.VENICE_OPTIONAL_NONE
+		return VENICE_OPTIONAL_NONE
 	} else {
-		return vval.VeniceOptionalOf(&vval.VeniceInteger{index})
+		return VeniceOptionalOf(&VeniceInteger{index})
 	}
 }
 
-func builtinStringSlice(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinStringSlice(args ...VeniceValue) VeniceValue {
 	if len(args) != 3 {
 		return nil
 	}
 
-	stringArg, ok1 := args[0].(*vval.VeniceString)
-	startIndexArg, ok2 := args[1].(*vval.VeniceInteger)
-	endIndexArg, ok3 := args[2].(*vval.VeniceInteger)
+	stringArg, ok1 := args[0].(*VeniceString)
+	startIndexArg, ok2 := args[1].(*VeniceInteger)
+	endIndexArg, ok3 := args[2].(*VeniceInteger)
 	if !ok1 || !ok2 || !ok3 {
 		return nil
 	}
 
 	// TODO(2021-08-25): Handle out-of-bounds error.
-	return &vval.VeniceString{stringArg.Value[startIndexArg.Value:endIndexArg.Value]}
+	return &VeniceString{stringArg.Value[startIndexArg.Value:endIndexArg.Value]}
 }
 
-func builtinStringSplit(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinStringSplit(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
 	}
 
-	stringArg, ok1 := args[0].(*vval.VeniceString)
-	splitterArg, ok2 := args[1].(*vval.VeniceString)
+	stringArg, ok1 := args[0].(*VeniceString)
+	splitterArg, ok2 := args[1].(*VeniceString)
 	if !ok1 || !ok2 {
 		return nil
 	}
 
-	list := &vval.VeniceList{}
+	list := &VeniceList{}
 	for _, word := range strings.Split(stringArg.Value, splitterArg.Value) {
-		list.Values = append(list.Values, &vval.VeniceString{word})
+		list.Values = append(list.Values, &VeniceString{word})
 	}
 	return list
 }
 
-func builtinStringSplitSpace(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinStringSplitSpace(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
-	stringArg, ok := args[0].(*vval.VeniceString)
+	stringArg, ok := args[0].(*VeniceString)
 	if !ok {
 		return nil
 	}
 
-	list := &vval.VeniceList{}
+	list := &VeniceList{}
 	for _, word := range strings.Fields(stringArg.Value) {
-		list.Values = append(list.Values, &vval.VeniceString{word})
+		list.Values = append(list.Values, &VeniceString{word})
 	}
 	return list
 }
 
-func builtinStringToUpper(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinStringToUpper(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
-	stringArg, ok := args[0].(*vval.VeniceString)
+	stringArg, ok := args[0].(*VeniceString)
 	if !ok {
 		return nil
 	}
 
-	return &vval.VeniceString{strings.ToUpper(stringArg.Value)}
+	return &VeniceString{strings.ToUpper(stringArg.Value)}
 }
 
-func builtinStringToLower(args ...vval.VeniceValue) vval.VeniceValue {
+func builtinStringToLower(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
 
-	stringArg, ok := args[0].(*vval.VeniceString)
+	stringArg, ok := args[0].(*VeniceString)
 	if !ok {
 		return nil
 	}
 
-	return &vval.VeniceString{strings.ToLower(stringArg.Value)}
+	return &VeniceString{strings.ToLower(stringArg.Value)}
 }
 
 // If a method is added here, make sure to also add it to the appropriate place in
 // compiler/compiler.go - `NewBuiltinSymbolTable` if it is a global built-in,
 // `stringBuiltins` if it is a string built-in, etc.
-var builtins = map[string]func(args ...vval.VeniceValue) vval.VeniceValue{
+var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	// Global built-ins
 	"int":    builtinInt,
 	"length": builtinLength,

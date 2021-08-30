@@ -9,8 +9,8 @@ package parser
 
 import (
 	"fmt"
-	"github.com/iafisher/venice/src/ast"
-	lexer_mod "github.com/iafisher/venice/src/lexer"
+	"github.com/iafisher/venice/src/compiler/ast"
+	lexer_mod "github.com/iafisher/venice/src/compiler/lexer"
 	"io/ioutil"
 	pathlib "path"
 	"strconv"

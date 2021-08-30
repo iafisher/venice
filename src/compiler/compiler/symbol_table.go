@@ -1,7 +1,7 @@
 package compiler
 
 import (
-	"github.com/iafisher/venice/src/vtype"
+	"github.com/iafisher/venice/src/compiler/vtype"
 )
 
 type SymbolTable struct {

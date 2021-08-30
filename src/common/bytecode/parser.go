@@ -3,7 +3,7 @@ package bytecode
 import (
 	"bufio"
 	"fmt"
-	lexer_mod "github.com/iafisher/venice/src/lexer"
+	lexer_mod "github.com/iafisher/venice/src/compiler/lexer"
 	"io/ioutil"
 	"strconv"
 )
