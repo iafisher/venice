@@ -312,7 +312,7 @@ func (vm *VirtualMachine) executeOne(
 		}
 		vm.pushStack(&vval.VeniceInteger{left - right})
 	case *bytecode.BuildClass:
-		values := []vval.VeniceValue{}
+		values := make([]vval.VeniceValue, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
 			topOfStack := vm.popStack()
 			values = append(values, topOfStack)
@@ -320,14 +320,14 @@ func (vm *VirtualMachine) executeOne(
 
 		vm.pushStack(&vval.VeniceClassObject{ClassName: bcode.Name, Values: values})
 	case *bytecode.BuildList:
-		values := []vval.VeniceValue{}
+		values := make([]vval.VeniceValue, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
 			topOfStack := vm.popStack()
 			values = append(values, topOfStack)
 		}
 		vm.pushStack(&vval.VeniceList{values})
 	case *bytecode.BuildMap:
-		pairs := []*vval.VeniceMapPair{}
+		pairs := make([]*vval.VeniceMapPair, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
 			value := vm.popStack()
 			key := vm.popStack()
@@ -335,7 +335,7 @@ func (vm *VirtualMachine) executeOne(
 		}
 		vm.pushStack(&vval.VeniceMap{pairs})
 	case *bytecode.BuildTuple:
-		values := []vval.VeniceValue{}
+		values := make([]vval.VeniceValue, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
 			topOfStack := vm.popStack()
 			values = append(values, topOfStack)
@@ -357,7 +357,7 @@ func (vm *VirtualMachine) executeOne(
 				}
 			}
 
-			args := []vval.VeniceValue{}
+			args := make([]vval.VeniceValue, 0, bcode.N)
 			for i := 0; i < bcode.N; i++ {
 				topOfStack := vm.popStack()
 				args = append(args, topOfStack)
@@ -440,7 +440,7 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.PushConstStr:
 		vm.pushStack(&vval.VeniceString{bcode.Value})
 	case *bytecode.PushEnum:
-		values := []vval.VeniceValue{}
+		values := make([]vval.VeniceValue, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
 			topOfStack := vm.popStack()
 			values = append(values, topOfStack)

@@ -327,8 +327,8 @@ func (compiler *Compiler) compileAssignStatementToSymbol(
 }
 
 func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode) error {
-	fields := []*vtype.VeniceClassField{}
-	paramTypes := []vtype.VeniceType{}
+	fields := make([]*vtype.VeniceClassField, 0, len(node.Fields))
+	paramTypes := make([]vtype.VeniceType, 0, len(node.Fields))
 	for _, field := range node.Fields {
 		paramType, err := compiler.resolveType(field.FieldType)
 		if err != nil {
@@ -380,9 +380,9 @@ func (compiler *Compiler) compileEnumDeclaration(node *ast.EnumDeclarationNode) 
 		)
 	}
 
-	caseTypes := []*vtype.VeniceCaseType{}
+	caseTypes := make([]*vtype.VeniceCaseType, 0, len(node.Cases))
 	for _, caseNode := range node.Cases {
-		types := []vtype.VeniceType{}
+		types := make([]vtype.VeniceType, 0, len(caseNode.Types))
 		for _, typeNode := range caseNode.Types {
 			veniceType, err := compiler.resolveType(typeNode)
 			if err != nil {
@@ -456,8 +456,8 @@ func (compiler *Compiler) compileForLoop(
 }
 
 func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarationNode) error {
-	params := []string{}
-	paramTypes := []vtype.VeniceType{}
+	params := make([]string, 0, len(node.Params))
+	paramTypes := make([]vtype.VeniceType, 0, len(node.Params))
 	bodySymbolTable := compiler.symbolTable.SpawnChild()
 	for _, param := range node.Params {
 		paramType, err := compiler.resolveType(param.ParamType)
@@ -505,7 +505,7 @@ func (compiler *Compiler) compileFunctionDeclaration(node *ast.FunctionDeclarati
 	compiler.functionInfo = nil
 	compiler.symbolTable = bodySymbolTable.Parent
 
-	paramLoadCode := []bytecode.Bytecode{}
+	paramLoadCode := make([]bytecode.Bytecode, 0, len(node.Params))
 	for i := len(node.Params) - 1; i >= 0; i-- {
 		param := node.Params[i]
 		paramLoadCode = append(paramLoadCode, &bytecode.StoreName{param.Name})
@@ -1371,7 +1371,7 @@ func (compiler *Compiler) compileTupleNode(
 	node *ast.TupleNode,
 ) ([]bytecode.Bytecode, vtype.VeniceType, error) {
 	code := []bytecode.Bytecode{}
-	itemTypes := []vtype.VeniceType{}
+	itemTypes := make([]vtype.VeniceType, 0, len(node.Values))
 	for i := len(node.Values) - 1; i >= 0; i-- {
 		value := node.Values[i]
 		valueCode, valueType, err := compiler.compileExpression(value)
@@ -1670,7 +1670,7 @@ func (compiler *Compiler) resolveType(typeNodeAny ast.TypeNode) (vtype.VeniceTyp
 		}
 		return resolvedType, nil
 	case *ast.TupleTypeNode:
-		types := []vtype.VeniceType{}
+		types := make([]vtype.VeniceType, 0, len(typeNode.TypeNodes))
 		for _, subTypeNode := range typeNode.TypeNodes {
 			subType, err := compiler.resolveType(subTypeNode)
 			if err != nil {

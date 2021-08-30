@@ -419,7 +419,7 @@ func (v *VeniceMapIterator) Next() []VeniceValue {
  */
 
 func (v *VeniceMap) Entries() VeniceValue {
-	values := []VeniceValue{}
+	values := make([]VeniceValue, 0, len(v.Pairs))
 	for _, pair := range v.Pairs {
 		values = append(
 			values,
@@ -445,11 +445,11 @@ func (v *VeniceMap) Get(key VeniceValue) VeniceValue {
 }
 
 func (v *VeniceMap) Keys() VeniceValue {
-	values := []VeniceValue{}
+	keys := make([]VeniceValue, 0, len(v.Pairs))
 	for _, pair := range v.Pairs {
-		values = append(values, pair.Key)
+		keys = append(keys, pair.Key)
 	}
-	return &VeniceList{values}
+	return &VeniceList{keys}
 }
 
 func (v *VeniceMap) Put(key VeniceValue, value VeniceValue) {
@@ -473,7 +473,7 @@ func (v *VeniceMap) Remove(key VeniceValue) {
 }
 
 func (v *VeniceMap) Values() VeniceValue {
-	values := []VeniceValue{}
+	values := make([]VeniceValue, 0, len(v.Pairs))
 	for _, pair := range v.Pairs {
 		values = append(values, pair.Value)
 	}

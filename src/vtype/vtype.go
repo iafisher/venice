@@ -243,7 +243,7 @@ func (t *VeniceCharacterType) SubstituteGenerics(
 func (t *VeniceClassType) SubstituteGenerics(
 	genericParameterMap map[string]VeniceType,
 ) VeniceType {
-	fields := []*VeniceClassField{}
+	fields := make([]*VeniceClassField, 0, len(t.Fields))
 	for _, field := range t.Fields {
 		fields = append(fields, &VeniceClassField{
 			field.Name,
@@ -257,9 +257,9 @@ func (t *VeniceClassType) SubstituteGenerics(
 func (t *VeniceEnumType) SubstituteGenerics(
 	genericParameterMap map[string]VeniceType,
 ) VeniceType {
-	cases := []*VeniceCaseType{}
+	cases := make([]*VeniceCaseType, 0, len(t.Cases))
 	for _, enumCase := range t.Cases {
-		caseTypes := []VeniceType{}
+		caseTypes := make([]VeniceType, 0, len(enumCase.Types))
 		for _, caseType := range enumCase.Types {
 			caseTypes = append(caseTypes, caseType.SubstituteGenerics(genericParameterMap))
 		}
@@ -271,7 +271,7 @@ func (t *VeniceEnumType) SubstituteGenerics(
 func (t *VeniceFunctionType) SubstituteGenerics(
 	genericParameterMap map[string]VeniceType,
 ) VeniceType {
-	paramTypes := []VeniceType{}
+	paramTypes := make([]VeniceType, 0, len(t.ParamTypes))
 	for _, paramType := range t.ParamTypes {
 		paramTypes = append(paramTypes, paramType.SubstituteGenerics(genericParameterMap))
 	}
@@ -338,7 +338,7 @@ func (t *VeniceSymbolType) SubstituteGenerics(
 func (t *VeniceTupleType) SubstituteGenerics(
 	genericParameterMap map[string]VeniceType,
 ) VeniceType {
-	newItemTypes := []VeniceType{}
+	newItemTypes := make([]VeniceType, 0, len(t.ItemTypes))
 	for _, itemType := range t.ItemTypes {
 		newItemTypes = append(newItemTypes, itemType.SubstituteGenerics(genericParameterMap))
 	}
@@ -348,7 +348,7 @@ func (t *VeniceTupleType) SubstituteGenerics(
 func (t *VeniceUnionType) SubstituteGenerics(
 	genericParameterMap map[string]VeniceType,
 ) VeniceType {
-	newTypes := []VeniceType{}
+	newTypes := make([]VeniceType, 0, len(t.Types))
 	for _, subType := range t.Types {
 		newTypes = append(newTypes, subType.SubstituteGenerics(genericParameterMap))
 	}
