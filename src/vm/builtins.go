@@ -33,7 +33,7 @@ func builtinLength(args ...VeniceValue) VeniceValue {
 	case *VeniceList:
 		n = len(arg.Values)
 	case *VeniceMap:
-		n = len(arg.Pairs)
+		n = arg.Size
 	case *VeniceString:
 		n = len(arg.Value)
 	default:

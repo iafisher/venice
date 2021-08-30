@@ -5,6 +5,7 @@ package vm
 
 import (
 	"fmt"
+	"hash/maphash"
 	"strings"
 )
 
@@ -12,6 +13,7 @@ type VeniceValue interface {
 	fmt.Stringer
 	veniceValue()
 	Equals(v VeniceValue) bool
+	Hash(h maphash.Hash) uint64
 }
 
 /**
@@ -38,13 +40,16 @@ type VeniceList struct {
 }
 
 type VeniceMap struct {
-	Pairs []*VeniceMapPair
+	table [256]*VeniceMapChain
+	hash  maphash.Hash
+	Size  int
 }
 
 // Helper struct - does not implement VeniceValue
-type VeniceMapPair struct {
+type VeniceMapChain struct {
 	Key   VeniceValue
 	Value VeniceValue
+	Next  *VeniceMapChain
 }
 
 type VeniceTuple struct {
@@ -61,8 +66,9 @@ type VeniceIterator interface {
 }
 
 type VeniceMapIterator struct {
-	Map   *VeniceMap
-	Index int
+	Map        *VeniceMap
+	TableIndex int
+	ChainIndex int
 }
 
 type VeniceListIterator struct {
@@ -178,11 +184,15 @@ func (v *VeniceListIterator) String() string {
 func (v *VeniceMap) String() string {
 	var sb strings.Builder
 	sb.WriteByte('{')
-	for i, pair := range v.Pairs {
-		sb.WriteString(pair.Key.String())
+	for i, entry := range v.Entries().Values {
+		entryAsTuple := entry.(*VeniceTuple)
+		key := entryAsTuple.Values[0]
+		value := entryAsTuple.Values[1]
+
+		sb.WriteString(key.String())
 		sb.WriteString(": ")
-		sb.WriteString(pair.Value.String())
-		if i != len(v.Pairs)-1 {
+		sb.WriteString(value.String())
+		if i != v.Size-1 {
 			sb.WriteString(", ")
 		}
 	}
@@ -323,24 +333,16 @@ func (v *VeniceMap) Equals(otherAny VeniceValue) bool {
 		return false
 	}
 
-	if len(v.Pairs) != len(other.Pairs) {
+	if v.Size != other.Size {
 		return false
 	}
 
-	for _, pair := range v.Pairs {
-		found := false
-		for _, otherPair := range other.Pairs {
-			if pair.Key.Equals(otherPair.Key) {
-				if pair.Value.Equals(otherPair.Value) {
-					found = true
-					break
-				} else {
-					return false
-				}
-			}
-		}
+	for _, entry := range v.Entries().Values {
+		entryAsTuple := entry.(*VeniceTuple)
+		key := entryAsTuple.Values[0]
+		value := entryAsTuple.Values[1]
 
-		if !found {
+		if !other.Get(key).Equals(value) {
 			return false
 		}
 	}
@@ -391,6 +393,85 @@ func (v *VeniceTuple) Equals(otherAny VeniceValue) bool {
 }
 
 /**
+ * Hash() implementations
+ */
+
+func (v *VeniceBoolean) Hash(h maphash.Hash) uint64 {
+	if v.Value {
+		h.WriteByte(1)
+	} else {
+		h.WriteByte(0)
+	}
+	return h.Sum64()
+}
+
+func (v *VeniceCharacter) Hash(h maphash.Hash) uint64 {
+	h.WriteByte(v.Value)
+	return h.Sum64()
+}
+
+func (v *VeniceClassObject) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-08-30): Handle this properly.
+	return 0
+}
+
+func (v *VeniceEnumObject) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-08-30): Handle this properly.
+	return 0
+}
+
+func (v *VeniceFunctionObject) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-08-30): Handle this properly.
+	return 0
+}
+
+func (v *VeniceInteger) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-08-30): Handle this properly.
+	return uint64(v.Value)
+}
+
+func (v *VeniceList) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-08-30): Is this usage correct?
+	for _, value := range v.Values {
+		value.Hash(h)
+	}
+	return h.Sum64()
+}
+
+func (v *VeniceListIterator) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-08-30): Handle this properly.
+	return 0
+}
+
+func (v *VeniceMap) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-08-30): Handle this properly.
+	return 0
+}
+
+func (v *VeniceMapIterator) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-08-30): Handle this properly.
+	return 0
+}
+
+func (v *VeniceRealNumber) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-08-30): Handle this properly.
+	return uint64(v.Value)
+}
+
+func (v *VeniceString) Hash(h maphash.Hash) uint64 {
+	h.WriteString(v.Value)
+	return h.Sum64()
+}
+
+func (v *VeniceTuple) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-08-30): Is this usage correct?
+	for _, value := range v.Values {
+		value.Hash(h)
+	}
+	return h.Sum64()
+}
+
+/**
  * Next() implementations for iterators
  */
 
@@ -405,79 +486,140 @@ func (v *VeniceListIterator) Next() []VeniceValue {
 }
 
 func (v *VeniceMapIterator) Next() []VeniceValue {
-	if v.Index == len(v.Map.Pairs) {
-		return nil
-	} else {
-		r := v.Map.Pairs[v.Index]
-		v.Index++
-		return []VeniceValue{r.Key, r.Value}
+	for v.TableIndex < len(v.Map.table) {
+		entry := v.Map.table[v.TableIndex]
+		for i := 0; i < v.ChainIndex && entry != nil; i++ {
+			entry = entry.Next
+		}
+
+		if entry != nil {
+			v.ChainIndex++
+			return []VeniceValue{entry.Key, entry.Value}
+		}
+
+		v.TableIndex++
+		v.ChainIndex = 0
 	}
+
+	return nil
 }
 
 /**
  * Miscellaneous methods
  */
 
-func (v *VeniceMap) Entries() VeniceValue {
-	values := make([]VeniceValue, 0, len(v.Pairs))
-	for _, pair := range v.Pairs {
-		values = append(
-			values,
-			&VeniceTuple{
-				[]VeniceValue{
-					pair.Key,
-					pair.Value,
-				},
-			},
-		)
+func NewVeniceMap() *VeniceMap {
+	return &VeniceMap{
+		Size: 0,
 	}
-	return &VeniceList{values}
+}
+
+func (v *VeniceMap) Entries() *VeniceList {
+	entries := make([]VeniceValue, 0, v.Size)
+	for _, chain := range v.table {
+		iterator := chain
+		for iterator != nil {
+			entries = append(entries, &VeniceTuple{[]VeniceValue{iterator.Key, iterator.Value}})
+			iterator = iterator.Next
+		}
+	}
+	return &VeniceList{entries}
 }
 
 func (v *VeniceMap) Get(key VeniceValue) VeniceValue {
-	for _, pair := range v.Pairs {
-		if pair.Key.Equals(key) {
-			return pair.Value
+	hash := v.getHash(key)
+	entry := v.table[hash]
+	for entry != nil {
+		if entry.Key.Equals(key) {
+			return entry.Value
 		}
-	}
 
+		entry = entry.Next
+	}
 	return nil
 }
 
-func (v *VeniceMap) Keys() VeniceValue {
-	keys := make([]VeniceValue, 0, len(v.Pairs))
-	for _, pair := range v.Pairs {
-		keys = append(keys, pair.Key)
+func (v *VeniceMap) Keys() *VeniceList {
+	keys := make([]VeniceValue, 0, v.Size)
+	for _, chain := range v.table {
+		iterator := chain
+		for iterator != nil {
+			keys = append(keys, iterator.Key)
+			iterator = iterator.Next
+		}
 	}
 	return &VeniceList{keys}
 }
 
 func (v *VeniceMap) Put(key VeniceValue, value VeniceValue) {
-	for _, pair := range v.Pairs {
-		if pair.Key.Equals(key) {
-			pair.Value = value
-			return
+	hash := v.getHash(key)
+	entry := v.table[hash]
+	if entry == nil {
+		v.table[hash] = &VeniceMapChain{
+			Key:   key,
+			Value: value,
+			Next:  nil,
 		}
-	}
+		v.Size++
+	} else {
+		for entry != nil {
+			if entry.Key.Equals(key) {
+				entry.Value = value
+				return
+			}
 
-	v.Pairs = append(v.Pairs, &VeniceMapPair{Key: key, Value: value})
+			if entry.Next == nil {
+				break
+			} else {
+				entry = entry.Next
+			}
+		}
+
+		entry.Next = &VeniceMapChain{
+			Key:   key,
+			Value: value,
+			Next:  nil,
+		}
+		v.Size++
+	}
 }
 
 func (v *VeniceMap) Remove(key VeniceValue) {
-	for i, pair := range v.Pairs {
-		if pair.Key.Equals(key) {
-			v.Pairs = append(v.Pairs[:i], v.Pairs[i+1:]...)
+	hash := v.getHash(key)
+	entry := v.table[hash]
+	var previous *VeniceMapChain
+	for entry != nil {
+		if entry.Key.Equals(key) {
+			if previous == nil {
+				v.table[hash] = nil
+			} else {
+				previous.Next = entry.Next
+			}
+			v.Size--
 			return
 		}
+
+		previous = entry
+		entry = entry.Next
 	}
 }
 
-func (v *VeniceMap) Values() VeniceValue {
-	values := make([]VeniceValue, 0, len(v.Pairs))
-	for _, pair := range v.Pairs {
-		values = append(values, pair.Value)
+func (v *VeniceMap) Values() *VeniceList {
+	values := make([]VeniceValue, 0, v.Size)
+	for _, chain := range v.table {
+		iterator := chain
+		for iterator != nil {
+			values = append(values, iterator.Value)
+			iterator = iterator.Next
+		}
 	}
 	return &VeniceList{values}
+}
+
+func (v *VeniceMap) getHash(key VeniceValue) uint64 {
+	v.hash.Reset()
+	// x & (y - 1) is equivalent to x % y as long as y is a power of 2.
+	return key.Hash(v.hash) & uint64(len(v.table)-1)
 }
 
 func (v *VeniceBoolean) veniceValue()        {}

@@ -326,13 +326,13 @@ func (vm *VirtualMachine) executeOne(
 		}
 		vm.pushStack(&VeniceList{values})
 	case *bytecode.BuildMap:
-		pairs := make([]*VeniceMapPair, 0, bcode.N)
+		v := NewVeniceMap()
 		for i := 0; i < bcode.N; i++ {
 			value := vm.popStack()
 			key := vm.popStack()
-			pairs = append(pairs, &VeniceMapPair{key, value})
+			v.Put(key, value)
 		}
-		vm.pushStack(&VeniceMap{pairs})
+		vm.pushStack(v)
 	case *bytecode.BuildTuple:
 		values := make([]VeniceValue, 0, bcode.N)
 		for i := 0; i < bcode.N; i++ {
@@ -404,7 +404,7 @@ func (vm *VirtualMachine) executeOne(
 		case *VeniceList:
 			vm.pushStack(&VeniceListIterator{List: topOfStack, Index: 0})
 		case *VeniceMap:
-			vm.pushStack(&VeniceMapIterator{Map: topOfStack, Index: 0})
+			vm.pushStack(&VeniceMapIterator{Map: topOfStack, TableIndex: 0, ChainIndex: 0})
 		}
 	case *bytecode.LookupMethod:
 		switch topOfStack := vm.peekStack().(type) {
