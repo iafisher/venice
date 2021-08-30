@@ -442,6 +442,7 @@ const (
 	TOKEN_LET                    = "TOKEN_LET"
 	TOKEN_MATCH                  = "TOKEN_MATCH"
 	TOKEN_MINUS                  = "TOKEN_MINUS"
+	TOKEN_NEW                    = "TOKEN_NEW"
 	TOKEN_NEWLINE                = "TOKEN_NEWLINE"
 	TOKEN_NO                     = "TOKEN_NO"
 	TOKEN_NOT                    = "TOKEN_NOT"
@@ -486,6 +487,7 @@ var keywords = map[string]string{
 	"in":          TOKEN_IN,
 	"let":         TOKEN_LET,
 	"match":       TOKEN_MATCH,
+	"new":         TOKEN_NEW,
 	"no":          TOKEN_NO,
 	"not":         TOKEN_NOT,
 	"or":          TOKEN_OR,

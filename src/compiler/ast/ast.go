@@ -195,6 +195,18 @@ type CharacterNode struct {
 	Location *lexer.Location
 }
 
+type ConstructorNode struct {
+	Name     string
+	Fields   []*ConstructorFieldNode
+	Location *lexer.Location
+}
+
+type ConstructorFieldNode struct {
+	Name     string
+	Value    ExpressionNode
+	Location *lexer.Location
+}
+
 type FieldAccessNode struct {
 	Expr     ExpressionNode
 	Name     string
@@ -336,6 +348,14 @@ func (n *ClassDeclarationNode) GetLocation() *lexer.Location {
 }
 
 func (n *CompoundPatternNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *ConstructorNode) GetLocation() *lexer.Location {
+	return n.Location
+}
+
+func (n *ConstructorFieldNode) GetLocation() *lexer.Location {
 	return n.Location
 }
 
@@ -534,6 +554,24 @@ func (n *CompoundPatternNode) String() string {
 
 	sb.WriteByte(')')
 	return sb.String()
+}
+
+func (n *ConstructorNode) String() string {
+	var sb strings.Builder
+	sb.WriteString("(class-constructor ")
+	sb.WriteString(n.Name)
+
+	for _, fieldNode := range n.Fields {
+		sb.WriteByte(' ')
+		sb.WriteString(fieldNode.String())
+	}
+
+	sb.WriteByte(')')
+	return sb.String()
+}
+
+func (n *ConstructorFieldNode) String() string {
+	return fmt.Sprintf("(%s %s)", n.Name, n.Value.String())
 }
 
 func (n *ContinueStatementNode) String() string {
@@ -836,6 +874,8 @@ func writeBlock(sb *strings.Builder, block []StatementNode) {
 func (n *BooleanNode) expressionNode()          {}
 func (n *CallNode) expressionNode()             {}
 func (n *CharacterNode) expressionNode()        {}
+func (n *ConstructorNode) expressionNode()      {}
+func (n *ConstructorFieldNode) expressionNode() {}
 func (n *FieldAccessNode) expressionNode()      {}
 func (n *IndexNode) expressionNode()            {}
 func (n *InfixNode) expressionNode()            {}

@@ -43,6 +43,19 @@ func TestParseClassDeclarationStatements(t *testing.T) {
 	*/
 }
 
+func TestParseClassConstructors(t *testing.T) {
+	checkParseExpression(
+		t,
+		`new Box { x: 1 }`,
+		"(class-constructor Box (x 1))",
+	)
+	checkParseExpression(
+		t,
+		`new Point { x: 1, y: 2}`,
+		"(class-constructor Point (x 1) (y 2))",
+	)
+}
+
 func TestParseBlock(t *testing.T) {
 	checkParseStatements(
 		t,

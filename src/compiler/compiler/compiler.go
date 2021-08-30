@@ -349,16 +349,6 @@ func (compiler *Compiler) compileClassDeclaration(node *ast.ClassDeclarationNode
 		Fields:            fields,
 	}
 	compiler.typeSymbolTable.Put(node.Name, classType)
-	constructorType := &vtype.VeniceFunctionType{
-		Name:       node.Name,
-		ParamTypes: paramTypes,
-		ReturnType: classType,
-		IsBuiltin:  false,
-	}
-	compiler.symbolTable.Put(node.Name, constructorType)
-
-	constructorBytecode := []bytecode.Bytecode{&bytecode.BuildClass{node.Name, len(fields)}}
-	compiler.compiledProgram.Code[node.Name] = constructorBytecode
 	return nil
 }
 
@@ -835,6 +825,8 @@ func (compiler *Compiler) compileExpression(
 		return []bytecode.Bytecode{
 			&bytecode.PushConstChar{node.Value},
 		}, vtype.VENICE_TYPE_CHARACTER, nil
+	case *ast.ConstructorNode:
+		return compiler.compileConstructorNode(node)
 	case *ast.FieldAccessNode:
 		return compiler.compileFieldAccessNode(node)
 	case *ast.IndexNode:
@@ -984,6 +976,65 @@ func (compiler *Compiler) compileQualifiedSymbolNode(
 	return nil, nil, compiler.customError(
 		node, "enum %s does not have case %s", node.Enum, node.Case,
 	)
+}
+
+func (compiler *Compiler) compileConstructorNode(
+	node *ast.ConstructorNode,
+) ([]bytecode.Bytecode, vtype.VeniceType, error) {
+	classTypeAny, ok := compiler.typeSymbolTable.Get(node.Name)
+	if !ok {
+		return nil, nil, compiler.customError(node, "no such type `%s`", node.Name)
+	}
+
+	classType, ok := classTypeAny.(*vtype.VeniceClassType)
+	if !ok {
+		return nil, nil, compiler.customError(node, "`%s` is not a class type", node.Name)
+	}
+
+	if len(classType.Fields) != len(node.Fields) {
+		return nil, nil, compiler.customError(node, "too many fields in class constructor")
+	}
+
+	code := []bytecode.Bytecode{}
+	for i := len(node.Fields) - 1; i >= 0; i-- {
+		field := node.Fields[i]
+		exprCode, exprType, err := compiler.compileExpression(field.Value)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		found := false
+		for _, fieldType := range classType.Fields {
+			if fieldType.Name == field.Name {
+				if !compiler.checkType(fieldType.FieldType, exprType) {
+					return nil, nil, compiler.customError(
+						node,
+						"expected type %s, got %s for class field `%s`",
+						fieldType.FieldType.String(),
+						exprType.String(),
+						fieldType.Name,
+					)
+				}
+
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return nil, nil, compiler.customError(
+				node,
+				"no such field `%s` on class `%s`",
+				field.Name,
+				node.Name,
+			)
+		}
+
+		code = append(code, exprCode...)
+	}
+
+	code = append(code, &bytecode.BuildClass{node.Name, len(node.Fields)})
+	return code, classType, nil
 }
 
 func (compiler *Compiler) compileFieldAccessNode(

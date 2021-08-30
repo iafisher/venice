@@ -790,45 +790,6 @@ func (p *Parser) matchInfix(
 	return &ast.InfixNode{operator, left, right, left.GetLocation()}, nil
 }
 
-func (p *Parser) matchMapPairs() ([]*ast.MapPairNode, error) {
-	pairs := []*ast.MapPairNode{}
-	for {
-		location := p.currentToken.Location
-		if p.currentToken.Type == lexer_mod.TOKEN_RIGHT_CURLY {
-			p.nextToken()
-			break
-		}
-
-		key, err := p.matchExpression(PRECEDENCE_LOWEST)
-		if err != nil {
-			return nil, err
-		}
-
-		if p.currentToken.Type != lexer_mod.TOKEN_COLON {
-			return nil, p.unexpectedToken("colon")
-		}
-
-		p.nextToken()
-		value, err := p.matchExpression(PRECEDENCE_LOWEST)
-		if err != nil {
-			return nil, err
-		}
-
-		pairs = append(pairs, &ast.MapPairNode{key, value, location})
-
-		if p.currentToken.Type == lexer_mod.TOKEN_COMMA {
-			p.nextToken()
-		} else if p.currentToken.Type == lexer_mod.TOKEN_RIGHT_CURLY {
-			p.brackets--
-			p.nextToken()
-			break
-		} else {
-			return nil, p.unexpectedToken("comma or right curly brace")
-		}
-	}
-	return pairs, nil
-}
-
 func (p *Parser) matchPrefix() (ast.ExpressionNode, error) {
 	location := p.currentToken.Location
 	switch p.currentToken.Type {
@@ -880,6 +841,8 @@ func (p *Parser) matchPrefix() (ast.ExpressionNode, error) {
 			return nil, err
 		}
 		return &ast.UnaryNode{operator, expr, location}, nil
+	case lexer_mod.TOKEN_NEW:
+		return p.matchConstructor()
 	case lexer_mod.TOKEN_REAL_NUMBER:
 		token := p.currentToken
 		p.nextToken()
@@ -916,6 +879,111 @@ func (p *Parser) matchPrefix() (ast.ExpressionNode, error) {
 	default:
 		return nil, p.unexpectedToken("start of expression")
 	}
+}
+
+func (p *Parser) matchConstructor() (*ast.ConstructorNode, error) {
+	location := p.currentToken.Location
+	p.nextToken()
+
+	if p.currentToken.Type != lexer_mod.TOKEN_SYMBOL {
+		return nil, p.unexpectedToken("class name")
+	}
+	name := p.currentToken.Value
+
+	p.nextToken()
+	if p.currentToken.Type != lexer_mod.TOKEN_LEFT_CURLY {
+		return nil, p.unexpectedToken("left curly brace")
+	}
+
+	p.brackets++
+
+	p.nextToken()
+	fields := []*ast.ConstructorFieldNode{}
+	for {
+		if p.currentToken.Type == lexer_mod.TOKEN_RIGHT_CURLY {
+			break
+		}
+
+		if p.currentToken.Type != lexer_mod.TOKEN_SYMBOL {
+			p.brackets--
+			return nil, p.unexpectedToken("field name")
+		}
+		fieldName := p.currentToken.Value
+
+		p.nextToken()
+		if p.currentToken.Type != lexer_mod.TOKEN_COLON {
+			p.brackets--
+			return nil, p.unexpectedToken("colon")
+		}
+
+		p.nextToken()
+		expr, err := p.matchExpression(PRECEDENCE_LOWEST)
+		if err != nil {
+			p.brackets--
+			return nil, err
+		}
+
+		fields = append(
+			fields,
+			&ast.ConstructorFieldNode{Name: fieldName, Value: expr},
+		)
+
+		if p.currentToken.Type == lexer_mod.TOKEN_RIGHT_CURLY {
+			break
+		} else if p.currentToken.Type != lexer_mod.TOKEN_COMMA {
+			p.brackets--
+			return nil, p.unexpectedToken("comma")
+		}
+
+		p.nextToken()
+	}
+
+	p.brackets--
+	p.nextToken()
+	return &ast.ConstructorNode{
+		Name:     name,
+		Fields:   fields,
+		Location: location,
+	}, nil
+}
+
+func (p *Parser) matchMapPairs() ([]*ast.MapPairNode, error) {
+	pairs := []*ast.MapPairNode{}
+	for {
+		location := p.currentToken.Location
+		if p.currentToken.Type == lexer_mod.TOKEN_RIGHT_CURLY {
+			p.nextToken()
+			break
+		}
+
+		key, err := p.matchExpression(PRECEDENCE_LOWEST)
+		if err != nil {
+			return nil, err
+		}
+
+		if p.currentToken.Type != lexer_mod.TOKEN_COLON {
+			return nil, p.unexpectedToken("colon")
+		}
+
+		p.nextToken()
+		value, err := p.matchExpression(PRECEDENCE_LOWEST)
+		if err != nil {
+			return nil, err
+		}
+
+		pairs = append(pairs, &ast.MapPairNode{key, value, location})
+
+		if p.currentToken.Type == lexer_mod.TOKEN_COMMA {
+			p.nextToken()
+		} else if p.currentToken.Type == lexer_mod.TOKEN_RIGHT_CURLY {
+			p.brackets--
+			p.nextToken()
+			break
+		} else {
+			return nil, p.unexpectedToken("comma or right curly brace")
+		}
+	}
+	return pairs, nil
 }
 
 /**

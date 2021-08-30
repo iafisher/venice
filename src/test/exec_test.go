@@ -91,6 +91,19 @@ func TestBreakStatement(t *testing.T) {
 }
 
 func TestClassConstructor(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		class Point {
+			public x: int
+			public y: int
+		}
+
+		let p = new Point { x: 1, y: 2 }
+		(p.x, p.y)
+		`,
+		Tup(I(1), I(2)),
+	)
 	/*
 		assertEqual(
 			t,
@@ -136,8 +149,8 @@ func TestClassEquality(t *testing.T) {
 			public value: int
 		}
 
-		let b1 = Box(42)
-		let b2 = Box(42)
+		let b1 = new Box { value: 42 }
+		let b2 = new Box { value: 42 }
 		b1 == b2
 		`,
 		B(true),
@@ -154,8 +167,8 @@ func TestClassEquality(t *testing.T) {
 			public value: int
 		}
 
-		let b1 = Box1(42)
-		let b2 = Box2(42)
+		let b1 = new Box1 { value: 42 }
+		let b2 = new Box2 { value: 42 }
 		b1 == b2
 		`,
 		"invalid type for right operand of ==",
@@ -169,7 +182,7 @@ func TestClassDeclaration(t *testing.T) {
 		class SecretBox {
 			private secret: int
 		}
-		let box = SecretBox(42)
+		let box = new SecretBox { secret: 42 }
 		box.secret
 		`,
 		"use of private field",
@@ -184,7 +197,7 @@ func TestClassFieldAssignment(t *testing.T) {
 		  public value: int
 		}
 
-		let b = Box(0)
+		let b = new Box { value: 0 }
 		b.value = 42
 		b.value
 		`,
@@ -197,7 +210,7 @@ func TestClassFieldAssignment(t *testing.T) {
 		  public value: int
 		}
 
-		let b = Box(0)
+		let b = new Box { value: 0 }
 		b.value = "42"
 		`,
 		"expected type int, got string",
