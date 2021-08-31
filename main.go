@@ -88,6 +88,18 @@ func repl() {
 				}
 
 				switch cmd {
+				case "!code":
+					functionName := line
+					functionCode, ok := compiledProgram.Code[functionName]
+					if ok {
+						fmt.Println(functionName)
+						for _, bcode := range functionCode {
+							fmt.Printf("  %s\n", bcode.String())
+						}
+					} else {
+						fmt.Printf("Function `%s` does not exist.", functionName)
+					}
+					continue
 				case "!compile":
 					operation = "compile"
 				case "!debug":
