@@ -402,9 +402,9 @@ func (vm *VirtualMachine) executeOne(
 		topOfStackAny := vm.popStack()
 		switch topOfStack := topOfStackAny.(type) {
 		case *VeniceList:
-			vm.pushStack(&VeniceListIterator{List: topOfStack, Index: 0})
+			vm.pushStack(NewVeniceListIterator(topOfStack))
 		case *VeniceMap:
-			vm.pushStack(&VeniceMapIterator{Map: topOfStack, TableIndex: 0, ChainIndex: 0})
+			vm.pushStack(NewVeniceMapIterator(topOfStack))
 		}
 	case *bytecode.LookupMethod:
 		switch topOfStack := vm.peekStack().(type) {

@@ -508,10 +508,18 @@ func (v *VeniceMapIterator) Next() []VeniceValue {
  * Miscellaneous methods
  */
 
+func NewVeniceListIterator(list *VeniceList) *VeniceListIterator {
+	return &VeniceListIterator{List: list, Index: 0}
+}
+
 func NewVeniceMap() *VeniceMap {
 	return &VeniceMap{
 		Size: 0,
 	}
+}
+
+func NewVeniceMapIterator(vmap *VeniceMap) *VeniceMapIterator {
+	return &VeniceMapIterator{Map: vmap, TableIndex: 0, ChainIndex: 0}
 }
 
 func (v *VeniceMap) Entries() *VeniceList {
