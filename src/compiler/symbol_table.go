@@ -156,6 +156,22 @@ var listBuiltins = map[string]VeniceType{
 		ReturnType: nil,
 		IsBuiltin:  true,
 	},
+	"reversed": &VeniceFunctionType{
+		Name: "reversed",
+		ParamTypes: []VeniceType{
+			&VeniceListType{&VeniceSymbolType{"T"}},
+		},
+		ReturnType: &VeniceListType{&VeniceSymbolType{"T"}},
+		IsBuiltin:  true,
+	},
+	"reverse_in_place": &VeniceFunctionType{
+		Name: "reverse_in_place",
+		ParamTypes: []VeniceType{
+			&VeniceListType{&VeniceSymbolType{"T"}},
+		},
+		ReturnType: nil,
+		IsBuiltin:  true,
+	},
 	"slice": &VeniceFunctionType{
 		Name: "slice",
 		ParamTypes: []VeniceType{

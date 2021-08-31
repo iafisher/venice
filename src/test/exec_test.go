@@ -453,6 +453,23 @@ func TestListBuiltins(t *testing.T) {
 		`,
 		L(S("Venezuela"), S("Paraguay"), S("Bolivia"), S("Argentina")),
 	)
+	assertEqual(
+		t,
+		`
+		let l = [4, 3, 2, 1]
+		l.reversed()
+		`,
+		L(I(1), I(2), I(3), I(4)),
+	)
+	assertEqual(
+		t,
+		`
+		let l = [4, 3, 2, 1]
+		l.reverse_in_place()
+		l
+		`,
+		L(I(1), I(2), I(3), I(4)),
+	)
 }
 
 func TestListIndexAssignment(t *testing.T) {

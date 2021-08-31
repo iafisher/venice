@@ -185,6 +185,38 @@ func builtinListRemove(args ...VeniceValue) VeniceValue {
 	return nil
 }
 
+func builtinListReversed(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	listArg, ok := args[0].(*VeniceList)
+	if !ok {
+		return nil
+	}
+
+	copiedList := listArg.Copy()
+	builtinListReverseInPlace(copiedList)
+	return copiedList
+}
+
+func builtinListReverseInPlace(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	listArg, ok := args[0].(*VeniceList)
+	if !ok {
+		return nil
+	}
+
+	for i, j := 0, len(listArg.Values)-1; i < j; i, j = i+1, j-1 {
+		listArg.Values[i], listArg.Values[j] = listArg.Values[j], listArg.Values[i]
+	}
+
+	return nil
+}
+
 func builtinListSlice(args ...VeniceValue) VeniceValue {
 	if len(args) != 3 {
 		return nil
@@ -445,14 +477,16 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	"real":   builtinReal,
 	"string": builtinString,
 	// List built-ins
-	"list__append":        builtinListAppend,
-	"list__copy":          builtinListCopy,
-	"list__extend":        builtinListExtend,
-	"list__length":        builtinLength,
-	"list__remove":        builtinListRemove,
-	"list__slice":         builtinListSlice,
-	"list__sorted":        builtinListSorted,
-	"list__sort_in_place": builtinListSortInPlace,
+	"list__append":           builtinListAppend,
+	"list__copy":             builtinListCopy,
+	"list__extend":           builtinListExtend,
+	"list__length":           builtinLength,
+	"list__remove":           builtinListRemove,
+	"list__reversed":         builtinListReversed,
+	"list__reverse_in_place": builtinListReverseInPlace,
+	"list__slice":            builtinListSlice,
+	"list__sorted":           builtinListSorted,
+	"list__sort_in_place":    builtinListSortInPlace,
 	// Map built-ins
 	"map__clear":   builtinMapClear,
 	"map__copy":    builtinMapCopy,
