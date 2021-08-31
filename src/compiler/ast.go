@@ -48,7 +48,6 @@ type TypeNode interface {
 type AssignStatementNode struct {
 	Destination ExpressionNode
 	Expr        ExpressionNode
-	Location    *lex.Location
 }
 
 type BreakStatementNode struct {
@@ -88,8 +87,7 @@ type EnumCaseNode struct {
 }
 
 type ExpressionStatementNode struct {
-	Expr     ExpressionNode
-	Location *lex.Location
+	Expr ExpressionNode
 }
 
 type ForLoopNode struct {
@@ -187,7 +185,6 @@ type BooleanNode struct {
 type CallNode struct {
 	Function ExpressionNode
 	Args     []ExpressionNode
-	Location *lex.Location
 }
 
 type CharacterNode struct {
@@ -208,22 +205,19 @@ type ConstructorFieldNode struct {
 }
 
 type FieldAccessNode struct {
-	Expr     ExpressionNode
-	Name     string
-	Location *lex.Location
+	Expr ExpressionNode
+	Name string
 }
 
 type IndexNode struct {
-	Expr     ExpressionNode
-	Index    ExpressionNode
-	Location *lex.Location
+	Expr  ExpressionNode
+	Index ExpressionNode
 }
 
 type InfixNode struct {
 	Operator string
 	Left     ExpressionNode
 	Right    ExpressionNode
-	Location *lex.Location
 }
 
 type IntegerNode struct {
@@ -273,7 +267,6 @@ type TernaryIfNode struct {
 	Condition   ExpressionNode
 	TrueClause  ExpressionNode
 	FalseClause ExpressionNode
-	Location    *lex.Location
 }
 
 type TupleNode struct {
@@ -282,9 +275,8 @@ type TupleNode struct {
 }
 
 type TupleFieldAccessNode struct {
-	Expr     ExpressionNode
-	Index    int
-	Location *lex.Location
+	Expr  ExpressionNode
+	Index int
 }
 
 type UnaryNode struct {
@@ -324,7 +316,7 @@ type TupleTypeNode struct {
  */
 
 func (n *AssignStatementNode) GetLocation() *lex.Location {
-	return n.Location
+	return n.Destination.GetLocation()
 }
 
 func (n *BooleanNode) GetLocation() *lex.Location {
@@ -336,7 +328,7 @@ func (n *BreakStatementNode) GetLocation() *lex.Location {
 }
 
 func (n *CallNode) GetLocation() *lex.Location {
-	return n.Location
+	return n.Function.GetLocation()
 }
 
 func (n *CharacterNode) GetLocation() *lex.Location {
@@ -368,11 +360,11 @@ func (n *EnumDeclarationNode) GetLocation() *lex.Location {
 }
 
 func (n *ExpressionStatementNode) GetLocation() *lex.Location {
-	return n.Location
+	return n.Expr.GetLocation()
 }
 
 func (n *FieldAccessNode) GetLocation() *lex.Location {
-	return n.Location
+	return n.Expr.GetLocation()
 }
 
 func (n *ForLoopNode) GetLocation() *lex.Location {
@@ -392,11 +384,11 @@ func (n *ImportStatementNode) GetLocation() *lex.Location {
 }
 
 func (n *IndexNode) GetLocation() *lex.Location {
-	return n.Location
+	return n.Expr.GetLocation()
 }
 
 func (n *InfixNode) GetLocation() *lex.Location {
-	return n.Location
+	return n.Left.GetLocation()
 }
 
 func (n *IntegerNode) GetLocation() *lex.Location {
@@ -452,11 +444,11 @@ func (n *SymbolNode) GetLocation() *lex.Location {
 }
 
 func (n *TernaryIfNode) GetLocation() *lex.Location {
-	return n.Location
+	return n.Condition.GetLocation()
 }
 
 func (n *TupleFieldAccessNode) GetLocation() *lex.Location {
-	return n.Location
+	return n.Expr.GetLocation()
 }
 
 func (n *TupleNode) GetLocation() *lex.Location {

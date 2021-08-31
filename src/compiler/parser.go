@@ -115,7 +115,8 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 			}
 
 			tree = &AssignStatementNode{
-				Destination: expr, Expr: assignExpr, Location: location,
+				Destination: expr,
+				Expr:        assignExpr,
 			}
 		} else if operator, ok := compoundAssignOperators[p.currentToken.Type]; ok {
 			p.nextToken()
@@ -124,17 +125,16 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 				return nil, err
 			}
 
-			fullAssignExpr := &InfixNode{
-				Operator: operator,
-				Left:     expr,
-				Right:    assignExpr,
-				Location: assignExpr.GetLocation(),
-			}
 			tree = &AssignStatementNode{
-				Destination: expr, Expr: fullAssignExpr, Location: location,
+				Destination: expr,
+				Expr: &InfixNode{
+					Operator: operator,
+					Left:     expr,
+					Right:    assignExpr,
+				},
 			}
 		} else {
-			tree = &ExpressionStatementNode{expr, expr.GetLocation()}
+			tree = &ExpressionStatementNode{expr}
 		}
 	}
 
@@ -648,7 +648,6 @@ func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {
  */
 
 func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
-	location := p.currentToken.Location
 	expr, err := p.matchPrefix()
 	if err != nil {
 		return nil, err
@@ -663,7 +662,7 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 						return nil, err
 					}
 
-					expr = &CallNode{expr, arglist, location}
+					expr = &CallNode{expr, arglist}
 				} else if p.currentToken.Type == lex.TOKEN_LEFT_SQUARE {
 					p.nextToken()
 					indexExpr, err := p.matchExpression(PRECEDENCE_LOWEST)
@@ -676,17 +675,17 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 					}
 					p.nextToken()
 
-					expr = &IndexNode{expr, indexExpr, location}
+					expr = &IndexNode{expr, indexExpr}
 				} else if p.currentToken.Type == lex.TOKEN_DOT {
 					p.nextToken()
 					if p.currentToken.Type == lex.TOKEN_SYMBOL {
-						expr = &FieldAccessNode{expr, p.currentToken.Value, location}
+						expr = &FieldAccessNode{expr, p.currentToken.Value}
 					} else if p.currentToken.Type == lex.TOKEN_INT {
 						index, err := strconv.ParseInt(p.currentToken.Value, 10, 0)
 						if err != nil {
 							return nil, p.customError("could not convert integer token")
 						}
-						expr = &TupleFieldAccessNode{expr, int(index), location}
+						expr = &TupleFieldAccessNode{expr, int(index)}
 					} else {
 						return nil, p.customError("right-hand side of dot must be a symbol")
 					}
@@ -713,10 +712,9 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 						Condition:   conditionExpr,
 						TrueClause:  expr,
 						FalseClause: elseExpr,
-						Location:    location,
 					}
 				} else if p.currentToken.Type == lex.TOKEN_NOT {
-					unaryLocation := p.currentToken.Location
+					location := p.currentToken.Location
 					p.nextToken()
 					if p.currentToken.Type != lex.TOKEN_IN {
 						return nil, p.customError(
@@ -736,9 +734,8 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 							Operator: "in",
 							Left:     expr,
 							Right:    right,
-							Location: location,
 						},
-						Location: unaryLocation,
+						Location: location,
 					}
 				} else {
 					expr, err = p.matchInfix(expr, infixPrecedence)
@@ -777,14 +774,12 @@ func (p *Parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode
 					Operator: operator,
 					Left:     leftInfix.Right,
 					Right:    right,
-					Location: right.GetLocation(),
 				},
-				Location: left.GetLocation(),
 			}, nil
 		}
 	}
 
-	return &InfixNode{operator, left, right, left.GetLocation()}, nil
+	return &InfixNode{operator, left, right}, nil
 }
 
 func (p *Parser) matchPrefix() (ExpressionNode, error) {
