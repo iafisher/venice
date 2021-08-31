@@ -139,6 +139,24 @@ var listBuiltins = map[string]VeniceType{
 		ReturnType: nil,
 		IsBuiltin:  true,
 	},
+	"find": &VeniceFunctionType{
+		Name: "find",
+		ParamTypes: []VeniceType{
+			&VeniceListType{&VeniceSymbolType{"T"}},
+			&VeniceSymbolType{"T"},
+		},
+		ReturnType: VeniceOptionalTypeOf(VENICE_TYPE_INTEGER),
+		IsBuiltin:  true,
+	},
+	"find_last": &VeniceFunctionType{
+		Name: "find_last",
+		ParamTypes: []VeniceType{
+			&VeniceListType{&VeniceSymbolType{"T"}},
+			&VeniceSymbolType{"T"},
+		},
+		ReturnType: VeniceOptionalTypeOf(VENICE_TYPE_INTEGER),
+		IsBuiltin:  true,
+	},
 	"length": &VeniceFunctionType{
 		Name: "length",
 		ParamTypes: []VeniceType{

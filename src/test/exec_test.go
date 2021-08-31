@@ -470,6 +470,38 @@ func TestListBuiltins(t *testing.T) {
 		`,
 		L(I(1), I(2), I(3), I(4)),
 	)
+	assertEqual(
+		t,
+		`
+		let l = range(0, 100)
+		l.find(14)
+		`,
+		Some(I(14)),
+	)
+	assertEqual(
+		t,
+		`
+		let l = range(0, 100)
+		l.find(-1)
+		`,
+		None(),
+	)
+	assertEqual(
+		t,
+		`
+		let l = [4, 0, 4]
+		l.find_last(4)
+		`,
+		Some(I(2)),
+	)
+	assertEqual(
+		t,
+		`
+		let l = range(0, 100)
+		l.find_last(-1)
+		`,
+		None(),
+	)
 }
 
 func TestListIndexAssignment(t *testing.T) {
@@ -659,6 +691,13 @@ func Some(v vm.VeniceValue) *vm.VeniceEnumObject {
 	return &vm.VeniceEnumObject{
 		Label:  "Some",
 		Values: []vm.VeniceValue{v},
+	}
+}
+
+func None() *vm.VeniceEnumObject {
+	return &vm.VeniceEnumObject{
+		Label:  "None",
+		Values: []vm.VeniceValue{},
 	}
 }
 

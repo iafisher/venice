@@ -164,6 +164,44 @@ func builtinListExtend(args ...VeniceValue) VeniceValue {
 	return nil
 }
 
+func builtinListFind(args ...VeniceValue) VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	listArg, ok := args[0].(*VeniceList)
+	if !ok {
+		return nil
+	}
+
+	for i, value := range listArg.Values {
+		if args[1].Equals(value) {
+			return VeniceOptionalOf(&VeniceInteger{i})
+		}
+	}
+
+	return VENICE_OPTIONAL_NONE
+}
+
+func builtinListFindLast(args ...VeniceValue) VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	listArg, ok := args[0].(*VeniceList)
+	if !ok {
+		return nil
+	}
+
+	for i := len(listArg.Values) - 1; i >= 0; i-- {
+		if args[1].Equals(listArg.Values[i]) {
+			return VeniceOptionalOf(&VeniceInteger{i})
+		}
+	}
+
+	return VENICE_OPTIONAL_NONE
+}
+
 func builtinListRemove(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
@@ -480,6 +518,8 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	"list__append":           builtinListAppend,
 	"list__copy":             builtinListCopy,
 	"list__extend":           builtinListExtend,
+	"list__find":             builtinListFind,
+	"list__find_last":        builtinListFindLast,
 	"list__length":           builtinLength,
 	"list__remove":           builtinListRemove,
 	"list__reversed":         builtinListReversed,
