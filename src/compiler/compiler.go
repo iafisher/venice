@@ -32,6 +32,7 @@ func NewCompiler() *Compiler {
 }
 
 func (compiler *Compiler) Compile(file *File) (*bytecode.CompiledProgram, error) {
+	compiler.compiledProgram = bytecode.NewCompiledProgram()
 	compiledProgram, _, err := compiler.compileModule("", file)
 	return compiledProgram, err
 }

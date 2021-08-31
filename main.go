@@ -209,9 +209,12 @@ func repl() {
 
 		if operation == "compile" {
 			for functionName, code := range compiledProgram.Code {
-				fmt.Printf("%s:\n", functionName)
+				if functionName != "main" {
+					continue
+				}
+
 				for _, bcode := range code {
-					fmt.Printf("  %s\n", bcode)
+					fmt.Printf("%s\n", bcode)
 				}
 			}
 			continue
