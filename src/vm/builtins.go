@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -135,6 +136,19 @@ func builtinListAppend(args ...VeniceValue) VeniceValue {
 	return nil
 }
 
+func builtinListCopy(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	listArg, ok := args[0].(*VeniceList)
+	if !ok {
+		return nil
+	}
+
+	return listArg.Copy()
+}
+
 func builtinListExtend(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
@@ -185,6 +199,37 @@ func builtinListSlice(args ...VeniceValue) VeniceValue {
 
 	// TODO(2021-08-25): Handle out-of-bounds error.
 	return &VeniceList{listArg.Values[startIndexArg.Value:endIndexArg.Value]}
+}
+
+func builtinListSorted(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	listArg, ok := args[0].(*VeniceList)
+	if !ok {
+		return nil
+	}
+
+	copiedList := listArg.Copy()
+	builtinListSortInPlace(copiedList)
+	return copiedList
+}
+
+func builtinListSortInPlace(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	listArg, ok := args[0].(*VeniceList)
+	if !ok {
+		return nil
+	}
+
+	sort.Slice(listArg.Values, func(i, j int) bool {
+		return listArg.Values[i].Compare(listArg.Values[j])
+	})
+	return nil
 }
 
 /**
@@ -400,11 +445,14 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	"real":   builtinReal,
 	"string": builtinString,
 	// List built-ins
-	"list__append": builtinListAppend,
-	"list__extend": builtinListExtend,
-	"list__length": builtinLength,
-	"list__remove": builtinListRemove,
-	"list__slice":  builtinListSlice,
+	"list__append":        builtinListAppend,
+	"list__copy":          builtinListCopy,
+	"list__extend":        builtinListExtend,
+	"list__length":        builtinLength,
+	"list__remove":        builtinListRemove,
+	"list__slice":         builtinListSlice,
+	"list__sorted":        builtinListSorted,
+	"list__sort_in_place": builtinListSortInPlace,
 	// Map built-ins
 	"map__clear":   builtinMapClear,
 	"map__copy":    builtinMapCopy,

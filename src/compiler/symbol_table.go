@@ -121,6 +121,14 @@ var listBuiltins = map[string]VeniceType{
 		ReturnType: nil,
 		IsBuiltin:  true,
 	},
+	"copy": &VeniceFunctionType{
+		Name: "copy",
+		ParamTypes: []VeniceType{
+			&VeniceListType{&VeniceSymbolType{"T"}},
+		},
+		ReturnType: &VeniceListType{&VeniceSymbolType{"T"}},
+		IsBuiltin:  true,
+	},
 	"extend": &VeniceFunctionType{
 		Name:              "extend",
 		GenericParameters: []string{"T"},
@@ -156,6 +164,22 @@ var listBuiltins = map[string]VeniceType{
 			VENICE_TYPE_INTEGER,
 		},
 		ReturnType: &VeniceListType{&VeniceSymbolType{"T"}},
+		IsBuiltin:  true,
+	},
+	"sorted": &VeniceFunctionType{
+		Name: "sorted",
+		ParamTypes: []VeniceType{
+			&VeniceListType{&VeniceSymbolType{"T"}},
+		},
+		ReturnType: &VeniceListType{&VeniceSymbolType{"T"}},
+		IsBuiltin:  true,
+	},
+	"sort_in_place": &VeniceFunctionType{
+		Name: "sort_in_place",
+		ParamTypes: []VeniceType{
+			&VeniceListType{&VeniceSymbolType{"T"}},
+		},
+		ReturnType: nil,
 		IsBuiltin:  true,
 	},
 }

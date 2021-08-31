@@ -12,6 +12,7 @@ import (
 type VeniceValue interface {
 	fmt.Stringer
 	veniceValue()
+	Compare(v VeniceValue) bool
 	Equals(v VeniceValue) bool
 	Hash(h maphash.Hash) uint64
 }
@@ -226,6 +227,94 @@ func (v *VeniceTuple) String() string {
 }
 
 /**
+ * Compare() implementations
+ */
+
+func (v *VeniceBoolean) Compare(otherAny VeniceValue) bool {
+	switch other := otherAny.(type) {
+	case *VeniceBoolean:
+		if !v.Value && other.Value {
+			return true
+		} else {
+			return false
+		}
+	default:
+		return false
+	}
+}
+
+func (v *VeniceCharacter) Compare(otherAny VeniceValue) bool {
+	switch other := otherAny.(type) {
+	case *VeniceCharacter:
+		return v.Value < other.Value
+	default:
+		return false
+	}
+}
+
+func (v *VeniceClassObject) Compare(otherAny VeniceValue) bool {
+	return false
+}
+
+func (v *VeniceEnumObject) Compare(otherAny VeniceValue) bool {
+	return false
+}
+
+func (v *VeniceFunctionObject) Compare(otherAny VeniceValue) bool {
+	return false
+}
+
+func (v *VeniceInteger) Compare(otherAny VeniceValue) bool {
+	switch other := otherAny.(type) {
+	case *VeniceInteger:
+		return v.Value < other.Value
+	case *VeniceRealNumber:
+		return float64(v.Value) < other.Value
+	default:
+		return false
+	}
+}
+
+func (v *VeniceList) Compare(otherAny VeniceValue) bool {
+	return false
+}
+
+func (v *VeniceListIterator) Compare(otherAny VeniceValue) bool {
+	return false
+}
+
+func (v *VeniceMap) Compare(otherAny VeniceValue) bool {
+	return false
+}
+
+func (v *VeniceMapIterator) Compare(otherAny VeniceValue) bool {
+	return false
+}
+
+func (v *VeniceRealNumber) Compare(otherAny VeniceValue) bool {
+	switch other := otherAny.(type) {
+	case *VeniceInteger:
+		return v.Value < float64(other.Value)
+	case *VeniceRealNumber:
+		return v.Value < other.Value
+	default:
+		return false
+	}
+}
+
+func (v *VeniceString) Compare(otherAny VeniceValue) bool {
+	other, ok := otherAny.(*VeniceString)
+	if !ok {
+		return false
+	}
+	return v.Value < other.Value
+}
+
+func (v *VeniceTuple) Compare(otherAny VeniceValue) bool {
+	return false
+}
+
+/**
  * Equals() implementations
  */
 
@@ -297,11 +386,14 @@ func (v *VeniceFunctionObject) Equals(otherAny VeniceValue) bool {
 }
 
 func (v *VeniceInteger) Equals(otherAny VeniceValue) bool {
-	other, ok := otherAny.(*VeniceInteger)
-	if !ok {
+	switch other := otherAny.(type) {
+	case *VeniceInteger:
+		return v.Value == other.Value
+	case *VeniceRealNumber:
+		return float64(v.Value) == other.Value
+	default:
 		return false
 	}
-	return v.Value == other.Value
 }
 
 func (v *VeniceList) Equals(otherAny VeniceValue) bool {
@@ -520,6 +612,12 @@ func NewVeniceMap() *VeniceMap {
 
 func NewVeniceMapIterator(vmap *VeniceMap) *VeniceMapIterator {
 	return &VeniceMapIterator{Map: vmap, TableIndex: 0, ChainIndex: 0}
+}
+
+func (v *VeniceList) Copy() *VeniceList {
+	copiedValues := make([]VeniceValue, len(v.Values))
+	copy(copiedValues, v.Values)
+	return &VeniceList{copiedValues}
 }
 
 func (v *VeniceMap) Clear() {

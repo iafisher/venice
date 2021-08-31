@@ -417,6 +417,42 @@ func TestListBuiltins(t *testing.T) {
 		`,
 		Tup(L(I(1), I(2), I(3)), L(I(1), I(2))),
 	)
+	assertEqual(
+		t,
+		`
+		let l = [1, 2, 3]
+		let l2 = l.copy()
+		l2[0] = 10
+		l
+		`,
+		L(I(1), I(2), I(3)),
+	)
+	assertEqual(
+		t,
+		`
+		let l = [4, 3, 2, 1]
+		l.sort_in_place()
+		l
+		`,
+		L(I(1), I(2), I(3), I(4)),
+	)
+	assertEqual(
+		t,
+		`
+		let l = ["Venezuela", "Paraguay", "Bolivia", "Argentina"]
+		l.sorted()
+		`,
+		L(S("Argentina"), S("Bolivia"), S("Paraguay"), S("Venezuela")),
+	)
+	assertEqual(
+		t,
+		`
+		let l = ["Venezuela", "Paraguay", "Bolivia", "Argentina"]
+		let l2 = l.sorted()
+		l
+		`,
+		L(S("Venezuela"), S("Paraguay"), S("Bolivia"), S("Argentina")),
+	)
 }
 
 func TestListIndexAssignment(t *testing.T) {
