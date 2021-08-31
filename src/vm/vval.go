@@ -522,6 +522,22 @@ func NewVeniceMapIterator(vmap *VeniceMap) *VeniceMapIterator {
 	return &VeniceMapIterator{Map: vmap, TableIndex: 0, ChainIndex: 0}
 }
 
+func (v *VeniceMap) Clear() {
+	for i := 0; i < len(v.table); i++ {
+		v.table[i] = nil
+	}
+	v.Size = 0
+}
+
+func (v *VeniceMap) Copy() *VeniceMap {
+	vCopy := NewVeniceMap()
+	for _, entry := range v.Entries().Values {
+		entryAsTuple := entry.(*VeniceTuple)
+		vCopy.Put(entryAsTuple.Values[0], entryAsTuple.Values[1])
+	}
+	return vCopy
+}
+
 func (v *VeniceMap) Entries() *VeniceList {
 	entries := make([]VeniceValue, 0, v.Size)
 	for _, chain := range v.table {

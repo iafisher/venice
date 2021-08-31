@@ -460,6 +460,27 @@ func TestMapBuiltins(t *testing.T) {
 		`,
 		L(Tup(I(1), S("one")), Tup(I(2), S("two"))),
 	)
+
+	assertEqual(
+		t,
+		`
+		let m = {"Canada": "Ottawa"}
+		let mCopy = m.copy()
+		m["Canada"] = "Toronto"
+		mCopy["Canada"]
+		`,
+		Some(S("Ottawa")),
+	)
+
+	assertEqual(
+		t,
+		`
+		let m = {"Guatemala": 14000000}
+		m.clear()
+		length(m)
+		`,
+		I(0),
+	)
 }
 
 func TestMapIndexAssignment(t *testing.T) {

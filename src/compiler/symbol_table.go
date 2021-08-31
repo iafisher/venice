@@ -161,6 +161,31 @@ var listBuiltins = map[string]VeniceType{
 }
 
 var mapBuiltins = map[string]VeniceType{
+	"clear": &VeniceFunctionType{
+		Name: "clear",
+		ParamTypes: []VeniceType{
+			&VeniceMapType{
+				KeyType:   &VeniceSymbolType{"K"},
+				ValueType: &VeniceSymbolType{"V"},
+			},
+		},
+		ReturnType: nil,
+		IsBuiltin:  true,
+	},
+	"copy": &VeniceFunctionType{
+		Name: "copy",
+		ParamTypes: []VeniceType{
+			&VeniceMapType{
+				KeyType:   &VeniceSymbolType{"K"},
+				ValueType: &VeniceSymbolType{"V"},
+			},
+		},
+		ReturnType: &VeniceMapType{
+			KeyType:   &VeniceSymbolType{"K"},
+			ValueType: &VeniceSymbolType{"V"},
+		},
+		IsBuiltin: true,
+	},
 	"entries": &VeniceFunctionType{
 		Name: "entries",
 		ParamTypes: []VeniceType{

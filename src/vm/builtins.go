@@ -191,6 +191,31 @@ func builtinListSlice(args ...VeniceValue) VeniceValue {
  * Map built-ins
  */
 
+func builtinMapClear(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	mapArg, ok := args[0].(*VeniceMap)
+	if !ok {
+		return nil
+	}
+	mapArg.Clear()
+	return nil
+}
+
+func builtinMapCopy(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	mapArg, ok := args[0].(*VeniceMap)
+	if !ok {
+		return nil
+	}
+	return mapArg.Copy()
+}
+
 func builtinMapEntries(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
@@ -381,6 +406,8 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	"list__remove": builtinListRemove,
 	"list__slice":  builtinListSlice,
 	// Map built-ins
+	"map__clear":   builtinMapClear,
+	"map__copy":    builtinMapCopy,
 	"map__entries": builtinMapEntries,
 	"map__keys":    builtinMapKeys,
 	"map__remove":  builtinMapRemove,
