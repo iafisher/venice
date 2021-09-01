@@ -502,6 +502,21 @@ func TestListBuiltins(t *testing.T) {
 		`,
 		None(),
 	)
+	assertEqual(
+		t,
+		`
+		let l = ["a", "b", "c"]
+		l.join(" ")
+		`,
+		S("a b c"),
+	)
+	/* TODO(#115):
+	assertTypecheckError(
+		t,
+		`[1, 2, 3].join(" ")`,
+		"`join` is only available for lists of strings",
+	)
+	*/
 }
 
 func TestListIndexAssignment(t *testing.T) {
