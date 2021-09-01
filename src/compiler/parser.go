@@ -944,22 +944,26 @@ func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
 	for {
 		location := p.currentToken.Location
 		if p.currentToken.Type == lex.TOKEN_RIGHT_CURLY {
+			p.brackets--
 			p.nextToken()
 			break
 		}
 
 		key, err := p.matchExpression(PRECEDENCE_LOWEST)
 		if err != nil {
+			p.brackets--
 			return nil, err
 		}
 
 		if p.currentToken.Type != lex.TOKEN_COLON {
+			p.brackets--
 			return nil, p.unexpectedToken("colon")
 		}
 
 		p.nextToken()
 		value, err := p.matchExpression(PRECEDENCE_LOWEST)
 		if err != nil {
+			p.brackets--
 			return nil, err
 		}
 
@@ -1004,8 +1008,8 @@ func (p *Parser) matchTypeNode() (TypeNode, error) {
 			return nil, err
 		}
 
-		if p.currentToken.Type != lex.TOKEN_COMMA {
-			return nil, p.unexpectedToken("comma")
+		if p.currentToken.Type != lex.TOKEN_COLON {
+			return nil, p.unexpectedToken("colon")
 		}
 
 		p.nextToken()

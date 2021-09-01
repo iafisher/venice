@@ -391,6 +391,46 @@ func TestLetStatement(t *testing.T) {
 		`,
 		"expected string, got int",
 	)
+	assertTypecheckError(
+		t,
+		`
+		let l = []
+		l
+		`,
+		"empty list has unknown type",
+	)
+	assertEqual(
+		t,
+		`
+		let l: [int] = []
+		l
+		`,
+		L(),
+	)
+	assertTypecheckError(
+		t,
+		`
+		let l: string = []
+		l
+		`,
+		"empty list has unknown type",
+	)
+	assertTypecheckError(
+		t,
+		`
+		let m = {}
+		m
+		`,
+		"empty map has unknown type",
+	)
+	assertEqual(
+		t,
+		`
+		let m: {int: int} = {}
+		m
+		`,
+		vm.NewVeniceMap(),
+	)
 }
 
 func TestListBuiltins(t *testing.T) {

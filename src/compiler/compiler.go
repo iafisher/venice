@@ -562,22 +562,24 @@ func (compiler *Compiler) compileLetStatement(
 		return nil, compiler.customError(node, "re-declaration of symbol `%q`", node.Symbol)
 	}
 
-	code, eType, err := compiler.compileExpression(node.Expr)
+	var declaredType VeniceType
+	if node.Type != nil {
+		var err error
+		declaredType, err = compiler.resolveType(node.Type)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	code, eType, err := compiler.compileExpressionWithTypeHint(node.Expr, declaredType)
 	if err != nil {
 		return nil, err
 	}
 
-	if node.Type != nil {
-		declaredType, err := compiler.resolveType(node.Type)
-		if err != nil {
-			return nil, err
-		}
-
-		if !compiler.checkType(declaredType, eType) {
-			return nil, compiler.customError(
-				node.Expr, "expected %s, got %s", declaredType.String(), eType.String(),
-			)
-		}
+	if declaredType != nil && !compiler.checkType(declaredType, eType) {
+		return nil, compiler.customError(
+			node.Expr, "expected %s, got %s", declaredType.String(), eType.String(),
+		)
 	}
 
 	if node.IsVar {
@@ -812,6 +814,12 @@ func (compiler *Compiler) compileBlock(
 func (compiler *Compiler) compileExpression(
 	nodeAny ExpressionNode,
 ) ([]bytecode.Bytecode, VeniceType, error) {
+	return compiler.compileExpressionWithTypeHint(nodeAny, nil)
+}
+
+func (compiler *Compiler) compileExpressionWithTypeHint(
+	nodeAny ExpressionNode, typeHint VeniceType,
+) ([]bytecode.Bytecode, VeniceType, error) {
 	switch node := nodeAny.(type) {
 	case *BooleanNode:
 		return []bytecode.Bytecode{
@@ -836,9 +844,9 @@ func (compiler *Compiler) compileExpression(
 			&bytecode.PushConstInt{node.Value},
 		}, VENICE_TYPE_INTEGER, nil
 	case *ListNode:
-		return compiler.compileListNode(node)
+		return compiler.compileListNode(node, typeHint)
 	case *MapNode:
-		return compiler.compileMapNode(node)
+		return compiler.compileMapNode(node, typeHint)
 	case *QualifiedSymbolNode:
 		return compiler.compileQualifiedSymbolNode(node)
 	case *RealNumberNode:
@@ -1288,7 +1296,7 @@ func (compiler *Compiler) compileInfixNode(
 }
 
 func (compiler *Compiler) compileListNode(
-	node *ListNode,
+	node *ListNode, typeHint VeniceType,
 ) ([]bytecode.Bytecode, VeniceType, error) {
 	code := []bytecode.Bytecode{}
 	var itemType VeniceType
@@ -1309,12 +1317,22 @@ func (compiler *Compiler) compileListNode(
 
 		code = append(code, valueCode...)
 	}
+
+	if len(node.Values) == 0 {
+		listTypeHint, ok := typeHint.(*VeniceListType)
+		if ok {
+			itemType = listTypeHint.ItemType
+		} else {
+			return nil, nil, compiler.customError(node, "empty list has unknown type")
+		}
+	}
+
 	code = append(code, &bytecode.BuildList{len(node.Values)})
 	return code, &VeniceListType{itemType}, nil
 }
 
 func (compiler *Compiler) compileMapNode(
-	node *MapNode,
+	node *MapNode, typeHint VeniceType,
 ) ([]bytecode.Bytecode, VeniceType, error) {
 	code := []bytecode.Bytecode{}
 	var keyType VeniceType
@@ -1351,6 +1369,17 @@ func (compiler *Compiler) compileMapNode(
 
 		code = append(code, valueCode...)
 	}
+
+	if len(node.Pairs) == 0 {
+		mapTypeHint, ok := typeHint.(*VeniceMapType)
+		if ok {
+			keyType = mapTypeHint.KeyType
+			valueType = mapTypeHint.ValueType
+		} else {
+			return nil, nil, compiler.customError(node, "empty map has unknown type")
+		}
+	}
+
 	code = append(code, &bytecode.BuildMap{len(node.Pairs)})
 	return code, &VeniceMapType{keyType, valueType}, nil
 }
