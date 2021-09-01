@@ -1086,6 +1086,13 @@ func (compiler *Compiler) compileFieldAccessNode(
 				node, "no such field or method `%s` on list type", node.Name,
 			)
 		}
+
+		genericParametersMap := map[string]VeniceType{"T": concreteType.ItemType}
+		methodType, err = compiler.substituteGenerics(genericParametersMap, methodType)
+		if err != nil {
+			return nil, nil, err
+		}
+
 		code = append(code, &bytecode.LookupMethod{node.Name})
 		return code, methodType, nil
 	case *VeniceMapType:
@@ -1697,6 +1704,57 @@ func (compiler *Compiler) checkType(
 		return false
 	default:
 		return expectedTypeAny == actualTypeAny
+	}
+}
+
+func (compiler *Compiler) substituteGenerics(
+	genericParametersMap map[string]VeniceType,
+	vtypeAny VeniceType,
+) (VeniceType, error) {
+	switch vtype := vtypeAny.(type) {
+	case *VeniceFunctionType:
+		newParamTypes := make([]VeniceType, 0, len(vtype.ParamTypes))
+		for _, paramType := range vtype.ParamTypes {
+			newParamType, err := compiler.substituteGenerics(
+				genericParametersMap,
+				paramType,
+			)
+			if err != nil {
+				return nil, err
+			}
+			newParamTypes = append(newParamTypes, newParamType)
+		}
+
+		newReturnType, err := compiler.substituteGenerics(
+			genericParametersMap,
+			vtype.ReturnType,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		return &VeniceFunctionType{
+			Name:       vtype.Name,
+			Public:     vtype.Public,
+			ParamTypes: newParamTypes,
+			ReturnType: newReturnType,
+			IsBuiltin:  vtype.IsBuiltin,
+		}, nil
+	case *VeniceListType:
+		itemType, err := compiler.substituteGenerics(genericParametersMap, vtype.ItemType)
+		if err != nil {
+			return nil, err
+		}
+		return &VeniceListType{itemType}, nil
+	case *VeniceSymbolType:
+		concreteType, ok := genericParametersMap[vtype.Label]
+		if ok {
+			return concreteType, nil
+		} else {
+			return vtype, nil
+		}
+	default:
+		return vtypeAny, nil
 	}
 }
 

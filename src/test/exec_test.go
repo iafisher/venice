@@ -557,6 +557,14 @@ func TestListBuiltins(t *testing.T) {
 		"`join` is only available for lists of strings",
 	)
 	*/
+	assertTypecheckError(
+		t,
+		`
+		let l = [1, 2, 3]
+		l.append("4")
+		`,
+		"wrong function parameter type",
+	)
 }
 
 func TestListIndexAssignment(t *testing.T) {
