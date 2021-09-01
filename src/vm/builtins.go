@@ -1,7 +1,9 @@
 package vm
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -10,6 +12,25 @@ import (
 /**
  * Global built-in functions
  */
+
+func builtinInput(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print(stringArg.Value)
+	text, err := reader.ReadString('\n')
+	if err != nil {
+		return VENICE_OPTIONAL_NONE
+	}
+	return VeniceOptionalOf(&VeniceString{text})
+}
 
 func builtinInt(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
@@ -535,6 +556,7 @@ func builtinStringToLower(args ...VeniceValue) VeniceValue {
 // `stringBuiltins` if it is a string built-in, etc.
 var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	// Global built-ins
+	"input":  builtinInput,
 	"int":    builtinInt,
 	"length": builtinLength,
 	"print":  builtinPrint,

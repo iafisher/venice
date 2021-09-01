@@ -20,6 +20,16 @@ func NewVarBinding(sType VeniceType) *SymbolTableBinding {
 
 func NewBuiltinSymbolTable() *SymbolTable {
 	symbols := map[string]*SymbolTableBinding{
+		"input": NewConstBinding(
+			&VeniceFunctionType{
+				Name: "input",
+				ParamTypes: []VeniceType{
+					VENICE_TYPE_STRING,
+				},
+				ReturnType: VeniceOptionalTypeOf(VENICE_TYPE_STRING),
+				IsBuiltin:  true,
+			},
+		),
 		"int": NewConstBinding(
 			&VeniceFunctionType{
 				Name: "int",
