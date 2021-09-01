@@ -169,7 +169,7 @@ var listBuiltins = map[string]VeniceType{
 	"length": &VeniceFunctionType{
 		Name: "length",
 		ParamTypes: []VeniceType{
-			&VeniceListType{VENICE_TYPE_ANY},
+			&VeniceListType{&VeniceSymbolType{"T"}},
 		},
 		ReturnType: VENICE_TYPE_INTEGER,
 		IsBuiltin:  true,
@@ -177,7 +177,7 @@ var listBuiltins = map[string]VeniceType{
 	"remove": &VeniceFunctionType{
 		Name: "remove",
 		ParamTypes: []VeniceType{
-			&VeniceListType{VENICE_TYPE_ANY},
+			&VeniceListType{&VeniceSymbolType{"T"}},
 			VENICE_TYPE_INTEGER,
 		},
 		ReturnType: nil,
@@ -286,10 +286,10 @@ var mapBuiltins = map[string]VeniceType{
 		Name: "remove",
 		ParamTypes: []VeniceType{
 			&VeniceMapType{
-				KeyType:   &VeniceSymbolType{"T"},
-				ValueType: VENICE_TYPE_ANY,
+				KeyType:   &VeniceSymbolType{"K"},
+				ValueType: &VeniceSymbolType{"V"},
 			},
-			&VeniceSymbolType{"T"},
+			&VeniceSymbolType{"K"},
 		},
 		ReturnType: nil,
 		IsBuiltin:  true,
@@ -298,7 +298,7 @@ var mapBuiltins = map[string]VeniceType{
 		Name: "values",
 		ParamTypes: []VeniceType{
 			&VeniceMapType{
-				KeyType:   VENICE_TYPE_ANY,
+				KeyType:   &VeniceSymbolType{"K"},
 				ValueType: &VeniceSymbolType{"V"},
 			},
 		},

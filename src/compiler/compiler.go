@@ -316,7 +316,10 @@ func (compiler *Compiler) compileAssignStatementToSymbol(
 		)
 	} else if !compiler.checkType(expectedType, eType) {
 		return nil, compiler.customError(
-			node, "wrong expression type in assignment to `%s`", destination.Value,
+			node,
+			"cannot assign %s to symbol of type %s",
+			eType.String(),
+			expectedType.String(),
 		)
 	}
 
@@ -911,12 +914,14 @@ func (compiler *Compiler) compileCallNode(
 	}
 
 	_, isClassMethod := node.Function.(*FieldAccessNode)
+	compiler.typeSymbolTable = compiler.typeSymbolTable.SpawnChild()
 	code, returnType, err := compiler.compileFunctionArguments(
 		node,
 		node.Args,
 		functionType,
 		isClassMethod,
 	)
+	compiler.typeSymbolTable = compiler.typeSymbolTable.Parent
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1102,6 +1107,16 @@ func (compiler *Compiler) compileFieldAccessNode(
 				node, "no such field or method `%s` on map type", node.Name,
 			)
 		}
+
+		genericParametersMap := map[string]VeniceType{
+			"K": concreteType.KeyType,
+			"V": concreteType.ValueType,
+		}
+		methodType, err = compiler.substituteGenerics(genericParametersMap, methodType)
+		if err != nil {
+			return nil, nil, err
+		}
+
 		code = append(code, &bytecode.LookupMethod{node.Name})
 		return code, methodType, nil
 	case *VeniceStringType:
@@ -1159,47 +1174,34 @@ func (compiler *Compiler) compileFunctionArguments(
 			paramType = functionType.ParamTypes[i]
 		}
 
-		err = compiler.checkFunctionArgType(
-			args[i], paramType, argType, genericParameterMap,
+		ok := compiler.checkTypeAndSubstituteGenerics(
+			paramType,
+			argType,
 		)
-		if err != nil {
-			return nil, nil, err
+		if !ok {
+			return nil, nil, compiler.customError(
+				node,
+				"wrong function parameter type",
+			)
 		}
 
 		code = append(code, argCode...)
 	}
 
-	for key, value := range genericParameterMap {
-		if value == nil {
-			return nil, nil, compiler.customError(
-				node, "unsubstituted generic parameter `%s`", key,
-			)
-		}
+	genericParametersMap := map[string]VeniceType{}
+	for key, value := range compiler.typeSymbolTable.Symbols {
+		genericParametersMap[key] = value.Type
 	}
 
-	if len(genericParameterMap) > 0 && functionType.ReturnType != nil {
-		return code, functionType.ReturnType.SubstituteGenerics(genericParameterMap), nil
-	} else {
-		return code, functionType.ReturnType, nil
-	}
-}
-
-func (compiler *Compiler) checkFunctionArgType(
-	node Node,
-	paramType VeniceType,
-	argType VeniceType,
-	genericParameterMap map[string]VeniceType,
-) error {
-	err := paramType.MatchGenerics(genericParameterMap, argType)
+	returnType, err := compiler.substituteGenerics(
+		genericParametersMap,
+		functionType.ReturnType,
+	)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	if !compiler.checkType(paramType, argType) {
-		return compiler.customError(node, "wrong function parameter type")
-	}
-
-	return nil
+	return code, returnType, nil
 }
 
 func (compiler *Compiler) compileIndexNode(
@@ -1619,7 +1621,23 @@ func (compiler *Compiler) checkInfixRightType(
 }
 
 func (compiler *Compiler) checkType(
-	expectedTypeAny VeniceType, actualTypeAny VeniceType,
+	expectedTypeAny VeniceType,
+	actualTypeAny VeniceType,
+) bool {
+	return compiler.checkTypeCore(expectedTypeAny, actualTypeAny, false)
+}
+
+func (compiler *Compiler) checkTypeAndSubstituteGenerics(
+	expectedTypeAny VeniceType,
+	actualTypeAny VeniceType,
+) bool {
+	return compiler.checkTypeCore(expectedTypeAny, actualTypeAny, true)
+}
+
+func (compiler *Compiler) checkTypeCore(
+	expectedTypeAny VeniceType,
+	actualTypeAny VeniceType,
+	substituteGenerics bool,
 ) bool {
 	switch expectedType := expectedTypeAny.(type) {
 	case *VeniceAnyType:
@@ -1648,12 +1666,10 @@ func (compiler *Compiler) checkType(
 			}
 
 			for j := 0; j < len(expectedType.Cases[i].Types); j++ {
-				// TODO(2021-08-25): Fix this dirty hack.
-				if _, isSymbolType := actualType.Cases[i].Types[j].(*VeniceSymbolType); isSymbolType {
-					continue
-				}
-
-				if !compiler.checkType(expectedType.Cases[i].Types[j], actualType.Cases[i].Types[j]) {
+				if !compiler.checkType(
+					expectedType.Cases[i].Types[j],
+					actualType.Cases[i].Types[j],
+				) {
 					return false
 				}
 			}
@@ -1669,14 +1685,12 @@ func (compiler *Compiler) checkType(
 			compiler.checkType(expectedType.KeyType, actualType.KeyType) &&
 			compiler.checkType(expectedType.ValueType, actualType.ValueType)
 	case *VeniceSymbolType:
-		return true
-		// TODO(2021-08-21)
-		// symbolType, ok := compiler.typeSymbolTable.Get(expectedType.Label)
-		// if !ok {
-		// 	// TODO(2021-08-21): Return an error?
-		// 	return false
-		// }
-		// return compiler.checkType(symbolType, actualTypeAny)
+		if substituteGenerics {
+			compiler.typeSymbolTable.Put(expectedType.Label, actualTypeAny)
+			return true
+		} else {
+			return false
+		}
 	case *VeniceTupleType:
 		actualType, ok := actualTypeAny.(*VeniceTupleType)
 		if !ok {
@@ -1712,6 +1726,23 @@ func (compiler *Compiler) substituteGenerics(
 	vtypeAny VeniceType,
 ) (VeniceType, error) {
 	switch vtype := vtypeAny.(type) {
+	case *VeniceEnumType:
+		cases := make([]*VeniceCaseType, 0, len(vtype.Cases))
+		for _, enumCase := range vtype.Cases {
+			caseTypes := make([]VeniceType, 0, len(enumCase.Types))
+			for _, caseType := range enumCase.Types {
+				newCaseType, err := compiler.substituteGenerics(
+					genericParametersMap,
+					caseType,
+				)
+				if err != nil {
+					return nil, err
+				}
+				caseTypes = append(caseTypes, newCaseType)
+			}
+			cases = append(cases, &VeniceCaseType{enumCase.Label, caseTypes})
+		}
+		return &VeniceEnumType{Name: vtype.Name, Cases: cases}, nil
 	case *VeniceFunctionType:
 		newParamTypes := make([]VeniceType, 0, len(vtype.ParamTypes))
 		for _, paramType := range vtype.ParamTypes {
@@ -1746,6 +1777,18 @@ func (compiler *Compiler) substituteGenerics(
 			return nil, err
 		}
 		return &VeniceListType{itemType}, nil
+	case *VeniceMapType:
+		keyType, err := compiler.substituteGenerics(genericParametersMap, vtype.KeyType)
+		if err != nil {
+			return nil, err
+		}
+
+		valueType, err := compiler.substituteGenerics(genericParametersMap, vtype.ValueType)
+		if err != nil {
+			return nil, err
+		}
+
+		return &VeniceMapType{KeyType: keyType, ValueType: valueType}, nil
 	case *VeniceSymbolType:
 		concreteType, ok := genericParametersMap[vtype.Label]
 		if ok {
@@ -1753,6 +1796,19 @@ func (compiler *Compiler) substituteGenerics(
 		} else {
 			return vtype, nil
 		}
+	case *VeniceTupleType:
+		newItemTypes := make([]VeniceType, 0, len(vtype.ItemTypes))
+		for _, itemType := range vtype.ItemTypes {
+			newItemType, err := compiler.substituteGenerics(
+				genericParametersMap,
+				itemType,
+			)
+			if err != nil {
+				return nil, err
+			}
+			newItemTypes = append(newItemTypes, newItemType)
+		}
+		return &VeniceTupleType{newItemTypes}, nil
 	default:
 		return vtypeAny, nil
 	}
@@ -1790,13 +1846,39 @@ func (compiler *Compiler) resolveType(typeNodeAny TypeNode) (VeniceType, error) 
 				typeNodeAny, "unknown type `%s`", typeNode.Symbol,
 			)
 		}
-		// TODO(2021-08-25): This is hard-coded to work only for Optional.
-		subType, err := compiler.resolveType(typeNode.TypeNodes[0])
+
+		genericParameters := resolvedType.GetGenericParameters()
+		if len(typeNode.TypeNodes) != len(genericParameters) {
+			return nil, compiler.customError(
+				typeNode,
+				"expected %d generic parameter(s), got %d",
+				len(genericParameters),
+				len(typeNode.TypeNodes),
+			)
+		}
+
+		genericParametersMap := map[string]VeniceType{}
+		for i := 0; i < len(typeNode.TypeNodes); i++ {
+			subTypeNode := typeNode.TypeNodes[i]
+			genericParameter := genericParameters[i]
+
+			subType, err := compiler.resolveType(subTypeNode)
+			if err != nil {
+				return nil, err
+			}
+
+			genericParametersMap[genericParameter] = subType
+		}
+
+		resolvedType, err := compiler.substituteGenerics(
+			genericParametersMap,
+			resolvedType,
+		)
 		if err != nil {
 			return nil, err
 		}
-		genericsMap := map[string]VeniceType{"T": subType}
-		return resolvedType.SubstituteGenerics(genericsMap), nil
+
+		return resolvedType, nil
 	case *SymbolNode:
 		resolvedType, ok := compiler.typeSymbolTable.Get(typeNode.Value)
 		if !ok {
