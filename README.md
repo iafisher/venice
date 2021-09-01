@@ -14,10 +14,10 @@ enum Json {
   JsonNull,
 }
 
-fn serialize_json(j: Json) -> string {
+func serialize_json(j: Json) -> string {
   match j {
     case JsonObject(obj) {
-      let it = "${key}: ${serialize_json(value)}" for key, value in obj
+      let it = ("\(key): \(serialize_json(value))" for key, value in obj)
       return "{" ++ join(it, ", ") ++ "}"
     }
     case JsonArray(values) {
