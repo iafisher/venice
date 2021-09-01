@@ -336,6 +336,12 @@ var stringBuiltins = map[string]VeniceType{
 		ReturnType: VENICE_TYPE_INTEGER,
 		IsBuiltin:  true,
 	},
+	"quoted": &VeniceFunctionType{
+		Name:       "quoted",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
 	"slice": &VeniceFunctionType{
 		Name: "slice",
 		ParamTypes: []VeniceType{

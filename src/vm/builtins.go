@@ -474,6 +474,19 @@ func builtinStringFindLast(args ...VeniceValue) VeniceValue {
 	}
 }
 
+func builtinStringQuoted(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	return &VeniceString{strconv.Quote(stringArg.Value)}
+}
+
 func builtinStringSlice(args ...VeniceValue) VeniceValue {
 	if len(args) != 3 {
 		return nil
@@ -588,6 +601,7 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	"string__find":        builtinStringFind,
 	"string__find_last":   builtinStringFindLast,
 	"string__length":      builtinLength,
+	"string__quoted":      builtinStringQuoted,
 	"string__slice":       builtinStringSlice,
 	"string__split_space": builtinStringSplitSpace,
 	"string__split":       builtinStringSplit,
