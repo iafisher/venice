@@ -989,6 +989,7 @@ func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
 func (p *Parser) matchTypeNode() (TypeNode, error) {
 	location := p.currentToken.Location
 	if p.currentToken.Type == lex.TOKEN_LEFT_SQUARE {
+		// Match a list type (e.g., `[int]`).
 		p.nextToken()
 		itemTypeNode, err := p.matchTypeNode()
 		if err != nil {
@@ -1002,6 +1003,7 @@ func (p *Parser) matchTypeNode() (TypeNode, error) {
 		p.nextToken()
 		return &ListTypeNode{itemTypeNode, location}, nil
 	} else if p.currentToken.Type == lex.TOKEN_LEFT_CURLY {
+		// Match a map type (e.g., `{int: int}`).
 		p.nextToken()
 		keyTypeNode, err := p.matchTypeNode()
 		if err != nil {
@@ -1025,6 +1027,7 @@ func (p *Parser) matchTypeNode() (TypeNode, error) {
 		p.nextToken()
 		return &MapTypeNode{keyTypeNode, valueTypeNode, location}, nil
 	} else if p.currentToken.Type == lex.TOKEN_LEFT_PAREN {
+		// Match a tuple type (e.g., `(int, string)`).
 		p.nextToken()
 		typeNodes := []TypeNode{}
 		for p.currentToken.Type != lex.TOKEN_RIGHT_PAREN {
@@ -1043,6 +1046,7 @@ func (p *Parser) matchTypeNode() (TypeNode, error) {
 		}
 		return &TupleTypeNode{typeNodes, location}, nil
 	} else if p.currentToken.Type == lex.TOKEN_SYMBOL {
+		// Match a symbol type, possibly with generic parameters (e.g., `vector<int>`).
 		name := p.currentToken.Value
 		p.nextToken()
 		if p.currentToken.Type == lex.TOKEN_LESS_THAN {
@@ -1219,7 +1223,7 @@ func (p *Parser) nextTokenSkipNewlines() *lex.Token {
  * Precedence table
  */
 
-// TODO(2021-08-03): Double-check this order.
+// TODO(#31): Double-check this order.
 const (
 	_ int = iota
 	PRECEDENCE_LOWEST
