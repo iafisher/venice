@@ -1,5 +1,5 @@
 # The Venice programming language
-Venice is a modern, high-level, statically-typed programming language. It pairs the convenience of Python with the static typing and modern language features of Rust.
+Venice is a modern, high-level, statically-typed programming language. It pairs the elegance and expressiveness of Python with the safety and modern language features of Rust.
 
 <!-- Venice's syntax is closest to Rust's, so we use that as the syntax declaration for the code block. -->
 ```rust
