@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 /**
@@ -436,6 +437,20 @@ func builtinMapValues(args ...VeniceValue) VeniceValue {
  * String built-ins
  */
 
+func builtinStringEndsWith(args ...VeniceValue) VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	stringArg, ok1 := args[0].(*VeniceString)
+	suffixArg, ok2 := args[1].(*VeniceString)
+	if !ok1 || !ok2 {
+		return nil
+	}
+
+	return &VeniceBoolean{strings.HasSuffix(stringArg.Value, suffixArg.Value)}
+}
+
 func builtinStringFind(args ...VeniceValue) VeniceValue {
 	if len(args) != 2 {
 		return nil
@@ -485,6 +500,91 @@ func builtinStringQuoted(args ...VeniceValue) VeniceValue {
 	}
 
 	return &VeniceString{strconv.Quote(stringArg.Value)}
+}
+
+func builtinStringRemovePrefix(args ...VeniceValue) VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	stringArg, ok1 := args[0].(*VeniceString)
+	prefixArg, ok2 := args[1].(*VeniceString)
+	if !ok1 || !ok2 {
+		return nil
+	}
+
+	if strings.HasPrefix(stringArg.Value, prefixArg.Value) {
+		return &VeniceString{stringArg.Value[len(prefixArg.Value):]}
+	} else {
+		return stringArg
+	}
+}
+
+func builtinStringRemoveSuffix(args ...VeniceValue) VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	stringArg, ok1 := args[0].(*VeniceString)
+	suffixArg, ok2 := args[1].(*VeniceString)
+	if !ok1 || !ok2 {
+		return nil
+	}
+
+	if strings.HasSuffix(stringArg.Value, suffixArg.Value) {
+		return &VeniceString{stringArg.Value[:len(stringArg.Value)-len(suffixArg.Value)]}
+	} else {
+		return stringArg
+	}
+}
+
+func builtinStringReplaceAll(args ...VeniceValue) VeniceValue {
+	if len(args) != 3 {
+		return nil
+	}
+
+	stringArg, ok1 := args[0].(*VeniceString)
+	beforeArg, ok2 := args[1].(*VeniceString)
+	afterArg, ok3 := args[2].(*VeniceString)
+	if !ok1 || !ok2 || !ok3 {
+		return nil
+	}
+
+	return &VeniceString{strings.ReplaceAll(stringArg.Value, beforeArg.Value, afterArg.Value)}
+}
+
+func builtinStringReplaceFirst(args ...VeniceValue) VeniceValue {
+	if len(args) != 3 {
+		return nil
+	}
+
+	stringArg, ok1 := args[0].(*VeniceString)
+	beforeArg, ok2 := args[1].(*VeniceString)
+	afterArg, ok3 := args[2].(*VeniceString)
+	if !ok1 || !ok2 || !ok3 {
+		return nil
+	}
+
+	return &VeniceString{strings.Replace(stringArg.Value, beforeArg.Value, afterArg.Value, 1)}
+}
+
+func builtinStringReplaceLast(args ...VeniceValue) VeniceValue {
+	if len(args) != 3 {
+		return nil
+	}
+
+	stringArg, ok1 := args[0].(*VeniceString)
+	beforeArg, ok2 := args[1].(*VeniceString)
+	afterArg, ok3 := args[2].(*VeniceString)
+	if !ok1 || !ok2 || !ok3 {
+		return nil
+	}
+
+	index := strings.LastIndex(stringArg.Value, beforeArg.Value)
+	if index == -1 {
+		return stringArg
+	}
+	return &VeniceString{stringArg.Value[:index] + afterArg.Value + stringArg.Value[index+len(beforeArg.Value):]}
 }
 
 func builtinStringSlice(args ...VeniceValue) VeniceValue {
@@ -538,6 +638,20 @@ func builtinStringSplitSpace(args ...VeniceValue) VeniceValue {
 	return list
 }
 
+func builtinStringStartsWith(args ...VeniceValue) VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	stringArg, ok1 := args[0].(*VeniceString)
+	prefixArg, ok2 := args[1].(*VeniceString)
+	if !ok1 || !ok2 {
+		return nil
+	}
+
+	return &VeniceBoolean{strings.HasPrefix(stringArg.Value, prefixArg.Value)}
+}
+
 func builtinStringToUpper(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
@@ -562,6 +676,45 @@ func builtinStringToLower(args ...VeniceValue) VeniceValue {
 	}
 
 	return &VeniceString{strings.ToLower(stringArg.Value)}
+}
+
+func builtinStringTrim(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	return &VeniceString{strings.TrimSpace(stringArg.Value)}
+}
+
+func builtinStringTrimLeft(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	return &VeniceString{strings.TrimLeftFunc(stringArg.Value, unicode.IsSpace)}
+}
+
+func builtinStringTrimRight(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	return &VeniceString{strings.TrimRightFunc(stringArg.Value, unicode.IsSpace)}
 }
 
 // If a method is added here, make sure to also add it to the appropriate place in
@@ -598,13 +751,23 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	"map__remove":  builtinMapRemove,
 	"map__values":  builtinMapValues,
 	// String built-ins
-	"string__find":        builtinStringFind,
-	"string__find_last":   builtinStringFindLast,
-	"string__length":      builtinLength,
-	"string__quoted":      builtinStringQuoted,
-	"string__slice":       builtinStringSlice,
-	"string__split_space": builtinStringSplitSpace,
-	"string__split":       builtinStringSplit,
-	"string__to_lower":    builtinStringToLower,
-	"string__to_upper":    builtinStringToUpper,
+	"string__ends_with":     builtinStringEndsWith,
+	"string__find":          builtinStringFind,
+	"string__find_last":     builtinStringFindLast,
+	"string__length":        builtinLength,
+	"string__quoted":        builtinStringQuoted,
+	"string__remove_prefix": builtinStringRemovePrefix,
+	"string__remove_suffix": builtinStringRemoveSuffix,
+	"string__replace_all":   builtinStringReplaceAll,
+	"string__replace_first": builtinStringReplaceFirst,
+	"string__replace_last":  builtinStringReplaceLast,
+	"string__slice":         builtinStringSlice,
+	"string__split_space":   builtinStringSplitSpace,
+	"string__split":         builtinStringSplit,
+	"string__starts_with":   builtinStringStartsWith,
+	"string__to_lower":      builtinStringToLower,
+	"string__to_upper":      builtinStringToUpper,
+	"string__trim":          builtinStringTrim,
+	"string__trim_left":     builtinStringTrimLeft,
+	"string__trim_right":    builtinStringTrimRight,
 }

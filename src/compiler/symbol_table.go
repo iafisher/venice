@@ -318,6 +318,12 @@ var mapBuiltins = map[string]VeniceType{
 }
 
 var stringBuiltins = map[string]VeniceType{
+	"ends_with": &VeniceFunctionType{
+		Name:       "ends_with",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING, VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
 	"find": &VeniceFunctionType{
 		Name:       "find",
 		ParamTypes: []VeniceType{VENICE_TYPE_STRING, VENICE_TYPE_STRING},
@@ -339,6 +345,36 @@ var stringBuiltins = map[string]VeniceType{
 	"quoted": &VeniceFunctionType{
 		Name:       "quoted",
 		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"remove_prefix": &VeniceFunctionType{
+		Name:       "remove_prefix",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING, VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"remove_suffix": &VeniceFunctionType{
+		Name:       "remove_suffix",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING, VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"replace_all": &VeniceFunctionType{
+		Name:       "replace_all",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING, VENICE_TYPE_STRING, VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"replace_first": &VeniceFunctionType{
+		Name:       "replace_first",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING, VENICE_TYPE_STRING, VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"replace_last": &VeniceFunctionType{
+		Name:       "replace_last",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING, VENICE_TYPE_STRING, VENICE_TYPE_STRING},
 		ReturnType: VENICE_TYPE_STRING,
 		IsBuiltin:  true,
 	},
@@ -369,6 +405,12 @@ var stringBuiltins = map[string]VeniceType{
 		ReturnType: &VeniceListType{VENICE_TYPE_STRING},
 		IsBuiltin:  true,
 	},
+	"starts_with": &VeniceFunctionType{
+		Name:       "starts_with",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING, VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
 	"to_lower": &VeniceFunctionType{
 		Name:       "to_lower",
 		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
@@ -377,6 +419,24 @@ var stringBuiltins = map[string]VeniceType{
 	},
 	"to_upper": &VeniceFunctionType{
 		Name:       "to_upper",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"trim": &VeniceFunctionType{
+		Name:       "trim",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"trim_left": &VeniceFunctionType{
+		Name:       "trim_left",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"trim_right": &VeniceFunctionType{
+		Name:       "trim_right",
 		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
 		ReturnType: VENICE_TYPE_STRING,
 		IsBuiltin:  true,
