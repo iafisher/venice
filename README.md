@@ -56,21 +56,5 @@ The Venice binary will be installed at `$GOBIN/venice`.
 Run `venice` to open the interactive read-eval-print loop (REPL), `venice compile example.vn` to compile a Venice program to bytecode, or `venice execute example.vn` to compile and execute a program in one step.
 
 
-## Development
-Venice is written in the Go programming language. Besides the entry point at `main.go`, all the source code lives in the `src/` directory.
-
-A Venice program goes through four stages during compilation:
-
-- Lexing: The program is tokenized, i.e. converted from a string (`1 + 1`) into a stream of tokens (`1`, `+`, `1`)
-- Parsing: The program is parsed into an abstract syntax tree.
-- Compilation: The abstract syntax tree is checked for type errors and compiled into bytecode.
-- Execution: The bytecode is executed by a virtual machine.
-
-The first three stages correspond to the packages under `src/compiler`: `src/compiler/lexer`, `src/compiler/parser`, and `src/compiler/compiler`. The last stage corresponds to the `src/vm` package.
-
-A few other packages and files define critical data structures:
-
-- `compiler/ast`: Abstract syntax trees
-- `common/bytecode`: Venice bytecode instructions
-- `compiler/vtype`: Representation of Venice types (e.g., `int`, `string`, `[int]`)
-- `vm/vval.go` Representation of Venice objects (e.g., `42`, `"hello"`, `[1, 2, 3]`)
+## Contributing
+If you're interested in contributing to Venice, check out [CONTRIBUTING.md](https://github.com/iafisher/venice/tree/master/CONTRIBUTING.md) and the [Venice development guide](https://github.com/iafisher/venice/tree/master/docs/development.md).
