@@ -1,9 +1,23 @@
 # The Venice Development Guide
 This is a manual for working on the Venice codebase. Most Venice programmers will never need to read this manual. If you are interested in *learning* Venice, you should read the [tutorial](https://github.com/iafisher/venice/blob/master/docs/tutorial.md) instead.
 
+This document should be read in conjunction with the [contributing guide](https://github.com/iafisher/venice/blob/master/CONTRIBUTING.md), which concerns the logistics of contributing to the open-source project.
 
-## Basics
+
+## Getting started
 Venice is written in the [Go programming language](https://go.dev/) and hosted on [GitHub](https://github.com/iafisher/venice).
+
+To compile Venice, you will need to install [Go 1.16](https://go.dev/learn/) and [git](https://github.com/git-guides/install-git). (Older versions of Go may or may not work.)
+
+Once Go and git are installed, you can clone and build the project with:
+
+```
+git clone https://github.com/iafisher/venice
+cd venice
+go build
+```
+
+This will produce a `venice` binary in your local directory.
 
 
 ## Architecture

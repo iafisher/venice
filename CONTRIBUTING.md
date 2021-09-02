@@ -7,6 +7,8 @@ Welcome! Thank you for your interest in Venice. There are many ways in which you
 
 Please see the relevant section of this document for instructions.
 
+Note that any contributions will be released under the terms of Venice's [license](https://github.com/iafisher/venice/blob/master/LICENSE).
+
 
 ## Reporting a bug
 Please file bugs using the [GitHub issue tracker](https://github.com/iafisher/venice/issues). You should include (a) the exact Venice code you ran, stripped down to the minimum, (b) what result you got, (c) what result you expected to get, and (d) what platform and version you are using (e.g., Windows 10, macOS Catalina, Ubuntu Linux 20.04).
