@@ -40,25 +40,6 @@ func NewBuiltinSymbolTable() *SymbolTable {
 				IsBuiltin:  true,
 			},
 		),
-		"length": NewConstBinding(
-			&VeniceFunctionType{
-				Name: "length",
-				ParamTypes: []VeniceType{
-					&VeniceUnionType{
-						[]VeniceType{
-							VENICE_TYPE_STRING,
-							&VeniceListType{VENICE_TYPE_ANY},
-							&VeniceMapType{
-								KeyType:   VENICE_TYPE_ANY,
-								ValueType: VENICE_TYPE_ANY,
-							},
-						},
-					},
-				},
-				ReturnType: VENICE_TYPE_INTEGER,
-				IsBuiltin:  true,
-			},
-		),
 		"print": NewConstBinding(
 			&VeniceFunctionType{
 				Name:       "print",
@@ -176,14 +157,6 @@ var listBuiltins = map[string]VeniceType{
 		ReturnType: VENICE_TYPE_STRING,
 		IsBuiltin:  true,
 	},
-	"length": &VeniceFunctionType{
-		Name: "length",
-		ParamTypes: []VeniceType{
-			&VeniceListType{&VeniceSymbolType{"T"}},
-		},
-		ReturnType: VENICE_TYPE_INTEGER,
-		IsBuiltin:  true,
-	},
 	"remove": &VeniceFunctionType{
 		Name: "remove",
 		ParamTypes: []VeniceType{
@@ -207,6 +180,14 @@ var listBuiltins = map[string]VeniceType{
 			&VeniceListType{&VeniceSymbolType{"T"}},
 		},
 		ReturnType: nil,
+		IsBuiltin:  true,
+	},
+	"size": &VeniceFunctionType{
+		Name: "size",
+		ParamTypes: []VeniceType{
+			&VeniceListType{&VeniceSymbolType{"T"}},
+		},
+		ReturnType: VENICE_TYPE_INTEGER,
 		IsBuiltin:  true,
 	},
 	"slice": &VeniceFunctionType{
@@ -304,6 +285,17 @@ var mapBuiltins = map[string]VeniceType{
 		ReturnType: nil,
 		IsBuiltin:  true,
 	},
+	"size": &VeniceFunctionType{
+		Name: "size",
+		ParamTypes: []VeniceType{
+			&VeniceMapType{
+				KeyType:   &VeniceSymbolType{"K"},
+				ValueType: &VeniceSymbolType{"V"},
+			},
+		},
+		ReturnType: VENICE_TYPE_INTEGER,
+		IsBuiltin:  true,
+	},
 	"values": &VeniceFunctionType{
 		Name: "values",
 		ParamTypes: []VeniceType{
@@ -334,12 +326,6 @@ var stringBuiltins = map[string]VeniceType{
 		Name:       "find_last",
 		ParamTypes: []VeniceType{VENICE_TYPE_STRING, VENICE_TYPE_STRING},
 		ReturnType: VeniceOptionalTypeOf(VENICE_TYPE_INTEGER),
-		IsBuiltin:  true,
-	},
-	"length": &VeniceFunctionType{
-		Name:       "length",
-		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
-		ReturnType: VENICE_TYPE_INTEGER,
 		IsBuiltin:  true,
 	},
 	"quoted": &VeniceFunctionType{
@@ -376,6 +362,12 @@ var stringBuiltins = map[string]VeniceType{
 		Name:       "replace_last",
 		ParamTypes: []VeniceType{VENICE_TYPE_STRING, VENICE_TYPE_STRING, VENICE_TYPE_STRING},
 		ReturnType: VENICE_TYPE_STRING,
+		IsBuiltin:  true,
+	},
+	"size": &VeniceFunctionType{
+		Name:       "size",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_INTEGER,
 		IsBuiltin:  true,
 	},
 	"slice": &VeniceFunctionType{

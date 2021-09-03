@@ -5,9 +5,10 @@ import (
 )
 
 func TestStringBuiltins(t *testing.T) {
-	// string.length
-	assertEqual(t, `let s = "123"; s.length()`, I(3))
-	assertEqual(t, `"123".length()`, I(3))
+	// string.size
+	assertEqual(t, `let s = "123"; s.size()`, I(3))
+	assertEqual(t, `"123".size()`, I(3))
+	assertEqual(t, `"Привет".size()`, I(6))
 
 	// string.to_upper
 	assertEqual(t, `"abc".to_upper()`, S("ABC"))
@@ -19,10 +20,18 @@ func TestStringBuiltins(t *testing.T) {
 	assertEqual(t, `"ABCDE".slice(1, 3)`, S("BC"))
 
 	// string.split_space
-	assertEqual(t, `"colorless green ideas".split_space()`, L(S("colorless"), S("green"), S("ideas")))
+	assertEqual(
+		t,
+		`"colorless green ideas".split_space()`,
+		L(S("colorless"), S("green"), S("ideas")),
+	)
 
 	// string.split
-	assertEqual(t, `"colorless green ideas".split(" ")`, L(S("colorless"), S("green"), S("ideas")))
+	assertEqual(
+		t,
+		`"colorless green ideas".split(" ")`,
+		L(S("colorless"), S("green"), S("ideas")),
+	)
 
 	// string.ends_with
 	assertEqual(t, `"Lorem ipsum".ends_with("ipsum")`, B(true))
@@ -46,11 +55,23 @@ func TestStringBuiltins(t *testing.T) {
 	assertEqual(t, `"www.example.com".remove_suffix(".com")`, S("www.example"))
 
 	// string.replace_all
-	assertEqual(t, `"Mt. Hood and Mt. St. Helens".replace_all("Mt.", "Mount")`, S("Mount Hood and Mount St. Helens"))
+	assertEqual(
+		t,
+		`"Mt. Hood and Mt. St. Helens".replace_all("Mt.", "Mount")`,
+		S("Mount Hood and Mount St. Helens"),
+	)
 
 	// string.replace_first
-	assertEqual(t, `"Mt. Hood and Mt. St. Helens".replace_first("Mt.", "Mount")`, S("Mount Hood and Mt. St. Helens"))
+	assertEqual(
+		t,
+		`"Mt. Hood and Mt. St. Helens".replace_first("Mt.", "Mount")`,
+		S("Mount Hood and Mt. St. Helens"),
+	)
 
 	// string.replace_last
-	assertEqual(t, `"Mt. Hood and Mt. St. Helens".replace_last("Mt.", "Mount")`, S("Mt. Hood and Mount St. Helens"))
+	assertEqual(
+		t,
+		`"Mt. Hood and Mt. St. Helens".replace_last("Mt.", "Mount")`,
+		S("Mt. Hood and Mount St. Helens"),
+	)
 }

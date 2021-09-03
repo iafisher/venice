@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 /**
@@ -44,25 +45,6 @@ func builtinInt(args ...VeniceValue) VeniceValue {
 	}
 
 	return &VeniceInteger{int(realArg.Value)}
-}
-
-func builtinLength(args ...VeniceValue) VeniceValue {
-	if len(args) != 1 {
-		return nil
-	}
-
-	var n int
-	switch arg := args[0].(type) {
-	case *VeniceList:
-		n = len(arg.Values)
-	case *VeniceMap:
-		n = arg.Size
-	case *VeniceString:
-		n = len(arg.Value)
-	default:
-		return nil
-	}
-	return &VeniceInteger{n}
 }
 
 func builtinPrint(args ...VeniceValue) VeniceValue {
@@ -304,6 +286,19 @@ func builtinListReverseInPlace(args ...VeniceValue) VeniceValue {
 	return nil
 }
 
+func builtinListSize(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	listArg, ok := args[0].(*VeniceList)
+	if !ok {
+		return nil
+	}
+
+	return &VeniceInteger{len(listArg.Values)}
+}
+
 func builtinListSlice(args ...VeniceValue) VeniceValue {
 	if len(args) != 3 {
 		return nil
@@ -418,6 +413,19 @@ func builtinMapRemove(args ...VeniceValue) VeniceValue {
 
 	mapArg.Remove(args[1])
 	return nil
+}
+
+func builtinMapSize(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	mapArg, ok := args[0].(*VeniceMap)
+	if !ok {
+		return nil
+	}
+
+	return &VeniceInteger{mapArg.Size}
 }
 
 func builtinMapValues(args ...VeniceValue) VeniceValue {
@@ -584,7 +592,24 @@ func builtinStringReplaceLast(args ...VeniceValue) VeniceValue {
 	if index == -1 {
 		return stringArg
 	}
-	return &VeniceString{stringArg.Value[:index] + afterArg.Value + stringArg.Value[index+len(beforeArg.Value):]}
+	return &VeniceString{
+		stringArg.Value[:index] +
+			afterArg.Value +
+			stringArg.Value[index+len(beforeArg.Value):],
+	}
+}
+
+func builtinStringSize(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	return &VeniceInteger{utf8.RuneCountInString(stringArg.Value)}
 }
 
 func builtinStringSlice(args ...VeniceValue) VeniceValue {
@@ -724,7 +749,6 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	// Global built-ins
 	"input":  builtinInput,
 	"int":    builtinInt,
-	"length": builtinLength,
 	"print":  builtinPrint,
 	"range":  builtinRange,
 	"real":   builtinReal,
@@ -736,13 +760,13 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	"list__find":             builtinListFind,
 	"list__find_last":        builtinListFindLast,
 	"list__join":             builtinListJoin,
-	"list__length":           builtinLength,
 	"list__remove":           builtinListRemove,
 	"list__reversed":         builtinListReversed,
 	"list__reverse_in_place": builtinListReverseInPlace,
 	"list__slice":            builtinListSlice,
 	"list__sorted":           builtinListSorted,
 	"list__sort_in_place":    builtinListSortInPlace,
+	"list__size":             builtinListSize,
 	// Map built-ins
 	"map__clear":   builtinMapClear,
 	"map__copy":    builtinMapCopy,
@@ -750,17 +774,18 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	"map__keys":    builtinMapKeys,
 	"map__remove":  builtinMapRemove,
 	"map__values":  builtinMapValues,
+	"map__size":    builtinMapSize,
 	// String built-ins
 	"string__ends_with":     builtinStringEndsWith,
 	"string__find":          builtinStringFind,
 	"string__find_last":     builtinStringFindLast,
-	"string__length":        builtinLength,
 	"string__quoted":        builtinStringQuoted,
 	"string__remove_prefix": builtinStringRemovePrefix,
 	"string__remove_suffix": builtinStringRemoveSuffix,
 	"string__replace_all":   builtinStringReplaceAll,
 	"string__replace_first": builtinStringReplaceFirst,
 	"string__replace_last":  builtinStringReplaceLast,
+	"string__size":          builtinStringSize,
 	"string__slice":         builtinStringSlice,
 	"string__split_space":   builtinStringSplitSpace,
 	"string__split":         builtinStringSplit,

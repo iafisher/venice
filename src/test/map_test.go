@@ -58,7 +58,7 @@ func TestMapBuiltins(t *testing.T) {
 		`
 		let m = {"Guatemala": 14000000}
 		m.clear()
-		length(m)
+		m.size()
 		`,
 		I(0),
 	)

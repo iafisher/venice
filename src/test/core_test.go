@@ -8,7 +8,7 @@ import (
 func TestAndOr(t *testing.T) {
 	// Make sure the `and` and `or` short-circuit before evaluating an expression that
 	// would cause an error.
-	assertEqual(t, `let l = [1]; length(l) >= 2 and l[1] == 42`, B(false))
+	assertEqual(t, `let l = [1]; l.size() >= 2 and l[1] == 42`, B(false))
 	assertEqual(t, `true or [0][1] == 10`, B(true))
 }
 
@@ -148,10 +148,10 @@ func TestFunctionCall(t *testing.T) {
 	assertEqual(
 		t,
 		`
-		let f = length
-		f([1, 2, 3])
+		let f = int
+		f(1.0)
 		`,
-		I(3),
+		I(1),
 	)
 }
 
@@ -182,13 +182,6 @@ func TestIndexing(t *testing.T) {
 	assertEqual(t, `let l = [1, 2, 3]; l[1]`, I(2))
 	assertEqual(t, `{1: "one", 2: "two", 3: "three"}[3]`, Some(S("three")))
 	assertEqual(t, `let s = "123"; s[1]`, C('2'))
-}
-
-func TestLength(t *testing.T) {
-	assertEqual(t, `length([1, 2, 3])`, I(3))
-	assertEqual(t, `length("abcdef")`, I(6))
-	// assertEqual(t, `length([])`, I(0))
-	assertEqual(t, `length("")`, I(0))
 }
 
 func TestLetStatement(t *testing.T) {
@@ -268,7 +261,7 @@ func TestLetStatement(t *testing.T) {
 }
 
 func TestListBuiltins(t *testing.T) {
-	assertEqual(t, `let l = [1, 2, 3]; l.length()`, I(3))
+	assertEqual(t, `let l = [1, 2, 3]; l.size()`, I(3))
 	assertEqual(t, `let l = [1, 2]; l.append(3); l[2]`, I(3))
 	assertEqual(t, `let l = [1, 2]; l.extend([3, 4]); l`, L(I(1), I(2), I(3), I(4)))
 	assertEqual(
