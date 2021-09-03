@@ -19,8 +19,6 @@ type VeniceAnyType struct{}
 
 type VeniceBooleanType struct{}
 
-type VeniceCharacterType struct{}
-
 type VeniceClassType struct {
 	Name              string
 	GenericParameters []string
@@ -95,7 +93,6 @@ type VeniceUnionType struct {
 var (
 	VENICE_TYPE_ANY         = &VeniceAnyType{}
 	VENICE_TYPE_BOOLEAN     = &VeniceBooleanType{}
-	VENICE_TYPE_CHARACTER   = &VeniceCharacterType{}
 	VENICE_TYPE_INTEGER     = &VeniceIntegerType{}
 	VENICE_TYPE_REAL_NUMBER = &VeniceRealNumberType{}
 	VENICE_TYPE_STRING      = &VeniceStringType{}
@@ -136,10 +133,6 @@ func (t *VeniceAnyType) String() string {
 
 func (t *VeniceBooleanType) String() string {
 	return "boolean"
-}
-
-func (t *VeniceCharacterType) String() string {
-	return "char"
 }
 
 func (t *VeniceClassType) String() string {
@@ -235,10 +228,6 @@ func (t *VeniceBooleanType) GetGenericParameters() []string {
 	return nil
 }
 
-func (t *VeniceCharacterType) GetGenericParameters() []string {
-	return nil
-}
-
 func (t *VeniceClassType) GetGenericParameters() []string {
 	return nil
 }
@@ -304,7 +293,6 @@ func (t *VeniceCaseType) AsFunctionType(enumType *VeniceEnumType) *VeniceFunctio
 
 func (t *VeniceAnyType) veniceType()        {}
 func (t *VeniceBooleanType) veniceType()    {}
-func (t *VeniceCharacterType) veniceType()  {}
 func (t *VeniceClassType) veniceType()      {}
 func (t *VeniceEnumType) veniceType()       {}
 func (t *VeniceFunctionType) veniceType()   {}

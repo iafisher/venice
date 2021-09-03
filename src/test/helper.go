@@ -11,10 +11,6 @@ func B(b bool) *vm.VeniceBoolean {
 	return &vm.VeniceBoolean{b}
 }
 
-func C(ch byte) *vm.VeniceCharacter {
-	return &vm.VeniceCharacter{ch}
-}
-
 func F(n float64) *vm.VeniceRealNumber {
 	return &vm.VeniceRealNumber{n}
 }

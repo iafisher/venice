@@ -830,10 +830,6 @@ func (compiler *Compiler) compileExpressionWithTypeHint(
 		}, VENICE_TYPE_BOOLEAN, nil
 	case *CallNode:
 		return compiler.compileCallNode(node)
-	case *CharacterNode:
-		return []bytecode.Bytecode{
-			&bytecode.PushConstChar{node.Value},
-		}, VENICE_TYPE_CHARACTER, nil
 	case *ConstructorNode:
 		return compiler.compileConstructorNode(node)
 	case *FieldAccessNode:
@@ -1242,7 +1238,7 @@ func (compiler *Compiler) compileIndexNode(
 		}
 
 		code = append(code, &bytecode.BinaryStringIndex{})
-		return code, VENICE_TYPE_CHARACTER, nil
+		return code, VENICE_TYPE_STRING, nil
 	default:
 		return nil, nil, compiler.customError(node, "%s cannot be indexed", exprTypeAny)
 	}
@@ -1589,9 +1585,7 @@ func (compiler *Compiler) checkInfixRightType(
 	case "in":
 		switch rightConcreteType := rightType.(type) {
 		case *VeniceStringType:
-			return VENICE_TYPE_BOOLEAN,
-				compiler.checkType(VENICE_TYPE_CHARACTER, leftType) ||
-					compiler.checkType(VENICE_TYPE_STRING, leftType)
+			return VENICE_TYPE_BOOLEAN, compiler.checkType(VENICE_TYPE_STRING, leftType)
 		case *VeniceListType:
 			return VENICE_TYPE_BOOLEAN,
 				compiler.checkType(rightConcreteType.ItemType, leftType)

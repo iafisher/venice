@@ -120,10 +120,6 @@ type PushConstBool struct {
 	Value bool
 }
 
-type PushConstChar struct {
-	Value byte
-}
-
 type PushConstFunction struct {
 	Name      string
 	IsBuiltin bool
@@ -328,10 +324,6 @@ func (b *PushConstBool) String() string {
 	}
 }
 
-func (b *PushConstChar) String() string {
-	return fmt.Sprintf("PUSH_CONST_CHAR %q", string(b.Value))
-}
-
 func (b *PushConstFunction) String() string {
 	var x string
 	if b.IsBuiltin {
@@ -451,7 +443,6 @@ func (b *GetIter) bytecode()             {}
 func (b *LookupMethod) bytecode()        {}
 func (b *Placeholder) bytecode()         {}
 func (b *PushConstBool) bytecode()       {}
-func (b *PushConstChar) bytecode()       {}
 func (b *PushConstInt) bytecode()        {}
 func (b *PushConstFunction) bytecode()   {}
 func (b *PushConstRealNumber) bytecode() {}

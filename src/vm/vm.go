@@ -143,14 +143,11 @@ func (vm *VirtualMachine) executeOne(
 		var result bool
 		switch right := rightAny.(type) {
 		case *VeniceString:
-			switch left := leftAny.(type) {
-			case *VeniceCharacter:
-				result = strings.IndexByte(right.Value, left.Value) != -1
-			case *VeniceString:
-				result = strings.Contains(right.Value, left.Value)
-			default:
-				return -1, &ExecutionError{"BINARY_IN expected character or string"}
+			left, ok := leftAny.(*VeniceString)
+			if !ok {
+				return -1, &ExecutionError{"BINARY_IN expected string"}
 			}
+			result = strings.Contains(right.Value, left.Value)
 		case *VeniceList:
 			result = false
 			for _, value := range right.Values {
@@ -303,7 +300,7 @@ func (vm *VirtualMachine) executeOne(
 			return -1, &ExecutionError{"index out of bounds"}
 		}
 
-		vm.pushStack(&VeniceCharacter{str.Value[index.Value]})
+		vm.pushStack(&VeniceString{str.Value[index.Value : index.Value+1]})
 	case *bytecode.BinarySub:
 		left, right, err := vm.popTwoInts()
 		if err != nil {
@@ -428,8 +425,6 @@ func (vm *VirtualMachine) executeOne(
 		}
 	case *bytecode.PushConstBool:
 		vm.pushStack(&VeniceBoolean{bcode.Value})
-	case *bytecode.PushConstChar:
-		vm.pushStack(&VeniceCharacter{bcode.Value})
 	case *bytecode.PushConstFunction:
 		vm.pushStack(&VeniceFunctionObject{bcode.Name, bcode.IsBuiltin})
 	case *bytecode.PushConstInt:

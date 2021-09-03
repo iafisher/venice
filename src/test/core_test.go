@@ -181,7 +181,7 @@ func TestFunctionDeclaration(t *testing.T) {
 func TestIndexing(t *testing.T) {
 	assertEqual(t, `let l = [1, 2, 3]; l[1]`, I(2))
 	assertEqual(t, `{1: "one", 2: "two", 3: "three"}[3]`, Some(S("three")))
-	assertEqual(t, `let s = "123"; s[1]`, C('2'))
+	assertEqual(t, `let s = "123"; s[1]`, S("2"))
 }
 
 func TestLetStatement(t *testing.T) {

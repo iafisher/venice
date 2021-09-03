@@ -76,7 +76,6 @@ func NewBuiltinSymbolTable() *SymbolTable {
 					&VeniceUnionType{
 						[]VeniceType{
 							VENICE_TYPE_BOOLEAN,
-							VENICE_TYPE_CHARACTER,
 							VENICE_TYPE_INTEGER,
 							VENICE_TYPE_STRING,
 						},

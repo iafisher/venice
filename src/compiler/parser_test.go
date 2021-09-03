@@ -144,8 +144,8 @@ func TestParseInfixExpressions(t *testing.T) {
 }
 
 func TestParseLetStatements(t *testing.T) {
-	checkParseStatement(t, "let x = '\\n'", "(let nil x '\\n')")
-	checkParseStatement(t, "let x: char = '\\n'", "(let char x '\\n')")
+	checkParseStatement(t, "let x = 42", "(let nil x 42)")
+	checkParseStatement(t, "let x: int = 42", "(let int x 42)")
 }
 
 func TestParseMatchStatements(t *testing.T) {

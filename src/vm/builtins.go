@@ -53,8 +53,6 @@ func builtinPrint(args ...VeniceValue) VeniceValue {
 	}
 
 	switch arg := args[0].(type) {
-	case *VeniceCharacter:
-		fmt.Println(string(arg.Value))
 	case *VeniceString:
 		fmt.Println(arg.Value)
 	default:
@@ -111,8 +109,6 @@ func builtinString(args ...VeniceValue) VeniceValue {
 		} else {
 			return &VeniceString{"false"}
 		}
-	case *VeniceCharacter:
-		return &VeniceString{string(arg.Value)}
 	case *VeniceInteger:
 		return &VeniceString{strconv.Itoa(arg.Value)}
 	case *VeniceString:

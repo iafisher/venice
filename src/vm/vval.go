@@ -85,10 +85,6 @@ type VeniceBoolean struct {
 	Value bool
 }
 
-type VeniceCharacter struct {
-	Value byte
-}
-
 type VeniceInteger struct {
 	Value int
 }
@@ -120,10 +116,6 @@ func (v *VeniceBoolean) String() string {
 	} else {
 		return "false"
 	}
-}
-
-func (v *VeniceCharacter) String() string {
-	return fmt.Sprintf("%q", v.Value)
 }
 
 func (v *VeniceClassObject) String() string {
@@ -243,15 +235,6 @@ func (v *VeniceBoolean) Compare(otherAny VeniceValue) bool {
 	}
 }
 
-func (v *VeniceCharacter) Compare(otherAny VeniceValue) bool {
-	switch other := otherAny.(type) {
-	case *VeniceCharacter:
-		return v.Value < other.Value
-	default:
-		return false
-	}
-}
-
 func (v *VeniceClassObject) Compare(otherAny VeniceValue) bool {
 	return false
 }
@@ -321,15 +304,6 @@ func (v *VeniceTuple) Compare(otherAny VeniceValue) bool {
 func (v *VeniceBoolean) Equals(otherAny VeniceValue) bool {
 	switch other := otherAny.(type) {
 	case *VeniceBoolean:
-		return v.Value == other.Value
-	default:
-		return false
-	}
-}
-
-func (v *VeniceCharacter) Equals(otherAny VeniceValue) bool {
-	switch other := otherAny.(type) {
-	case *VeniceCharacter:
 		return v.Value == other.Value
 	default:
 		return false
@@ -494,11 +468,6 @@ func (v *VeniceBoolean) Hash(h maphash.Hash) uint64 {
 	} else {
 		h.WriteByte(0)
 	}
-	return h.Sum64()
-}
-
-func (v *VeniceCharacter) Hash(h maphash.Hash) uint64 {
-	h.WriteByte(v.Value)
 	return h.Sum64()
 }
 
@@ -745,7 +714,6 @@ func (v *VeniceMap) getHash(key VeniceValue) uint64 {
 }
 
 func (v *VeniceBoolean) veniceValue()        {}
-func (v *VeniceCharacter) veniceValue()      {}
 func (v *VeniceClassObject) veniceValue()    {}
 func (v *VeniceEnumObject) veniceValue()     {}
 func (v *VeniceFunctionObject) veniceValue() {}

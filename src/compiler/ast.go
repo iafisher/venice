@@ -187,11 +187,6 @@ type CallNode struct {
 	Args     []ExpressionNode
 }
 
-type CharacterNode struct {
-	Value    byte
-	Location *lex.Location
-}
-
 type ConstructorNode struct {
 	Name     string
 	Fields   []*ConstructorFieldNode
@@ -329,10 +324,6 @@ func (n *BreakStatementNode) GetLocation() *lex.Location {
 
 func (n *CallNode) GetLocation() *lex.Location {
 	return n.Function.GetLocation()
-}
-
-func (n *CharacterNode) GetLocation() *lex.Location {
-	return n.Location
 }
 
 func (n *ClassDeclarationNode) GetLocation() *lex.Location {
@@ -497,10 +488,6 @@ func (n *CallNode) String() string {
 	}
 	sb.WriteByte(')')
 	return sb.String()
-}
-
-func (n *CharacterNode) String() string {
-	return fmt.Sprintf("%q", n.Value)
 }
 
 func (n *ClassDeclarationNode) String() string {
@@ -865,7 +852,6 @@ func writeBlock(sb *strings.Builder, block []StatementNode) {
 
 func (n *BooleanNode) expressionNode()          {}
 func (n *CallNode) expressionNode()             {}
-func (n *CharacterNode) expressionNode()        {}
 func (n *ConstructorNode) expressionNode()      {}
 func (n *ConstructorFieldNode) expressionNode() {}
 func (n *FieldAccessNode) expressionNode()      {}

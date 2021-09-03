@@ -14,19 +14,6 @@ func TestBlockComments(t *testing.T) {
 	checkTokensLength(t, tokens, 0)
 }
 
-func TestCharacterLiterals(t *testing.T) {
-	tokens := getTokens(`'a' '\\' '\u263a'`)
-	checkToken(t, tokens[0], TOKEN_CHARACTER, "a")
-	checkToken(t, tokens[1], TOKEN_CHARACTER, "\\")
-	checkToken(t, tokens[2], TOKEN_CHARACTER, "☺")
-
-	tokens = getTokens(`'`)
-	checkToken(t, tokens[0], TOKEN_ERROR, "invalid character literal")
-
-	tokens = getTokens(`'abc'`)
-	checkToken(t, tokens[0], TOKEN_ERROR, "invalid character literal")
-}
-
 func TestKeywordTokens(t *testing.T) {
 	tokens := getTokens(
 		"and break class continue else enum false for func if in let or private public return true while void",

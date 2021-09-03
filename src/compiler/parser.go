@@ -840,10 +840,6 @@ func (p *parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode
 func (p *parser) matchPrefix() (ExpressionNode, error) {
 	location := p.currentToken.Location
 	switch p.currentToken.Type {
-	case lex.TOKEN_CHARACTER:
-		value := p.currentToken.Value
-		p.nextToken()
-		return &CharacterNode{value[0], location}, nil
 	case lex.TOKEN_FALSE:
 		p.nextToken()
 		return &BooleanNode{false, location}, nil

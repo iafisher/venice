@@ -248,12 +248,6 @@ func (p *bytecodeParser) parse() (*bytecode.CompiledProgram, error) {
 				continue
 			}
 			bcode = &bytecode.PushConstBool{n == 1}
-		case "PUSH_CONST_CHAR":
-			value, ok := p.expectString()
-			if !ok {
-				continue
-			}
-			bcode = &bytecode.PushConstChar{value[0]}
 		case "PUSH_CONST_FUNCTION":
 			name, ok := p.expectString()
 			if !ok {

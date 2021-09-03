@@ -2,7 +2,6 @@
 # hello
 # 42
 # true
-# c
 # END OUTPUT
 
 
@@ -16,6 +15,4 @@ func main() {
   let b = true
   print(b)
 
-  let c = 'c'
-  print(c)
 }

@@ -117,16 +117,6 @@ func (l *Lexer) nextToken() *Token {
 			}
 		}
 		return &Token{Type: TOKEN_STRING, Value: value, Location: location}
-	case ch == '\'':
-		value, err := l.readString('\'')
-		if err != nil {
-			return &Token{
-				Type:     TOKEN_ERROR,
-				Value:    "invalid character literal",
-				Location: location,
-			}
-		}
-		return &Token{Type: TOKEN_CHARACTER, Value: value, Location: location}
 	default:
 		l.advance()
 		return &Token{Type: TOKEN_UNKNOWN, Value: string(ch), Location: location}
@@ -409,7 +399,6 @@ const (
 	TOKEN_ASTERISK               = "TOKEN_ASTERISK"
 	TOKEN_BREAK                  = "TOKEN_BREAK"
 	TOKEN_CASE                   = "TOKEN_CASE"
-	TOKEN_CHARACTER              = "TOKEN_CHARACTER"
 	TOKEN_CLASS                  = "TOKEN_CLASS"
 	TOKEN_COLON                  = "TOKEN_COLON"
 	TOKEN_COMMA                  = "TOKEN_COMMA"
