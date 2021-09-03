@@ -7,8 +7,10 @@
 # three
 # END OUTPUT
 
-let m = {1: "one", 2: "two", 3: "three"}
-for k, v in m {
-  print(k)
-  print(v)
+func main() {
+  let m = {1: "one", 2: "two", 3: "three"}
+  for k, v in m {
+    print(k)
+    print(v)
+  }
 }

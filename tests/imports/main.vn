@@ -3,4 +3,6 @@
 # END OUTPUT
 import "./lib.vn" as lib
 
-lib::hello()
+func main() {
+  lib::hello()
+}

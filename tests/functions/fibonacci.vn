@@ -17,4 +17,6 @@ func fibonacci(n: int) -> int {
   return fib_i
 }
 
-print(fibonacci(12))
+func main() {
+  print(fibonacci(12))
+}

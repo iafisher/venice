@@ -17,11 +17,18 @@ import (
 )
 
 func ParseString(input string) (*File, error) {
-	return newParser().ParseString(input)
+	p := newParser("", input)
+	return p.matchReplProgram()
 }
 
 func ParseFile(filePath string) (*File, error) {
-	return newParser().ParseFile(filePath)
+	fileContentsBytes, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	p := newParser(filePath, string(fileContentsBytes))
+	return p.matchProgram()
 }
 
 type parser struct {
@@ -31,30 +38,38 @@ type parser struct {
 	brackets int
 }
 
-func newParser() *parser {
-	return &parser{lexer: nil, currentToken: nil, brackets: 0}
+func newParser(filePath, input string) *parser {
+	lexer := lex.NewLexer(filePath, input)
+	p := &parser{lexer: lexer, currentToken: nil, brackets: 0}
+	p.nextTokenSkipNewlines()
+	return p
 }
 
-func (p *parser) ParseString(input string) (*File, error) {
-	return p.parseGeneric("", input)
-}
+func (p *parser) matchProgram() (*File, error) {
+	statements := []StatementNode{}
+	for {
+		statement, err := p.matchTopLevelStatement()
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, statement)
 
-func (p *parser) ParseFile(filePath string) (*File, error) {
-	fileContentsBytes, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return nil, err
+		if p.currentToken.Type == lex.TOKEN_EOF {
+			break
+		}
 	}
 
-	return p.parseGeneric(filePath, string(fileContentsBytes))
+	if len(statements) == 0 {
+		return nil, p.customError("empty program")
+	}
+
+	return &File{Statements: statements, Imports: []string{}}, nil
 }
 
-func (p *parser) parseGeneric(filePath string, input string) (*File, error) {
-	p.lexer = lex.NewLexer(filePath, input)
-	p.nextTokenSkipNewlines()
+func (p *parser) matchReplProgram() (*File, error) {
 	statements := []StatementNode{}
-
 	for {
-		statement, err := p.matchStatement()
+		statement, err := p.matchReplStatement()
 		if err != nil {
 			return nil, err
 		}
@@ -76,6 +91,46 @@ func (p *parser) parseGeneric(filePath string, input string) (*File, error) {
  * Match statements
  */
 
+func (p *parser) matchReplStatement() (StatementNode, error) {
+	tree, err := p.matchTopLevelStatement()
+	if err != nil {
+		tree, err = p.matchStatement()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return tree, nil
+}
+
+func (p *parser) matchTopLevelStatement() (StatementNode, error) {
+	switch p.currentToken.Type {
+	case lex.TOKEN_CLASS:
+		return p.matchClassDeclaration()
+	case lex.TOKEN_ENUM:
+		return p.matchEnumDeclaration()
+	case lex.TOKEN_FUNC:
+		return p.matchFunctionDeclaration()
+	case lex.TOKEN_IMPORT:
+		tree, err := p.matchImportStatement()
+		if err != nil {
+			return nil, err
+		}
+
+		if p.currentToken.Type != lex.TOKEN_NEWLINE &&
+			p.currentToken.Type != lex.TOKEN_SEMICOLON &&
+			p.currentToken.Type != lex.TOKEN_EOF {
+			return nil, p.customError(
+				"statement must be followed by newline or semicolon (got %s)",
+				p.currentToken.Type,
+			)
+		}
+		p.nextTokenSkipNewlines()
+		return tree, nil
+	default:
+		return nil, p.customError("unexpected start of statement at top-level of program")
+	}
+}
+
 func (p *parser) matchStatement() (StatementNode, error) {
 	location := p.currentToken.Location
 	var tree StatementNode
@@ -84,21 +139,13 @@ func (p *parser) matchStatement() (StatementNode, error) {
 	case lex.TOKEN_BREAK:
 		tree = &BreakStatementNode{location}
 		p.nextToken()
-	case lex.TOKEN_CLASS:
-		return p.matchClassDeclaration()
 	case lex.TOKEN_CONTINUE:
 		tree = &ContinueStatementNode{location}
 		p.nextToken()
-	case lex.TOKEN_ENUM:
-		return p.matchEnumDeclaration()
-	case lex.TOKEN_FUNC:
-		return p.matchFunctionDeclaration()
 	case lex.TOKEN_FOR:
 		return p.matchForLoop()
 	case lex.TOKEN_IF:
 		return p.matchIfStatement()
-	case lex.TOKEN_IMPORT:
-		tree, err = p.matchImportStatement()
 	case lex.TOKEN_LET:
 		tree, err = p.matchLetStatement(false)
 	case lex.TOKEN_MATCH:

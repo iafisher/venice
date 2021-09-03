@@ -8,7 +8,9 @@ class Point {
   public y: int
 }
 
-let p = new Point { x: 0, y: 1 }
-print(p.x)
-p.x = 10
-print(p.x)
+func main() {
+  let p = new Point { x: 0, y: 1 }
+  print(p.x)
+  p.x = 10
+  print(p.x)
+}

@@ -15,4 +15,6 @@ func countdown(n: int) {
   countdown(n - 1)
 }
 
-countdown(5)
+func main() {
+  countdown(5)
+}

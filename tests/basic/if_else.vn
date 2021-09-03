@@ -4,27 +4,29 @@
 # good
 # END OUTPUT
 
-let x = true
-if x {
-  print("good")
-}
+func main() {
+  let x = true
+  if x {
+    print("good")
+  }
 
-if not x {
-  print("bad")
-}
+  if not x {
+    print("bad")
+  }
 
-if false {
-  print("bad")
-} else {
-  print("good")
-}
+  if false {
+    print("bad")
+  } else {
+    print("good")
+  }
 
-if false {
-  print("bad")
-} else if true {
-  print("good")
-} else if true {
-  print("not good")
-} else {
-  print("very bad")
+  if false {
+    print("bad")
+  } else if true {
+    print("good")
+  } else if true {
+    print("not good")
+  } else {
+    print("very bad")
+  }
 }

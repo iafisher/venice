@@ -7,5 +7,7 @@ enum MyOptional {
   None,
 }
 
-let x = MyOptional::Some(10)
-print(x)
+func main() {
+  let x = MyOptional::Some(10)
+  print(x)
+}

@@ -6,8 +6,10 @@
 # 5
 # END OUTPUT
 
-var i = 1
-while i <= 5 {
-  print(i)
-  i = i + 1
+func main() {
+  var i = 1
+  while i <= 5 {
+    print(i)
+    i = i + 1
+  }
 }

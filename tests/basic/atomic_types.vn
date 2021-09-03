@@ -5,14 +5,17 @@
 # c
 # END OUTPUT
 
-let s = "hello"
-print(s)
 
-let n = 42
-print(n)
+func main() {
+  let s = "hello"
+  print(s)
 
-let b = true
-print(b)
+  let n = 42
+  print(n)
 
-let c = 'c'
-print(c)
+  let b = true
+  print(b)
+
+  let c = 'c'
+  print(c)
+}

@@ -7,5 +7,7 @@ class Box<T> {
   public object: T
 }
 
-let box = Box(41)
-print(box.object + 1)
+func main() {
+  let box = Box(41)
+  print(box.object + 1)
+}

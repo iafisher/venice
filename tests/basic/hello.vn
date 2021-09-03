@@ -2,4 +2,6 @@
 # Hello, world!
 # END OUTPUT
 
-print("Hello, world!")
+func main() {
+  print("Hello, world!")
+}

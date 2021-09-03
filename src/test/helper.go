@@ -71,6 +71,7 @@ func assertEqual(t *testing.T, program string, result vm.VeniceValue) {
 	}
 
 	if value == nil {
+		t.Helper()
 		t.Fatalf("Code snippet did not return a value\n\nInput:\n\n%s", program)
 	}
 

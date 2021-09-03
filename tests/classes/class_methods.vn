@@ -13,7 +13,9 @@ class Point {
   }
 }
 
-let p = Point(0, 1)
-print(p.x)
-p.addx(10)
-print(p.x)
+func main() {
+  let p = Point(0, 1)
+  print(p.x)
+  p.addx(10)
+  print(p.x)
+}
