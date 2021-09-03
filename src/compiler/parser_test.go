@@ -178,7 +178,7 @@ func TestParseUnaryOperators(t *testing.T) {
 }
 
 func checkParseExpression(t *testing.T, input string, expectedOutput string) {
-	parsedFile, err := NewParser().ParseString(input)
+	parsedFile, err := ParseString(input)
 	if err != nil {
 		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
@@ -203,7 +203,7 @@ func checkParseExpression(t *testing.T, input string, expectedOutput string) {
 }
 
 func checkParseStatement(t *testing.T, input string, expectedOutput string) {
-	parsedFile, err := NewParser().ParseString(input)
+	parsedFile, err := ParseString(input)
 	if err != nil {
 		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
@@ -222,7 +222,7 @@ func checkParseStatement(t *testing.T, input string, expectedOutput string) {
 }
 
 func checkParseStatements(t *testing.T, input string, expectedOutput string) {
-	parsedFile, err := NewParser().ParseString(input)
+	parsedFile, err := ParseString(input)
 	if err != nil {
 		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)

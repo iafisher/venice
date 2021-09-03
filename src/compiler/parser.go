@@ -16,22 +16,30 @@ import (
 	"strings"
 )
 
-type Parser struct {
+func ParseString(input string) (*File, error) {
+	return newParser().ParseString(input)
+}
+
+func ParseFile(filePath string) (*File, error) {
+	return newParser().ParseFile(filePath)
+}
+
+type parser struct {
 	lexer        *lex.Lexer
 	currentToken *lex.Token
 	// Number of currently nested brackets (parentheses, curly braces, square brackets).
 	brackets int
 }
 
-func NewParser() *Parser {
-	return &Parser{lexer: nil, currentToken: nil, brackets: 0}
+func newParser() *parser {
+	return &parser{lexer: nil, currentToken: nil, brackets: 0}
 }
 
-func (p *Parser) ParseString(input string) (*File, error) {
+func (p *parser) ParseString(input string) (*File, error) {
 	return p.parseGeneric("", input)
 }
 
-func (p *Parser) ParseFile(filePath string) (*File, error) {
+func (p *parser) ParseFile(filePath string) (*File, error) {
 	fileContentsBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -40,7 +48,7 @@ func (p *Parser) ParseFile(filePath string) (*File, error) {
 	return p.parseGeneric(filePath, string(fileContentsBytes))
 }
 
-func (p *Parser) parseGeneric(filePath string, input string) (*File, error) {
+func (p *parser) parseGeneric(filePath string, input string) (*File, error) {
 	p.lexer = lex.NewLexer(filePath, input)
 	p.nextTokenSkipNewlines()
 	statements := []StatementNode{}
@@ -68,7 +76,7 @@ func (p *Parser) parseGeneric(filePath string, input string) (*File, error) {
  * Match statements
  */
 
-func (p *Parser) matchStatement() (StatementNode, error) {
+func (p *parser) matchStatement() (StatementNode, error) {
 	location := p.currentToken.Location
 	var tree StatementNode
 	var err error
@@ -160,7 +168,7 @@ func (p *Parser) matchStatement() (StatementNode, error) {
 	return tree, nil
 }
 
-func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
+func (p *parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	if p.currentToken.Type != lex.TOKEN_SYMBOL {
@@ -234,7 +242,7 @@ func (p *Parser) matchClassDeclaration() (*ClassDeclarationNode, error) {
 	}, nil
 }
 
-func (p *Parser) matchEnumDeclaration() (*EnumDeclarationNode, error) {
+func (p *parser) matchEnumDeclaration() (*EnumDeclarationNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	if p.currentToken.Type != lex.TOKEN_SYMBOL {
@@ -329,7 +337,7 @@ func (p *Parser) matchEnumDeclaration() (*EnumDeclarationNode, error) {
 	return &EnumDeclarationNode{name, genericTypeParameter, cases, location}, nil
 }
 
-func (p *Parser) matchForLoop() (*ForLoopNode, error) {
+func (p *parser) matchForLoop() (*ForLoopNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 
@@ -364,7 +372,7 @@ func (p *Parser) matchForLoop() (*ForLoopNode, error) {
 	return &ForLoopNode{variables, iterable, body, location}, nil
 }
 
-func (p *Parser) matchFunctionDeclaration() (*FunctionDeclarationNode, error) {
+func (p *parser) matchFunctionDeclaration() (*FunctionDeclarationNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	if p.currentToken.Type != lex.TOKEN_SYMBOL {
@@ -406,7 +414,7 @@ func (p *Parser) matchFunctionDeclaration() (*FunctionDeclarationNode, error) {
 	return &FunctionDeclarationNode{name, params, returnType, body, location}, nil
 }
 
-func (p *Parser) matchFunctionParams() ([]*FunctionParamNode, error) {
+func (p *parser) matchFunctionParams() ([]*FunctionParamNode, error) {
 	params := []*FunctionParamNode{}
 	for p.currentToken.Type != lex.TOKEN_RIGHT_PAREN {
 		if p.currentToken.Type != lex.TOKEN_SYMBOL {
@@ -439,7 +447,7 @@ func (p *Parser) matchFunctionParams() ([]*FunctionParamNode, error) {
 	return params, nil
 }
 
-func (p *Parser) matchIfStatement() (*IfStatementNode, error) {
+func (p *parser) matchIfStatement() (*IfStatementNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	condition, err := p.matchExpression(PRECEDENCE_LOWEST)
@@ -484,7 +492,7 @@ func (p *Parser) matchIfStatement() (*IfStatementNode, error) {
 	return &IfStatementNode{clauses, elseClause, location}, nil
 }
 
-func (p *Parser) matchImportStatement() (*ImportStatementNode, error) {
+func (p *parser) matchImportStatement() (*ImportStatementNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	if p.currentToken.Type != lex.TOKEN_STRING {
@@ -513,7 +521,7 @@ func (p *Parser) matchImportStatement() (*ImportStatementNode, error) {
 	return &ImportStatementNode{Path: path, Name: name, Location: location}, nil
 }
 
-func (p *Parser) matchLetStatement(isVar bool) (*LetStatementNode, error) {
+func (p *parser) matchLetStatement(isVar bool) (*LetStatementNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	if p.currentToken.Type != lex.TOKEN_SYMBOL {
@@ -551,7 +559,7 @@ func (p *Parser) matchLetStatement(isVar bool) (*LetStatementNode, error) {
 	}, nil
 }
 
-func (p *Parser) matchMatchStatement() (*MatchStatementNode, error) {
+func (p *parser) matchMatchStatement() (*MatchStatementNode, error) {
 	location := p.currentToken.Location
 
 	p.nextToken()
@@ -612,7 +620,7 @@ func (p *Parser) matchMatchStatement() (*MatchStatementNode, error) {
 	}, nil
 }
 
-func (p *Parser) matchReturnStatement() (*ReturnStatementNode, error) {
+func (p *parser) matchReturnStatement() (*ReturnStatementNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	if p.currentToken.Type == lex.TOKEN_NEWLINE ||
@@ -627,7 +635,7 @@ func (p *Parser) matchReturnStatement() (*ReturnStatementNode, error) {
 	return &ReturnStatementNode{expr, location}, nil
 }
 
-func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {
+func (p *parser) matchWhileLoop() (*WhileLoopNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 	condition, err := p.matchExpression(PRECEDENCE_LOWEST)
@@ -647,7 +655,7 @@ func (p *Parser) matchWhileLoop() (*WhileLoopNode, error) {
  * Match expressions
  */
 
-func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
+func (p *parser) matchExpression(precedence int) (ExpressionNode, error) {
 	expr, err := p.matchPrefix()
 	if err != nil {
 		return nil, err
@@ -754,7 +762,7 @@ func (p *Parser) matchExpression(precedence int) (ExpressionNode, error) {
 	return expr, nil
 }
 
-func (p *Parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode, error) {
+func (p *parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode, error) {
 	operator := p.currentToken.Value
 	p.nextToken()
 	right, err := p.matchExpression(precedence)
@@ -782,7 +790,7 @@ func (p *Parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode
 	return &InfixNode{operator, left, right}, nil
 }
 
-func (p *Parser) matchPrefix() (ExpressionNode, error) {
+func (p *parser) matchPrefix() (ExpressionNode, error) {
 	location := p.currentToken.Location
 	switch p.currentToken.Type {
 	case lex.TOKEN_CHARACTER:
@@ -873,7 +881,7 @@ func (p *Parser) matchPrefix() (ExpressionNode, error) {
 	}
 }
 
-func (p *Parser) matchConstructor() (*ConstructorNode, error) {
+func (p *parser) matchConstructor() (*ConstructorNode, error) {
 	location := p.currentToken.Location
 	p.nextToken()
 
@@ -939,7 +947,7 @@ func (p *Parser) matchConstructor() (*ConstructorNode, error) {
 	}, nil
 }
 
-func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
+func (p *parser) matchMapPairs() ([]*MapPairNode, error) {
 	pairs := []*MapPairNode{}
 	for {
 		location := p.currentToken.Location
@@ -986,7 +994,7 @@ func (p *Parser) matchMapPairs() ([]*MapPairNode, error) {
  * Match types
  */
 
-func (p *Parser) matchTypeNode() (TypeNode, error) {
+func (p *parser) matchTypeNode() (TypeNode, error) {
 	location := p.currentToken.Location
 	if p.currentToken.Type == lex.TOKEN_LEFT_SQUARE {
 		// Match a list type (e.g., `[int]`).
@@ -1092,7 +1100,7 @@ func (p *Parser) matchTypeNode() (TypeNode, error) {
  * Match patterns
  */
 
-func (p *Parser) matchPatternNode() (PatternNode, error) {
+func (p *parser) matchPatternNode() (PatternNode, error) {
 	location := p.currentToken.Location
 	if p.currentToken.Type == lex.TOKEN_SYMBOL {
 		value := p.currentToken.Value
@@ -1148,7 +1156,7 @@ func (p *Parser) matchPatternNode() (PatternNode, error) {
  * Helper functions
  */
 
-func (p *Parser) matchArglist(terminator string) ([]ExpressionNode, error) {
+func (p *parser) matchArglist(terminator string) ([]ExpressionNode, error) {
 	p.brackets++
 	p.nextToken()
 
@@ -1179,7 +1187,7 @@ func (p *Parser) matchArglist(terminator string) ([]ExpressionNode, error) {
 	return arglist, nil
 }
 
-func (p *Parser) matchBlock() ([]StatementNode, error) {
+func (p *parser) matchBlock() ([]StatementNode, error) {
 	if p.currentToken.Type != lex.TOKEN_LEFT_CURLY {
 		return nil, p.unexpectedToken("left curly brace")
 	}
@@ -1205,7 +1213,7 @@ func (p *Parser) matchBlock() ([]StatementNode, error) {
  * Parser methods
  */
 
-func (p *Parser) nextToken() *lex.Token {
+func (p *parser) nextToken() *lex.Token {
 	if p.brackets > 0 {
 		p.currentToken = p.lexer.NextTokenSkipNewlines()
 	} else {
@@ -1214,7 +1222,7 @@ func (p *Parser) nextToken() *lex.Token {
 	return p.currentToken
 }
 
-func (p *Parser) nextTokenSkipNewlines() *lex.Token {
+func (p *parser) nextTokenSkipNewlines() *lex.Token {
 	p.currentToken = p.lexer.NextTokenSkipNewlines()
 	return p.currentToken
 }
@@ -1287,7 +1295,7 @@ func (e *ParseError) Error() string {
 	}
 }
 
-func (p *Parser) unexpectedToken(expected string) *ParseError {
+func (p *parser) unexpectedToken(expected string) *ParseError {
 	if p.currentToken.Type == lex.TOKEN_EOF {
 		// Don't change the start of this error message or multi-line parsing in the REPL
 		// will break.
@@ -1299,6 +1307,6 @@ func (p *Parser) unexpectedToken(expected string) *ParseError {
 	}
 }
 
-func (p *Parser) customError(message string, args ...interface{}) *ParseError {
+func (p *parser) customError(message string, args ...interface{}) *ParseError {
 	return &ParseError{fmt.Sprintf(message, args...), p.currentToken.Location}
 }

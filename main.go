@@ -151,7 +151,7 @@ func repl() {
 			continue
 		}
 
-		parsedFile, err := compilerPkg.NewParser().ParseString(line)
+		parsedFile, err := compilerPkg.ParseString(line)
 		if err != nil && strings.HasPrefix(err.Error(), "premature end of input") {
 			var sb strings.Builder
 			sb.WriteString(line)
@@ -172,7 +172,7 @@ func repl() {
 				}
 			}
 
-			parsedFile, err = compilerPkg.NewParser().ParseString(sb.String())
+			parsedFile, err = compilerPkg.ParseString(sb.String())
 		}
 
 		if err != nil {
@@ -256,7 +256,7 @@ const helpString = `!compile <code>   Compile the Venice code into bytecode.
 !types            Print all types in the current environment.`
 
 func compileProgram(filePath string, toStdout bool) {
-	parsedFile, err := compilerPkg.NewParser().ParseFile(filePath)
+	parsedFile, err := compilerPkg.ParseFile(filePath)
 	if err != nil {
 		fatalError("Parse error: %v", err)
 	}

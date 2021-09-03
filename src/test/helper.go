@@ -50,7 +50,7 @@ func Tup(values ...vm.VeniceValue) *vm.VeniceTuple {
 }
 
 func assertEqual(t *testing.T, program string, result vm.VeniceValue) {
-	parsedFile, err := compilerPkg.NewParser().ParseString(program)
+	parsedFile, err := compilerPkg.ParseString(program)
 	if err != nil {
 		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput:\n\n%s", err, program)
@@ -86,7 +86,7 @@ func assertEqual(t *testing.T, program string, result vm.VeniceValue) {
 }
 
 func assertTypecheckError(t *testing.T, program string, errorMessage string) {
-	parsedFile, err := compilerPkg.NewParser().ParseString(program)
+	parsedFile, err := compilerPkg.ParseString(program)
 	if err != nil {
 		t.Helper()
 		t.Fatalf("Parse error: %s\n\nInput:\n\n%s", err, program)

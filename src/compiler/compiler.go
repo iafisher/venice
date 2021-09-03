@@ -58,7 +58,7 @@ func (compiler *Compiler) compileModule(
 				return nil, nil, err
 			}
 		case *ImportStatementNode:
-			importedFile, err := NewParser().ParseFile(statement.Path)
+			importedFile, err := ParseFile(statement.Path)
 			if err != nil {
 				return nil, nil, err
 			}
