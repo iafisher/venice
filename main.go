@@ -281,7 +281,7 @@ func compileProgram(filePath string, toStdout bool) {
 		writer = bufio.NewWriter(f)
 	}
 
-	bytecode.WriteCompiledProgramToFile(writer, code)
+	vm.WriteCompiledProgramToFile(writer, code)
 }
 
 func executeProgram(filePath string) {
@@ -290,7 +290,7 @@ func executeProgram(filePath string) {
 		filePath = filePath + "b"
 	}
 
-	compiledProgram, err := bytecode.ReadCompiledProgramFromFile(filePath)
+	compiledProgram, err := vm.ReadCompiledProgramFromFile(filePath)
 	if err != nil {
 		fatalError("Error while reading %s: %v", filePath, err)
 	}

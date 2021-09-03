@@ -1,14 +1,15 @@
-package bytecode
+package vm
 
 import (
 	"bufio"
 	"fmt"
+	"github.com/iafisher/venice/src/common/bytecode"
 	"github.com/iafisher/venice/src/common/lex"
 	"io/ioutil"
 	"strconv"
 )
 
-func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram *CompiledProgram) {
+func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram *bytecode.CompiledProgram) {
 	writer.WriteString(fmt.Sprintf("version %d\n\n", compiledProgram.Version))
 
 	if len(compiledProgram.Imports) > 0 {
@@ -27,9 +28,9 @@ func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram *CompiledP
 	for functionName, functionCode := range compiledProgram.Code {
 		writer.WriteString(functionName)
 		writer.WriteString(":\n")
-		for _, bytecode := range functionCode {
+		for _, bcode := range functionCode {
 			writer.WriteString("  ")
-			writer.WriteString(bytecode.String())
+			writer.WriteString(bcode.String())
 			writer.WriteByte('\n')
 		}
 	}
@@ -37,7 +38,7 @@ func WriteCompiledProgramToFile(writer *bufio.Writer, compiledProgram *CompiledP
 	writer.Flush()
 }
 
-func ReadCompiledProgramFromFile(filePath string) (*CompiledProgram, error) {
+func ReadCompiledProgramFromFile(filePath string) (*bytecode.CompiledProgram, error) {
 	fileContentsBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -57,7 +58,7 @@ func ReadCompiledProgramFromFile(filePath string) (*CompiledProgram, error) {
 	return compiledProgram, nil
 }
 
-func ReadCompiledProgramFromString(programString string) (*CompiledProgram, error) {
+func ReadCompiledProgramFromString(programString string) (*bytecode.CompiledProgram, error) {
 	p := bytecodeParser{lexer: lex.NewLexer("", programString)}
 	return p.parse()
 }
@@ -69,8 +70,8 @@ type bytecodeParser struct {
 	errors              []error
 }
 
-func (p *bytecodeParser) parse() (*CompiledProgram, error) {
-	compiledProgram := NewCompiledProgram()
+func (p *bytecodeParser) parse() (*bytecode.CompiledProgram, error) {
+	compiledProgram := bytecode.NewCompiledProgram()
 
 	p.nextTokenSkipNewlines()
 
@@ -97,7 +98,8 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 		p.nextTokenSkipNewlines()
 
 		compiledProgram.Imports = append(
-			compiledProgram.Imports, &CompiledProgramImport{Path: path, Name: name},
+			compiledProgram.Imports,
+			&bytecode.CompiledProgramImport{Path: path, Name: name},
 		)
 	}
 
@@ -133,48 +135,48 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			continue
 		}
 
-		var bytecode Bytecode
+		var bcode bytecode.Bytecode
 		switch symbol {
 		case "BINARY_ADD":
-			bytecode = &BinaryAdd{}
+			bcode = &bytecode.BinaryAdd{}
 		case "BINARY_AND":
-			bytecode = &BinaryAnd{}
+			bcode = &bytecode.BinaryAnd{}
 		case "BINARY_CONCAT":
-			bytecode = &BinaryConcat{}
+			bcode = &bytecode.BinaryConcat{}
 		case "BINARY_EQ":
-			bytecode = &BinaryEq{}
+			bcode = &bytecode.BinaryEq{}
 		case "BINARY_GT":
-			bytecode = &BinaryGt{}
+			bcode = &bytecode.BinaryGt{}
 		case "BINARY_GT_EQ":
-			bytecode = &BinaryGtEq{}
+			bcode = &bytecode.BinaryGtEq{}
 		case "BINARY_IN":
-			bytecode = &BinaryIn{}
+			bcode = &bytecode.BinaryIn{}
 		case "BINARY_LIST_INDEX":
-			bytecode = &BinaryListIndex{}
+			bcode = &bytecode.BinaryListIndex{}
 		case "BINARY_LT":
-			bytecode = &BinaryLt{}
+			bcode = &bytecode.BinaryLt{}
 		case "BINARY_LT_EQ":
-			bytecode = &BinaryLtEq{}
+			bcode = &bytecode.BinaryLtEq{}
 		case "BINARY_MAP_INDEX":
-			bytecode = &BinaryMapIndex{}
+			bcode = &bytecode.BinaryMapIndex{}
 		case "BINARY_MUL":
-			bytecode = &BinaryMul{}
+			bcode = &bytecode.BinaryMul{}
 		case "BINARY_NOT_EQ":
-			bytecode = &BinaryNotEq{}
+			bcode = &bytecode.BinaryNotEq{}
 		case "BINARY_OR":
-			bytecode = &BinaryOr{}
+			bcode = &bytecode.BinaryOr{}
 		case "BINARY_REAL_ADD":
-			bytecode = &BinaryRealAdd{}
+			bcode = &bytecode.BinaryRealAdd{}
 		case "BINARY_REAL_DIV":
-			bytecode = &BinaryRealDiv{}
+			bcode = &bytecode.BinaryRealDiv{}
 		case "BINARY_REAL_MUL":
-			bytecode = &BinaryRealMul{}
+			bcode = &bytecode.BinaryRealMul{}
 		case "BINARY_REAL_SUB":
-			bytecode = &BinaryRealSub{}
+			bcode = &bytecode.BinaryRealSub{}
 		case "BINARY_STRING_INDEX":
-			bytecode = &BinaryStringIndex{}
+			bcode = &bytecode.BinaryStringIndex{}
 		case "BINARY_SUB":
-			bytecode = &BinarySub{}
+			bcode = &bytecode.BinarySub{}
 		case "BUILD_CLASS":
 			name, ok := p.expectString()
 			if !ok {
@@ -185,58 +187,58 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			if !ok {
 				continue
 			}
-			bytecode = &BuildClass{name, n}
+			bcode = &bytecode.BuildClass{name, n}
 		case "BUILD_LIST":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &BuildList{n}
+			bcode = &bytecode.BuildList{n}
 		case "BUILD_MAP":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &BuildMap{n}
+			bcode = &bytecode.BuildMap{n}
 		case "BUILD_TUPLE":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &BuildTuple{n}
+			bcode = &bytecode.BuildTuple{n}
 		case "CALL_BUILTIN":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &CallBuiltin{n}
+			bcode = &bytecode.CallBuiltin{n}
 		case "CALL_FUNCTION":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
 
-			bytecode = &CallFunction{n}
+			bcode = &bytecode.CallFunction{n}
 		case "CHECK_LABEL":
 			name, ok := p.expectString()
 			if !ok {
 				continue
 			}
-			bytecode = &CheckLabel{name}
+			bcode = &bytecode.CheckLabel{name}
 		case "FOR_ITER":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &ForIter{n}
+			bcode = &bytecode.ForIter{n}
 		case "GET_ITER":
-			bytecode = &GetIter{}
+			bcode = &bytecode.GetIter{}
 		case "LOOKUP_METHOD":
 			name, ok := p.expectString()
 			if !ok {
 				continue
 			}
-			bytecode = &LookupMethod{name}
+			bcode = &bytecode.LookupMethod{name}
 		case "PLACEHOLDER":
 			p.newError("placeholder instruction")
 			continue
@@ -245,13 +247,13 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			if !ok {
 				continue
 			}
-			bytecode = &PushConstBool{n == 1}
+			bcode = &bytecode.PushConstBool{n == 1}
 		case "PUSH_CONST_CHAR":
 			value, ok := p.expectString()
 			if !ok {
 				continue
 			}
-			bytecode = &PushConstChar{value[0]}
+			bcode = &bytecode.PushConstChar{value[0]}
 		case "PUSH_CONST_FUNCTION":
 			name, ok := p.expectString()
 			if !ok {
@@ -262,25 +264,25 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			if !ok {
 				continue
 			}
-			bytecode = &PushConstFunction{name, n == 1}
+			bcode = &bytecode.PushConstFunction{name, n == 1}
 		case "PUSH_CONST_INT":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &PushConstInt{n}
+			bcode = &bytecode.PushConstInt{n}
 		case "PUSH_CONST_REAL_NUMBER":
 			n, ok := p.expectRealNumber()
 			if !ok {
 				continue
 			}
-			bytecode = &PushConstRealNumber{n}
+			bcode = &bytecode.PushConstRealNumber{n}
 		case "PUSH_CONST_STR":
 			value, ok := p.expectString()
 			if !ok {
 				continue
 			}
-			bytecode = &PushConstStr{value}
+			bcode = &bytecode.PushConstStr{value}
 		case "PUSH_ENUM":
 			name, ok := p.expectString()
 			if !ok {
@@ -291,77 +293,77 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 			if !ok {
 				continue
 			}
-			bytecode = &PushEnum{name, n}
+			bcode = &bytecode.PushEnum{name, n}
 		case "PUSH_ENUM_INDEX":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &PushEnumIndex{n}
+			bcode = &bytecode.PushEnumIndex{n}
 		case "PUSH_FIELD":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &PushField{n}
+			bcode = &bytecode.PushField{n}
 		case "PUSH_NAME":
 			name, ok := p.expectString()
 			if !ok {
 				continue
 			}
-			bytecode = &PushName{name}
+			bcode = &bytecode.PushName{name}
 		case "PUSH_TUPLE_FIELD":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &PushTupleField{n}
+			bcode = &bytecode.PushTupleField{n}
 		case "REL_JUMP":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &RelJump{n}
+			bcode = &bytecode.RelJump{n}
 		case "REL_JUMP_IF_FALSE":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &RelJumpIfFalse{n}
+			bcode = &bytecode.RelJumpIfFalse{n}
 		case "REL_JUMP_IF_FALSE_OR_POP":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &RelJumpIfFalseOrPop{n}
+			bcode = &bytecode.RelJumpIfFalseOrPop{n}
 		case "REL_JUMP_IF_TRUE_OR_POP":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &RelJumpIfTrueOrPop{n}
+			bcode = &bytecode.RelJumpIfTrueOrPop{n}
 		case "RETURN":
-			bytecode = &Return{}
+			bcode = &bytecode.Return{}
 		case "STORE_FIELD":
 			n, ok := p.expectInt()
 			if !ok {
 				continue
 			}
-			bytecode = &StoreField{n}
+			bcode = &bytecode.StoreField{n}
 		case "STORE_INDEX":
-			bytecode = &StoreIndex{}
+			bcode = &bytecode.StoreIndex{}
 		case "STORE_MAP_INDEX":
-			bytecode = &StoreMapIndex{}
+			bcode = &bytecode.StoreMapIndex{}
 		case "STORE_NAME":
 			name, ok := p.expectString()
 			if !ok {
 				continue
 			}
-			bytecode = &StoreName{name}
+			bcode = &bytecode.StoreName{name}
 		case "UNARY_MINUS":
-			bytecode = &UnaryMinus{}
+			bcode = &bytecode.UnaryMinus{}
 		case "UNARY_NOT":
-			bytecode = &UnaryNot{}
+			bcode = &bytecode.UnaryNot{}
 		default:
 			p.newError(fmt.Sprintf("unknown bytecode op `%s`", symbol))
 			p.skipToNextLine()
@@ -370,7 +372,7 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 
 		compiledProgram.Code[p.currentFunctionName] = append(
 			compiledProgram.Code[p.currentFunctionName],
-			bytecode,
+			bcode,
 		)
 		p.expect(lex.TOKEN_NEWLINE)
 
@@ -386,13 +388,15 @@ func (p *bytecodeParser) parse() (*CompiledProgram, error) {
 	}
 }
 
-func (p *bytecodeParser) resolveImports(compiledProgram *CompiledProgram) error {
+func (p *bytecodeParser) resolveImports(compiledProgram *bytecode.CompiledProgram) error {
 	visited := map[string]bool{}
 	return p.resolveImportsRecursive(compiledProgram, compiledProgram, visited)
 }
 
 func (p *bytecodeParser) resolveImportsRecursive(
-	original *CompiledProgram, compiledProgram *CompiledProgram, visited map[string]bool,
+	original *bytecode.CompiledProgram,
+	compiledProgram *bytecode.CompiledProgram,
+	visited map[string]bool,
 ) error {
 	for _, importObject := range compiledProgram.Imports {
 		if _, ok := visited[importObject.Path]; ok {
