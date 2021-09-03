@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"hash/maphash"
 	"strings"
+	"unicode/utf8"
 )
 
 type VeniceValue interface {
@@ -74,6 +75,11 @@ type VeniceMapIterator struct {
 
 type VeniceListIterator struct {
 	List  *VeniceList
+	Index int
+}
+
+type VeniceStringIterator struct {
+	Str   *VeniceString
 	Index int
 }
 
@@ -205,6 +211,10 @@ func (v *VeniceString) String() string {
 	return fmt.Sprintf("%q", v.Value)
 }
 
+func (v *VeniceStringIterator) String() string {
+	return "<string iterator>"
+}
+
 func (v *VeniceTuple) String() string {
 	var sb strings.Builder
 	sb.WriteByte('(')
@@ -291,6 +301,10 @@ func (v *VeniceString) Compare(otherAny VeniceValue) bool {
 		return false
 	}
 	return v.Value < other.Value
+}
+
+func (v *VeniceStringIterator) Compare(otherAny VeniceValue) bool {
+	return false
 }
 
 func (v *VeniceTuple) Compare(otherAny VeniceValue) bool {
@@ -439,6 +453,10 @@ func (v *VeniceString) Equals(otherAny VeniceValue) bool {
 	return v.Value == other.Value
 }
 
+func (v *VeniceStringIterator) Equals(otherAny VeniceValue) bool {
+	return false
+}
+
 func (v *VeniceTuple) Equals(otherAny VeniceValue) bool {
 	other, ok := otherAny.(*VeniceTuple)
 	if !ok {
@@ -524,6 +542,11 @@ func (v *VeniceString) Hash(h maphash.Hash) uint64 {
 	return h.Sum64()
 }
 
+func (v *VeniceStringIterator) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-09-03): Handle this properly.
+	return 0
+}
+
 func (v *VeniceTuple) Hash(h maphash.Hash) uint64 {
 	// TODO(2021-08-30): Is this usage correct?
 	for _, value := range v.Values {
@@ -565,6 +588,16 @@ func (v *VeniceMapIterator) Next() []VeniceValue {
 	return nil
 }
 
+func (v *VeniceStringIterator) Next() []VeniceValue {
+	if v.Index >= len(v.Str.Value) {
+		return nil
+	}
+
+	r, size := utf8.DecodeRuneInString(v.Str.Value[v.Index:])
+	v.Index += size
+	return []VeniceValue{&VeniceString{string(r)}}
+}
+
 /**
  * Miscellaneous methods
  */
@@ -581,6 +614,10 @@ func NewVeniceMap() *VeniceMap {
 
 func NewVeniceMapIterator(vmap *VeniceMap) *VeniceMapIterator {
 	return &VeniceMapIterator{Map: vmap, TableIndex: 0, ChainIndex: 0}
+}
+
+func NewVeniceStringIterator(str *VeniceString) *VeniceStringIterator {
+	return &VeniceStringIterator{Str: str, Index: 0}
 }
 
 func (v *VeniceList) Copy() *VeniceList {
@@ -724,4 +761,5 @@ func (v *VeniceMap) veniceValue()            {}
 func (v *VeniceMapIterator) veniceValue()    {}
 func (v *VeniceRealNumber) veniceValue()     {}
 func (v *VeniceString) veniceValue()         {}
+func (v *VeniceStringIterator) veniceValue() {}
 func (v *VeniceTuple) veniceValue()          {}

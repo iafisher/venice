@@ -412,6 +412,12 @@ func (vm *VirtualMachine) executeOne(
 			vm.pushStack(NewVeniceListIterator(topOfStack))
 		case *VeniceMap:
 			vm.pushStack(NewVeniceMapIterator(topOfStack))
+		case *VeniceString:
+			vm.pushStack(NewVeniceStringIterator(topOfStack))
+		default:
+			return -1, &ExecutionError{
+				"expected list or map at top of virtual machine stack for GET_ITER",
+			}
 		}
 	case *bytecode.LookupMethod:
 		switch topOfStack := vm.peekStack().(type) {

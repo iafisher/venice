@@ -421,8 +421,14 @@ func (compiler *Compiler) compileForLoop(
 
 		loopSymbolTable.Put(node.Variables[0], iterableType.KeyType)
 		loopSymbolTable.Put(node.Variables[1], iterableType.ValueType)
+	case *VeniceStringType:
+		if len(node.Variables) != 1 {
+			return nil, compiler.customError(node, "too many for loop variables")
+		}
+
+		loopSymbolTable.Put(node.Variables[0], VENICE_TYPE_STRING)
 	default:
-		return nil, compiler.customError(node.Iterable, "for loop must be of list")
+		return nil, compiler.customError(node.Iterable, "for loop must be of list, map, or string")
 	}
 
 	compiler.symbolTable = loopSymbolTable
