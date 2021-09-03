@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/iafisher/venice/src/common/bytecode"
 	"strings"
+	"unicode/utf8"
 )
 
 type Environment struct {
@@ -300,7 +301,16 @@ func (vm *VirtualMachine) executeOne(
 			return -1, &ExecutionError{"index out of bounds"}
 		}
 
-		vm.pushStack(&VeniceString{str.Value[index.Value : index.Value+1]})
+		byteIndex := 0
+		charIndex := 0
+		for charIndex < index.Value {
+			_, size := utf8.DecodeRuneInString(str.Value[byteIndex:])
+			byteIndex += size
+			charIndex++
+		}
+
+		r, _ := utf8.DecodeRuneInString(str.Value[byteIndex:])
+		vm.pushStack(&VeniceString{string(r)})
 	case *bytecode.BinarySub:
 		left, right, err := vm.popTwoInts()
 		if err != nil {

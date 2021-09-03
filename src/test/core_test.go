@@ -182,6 +182,8 @@ func TestIndexing(t *testing.T) {
 	assertEqual(t, `let l = [1, 2, 3]; l[1]`, I(2))
 	assertEqual(t, `{1: "one", 2: "two", 3: "three"}[3]`, Some(S("three")))
 	assertEqual(t, `let s = "123"; s[1]`, S("2"))
+	assertEqual(t, `"Привет"[0]`, S("П"))
+	assertEqual(t, `"Привет"[5]`, S("т"))
 }
 
 func TestLetStatement(t *testing.T) {
