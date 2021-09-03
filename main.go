@@ -18,6 +18,7 @@ func main() {
 	executeCommand := flag.NewFlagSet("execute", flag.ExitOnError)
 
 	stdoutFlagPtr := compileCommand.Bool("stdout", false, "Output bytecode to stdout instead of to disk.")
+	debugFlagPtr := executeCommand.Bool("debug", false, "Run the virtual machine in debugging mode.")
 
 	if len(os.Args) == 1 {
 		repl()
@@ -28,7 +29,7 @@ func main() {
 			compileProgram(compileCommand.Arg(0), *stdoutFlagPtr)
 		case "execute":
 			executeCommand.Parse(os.Args[2:])
-			executeProgram(executeCommand.Arg(0))
+			executeProgram(executeCommand.Arg(0), *debugFlagPtr)
 		default:
 			fmt.Printf("Error: unknown subcommand %q", os.Args[1])
 		}
@@ -284,7 +285,7 @@ func compileProgram(filePath string, toStdout bool) {
 	vm.WriteCompiledProgramToFile(writer, code)
 }
 
-func executeProgram(filePath string) {
+func executeProgram(filePath string, debug bool) {
 	if strings.HasSuffix(filePath, ".vn") {
 		compileProgram(filePath, false)
 		filePath = filePath + "b"
@@ -296,7 +297,7 @@ func executeProgram(filePath string) {
 	}
 
 	virtualMachine := vm.NewVirtualMachine()
-	_, err = virtualMachine.Execute(compiledProgram, false)
+	_, err = virtualMachine.Execute(compiledProgram, debug)
 	if err != nil {
 		fatalError("Execution error: %s", err)
 	}

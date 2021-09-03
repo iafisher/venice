@@ -192,6 +192,8 @@ type UnaryMinus struct{}
 
 type UnaryNot struct{}
 
+type UnpackTuple struct{}
+
 func (b *BinaryAdd) String() string {
 	return "BINARY_ADD"
 }
@@ -411,6 +413,10 @@ func (b *UnaryNot) String() string {
 	return "UNARY_NOT"
 }
 
+func (b *UnpackTuple) String() string {
+	return "UNPACK_TUPLE"
+}
+
 func (b *BinaryAdd) bytecode()           {}
 func (b *BinaryAnd) bytecode()           {}
 func (b *BinaryConcat) bytecode()        {}
@@ -463,3 +469,4 @@ func (b *StoreMapIndex) bytecode()       {}
 func (b *StoreName) bytecode()           {}
 func (b *UnaryMinus) bytecode()          {}
 func (b *UnaryNot) bytecode()            {}
+func (b *UnpackTuple) bytecode()         {}

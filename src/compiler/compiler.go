@@ -441,14 +441,24 @@ func (compiler *Compiler) compileForLoop(
 		return nil, err
 	}
 
+	jump := len(node.Variables) + len(bodyCode) + 1
+	if len(node.Variables) > 1 {
+		// Account for the extra UNPACK_TUPLE instruction.
+		jump++
+	}
+
 	code := iterableCode
 	code = append(code, &bytecode.GetIter{})
-	code = append(code, &bytecode.ForIter{len(bodyCode) + len(node.Variables) + 2})
-	for i := len(node.Variables) - 1; i >= 0; i-- {
-		code = append(code, &bytecode.StoreName{node.Variables[i]})
+	code = append(code, &bytecode.ForIter{jump + 1})
+
+	if len(node.Variables) > 1 {
+		code = append(code, &bytecode.UnpackTuple{})
+	}
+	for _, variable := range node.Variables {
+		code = append(code, &bytecode.StoreName{variable})
 	}
 	code = append(code, bodyCode...)
-	code = append(code, &bytecode.RelJump{-(len(bodyCode) + len(node.Variables) + 1)})
+	code = append(code, &bytecode.RelJump{-jump})
 	return code, nil
 }
 

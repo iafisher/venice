@@ -64,7 +64,7 @@ type VeniceTuple struct {
 
 type VeniceIterator interface {
 	VeniceValue
-	Next() []VeniceValue
+	Next() VeniceValue
 }
 
 type VeniceMapIterator struct {
@@ -559,17 +559,17 @@ func (v *VeniceTuple) Hash(h maphash.Hash) uint64 {
  * Next() implementations for iterators
  */
 
-func (v *VeniceListIterator) Next() []VeniceValue {
+func (v *VeniceListIterator) Next() VeniceValue {
 	if v.Index == len(v.List.Values) {
 		return nil
 	} else {
 		r := v.List.Values[v.Index]
 		v.Index++
-		return []VeniceValue{r}
+		return r
 	}
 }
 
-func (v *VeniceMapIterator) Next() []VeniceValue {
+func (v *VeniceMapIterator) Next() VeniceValue {
 	for v.TableIndex < len(v.Map.table) {
 		entry := v.Map.table[v.TableIndex]
 		for i := 0; i < v.ChainIndex && entry != nil; i++ {
@@ -578,7 +578,7 @@ func (v *VeniceMapIterator) Next() []VeniceValue {
 
 		if entry != nil {
 			v.ChainIndex++
-			return []VeniceValue{entry.Key, entry.Value}
+			return &VeniceTuple{[]VeniceValue{entry.Key, entry.Value}}
 		}
 
 		v.TableIndex++
@@ -588,14 +588,14 @@ func (v *VeniceMapIterator) Next() []VeniceValue {
 	return nil
 }
 
-func (v *VeniceStringIterator) Next() []VeniceValue {
+func (v *VeniceStringIterator) Next() VeniceValue {
 	if v.Index >= len(v.Str.Value) {
 		return nil
 	}
 
 	r, size := utf8.DecodeRuneInString(v.Str.Value[v.Index:])
 	v.Index += size
-	return []VeniceValue{&VeniceString{string(r)}}
+	return &VeniceString{string(r)}
 }
 
 /**

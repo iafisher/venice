@@ -401,9 +401,7 @@ func (vm *VirtualMachine) executeOne(
 			vm.popStack()
 			return bcode.N, nil
 		} else {
-			for _, v := range next {
-				vm.pushStack(v)
-			}
+			vm.pushStack(next)
 		}
 	case *bytecode.GetIter:
 		topOfStackAny := vm.popStack()
@@ -603,6 +601,18 @@ func (vm *VirtualMachine) executeOne(
 
 		topOfStack.Value = !topOfStack.Value
 		vm.pushStack(topOfStack)
+	case *bytecode.UnpackTuple:
+		topOfStackAny := vm.popStack()
+		topOfStack, ok := topOfStackAny.(*VeniceTuple)
+		if !ok {
+			return -1, &ExecutionError{
+				"expected tuple at top of virtual machine stack for UNPACK_TUPLE",
+			}
+		}
+
+		for i := len(topOfStack.Values) - 1; i >= 0; i-- {
+			vm.pushStack(topOfStack.Values[i])
+		}
 	default:
 		return -1, &ExecutionError{fmt.Sprintf("unknown bytecode instruction: %T", bcode)}
 	}

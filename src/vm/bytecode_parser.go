@@ -358,6 +358,8 @@ func (p *bytecodeParser) parse() (*bytecode.CompiledProgram, error) {
 			bcode = &bytecode.UnaryMinus{}
 		case "UNARY_NOT":
 			bcode = &bytecode.UnaryNot{}
+		case "UNPACK_TUPLE":
+			bcode = &bytecode.UnpackTuple{}
 		default:
 			p.newError(fmt.Sprintf("unknown bytecode op `%s`", symbol))
 			p.skipToNextLine()
