@@ -176,6 +176,17 @@ func TestFunctionDeclaration(t *testing.T) {
 		`,
 		"non-void function has no return statement",
 	)
+
+	assertTypecheckError(
+		t,
+		`
+		func f(x: int) -> int {
+			return x + 1
+		}
+		x
+		`,
+		"undefined symbol `x`",
+	)
 }
 
 func TestIndexing(t *testing.T) {
@@ -259,6 +270,16 @@ func TestLetStatement(t *testing.T) {
 		m
 		`,
 		vm.NewVeniceMap(),
+	)
+	assertTypecheckError(
+		t,
+		`
+		if (true) {
+			let x = 10
+		}
+		x
+		`,
+		"undefined symbol `x`",
 	)
 }
 

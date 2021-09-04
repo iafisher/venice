@@ -814,6 +814,9 @@ func (compiler *Compiler) compileWhileLoop(
 func (compiler *Compiler) compileBlock(
 	block []StatementNode,
 ) ([]bytecode.Bytecode, error) {
+	compiler.symbolTable = compiler.symbolTable.SpawnChild()
+	defer func() { compiler.symbolTable = compiler.symbolTable.Parent }()
+
 	code := []bytecode.Bytecode{}
 	for _, statement := range block {
 		statementCode, err := compiler.compileStatement(statement)
@@ -876,7 +879,7 @@ func (compiler *Compiler) compileExpressionWithTypeHint(
 		symbolType, ok := compiler.symbolTable.Get(node.Value)
 		if !ok {
 			return nil, nil, compiler.customError(
-				nodeAny, "undefined symbol: %s", node.Value,
+				nodeAny, "undefined symbol `%s`", node.Value,
 			)
 		}
 		// TODO(2021-08-26): Do we need to handle function types separately?
