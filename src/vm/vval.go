@@ -126,14 +126,15 @@ func (v *VeniceBoolean) String() string {
 
 func (v *VeniceClassObject) String() string {
 	var sb strings.Builder
-	sb.WriteString("<object ")
+	sb.WriteString(v.ClassName)
+	sb.WriteString(" { ")
 	for i, value := range v.Values {
 		sb.WriteString(value.String())
 		if i != len(v.Values)-1 {
 			sb.WriteString(", ")
 		}
 	}
-	sb.WriteByte('>')
+	sb.WriteString(" }")
 	return sb.String()
 }
 
