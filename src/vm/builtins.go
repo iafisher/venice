@@ -529,6 +529,331 @@ func builtinStringFindLast(args ...VeniceValue) VeniceValue {
 	}
 }
 
+func builtinStringIsControl(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsControl(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsDigit(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsDigit(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsGraphic(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsGraphic(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsLetter(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsLetter(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsLowercase(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsLower(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsMark(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsMark(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsNumber(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsNumber(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsPrintable(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsPrint(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsPunctuation(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsPunct(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsSymbol(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsSymbol(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsTitleCase(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsTitle(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsUppercase(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsUpper(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
+func builtinStringIsWhitespace(args ...VeniceValue) VeniceValue {
+	if len(args) != 1 {
+		return nil
+	}
+
+	stringArg, ok := args[0].(*VeniceString)
+	if !ok {
+		return nil
+	}
+
+	if len(stringArg.Value) == 0 {
+		return &VeniceBoolean{false}
+	}
+
+	result := true
+	for _, r := range stringArg.Value {
+		if !unicode.IsSpace(r) {
+			result = false
+			break
+		}
+	}
+
+	return &VeniceBoolean{result}
+}
+
 func builtinStringQuoted(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
@@ -709,7 +1034,7 @@ func builtinStringStartsWith(args ...VeniceValue) VeniceValue {
 	return &VeniceBoolean{strings.HasPrefix(stringArg.Value, prefixArg.Value)}
 }
 
-func builtinStringToUpper(args ...VeniceValue) VeniceValue {
+func builtinStringToUppercase(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
@@ -722,7 +1047,7 @@ func builtinStringToUpper(args ...VeniceValue) VeniceValue {
 	return &VeniceString{strings.ToUpper(stringArg.Value)}
 }
 
-func builtinStringToLower(args ...VeniceValue) VeniceValue {
+func builtinStringToLowercase(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
 	}
@@ -831,23 +1156,36 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	"map__values":  builtinMapValues,
 	"map__size":    builtinMapSize,
 	// String built-ins
-	"string__ends_with":     builtinStringEndsWith,
-	"string__find":          builtinStringFind,
-	"string__find_last":     builtinStringFindLast,
-	"string__quoted":        builtinStringQuoted,
-	"string__remove_prefix": builtinStringRemovePrefix,
-	"string__remove_suffix": builtinStringRemoveSuffix,
-	"string__replace_all":   builtinStringReplaceAll,
-	"string__replace_first": builtinStringReplaceFirst,
-	"string__replace_last":  builtinStringReplaceLast,
-	"string__size":          builtinStringSize,
-	"string__slice":         builtinStringSlice,
-	"string__split_space":   builtinStringSplitSpace,
-	"string__split":         builtinStringSplit,
-	"string__starts_with":   builtinStringStartsWith,
-	"string__to_lower":      builtinStringToLower,
-	"string__to_upper":      builtinStringToUpper,
-	"string__trim":          builtinStringTrim,
-	"string__trim_left":     builtinStringTrimLeft,
-	"string__trim_right":    builtinStringTrimRight,
+	"string__ends_with":      builtinStringEndsWith,
+	"string__find":           builtinStringFind,
+	"string__find_last":      builtinStringFindLast,
+	"string__is_control":     builtinStringIsControl,
+	"string__is_digit":       builtinStringIsDigit,
+	"string__is_graphic":     builtinStringIsGraphic,
+	"string__is_letter":      builtinStringIsLetter,
+	"string__is_lowercase":   builtinStringIsLowercase,
+	"string__is_mark":        builtinStringIsMark,
+	"string__is_number":      builtinStringIsNumber,
+	"string__is_printable":   builtinStringIsPrintable,
+	"string__is_punctuation": builtinStringIsPunctuation,
+	"string__is_symbol":      builtinStringIsSymbol,
+	"string__is_title_case":  builtinStringIsTitleCase,
+	"string__is_uppercase":   builtinStringIsUppercase,
+	"string__is_whitespace":  builtinStringIsWhitespace,
+	"string__quoted":         builtinStringQuoted,
+	"string__remove_prefix":  builtinStringRemovePrefix,
+	"string__remove_suffix":  builtinStringRemoveSuffix,
+	"string__replace_all":    builtinStringReplaceAll,
+	"string__replace_first":  builtinStringReplaceFirst,
+	"string__replace_last":   builtinStringReplaceLast,
+	"string__size":           builtinStringSize,
+	"string__slice":          builtinStringSlice,
+	"string__split_space":    builtinStringSplitSpace,
+	"string__split":          builtinStringSplit,
+	"string__starts_with":    builtinStringStartsWith,
+	"string__to_lowercase":   builtinStringToLowercase,
+	"string__to_uppercase":   builtinStringToUppercase,
+	"string__trim":           builtinStringTrim,
+	"string__trim_left":      builtinStringTrimLeft,
+	"string__trim_right":     builtinStringTrimRight,
 }

@@ -349,6 +349,84 @@ var stringBuiltins = map[string]VeniceType{
 		ReturnType: VeniceOptionalTypeOf(VENICE_TYPE_INTEGER),
 		IsBuiltin:  true,
 	},
+	"is_control": &VeniceFunctionType{
+		Name:       "is_control",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_digit": &VeniceFunctionType{
+		Name:       "is_digit",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_graphic": &VeniceFunctionType{
+		Name:       "is_graphic",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_letter": &VeniceFunctionType{
+		Name:       "is_letter",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_lowercase": &VeniceFunctionType{
+		Name:       "is_lowercase",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_mark": &VeniceFunctionType{
+		Name:       "is_mark",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_number": &VeniceFunctionType{
+		Name:       "is_number",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_printable": &VeniceFunctionType{
+		Name:       "is_printable",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_punctuation": &VeniceFunctionType{
+		Name:       "is_punctuation",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_symbol": &VeniceFunctionType{
+		Name:       "is_symbol",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_title_case": &VeniceFunctionType{
+		Name:       "is_title_case",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_uppercase": &VeniceFunctionType{
+		Name:       "is_uppercase",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
+	"is_whitespace": &VeniceFunctionType{
+		Name:       "is_whitespace",
+		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
+		ReturnType: VENICE_TYPE_BOOLEAN,
+		IsBuiltin:  true,
+	},
 	"quoted": &VeniceFunctionType{
 		Name:       "quoted",
 		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
@@ -424,14 +502,14 @@ var stringBuiltins = map[string]VeniceType{
 		ReturnType: VENICE_TYPE_BOOLEAN,
 		IsBuiltin:  true,
 	},
-	"to_lower": &VeniceFunctionType{
-		Name:       "to_lower",
+	"to_lowercase": &VeniceFunctionType{
+		Name:       "to_lowercase",
 		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
 		ReturnType: VENICE_TYPE_STRING,
 		IsBuiltin:  true,
 	},
-	"to_upper": &VeniceFunctionType{
-		Name:       "to_upper",
+	"to_uppercase": &VeniceFunctionType{
+		Name:       "to_uppercase",
 		ParamTypes: []VeniceType{VENICE_TYPE_STRING},
 		ReturnType: VENICE_TYPE_STRING,
 		IsBuiltin:  true,

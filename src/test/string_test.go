@@ -10,11 +10,11 @@ func TestStringBuiltins(t *testing.T) {
 	assertEqual(t, `"123".size()`, I(3))
 	assertEqual(t, `"Привет".size()`, I(6))
 
-	// string.to_upper
-	assertEqual(t, `"abc".to_upper()`, S("ABC"))
+	// string.to_uppercase
+	assertEqual(t, `"abc".to_uppercase()`, S("ABC"))
 
-	// string.to_lower
-	assertEqual(t, `"ABC".to_lower()`, S("abc"))
+	// string.to_lowercase
+	assertEqual(t, `"ABC".to_lowercase()`, S("abc"))
 
 	// string.slice
 	assertEqual(t, `"ABCDE".slice(1, 3)`, S("BC"))
