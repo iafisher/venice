@@ -18,6 +18,7 @@ func TestStringBuiltins(t *testing.T) {
 
 	// string.slice
 	assertEqual(t, `"ABCDE".slice(1, 3)`, S("BC"))
+	assertEqual(t, `"Привет".slice(1, 4)`, S("рив"))
 
 	// string.split_space
 	assertEqual(

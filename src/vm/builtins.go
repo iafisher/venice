@@ -621,7 +621,7 @@ func builtinStringSlice(args ...VeniceValue) VeniceValue {
 	}
 
 	// TODO(2021-08-25): Handle out-of-bounds error.
-	return &VeniceString{stringArg.Value[startIndexArg.Value:endIndexArg.Value]}
+	return &VeniceString{getUtf8Slice(stringArg.Value, startIndexArg.Value, endIndexArg.Value)}
 }
 
 func builtinStringSplit(args ...VeniceValue) VeniceValue {
@@ -736,6 +736,27 @@ func builtinStringTrimRight(args ...VeniceValue) VeniceValue {
 	}
 
 	return &VeniceString{strings.TrimRightFunc(stringArg.Value, unicode.IsSpace)}
+}
+
+func getUtf8Slice(s string, start int, end int) string {
+	byteIndex := 0
+	charIndex := 0
+
+	for charIndex < start {
+		_, size := utf8.DecodeRuneInString(s[byteIndex:])
+		byteIndex += size
+		charIndex++
+	}
+
+	var sb strings.Builder
+	for charIndex < end {
+		r, size := utf8.DecodeRuneInString(s[byteIndex:])
+		sb.WriteRune(r)
+		byteIndex += size
+		charIndex++
+	}
+
+	return sb.String()
 }
 
 // If a method is added here, make sure to also add it to the appropriate place in
