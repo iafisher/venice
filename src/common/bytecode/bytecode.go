@@ -55,6 +55,8 @@ type BinaryLtEq struct{}
 
 type BinaryMapIndex struct{}
 
+type BinaryModulo struct{}
+
 type BinaryMul struct{}
 
 type BinaryNotEq struct{}
@@ -236,6 +238,10 @@ func (b *BinaryLtEq) String() string {
 
 func (b *BinaryMapIndex) String() string {
 	return "BINARY_MAP_INDEX"
+}
+
+func (b *BinaryModulo) String() string {
+	return "BINARY_MODULO"
 }
 
 func (b *BinaryMul) String() string {
@@ -428,6 +434,7 @@ func (b *BinaryListIndex) bytecode()     {}
 func (b *BinaryLt) bytecode()            {}
 func (b *BinaryLtEq) bytecode()          {}
 func (b *BinaryMapIndex) bytecode()      {}
+func (b *BinaryModulo) bytecode()        {}
 func (b *BinaryMul) bytecode()           {}
 func (b *BinaryNotEq) bytecode()         {}
 func (b *BinaryOr) bytecode()            {}

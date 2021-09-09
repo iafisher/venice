@@ -159,6 +159,8 @@ func (p *bytecodeParser) parse() (*bytecode.CompiledProgram, error) {
 			bcode = &bytecode.BinaryLtEq{}
 		case "BINARY_MAP_INDEX":
 			bcode = &bytecode.BinaryMapIndex{}
+		case "BINARY_MODULO":
+			bcode = &bytecode.BinaryModulo{}
 		case "BINARY_MUL":
 			bcode = &bytecode.BinaryMul{}
 		case "BINARY_NOT_EQ":

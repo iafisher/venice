@@ -230,6 +230,12 @@ func (vm *VirtualMachine) executeOne(
 		}
 
 		vm.pushStack(wrappedResult)
+	case *bytecode.BinaryModulo:
+		left, right, err := vm.popTwoInts()
+		if err != nil {
+			return -1, err
+		}
+		vm.pushStack(&VeniceInteger{left % right})
 	case *bytecode.BinaryMul:
 		left, right, err := vm.popTwoInts()
 		if err != nil {

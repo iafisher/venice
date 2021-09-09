@@ -431,6 +431,7 @@ const (
 	TOKEN_LET                    = "TOKEN_LET"
 	TOKEN_MATCH                  = "TOKEN_MATCH"
 	TOKEN_MINUS                  = "TOKEN_MINUS"
+	TOKEN_MODULO                 = "TOKEN_MODULO"
 	TOKEN_NEW                    = "TOKEN_NEW"
 	TOKEN_NEWLINE                = "TOKEN_NEWLINE"
 	TOKEN_NO                     = "TOKEN_NO"
@@ -502,6 +503,7 @@ var one_char_tokens = map[byte]string{
 	'[':  TOKEN_LEFT_SQUARE,
 	'<':  TOKEN_LESS_THAN,
 	'-':  TOKEN_MINUS,
+	'%':  TOKEN_MODULO,
 	'\n': TOKEN_NEWLINE,
 	'+':  TOKEN_PLUS,
 	'}':  TOKEN_RIGHT_CURLY,

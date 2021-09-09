@@ -1550,6 +1550,7 @@ var opsToBytecodes = map[string]bytecode.Bytecode{
 	"in":  &bytecode.BinaryIn{},
 	"<":   &bytecode.BinaryLt{},
 	"<=":  &bytecode.BinaryLtEq{},
+	"%":   &bytecode.BinaryModulo{},
 	"*":   &bytecode.BinaryMul{},
 	"!=":  &bytecode.BinaryNotEq{},
 	"or":  &bytecode.BinaryOr{},

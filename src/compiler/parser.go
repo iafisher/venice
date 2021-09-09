@@ -1304,6 +1304,7 @@ var precedenceMap = map[string]int{
 	lex.TOKEN_LESS_THAN:              PRECEDENCE_CMP,
 	lex.TOKEN_LESS_THAN_OR_EQUALS:    PRECEDENCE_CMP,
 	lex.TOKEN_MINUS:                  PRECEDENCE_ADD_SUB,
+	lex.TOKEN_MODULO:                 PRECEDENCE_MUL_DIV,
 	lex.TOKEN_NOT:                    PRECEDENCE_CMP, // `not` is used in the binary operator `not in`.
 	lex.TOKEN_NOT_EQUALS:             PRECEDENCE_CMP,
 	lex.TOKEN_OR:                     PRECEDENCE_OR,

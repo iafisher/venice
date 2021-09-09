@@ -467,6 +467,10 @@ func TestMatchStatements(t *testing.T) {
 	)
 }
 
+func TestModulo(t *testing.T) {
+	assertEqual(t, `5 % 2`, I(1))
+}
+
 func TestRealNumbers(t *testing.T) {
 	assertEqual(t, `1 / 2`, F(0.5))
 	assertEqual(t, `1 + 2.0`, F(3.0))
