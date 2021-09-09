@@ -47,6 +47,42 @@ func builtinInt(args ...VeniceValue) VeniceValue {
 	return &VeniceInteger{int(realArg.Value)}
 }
 
+func builtinMaximum(args ...VeniceValue) VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	intArg1, ok1 := args[0].(*VeniceInteger)
+	intArg2, ok2 := args[1].(*VeniceInteger)
+	if !ok1 || !ok2 {
+		return nil
+	}
+
+	if intArg1.Value > intArg2.Value {
+		return intArg1
+	} else {
+		return intArg2
+	}
+}
+
+func builtinMinimum(args ...VeniceValue) VeniceValue {
+	if len(args) != 2 {
+		return nil
+	}
+
+	intArg1, ok1 := args[0].(*VeniceInteger)
+	intArg2, ok2 := args[1].(*VeniceInteger)
+	if !ok1 || !ok2 {
+		return nil
+	}
+
+	if intArg1.Value > intArg2.Value {
+		return intArg2
+	} else {
+		return intArg1
+	}
+}
+
 func builtinPrint(args ...VeniceValue) VeniceValue {
 	if len(args) != 1 {
 		return nil
@@ -764,12 +800,14 @@ func getUtf8Slice(s string, start int, end int) string {
 // `stringBuiltins` if it is a string built-in, etc.
 var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	// Global built-ins
-	"input":  builtinInput,
-	"int":    builtinInt,
-	"print":  builtinPrint,
-	"range":  builtinRange,
-	"real":   builtinReal,
-	"string": builtinString,
+	"input":   builtinInput,
+	"int":     builtinInt,
+	"maximum": builtinMaximum,
+	"minimum": builtinMinimum,
+	"print":   builtinPrint,
+	"range":   builtinRange,
+	"real":    builtinReal,
+	"string":  builtinString,
 	// List built-ins
 	"list__append":           builtinListAppend,
 	"list__copy":             builtinListCopy,

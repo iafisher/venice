@@ -40,6 +40,28 @@ func NewBuiltinSymbolTable() *SymbolTable {
 				IsBuiltin:  true,
 			},
 		),
+		"maximum": NewConstBinding(
+			&VeniceFunctionType{
+				Name: "maximum",
+				ParamTypes: []VeniceType{
+					VENICE_TYPE_INTEGER,
+					VENICE_TYPE_INTEGER,
+				},
+				ReturnType: VENICE_TYPE_INTEGER,
+				IsBuiltin:  true,
+			},
+		),
+		"minimum": NewConstBinding(
+			&VeniceFunctionType{
+				Name: "minimum",
+				ParamTypes: []VeniceType{
+					VENICE_TYPE_INTEGER,
+					VENICE_TYPE_INTEGER,
+				},
+				ReturnType: VENICE_TYPE_INTEGER,
+				IsBuiltin:  true,
+			},
+		),
 		"print": NewConstBinding(
 			&VeniceFunctionType{
 				Name:       "print",
