@@ -167,6 +167,28 @@ func TestFunctionDeclaration(t *testing.T) {
 		L(I(1), I(2), I(3)),
 	)
 
+	assertEqual(
+		t,
+		`
+		func empty() -> [int] {
+			return []
+		}
+		empty()
+		`,
+		L(),
+	)
+
+	assertEqual(
+		t,
+		`
+		func empty_map() -> {int: int} {
+			return {}
+		}
+		empty_map()
+		`,
+		vm.NewVeniceMap(),
+	)
+
 	assertTypecheckError(
 		t,
 		`

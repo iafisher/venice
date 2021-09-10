@@ -744,7 +744,10 @@ func (compiler *Compiler) compileReturnStatement(
 	}
 
 	if node.Expr != nil {
-		code, exprType, err := compiler.compileExpression(node.Expr)
+		code, exprType, err := compiler.compileExpressionWithTypeHint(
+			node.Expr,
+			compiler.functionInfo.declaredReturnType,
+		)
 		if err != nil {
 			return nil, err
 		}
