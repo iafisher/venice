@@ -209,6 +209,38 @@ func TestFunctionDeclaration(t *testing.T) {
 		`,
 		"undefined symbol `x`",
 	)
+
+	assertTypecheckError(
+		t,
+		`
+		func f() -> int {}
+		`,
+		"non-void function has no return statement",
+	)
+
+	assertTypecheckError(
+		t,
+		`
+		func f() -> int {
+			return "abc"
+		}
+		`,
+		"conflicting function return types: got string, expected int",
+	)
+
+	/* TODO(2021-09-10): Enable this test.
+	assertTypecheckError(
+		t,
+		`
+		func f() -> int {
+			if false {
+				return 42
+			}
+		}
+		`,
+		"conflicting function return types: got string, expected int",
+	)
+	*/
 }
 
 func TestIndexing(t *testing.T) {
