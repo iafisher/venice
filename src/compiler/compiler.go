@@ -506,6 +506,9 @@ func (compiler *Compiler) compileFunctionDeclaration(node *FunctionDeclarationNo
 		declaredReturnType: declaredReturnType,
 	}
 	bodyCode, returnType, err := compiler.compileBlock(node.Body)
+	compiler.functionInfo = nil
+	compiler.symbolTable = bodySymbolTable.Parent
+
 	if err != nil {
 		return err
 	}
@@ -513,9 +516,6 @@ func (compiler *Compiler) compileFunctionDeclaration(node *FunctionDeclarationNo
 	if declaredReturnType != nil && returnType == nil {
 		return compiler.customError(node, "non-void function does not end with return statement")
 	}
-
-	compiler.functionInfo = nil
-	compiler.symbolTable = bodySymbolTable.Parent
 
 	paramLoadCode := make([]bytecode.Bytecode, 0, len(node.Params))
 	for i := len(node.Params) - 1; i >= 0; i-- {
