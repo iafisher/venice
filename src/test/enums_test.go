@@ -26,3 +26,25 @@ func TestEnumDeclaration(t *testing.T) {
 		"wrong function parameter type",
 	)
 }
+
+func TestEnumAsFunctionParameter(t *testing.T) {
+	/* TODO(2021-09-11)
+	assertEqual(
+		t,
+		`
+		func unwrap(o: Optional<int>) -> int {
+			match o {
+				case Some(x) {
+					return x
+				}
+				case None {
+					return -1
+				}
+			}
+		}
+		unwrap(Optional::Some(10)
+		`,
+		I(10),
+	)
+	*/
+}

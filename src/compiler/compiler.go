@@ -83,7 +83,7 @@ func (compiler *Compiler) compileModule(
 
 			compiler.symbolTable.Put(statement.Name, moduleType)
 		default:
-			code, err := compiler.compileStatement(statementAny)
+			code, _, err := compiler.compileStatement(statementAny)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -104,31 +104,37 @@ func (compiler *Compiler) GetType(expr ExpressionNode) (VeniceType, error) {
 
 func (compiler *Compiler) compileStatement(
 	treeAny StatementNode,
-) ([]bytecode.Bytecode, error) {
+) ([]bytecode.Bytecode, VeniceType, error) {
 	switch node := treeAny.(type) {
 	case *AssignStatementNode:
-		return compiler.compileAssignStatement(node)
+		code, err := compiler.compileAssignStatement(node)
+		return code, nil, err
 	case *BreakStatementNode:
-		return compiler.compileBreakStatement(node)
+		code, err := compiler.compileBreakStatement(node)
+		return code, nil, err
 	case *ContinueStatementNode:
-		return compiler.compileContinueStatement(node)
+		code, err := compiler.compileContinueStatement(node)
+		return code, nil, err
 	case *ExpressionStatementNode:
 		code, _, err := compiler.compileExpression(node.Expr)
-		return code, err
+		return code, nil, err
 	case *ForLoopNode:
-		return compiler.compileForLoop(node)
+		code, err := compiler.compileForLoop(node)
+		return code, nil, err
 	case *IfStatementNode:
 		return compiler.compileIfStatement(node)
 	case *LetStatementNode:
-		return compiler.compileLetStatement(node)
+		code, err := compiler.compileLetStatement(node)
+		return code, nil, err
 	case *MatchStatementNode:
 		return compiler.compileMatchStatement(node)
 	case *ReturnStatementNode:
 		return compiler.compileReturnStatement(node)
 	case *WhileLoopNode:
-		return compiler.compileWhileLoop(node)
+		code, err := compiler.compileWhileLoop(node)
+		return code, nil, err
 	default:
-		return nil, compiler.customError(treeAny, "unknown statement type: %T", treeAny)
+		return nil, nil, compiler.customError(treeAny, "unknown statement type: %T", treeAny)
 	}
 }
 
@@ -433,7 +439,7 @@ func (compiler *Compiler) compileForLoop(
 
 	compiler.symbolTable = loopSymbolTable
 	compiler.nestedLoopCount += 1
-	bodyCode, err := compiler.compileBlock(node.Body)
+	bodyCode, _, err := compiler.compileBlock(node.Body)
 	compiler.nestedLoopCount -= 1
 	compiler.symbolTable = compiler.symbolTable.Parent
 
@@ -497,16 +503,15 @@ func (compiler *Compiler) compileFunctionDeclaration(node *FunctionDeclarationNo
 
 	compiler.symbolTable = bodySymbolTable
 	compiler.functionInfo = &FunctionInfo{
-		declaredReturnType:  declaredReturnType,
-		seenReturnStatement: false,
+		declaredReturnType: declaredReturnType,
 	}
-	bodyCode, err := compiler.compileBlock(node.Body)
+	bodyCode, returnType, err := compiler.compileBlock(node.Body)
 	if err != nil {
 		return err
 	}
 
-	if declaredReturnType != nil && !compiler.functionInfo.seenReturnStatement {
-		return compiler.customError(node, "non-void function has no return statement")
+	if declaredReturnType != nil && returnType == nil {
+		return compiler.customError(node, "non-void function does not end with return statement")
 	}
 
 	compiler.functionInfo = nil
@@ -524,27 +529,38 @@ func (compiler *Compiler) compileFunctionDeclaration(node *FunctionDeclarationNo
 
 func (compiler *Compiler) compileIfStatement(
 	node *IfStatementNode,
-) ([]bytecode.Bytecode, error) {
+) ([]bytecode.Bytecode, VeniceType, error) {
 	if len(node.Clauses) == 0 {
-		return nil, compiler.customError(node, "`if` statement with no clauses")
+		return nil, nil, compiler.customError(node, "`if` statement with no clauses")
 	}
 
 	code := []bytecode.Bytecode{}
-	for _, clause := range node.Clauses {
+	var returnType VeniceType
+	for i, clause := range node.Clauses {
 		conditionCode, conditionType, err := compiler.compileExpression(clause.Condition)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if !compiler.checkType(VENICE_TYPE_BOOLEAN, conditionType) {
-			return nil, compiler.customError(
+			return nil, nil, compiler.customError(
 				clause.Condition, "condition of `if` statement must be a boolean",
 			)
 		}
 
-		bodyCode, err := compiler.compileBlock(clause.Body)
+		bodyCode, bodyReturnType, err := compiler.compileBlock(clause.Body)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+
+		// Set the overall return type of the if statement to the return type of the first
+		// clause, unless any of the clauses have a nil return type, in which case the
+		// overall return type is also nil. Checking that the different return types are
+		// compatible is done elsewhere.
+		if i == 0 {
+			returnType = bodyReturnType
+		} else if bodyReturnType == nil {
+			returnType = nil
 		}
 
 		code = append(code, conditionCode...)
@@ -556,12 +572,18 @@ func (compiler *Compiler) compileIfStatement(
 	}
 
 	if node.ElseClause != nil {
-		elseClauseCode, err := compiler.compileBlock(node.ElseClause)
+		elseClauseCode, bodyReturnType, err := compiler.compileBlock(node.ElseClause)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+
+		if bodyReturnType == nil {
+			returnType = nil
 		}
 
 		code = append(code, elseClauseCode...)
+	} else {
+		returnType = nil
 	}
 
 	// Fill in the relative jump values now that we have generated all the code.
@@ -571,7 +593,7 @@ func (compiler *Compiler) compileIfStatement(
 		}
 	}
 
-	return code, nil
+	return code, returnType, nil
 }
 
 func (compiler *Compiler) compileLetStatement(
@@ -611,15 +633,15 @@ func (compiler *Compiler) compileLetStatement(
 
 func (compiler *Compiler) compileMatchStatement(
 	node *MatchStatementNode,
-) ([]bytecode.Bytecode, error) {
+) ([]bytecode.Bytecode, VeniceType, error) {
 	exprCode, exprType, err := compiler.compileExpression(node.Expr)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	enumType, ok := exprType.(*VeniceEnumType)
 	if !ok {
-		return nil, compiler.customError(
+		return nil, nil, compiler.customError(
 			node.Expr,
 			"cannot match a non-enum type (%s)",
 			exprType.String(),
@@ -629,18 +651,29 @@ func (compiler *Compiler) compileMatchStatement(
 	// TODO(2021-08-22): Ensure matches are exhaustive.
 	// TODO(2021-08-22): This code leaves the value on the top of the stack.
 	code := exprCode
-	for _, clause := range node.Clauses {
+	var returnType VeniceType
+	for i, clause := range node.Clauses {
 		compiler.symbolTable = compiler.symbolTable.SpawnChild()
 		patternCode, err := compiler.compilePattern(clause.Pattern, enumType)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		bodyCode, err := compiler.compileBlock(clause.Body)
+		bodyCode, bodyReturnType, err := compiler.compileBlock(clause.Body)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		compiler.symbolTable = compiler.symbolTable.Parent
+
+		// Set the overall return type of the match statement to the return type of the
+		// first clause, unless any of the clauses have a nil return type, in which case the
+		// overall return type is also nil. Checking that the different return types are
+		// compatible is done elsewhere.
+		if i == 0 {
+			returnType = bodyReturnType
+		} else if bodyReturnType == nil {
+			returnType = nil
+		}
 
 		code = append(code, patternCode...)
 		code = append(code, &bytecode.RelJumpIfFalseOrPop{len(bodyCode) + 2})
@@ -658,7 +691,7 @@ func (compiler *Compiler) compileMatchStatement(
 		}
 	}
 
-	return code, nil
+	return code, returnType, nil
 }
 
 func (compiler *Compiler) compilePattern(
@@ -736,9 +769,9 @@ func (compiler *Compiler) compilePattern(
 
 func (compiler *Compiler) compileReturnStatement(
 	node *ReturnStatementNode,
-) ([]bytecode.Bytecode, error) {
+) ([]bytecode.Bytecode, VeniceType, error) {
 	if compiler.functionInfo == nil {
-		return nil, compiler.customError(
+		return nil, nil, compiler.customError(
 			node, "return statement outside of function definition",
 		)
 	}
@@ -749,11 +782,11 @@ func (compiler *Compiler) compileReturnStatement(
 			compiler.functionInfo.declaredReturnType,
 		)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if !compiler.checkType(compiler.functionInfo.declaredReturnType, exprType) {
-			return nil, compiler.customError(
+			return nil, nil, compiler.customError(
 				node,
 				"conflicting function return types: got %s, expected %s",
 				exprType.String(),
@@ -761,15 +794,14 @@ func (compiler *Compiler) compileReturnStatement(
 			)
 		}
 
-		compiler.functionInfo.seenReturnStatement = true
 		code = append(code, &bytecode.Return{})
-		return code, err
+		return code, exprType, err
 	} else {
 		if compiler.functionInfo.declaredReturnType != nil {
-			return nil, compiler.customError(node, "function cannot return void")
+			return nil, nil, compiler.customError(node, "function cannot return void")
 		}
 
-		return []bytecode.Bytecode{&bytecode.Return{}}, nil
+		return []bytecode.Bytecode{&bytecode.Return{}}, nil, nil
 	}
 }
 
@@ -788,7 +820,7 @@ func (compiler *Compiler) compileWhileLoop(
 	}
 
 	compiler.nestedLoopCount += 1
-	bodyCode, err := compiler.compileBlock(node.Body)
+	bodyCode, _, err := compiler.compileBlock(node.Body)
 	compiler.nestedLoopCount -= 1
 	if err != nil {
 		return nil, err
@@ -816,20 +848,25 @@ func (compiler *Compiler) compileWhileLoop(
 
 func (compiler *Compiler) compileBlock(
 	block []StatementNode,
-) ([]bytecode.Bytecode, error) {
+) ([]bytecode.Bytecode, VeniceType, error) {
 	compiler.symbolTable = compiler.symbolTable.SpawnChild()
 	defer func() { compiler.symbolTable = compiler.symbolTable.Parent }()
 
 	code := []bytecode.Bytecode{}
-	for _, statement := range block {
-		statementCode, err := compiler.compileStatement(statement)
+	var returnType VeniceType
+	for i, statement := range block {
+		statementCode, statementReturnType, err := compiler.compileStatement(statement)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		code = append(code, statementCode...)
+
+		if i == len(block)-1 {
+			returnType = statementReturnType
+		}
 	}
-	return code, nil
+	return code, returnType, nil
 }
 
 /**
@@ -1926,8 +1963,7 @@ func (compiler *Compiler) resolveType(typeNodeAny TypeNode) (VeniceType, error) 
  */
 
 type FunctionInfo struct {
-	declaredReturnType  VeniceType
-	seenReturnStatement bool
+	declaredReturnType VeniceType
 }
 
 func (compiler *Compiler) PrintSymbolTable() {
