@@ -51,6 +51,37 @@ func TestFunctionCall(t *testing.T) {
 	)
 }
 
+func TestFunctionCallTypeInferenceForEmptyContainers(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		func get_first_or_zero(items: [int]) -> int {
+			return items[0] if items.size() > 0 else 0
+		}
+		get_first_or_zero([])
+		`,
+		I(0),
+	)
+
+	assertEqual(
+		t,
+		`
+		func get_value_or_zero(items: {int: int}) -> int {
+			match items[0] {
+				case Some(x) {
+					return x
+				}
+				case None {
+					return 0
+				}
+			}
+		}
+		get_value_or_zero({})
+		`,
+		I(0),
+	)
+}
+
 func TestFunctionDeclaration(t *testing.T) {
 	assertEqual(
 		t,

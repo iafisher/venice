@@ -1217,16 +1217,16 @@ func (compiler *Compiler) compileFunctionArguments(
 
 	code := []bytecode.Bytecode{}
 	for i := len(args) - 1; i >= 0; i-- {
-		argCode, argType, err := compiler.compileExpression(args[i])
-		if err != nil {
-			return nil, nil, err
-		}
-
 		var paramType VeniceType
 		if isClassMethod {
 			paramType = functionType.ParamTypes[i+1]
 		} else {
 			paramType = functionType.ParamTypes[i]
+		}
+
+		argCode, argType, err := compiler.compileExpressionWithTypeHint(args[i], paramType)
+		if err != nil {
+			return nil, nil, err
 		}
 
 		ok := compiler.checkTypeAndSubstituteGenerics(
@@ -1474,7 +1474,10 @@ func (compiler *Compiler) compileTernaryIfNode(
 
 	if !compiler.checkType(trueClauseType, falseClauseType) {
 		return nil, nil, compiler.customError(
-			node, "branches of `if` expression are of different types",
+			node,
+			"branches of `if` expression are of different types (%s and %s)",
+			trueClauseType.String(),
+			falseClauseType.String(),
 		)
 	}
 
