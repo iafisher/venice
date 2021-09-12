@@ -1,7 +1,0 @@
-# OUTPUT
-# Hello, world!
-# END OUTPUT
-
-func main() {
-  print("Hello, world!")
-}

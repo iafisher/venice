@@ -27,8 +27,35 @@ func TestEnumDeclaration(t *testing.T) {
 	)
 }
 
+func TestEnumRedeclaration(t *testing.T) {
+	assertTypecheckError(
+		t,
+		`
+		enum MyBoolean { True, False }
+		enum MyBoolean { True, False, Maybe }
+		`,
+		"symbol `MyBoolean` is already defined",
+	)
+
+	// Functions and types are in different namespaces, so identical names don't conflict
+	// with one another.
+	assertEqual(
+		t,
+		`
+		enum MyBoolean { True, False }
+
+		func MyBoolean() -> bool {
+			return true
+		}
+
+		MyBoolean()
+		`,
+		B(true),
+	)
+}
+
 func TestEnumAsFunctionParameter(t *testing.T) {
-	/* TODO(2021-09-11)
+	/* TODO(2021-09-12)
 	assertEqual(
 		t,
 		`
@@ -42,9 +69,9 @@ func TestEnumAsFunctionParameter(t *testing.T) {
 				}
 			}
 		}
-		unwrap(Optional::Some(10)
+		(unwrap(Optional::Some(10)), unwrap(Optional::None))
 		`,
-		I(10),
+		Tup(I(10), I(-1)),
 	)
 	*/
 }

@@ -360,6 +360,10 @@ func (compiler *Compiler) compileClassDeclaration(node *ClassDeclarationNode) er
 }
 
 func (compiler *Compiler) compileEnumDeclaration(node *EnumDeclarationNode) error {
+	if _, ok := compiler.typeSymbolTable.Get(node.Name); ok {
+		return compiler.customError(node, "symbol `%s` is already defined", node.Name)
+	}
+
 	// Put in a dummy entry for the enum in the type symbol table so that recursive enum
 	// types will type-check properly.
 	enumType := &VeniceEnumType{
