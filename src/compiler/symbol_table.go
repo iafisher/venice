@@ -169,15 +169,6 @@ var listBuiltins = map[string]VeniceType{
 		ReturnType: VeniceOptionalTypeOf(VENICE_TYPE_INTEGER),
 		IsBuiltin:  true,
 	},
-	"join": &VeniceFunctionType{
-		Name: "join",
-		ParamTypes: []VeniceType{
-			&VeniceListType{VENICE_TYPE_STRING},
-			VENICE_TYPE_STRING,
-		},
-		ReturnType: VENICE_TYPE_STRING,
-		IsBuiltin:  true,
-	},
 	"remove": &VeniceFunctionType{
 		Name: "remove",
 		ParamTypes: []VeniceType{

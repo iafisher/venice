@@ -162,31 +162,6 @@ func builtinListFindLast(args ...VeniceValue) VeniceValue {
 	return VENICE_OPTIONAL_NONE
 }
 
-func builtinListJoin(args ...VeniceValue) VeniceValue {
-	countArgsOrPanic(args, 2)
-	if len(args) != 2 {
-		return nil
-	}
-
-	listArg := args[0].(*VeniceList)
-	stringArg := args[1].(*VeniceString)
-
-	var sb strings.Builder
-	joiner := stringArg.Value
-	for i, value := range listArg.Values {
-		valueAsString, ok := value.(*VeniceString)
-		if !ok {
-			return nil
-		}
-
-		sb.WriteString(valueAsString.Value)
-		if i != len(listArg.Values)-1 {
-			sb.WriteString(joiner)
-		}
-	}
-	return &VeniceString{sb.String()}
-}
-
 func builtinListRemove(args ...VeniceValue) VeniceValue {
 	countArgsOrPanic(args, 2)
 	listArg := args[0].(*VeniceList)
@@ -775,7 +750,6 @@ var builtins = map[string]func(args ...VeniceValue) VeniceValue{
 	"list__extend":           builtinListExtend,
 	"list__find":             builtinListFind,
 	"list__find_last":        builtinListFindLast,
-	"list__join":             builtinListJoin,
 	"list__remove":           builtinListRemove,
 	"list__reversed":         builtinListReversed,
 	"list__reverse_in_place": builtinListReverseInPlace,
