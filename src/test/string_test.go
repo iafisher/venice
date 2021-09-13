@@ -76,3 +76,8 @@ func TestStringBuiltins(t *testing.T) {
 		S("Mt. Hood and Mount St. Helens"),
 	)
 }
+
+func TestStringIndexOutOfBounds(t *testing.T) {
+	assertPanic(t, `let s = "123"; s[500]`)
+	assertPanic(t, `let s = "123"; s.slice(500, 600)`)
+}

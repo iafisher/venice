@@ -130,4 +130,6 @@ func TestListIndexAssignment(t *testing.T) {
 func TestListIndexOutOfBounds(t *testing.T) {
 	assertPanic(t, "let l = [1, 2, 3]; l[500]")
 	assertPanic(t, "let l = [1, 2, 3]; l[500] = 4")
+	assertPanic(t, "let l = [1, 2, 3]; l.remove(500)")
+	assertPanic(t, "let l = [1, 2, 3]; l.slice(500, 600)")
 }

@@ -366,7 +366,12 @@ func (vm *VirtualMachine) executeOne(
 				args = append(args, topOfStack)
 			}
 
-			result := builtin(args...)
+			result, err := builtin(args...)
+
+			if err != nil {
+				return -1, err
+			}
+
 			if result != nil {
 				vm.pushStack(result)
 			}

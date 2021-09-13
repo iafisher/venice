@@ -15,7 +15,7 @@ import (
  * Global built-in functions
  */
 
-func builtinInput(args ...VeniceValue) VeniceValue {
+func builtinInput(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
@@ -23,43 +23,43 @@ func builtinInput(args ...VeniceValue) VeniceValue {
 	fmt.Print(stringArg.Value)
 	text, err := reader.ReadString('\n')
 	if err != nil {
-		return VENICE_OPTIONAL_NONE
+		return VENICE_OPTIONAL_NONE, nil
 	}
-	return VeniceOptionalOf(&VeniceString{text})
+	return VeniceOptionalOf(&VeniceString{text}), nil
 }
 
-func builtinInt(args ...VeniceValue) VeniceValue {
+func builtinInt(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	realArg := args[0].(*VeniceRealNumber)
-	return &VeniceInteger{int(realArg.Value)}
+	return &VeniceInteger{int(realArg.Value)}, nil
 }
 
-func builtinMaximum(args ...VeniceValue) VeniceValue {
+func builtinMaximum(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	intArg1 := args[0].(*VeniceInteger)
 	intArg2 := args[1].(*VeniceInteger)
 
 	if intArg1.Value > intArg2.Value {
-		return intArg1
+		return intArg1, nil
 	} else {
-		return intArg2
+		return intArg2, nil
 	}
 }
 
-func builtinMinimum(args ...VeniceValue) VeniceValue {
+func builtinMinimum(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 
 	intArg1 := args[0].(*VeniceInteger)
 	intArg2 := args[1].(*VeniceInteger)
 
 	if intArg1.Value > intArg2.Value {
-		return intArg2
+		return intArg2, nil
 	} else {
-		return intArg1
+		return intArg1, nil
 	}
 }
 
-func builtinPrint(args ...VeniceValue) VeniceValue {
+func builtinPrint(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	switch arg := args[0].(type) {
 	case *VeniceString:
@@ -67,45 +67,45 @@ func builtinPrint(args ...VeniceValue) VeniceValue {
 	default:
 		fmt.Println(args[0].String())
 	}
-	return nil
+	return nil, nil
 }
 
-func builtinRange(args ...VeniceValue) VeniceValue {
+func builtinRange(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	intArg1 := args[0].(*VeniceInteger)
 	intArg2 := args[1].(*VeniceInteger)
 
 	length := intArg2.Value - intArg1.Value
 	if length <= 0 {
-		return &VeniceList{[]VeniceValue{}}
+		return &VeniceList{[]VeniceValue{}}, nil
 	}
 
 	numbers := make([]VeniceValue, 0, intArg2.Value-intArg1.Value)
 	for i := intArg1.Value; i < intArg2.Value; i++ {
 		numbers = append(numbers, &VeniceInteger{i})
 	}
-	return &VeniceList{numbers}
+	return &VeniceList{numbers}, nil
 }
 
-func builtinReal(args ...VeniceValue) VeniceValue {
+func builtinReal(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	intArg := args[0].(*VeniceInteger)
-	return &VeniceRealNumber{float64(intArg.Value)}
+	return &VeniceRealNumber{float64(intArg.Value)}, nil
 }
 
-func builtinString(args ...VeniceValue) VeniceValue {
+func builtinString(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	switch arg := args[0].(type) {
 	case *VeniceBoolean:
 		if arg.Value {
-			return &VeniceString{"true"}
+			return &VeniceString{"true"}, nil
 		} else {
-			return &VeniceString{"false"}
+			return &VeniceString{"false"}, nil
 		}
 	case *VeniceInteger:
-		return &VeniceString{strconv.Itoa(arg.Value)}
+		return &VeniceString{strconv.Itoa(arg.Value)}, nil
 	case *VeniceString:
-		return arg
+		return arg, nil
 	default:
 		panic("invalid argument to string()")
 	}
@@ -115,77 +115,76 @@ func builtinString(args ...VeniceValue) VeniceValue {
  * List built-ins
  */
 
-func builtinListAppend(args ...VeniceValue) VeniceValue {
+func builtinListAppend(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	listArg := args[0].(*VeniceList)
 	listArg.Values = append(listArg.Values, args[1])
-	return nil
+	return nil, nil
 }
 
-func builtinListCopy(args ...VeniceValue) VeniceValue {
+func builtinListCopy(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	listArg := args[0].(*VeniceList)
-	return listArg.Copy()
+	return listArg.Copy(), nil
 }
 
-func builtinListExtend(args ...VeniceValue) VeniceValue {
+func builtinListExtend(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	listArg1 := args[0].(*VeniceList)
 	listArg2 := args[1].(*VeniceList)
 	listArg1.Values = append(listArg1.Values, listArg2.Values...)
-	return nil
+	return nil, nil
 }
 
-func builtinListFind(args ...VeniceValue) VeniceValue {
+func builtinListFind(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	listArg := args[0].(*VeniceList)
 
 	for i, value := range listArg.Values {
 		if args[1].Equals(value) {
-			return VeniceOptionalOf(&VeniceInteger{i})
+			return VeniceOptionalOf(&VeniceInteger{i}), nil
 		}
 	}
 
-	return VENICE_OPTIONAL_NONE
+	return VENICE_OPTIONAL_NONE, nil
 }
 
-func builtinListFindLast(args ...VeniceValue) VeniceValue {
+func builtinListFindLast(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	listArg := args[0].(*VeniceList)
 
 	for i := len(listArg.Values) - 1; i >= 0; i-- {
 		if args[1].Equals(listArg.Values[i]) {
-			return VeniceOptionalOf(&VeniceInteger{i})
+			return VeniceOptionalOf(&VeniceInteger{i}), nil
 		}
 	}
 
-	return VENICE_OPTIONAL_NONE
+	return VENICE_OPTIONAL_NONE, nil
 }
 
-func builtinListRemove(args ...VeniceValue) VeniceValue {
+func builtinListRemove(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	listArg := args[0].(*VeniceList)
 	intArg := args[1].(*VeniceInteger)
 
 	index := intArg.Value
 	if index < 0 || index >= len(listArg.Values) {
-		// TODO(2021-08-23): Handle this better.
-		panic("index out of bounds for list.remove")
+		return nil, &PanicError{"index out of bounds"}
 	}
 
 	listArg.Values = append(listArg.Values[:index], listArg.Values[index+1:]...)
-	return nil
+	return nil, nil
 }
 
-func builtinListReversed(args ...VeniceValue) VeniceValue {
+func builtinListReversed(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	listArg := args[0].(*VeniceList)
 	copiedList := listArg.Copy()
 	builtinListReverseInPlace(copiedList)
-	return copiedList
+	return copiedList, nil
 }
 
-func builtinListReverseInPlace(args ...VeniceValue) VeniceValue {
+func builtinListReverseInPlace(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	listArg := args[0].(*VeniceList)
 
@@ -193,130 +192,138 @@ func builtinListReverseInPlace(args ...VeniceValue) VeniceValue {
 		listArg.Values[i], listArg.Values[j] = listArg.Values[j], listArg.Values[i]
 	}
 
-	return nil
+	return nil, nil
 }
 
-func builtinListSize(args ...VeniceValue) VeniceValue {
+func builtinListSize(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	listArg := args[0].(*VeniceList)
-	return &VeniceInteger{len(listArg.Values)}
+	return &VeniceInteger{len(listArg.Values)}, nil
 }
 
-func builtinListSlice(args ...VeniceValue) VeniceValue {
+func builtinListSlice(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 3)
 	listArg := args[0].(*VeniceList)
 	startIndexArg := args[1].(*VeniceInteger)
 	endIndexArg := args[2].(*VeniceInteger)
-	// TODO(2021-08-25): Handle out-of-bounds error.
-	return &VeniceList{listArg.Values[startIndexArg.Value:endIndexArg.Value]}
+
+	if startIndexArg.Value < 0 || startIndexArg.Value >= len(listArg.Values) {
+		return nil, &PanicError{"index out of bounds"}
+	}
+
+	if endIndexArg.Value < 0 || endIndexArg.Value > len(listArg.Values) {
+		return nil, &PanicError{"index out of bounds"}
+	}
+
+	return &VeniceList{listArg.Values[startIndexArg.Value:endIndexArg.Value]}, nil
 }
 
-func builtinListSorted(args ...VeniceValue) VeniceValue {
+func builtinListSorted(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	listArg := args[0].(*VeniceList)
 	copiedList := listArg.Copy()
 	builtinListSortInPlace(copiedList)
-	return copiedList
+	return copiedList, nil
 }
 
-func builtinListSortInPlace(args ...VeniceValue) VeniceValue {
+func builtinListSortInPlace(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	listArg := args[0].(*VeniceList)
 	sort.Slice(listArg.Values, func(i, j int) bool {
 		return listArg.Values[i].Compare(listArg.Values[j])
 	})
-	return nil
+	return nil, nil
 }
 
 /**
  * Map built-ins
  */
 
-func builtinMapClear(args ...VeniceValue) VeniceValue {
+func builtinMapClear(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	mapArg := args[0].(*VeniceMap)
 	mapArg.Clear()
-	return nil
+	return nil, nil
 }
 
-func builtinMapCopy(args ...VeniceValue) VeniceValue {
+func builtinMapCopy(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	mapArg := args[0].(*VeniceMap)
-	return mapArg.Copy()
+	return mapArg.Copy(), nil
 }
 
-func builtinMapEntries(args ...VeniceValue) VeniceValue {
+func builtinMapEntries(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	mapArg := args[0].(*VeniceMap)
-	return mapArg.Entries()
+	return mapArg.Entries(), nil
 }
 
-func builtinMapKeys(args ...VeniceValue) VeniceValue {
+func builtinMapKeys(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	mapArg := args[0].(*VeniceMap)
-	return mapArg.Keys()
+	return mapArg.Keys(), nil
 }
 
-func builtinMapRemove(args ...VeniceValue) VeniceValue {
+func builtinMapRemove(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	mapArg := args[0].(*VeniceMap)
 	mapArg.Remove(args[1])
-	return nil
+	return nil, nil
 }
 
-func builtinMapSize(args ...VeniceValue) VeniceValue {
+func builtinMapSize(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	mapArg := args[0].(*VeniceMap)
-	return &VeniceInteger{mapArg.Size}
+	return &VeniceInteger{mapArg.Size}, nil
 }
 
-func builtinMapValues(args ...VeniceValue) VeniceValue {
+func builtinMapValues(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	mapArg := args[0].(*VeniceMap)
-	return mapArg.Values()
+	return mapArg.Values(), nil
 }
 
 /**
  * String built-ins
  */
 
-func builtinStringEndsWith(args ...VeniceValue) VeniceValue {
+func builtinStringEndsWith(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	stringArg := args[0].(*VeniceString)
 	suffixArg := args[1].(*VeniceString)
-	return &VeniceBoolean{strings.HasSuffix(stringArg.Value, suffixArg.Value)}
+	return &VeniceBoolean{strings.HasSuffix(stringArg.Value, suffixArg.Value)}, nil
 }
 
-func builtinStringFind(args ...VeniceValue) VeniceValue {
+func builtinStringFind(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	stringArg := args[0].(*VeniceString)
 	searchArg := args[1].(*VeniceString)
 	index := strings.Index(stringArg.Value, searchArg.Value)
 	if index == -1 {
-		return VENICE_OPTIONAL_NONE
+		return VENICE_OPTIONAL_NONE, nil
 	} else {
-		return VeniceOptionalOf(&VeniceInteger{index})
+		return VeniceOptionalOf(&VeniceInteger{index}), nil
 	}
 }
 
-func builtinStringFindLast(args ...VeniceValue) VeniceValue {
+func builtinStringFindLast(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	stringArg := args[0].(*VeniceString)
 	searchArg := args[1].(*VeniceString)
 	index := strings.LastIndex(stringArg.Value, searchArg.Value)
 	if index == -1 {
-		return VENICE_OPTIONAL_NONE
+		return VENICE_OPTIONAL_NONE, nil
 	} else {
-		return VeniceOptionalOf(&VeniceInteger{index})
+		return VeniceOptionalOf(&VeniceInteger{index}), nil
 	}
 }
 
-func builtinStringIsControl(args ...VeniceValue) VeniceValue {
+func builtinStringIsControl(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -327,15 +334,15 @@ func builtinStringIsControl(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsDigit(args ...VeniceValue) VeniceValue {
+func builtinStringIsDigit(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -346,15 +353,15 @@ func builtinStringIsDigit(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsGraphic(args ...VeniceValue) VeniceValue {
+func builtinStringIsGraphic(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -365,15 +372,15 @@ func builtinStringIsGraphic(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsLetter(args ...VeniceValue) VeniceValue {
+func builtinStringIsLetter(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -384,15 +391,15 @@ func builtinStringIsLetter(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsLowercase(args ...VeniceValue) VeniceValue {
+func builtinStringIsLowercase(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -403,15 +410,15 @@ func builtinStringIsLowercase(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsMark(args ...VeniceValue) VeniceValue {
+func builtinStringIsMark(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -422,15 +429,15 @@ func builtinStringIsMark(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsNumber(args ...VeniceValue) VeniceValue {
+func builtinStringIsNumber(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -441,15 +448,15 @@ func builtinStringIsNumber(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsPrintable(args ...VeniceValue) VeniceValue {
+func builtinStringIsPrintable(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -460,15 +467,15 @@ func builtinStringIsPrintable(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsPunctuation(args ...VeniceValue) VeniceValue {
+func builtinStringIsPunctuation(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -479,15 +486,15 @@ func builtinStringIsPunctuation(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsSymbol(args ...VeniceValue) VeniceValue {
+func builtinStringIsSymbol(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -498,15 +505,15 @@ func builtinStringIsSymbol(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsTitleCase(args ...VeniceValue) VeniceValue {
+func builtinStringIsTitleCase(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -517,15 +524,15 @@ func builtinStringIsTitleCase(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsUppercase(args ...VeniceValue) VeniceValue {
+func builtinStringIsUppercase(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -536,15 +543,15 @@ func builtinStringIsUppercase(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringIsWhitespace(args ...VeniceValue) VeniceValue {
+func builtinStringIsWhitespace(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
 	if len(stringArg.Value) == 0 {
-		return &VeniceBoolean{false}
+		return &VeniceBoolean{false}, nil
 	}
 
 	result := true
@@ -555,56 +562,56 @@ func builtinStringIsWhitespace(args ...VeniceValue) VeniceValue {
 		}
 	}
 
-	return &VeniceBoolean{result}
+	return &VeniceBoolean{result}, nil
 }
 
-func builtinStringQuoted(args ...VeniceValue) VeniceValue {
+func builtinStringQuoted(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
-	return &VeniceString{strconv.Quote(stringArg.Value)}
+	return &VeniceString{strconv.Quote(stringArg.Value)}, nil
 }
 
-func builtinStringRemovePrefix(args ...VeniceValue) VeniceValue {
+func builtinStringRemovePrefix(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	stringArg := args[0].(*VeniceString)
 	prefixArg := args[1].(*VeniceString)
 
 	if strings.HasPrefix(stringArg.Value, prefixArg.Value) {
-		return &VeniceString{stringArg.Value[len(prefixArg.Value):]}
+		return &VeniceString{stringArg.Value[len(prefixArg.Value):]}, nil
 	} else {
-		return stringArg
+		return stringArg, nil
 	}
 }
 
-func builtinStringRemoveSuffix(args ...VeniceValue) VeniceValue {
+func builtinStringRemoveSuffix(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	stringArg := args[0].(*VeniceString)
 	suffixArg := args[1].(*VeniceString)
 
 	if strings.HasSuffix(stringArg.Value, suffixArg.Value) {
-		return &VeniceString{stringArg.Value[:len(stringArg.Value)-len(suffixArg.Value)]}
+		return &VeniceString{stringArg.Value[:len(stringArg.Value)-len(suffixArg.Value)]}, nil
 	} else {
-		return stringArg
+		return stringArg, nil
 	}
 }
 
-func builtinStringReplaceAll(args ...VeniceValue) VeniceValue {
+func builtinStringReplaceAll(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 3)
 	stringArg := args[0].(*VeniceString)
 	beforeArg := args[1].(*VeniceString)
 	afterArg := args[2].(*VeniceString)
-	return &VeniceString{strings.ReplaceAll(stringArg.Value, beforeArg.Value, afterArg.Value)}
+	return &VeniceString{strings.ReplaceAll(stringArg.Value, beforeArg.Value, afterArg.Value)}, nil
 }
 
-func builtinStringReplaceFirst(args ...VeniceValue) VeniceValue {
+func builtinStringReplaceFirst(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 3)
 	stringArg := args[0].(*VeniceString)
 	beforeArg := args[1].(*VeniceString)
 	afterArg := args[2].(*VeniceString)
-	return &VeniceString{strings.Replace(stringArg.Value, beforeArg.Value, afterArg.Value, 1)}
+	return &VeniceString{strings.Replace(stringArg.Value, beforeArg.Value, afterArg.Value, 1)}, nil
 }
 
-func builtinStringReplaceLast(args ...VeniceValue) VeniceValue {
+func builtinStringReplaceLast(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 3)
 	stringArg := args[0].(*VeniceString)
 	beforeArg := args[1].(*VeniceString)
@@ -612,31 +619,39 @@ func builtinStringReplaceLast(args ...VeniceValue) VeniceValue {
 
 	index := strings.LastIndex(stringArg.Value, beforeArg.Value)
 	if index == -1 {
-		return stringArg
+		return stringArg, nil
 	}
 	return &VeniceString{
 		stringArg.Value[:index] +
 			afterArg.Value +
 			stringArg.Value[index+len(beforeArg.Value):],
-	}
+	}, nil
 }
 
-func builtinStringSize(args ...VeniceValue) VeniceValue {
+func builtinStringSize(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
-	return &VeniceInteger{utf8.RuneCountInString(stringArg.Value)}
+	return &VeniceInteger{utf8.RuneCountInString(stringArg.Value)}, nil
 }
 
-func builtinStringSlice(args ...VeniceValue) VeniceValue {
+func builtinStringSlice(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 3)
 	stringArg := args[0].(*VeniceString)
 	startIndexArg := args[1].(*VeniceInteger)
 	endIndexArg := args[2].(*VeniceInteger)
-	// TODO(2021-08-25): Handle out-of-bounds error.
-	return &VeniceString{getUtf8Slice(stringArg.Value, startIndexArg.Value, endIndexArg.Value)}
+
+	if startIndexArg.Value < 0 || startIndexArg.Value >= len(stringArg.Value) {
+		return nil, &PanicError{"index out of bounds"}
+	}
+
+	if endIndexArg.Value < 0 || endIndexArg.Value > len(stringArg.Value) {
+		return nil, &PanicError{"index out of bounds"}
+	}
+
+	return &VeniceString{getUtf8Slice(stringArg.Value, startIndexArg.Value, endIndexArg.Value)}, nil
 }
 
-func builtinStringSplit(args ...VeniceValue) VeniceValue {
+func builtinStringSplit(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	stringArg := args[0].(*VeniceString)
 	splitterArg := args[1].(*VeniceString)
@@ -645,10 +660,10 @@ func builtinStringSplit(args ...VeniceValue) VeniceValue {
 	for _, word := range strings.Split(stringArg.Value, splitterArg.Value) {
 		list.Values = append(list.Values, &VeniceString{word})
 	}
-	return list
+	return list, nil
 }
 
-func builtinStringSplitSpace(args ...VeniceValue) VeniceValue {
+func builtinStringSplitSpace(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
 
@@ -656,44 +671,44 @@ func builtinStringSplitSpace(args ...VeniceValue) VeniceValue {
 	for _, word := range strings.Fields(stringArg.Value) {
 		list.Values = append(list.Values, &VeniceString{word})
 	}
-	return list
+	return list, nil
 }
 
-func builtinStringStartsWith(args ...VeniceValue) VeniceValue {
+func builtinStringStartsWith(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	stringArg := args[0].(*VeniceString)
 	prefixArg := args[1].(*VeniceString)
-	return &VeniceBoolean{strings.HasPrefix(stringArg.Value, prefixArg.Value)}
+	return &VeniceBoolean{strings.HasPrefix(stringArg.Value, prefixArg.Value)}, nil
 }
 
-func builtinStringToUppercase(args ...VeniceValue) VeniceValue {
+func builtinStringToUppercase(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
-	return &VeniceString{strings.ToUpper(stringArg.Value)}
+	return &VeniceString{strings.ToUpper(stringArg.Value)}, nil
 }
 
-func builtinStringToLowercase(args ...VeniceValue) VeniceValue {
+func builtinStringToLowercase(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
-	return &VeniceString{strings.ToLower(stringArg.Value)}
+	return &VeniceString{strings.ToLower(stringArg.Value)}, nil
 }
 
-func builtinStringTrim(args ...VeniceValue) VeniceValue {
+func builtinStringTrim(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
-	return &VeniceString{strings.TrimSpace(stringArg.Value)}
+	return &VeniceString{strings.TrimSpace(stringArg.Value)}, nil
 }
 
-func builtinStringTrimLeft(args ...VeniceValue) VeniceValue {
+func builtinStringTrimLeft(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
-	return &VeniceString{strings.TrimLeftFunc(stringArg.Value, unicode.IsSpace)}
+	return &VeniceString{strings.TrimLeftFunc(stringArg.Value, unicode.IsSpace)}, nil
 }
 
-func builtinStringTrimRight(args ...VeniceValue) VeniceValue {
+func builtinStringTrimRight(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 1)
 	stringArg := args[0].(*VeniceString)
-	return &VeniceString{strings.TrimRightFunc(stringArg.Value, unicode.IsSpace)}
+	return &VeniceString{strings.TrimRightFunc(stringArg.Value, unicode.IsSpace)}, nil
 }
 
 /**
@@ -734,7 +749,7 @@ func countArgsOrPanic(args []VeniceValue, count int) {
 // If a method is added here, make sure to also add it to the appropriate place in
 // compiler/compiler.go - `NewBuiltinSymbolTable` if it is a global built-in,
 // `stringBuiltins` if it is a string built-in, etc.
-var builtins = map[string]func(args ...VeniceValue) VeniceValue{
+var builtins = map[string]func(args ...VeniceValue) (VeniceValue, error){
 	// Global built-ins
 	"input":   builtinInput,
 	"int":     builtinInt,
