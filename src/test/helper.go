@@ -109,3 +109,30 @@ func assertTypecheckError(t *testing.T, program string, errorMessage string) {
 		)
 	}
 }
+
+func assertPanic(t *testing.T, program string) {
+	parsedFile, err := compilerPkg.ParseString(program)
+	if err != nil {
+		t.Helper()
+		t.Fatalf("Parse error: %s\n\nInput:\n\n%s", err, program)
+	}
+
+	compiler := compilerPkg.NewCompiler()
+	compiledProgram, err := compiler.Compile(parsedFile)
+	if err != nil {
+		t.Helper()
+		t.Fatalf("Compile error: %s\n\nInput:\n\n%s", err, program)
+	}
+
+	virtualMachine := vm.NewVirtualMachine()
+	_, err = virtualMachine.Execute(compiledProgram, false)
+	if err == nil {
+		t.Helper()
+		t.Fatalf("Expected panic, but program ran without panicking: %s\n\nInput:\n\n%s", err, program)
+	}
+
+	if _, ok := err.(*vm.PanicError); !ok {
+		t.Helper()
+		t.Fatalf("Expected panic, but program suffered an internal error: %s\n\nInput:\n\n%s", err, program)
+	}
+}

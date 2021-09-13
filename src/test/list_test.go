@@ -141,3 +141,8 @@ func TestListBuiltins(t *testing.T) {
 func TestListIndexAssignment(t *testing.T) {
 	assertEqual(t, `let l = [1]; l[0] = 42; l[0]`, I(42))
 }
+
+func TestListIndexOutOfBounds(t *testing.T) {
+	assertPanic(t, "let l = [1, 2, 3]; l[500]")
+	assertPanic(t, "let l = [1, 2, 3]; l[500] = 4")
+}

@@ -188,7 +188,7 @@ func (vm *VirtualMachine) executeOne(
 		}
 
 		if index.Value < 0 || index.Value >= len(list.Values) {
-			return -1, &InternalError{"index out of bounds"}
+			return -1, &PanicError{"index out of bounds"}
 		}
 
 		vm.pushStack(list.Values[index.Value])
@@ -303,7 +303,7 @@ func (vm *VirtualMachine) executeOne(
 		}
 
 		if index.Value < 0 || index.Value >= len(str.Value) {
-			return -1, &InternalError{"index out of bounds"}
+			return -1, &PanicError{"index out of bounds"}
 		}
 
 		s := getUtf8Slice(str.Value, index.Value, index.Value+1)
@@ -561,6 +561,10 @@ func (vm *VirtualMachine) executeOne(
 			}
 		}
 
+		if index.Value < 0 || index.Value >= len(destination.Values) {
+			return -1, &PanicError{"index out of bounds"}
+		}
+
 		destination.Values[index.Value] = value
 	case *bytecode.StoreMapIndex:
 		destinationAny := vm.popStack()
@@ -713,5 +717,13 @@ type InternalError struct {
 }
 
 func (e *InternalError) Error() string {
+	return e.Message
+}
+
+type PanicError struct {
+	Message string
+}
+
+func (e *PanicError) Error() string {
 	return e.Message
 }

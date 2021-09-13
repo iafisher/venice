@@ -236,7 +236,12 @@ func repl() {
 		debug := (operation == "debug")
 		value, err := virtualMachine.Execute(compiledProgram, debug)
 		if err != nil {
-			fmt.Printf("Execution error: %v\n", err)
+			switch err.(type) {
+			case *vm.PanicError:
+				fmt.Printf("Panic: %s\n", err.Error())
+			default:
+				fmt.Printf("Internal error: %s\n", err.Error())
+			}
 			continue
 		}
 
@@ -299,7 +304,12 @@ func executeProgram(filePath string, debug bool) {
 	virtualMachine := vm.NewVirtualMachine()
 	_, err = virtualMachine.Execute(compiledProgram, debug)
 	if err != nil {
-		fatalError("Execution error: %s", err)
+		switch err.(type) {
+		case *vm.PanicError:
+			fmt.Printf("Panic: %s\n", err.Error())
+		default:
+			fmt.Printf("Internal error: %s\n", err.Error())
+		}
 	}
 }
 
