@@ -30,7 +30,7 @@ func (vm *VirtualMachine) Execute(
 	compiledProgram *bytecode.CompiledProgram, debug bool,
 ) (VeniceValue, error) {
 	if compiledProgram.Version != 1 {
-		return nil, &ExecutionError{
+		return nil, &InternalError{
 			fmt.Sprintf("unsupported bytecode version: %d", compiledProgram.Version),
 		}
 	}
@@ -43,7 +43,7 @@ func (vm *VirtualMachine) executeFunction(
 ) (VeniceValue, error) {
 	code, ok := compiledProgram.Code[functionName]
 	if !ok {
-		return nil, &ExecutionError{fmt.Sprintf("function %q not found", functionName)}
+		return nil, &InternalError{fmt.Sprintf("function %q not found", functionName)}
 	}
 
 	index := 0
@@ -111,7 +111,7 @@ func (vm *VirtualMachine) executeOne(
 			left := leftAny.(*VeniceString)
 			vm.pushStack(&VeniceString{left.Value + right.Value})
 		default:
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				fmt.Sprintf(
 					"BINARY_CONCAT requires list or string on top of stack, got %s (%T)",
 					rightAny.String(),
@@ -145,7 +145,7 @@ func (vm *VirtualMachine) executeOne(
 		case *VeniceString:
 			left, ok := leftAny.(*VeniceString)
 			if !ok {
-				return -1, &ExecutionError{"BINARY_IN expected string"}
+				return -1, &InternalError{"BINARY_IN expected string"}
 			}
 			result = strings.Contains(right.Value, left.Value)
 		case *VeniceList:
@@ -159,14 +159,14 @@ func (vm *VirtualMachine) executeOne(
 		case *VeniceMap:
 			result = right.Get(leftAny) != nil
 		default:
-			return -1, &ExecutionError{"BINARY_IN requires list, map, or string"}
+			return -1, &InternalError{"BINARY_IN requires list, map, or string"}
 		}
 		vm.pushStack(&VeniceBoolean{result})
 	case *bytecode.BinaryListIndex:
 		indexAny := vm.popStack()
 		index, ok := indexAny.(*VeniceInteger)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				fmt.Sprintf(
 					"BINARY_LIST_INDEX requires integer on top of stack, got %s (%T)",
 					indexAny.String(),
@@ -178,7 +178,7 @@ func (vm *VirtualMachine) executeOne(
 		listAny := vm.popStack()
 		list, ok := listAny.(*VeniceList)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				fmt.Sprintf(
 					"BINARY_LIST_INDEX requires list on top of stack, got %s (%T)",
 					listAny.String(),
@@ -188,7 +188,7 @@ func (vm *VirtualMachine) executeOne(
 		}
 
 		if index.Value < 0 || index.Value >= len(list.Values) {
-			return -1, &ExecutionError{"index out of bounds"}
+			return -1, &InternalError{"index out of bounds"}
 		}
 
 		vm.pushStack(list.Values[index.Value])
@@ -209,7 +209,7 @@ func (vm *VirtualMachine) executeOne(
 		vMapAny := vm.popStack()
 		vMap, ok := vMapAny.(*VeniceMap)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				fmt.Sprintf(
 					"BINARY_MAP_INDEX requires map on top of stack, got %s (%T)",
 					vMapAny.String(),
@@ -281,7 +281,7 @@ func (vm *VirtualMachine) executeOne(
 		indexAny := vm.popStack()
 		index, ok := indexAny.(*VeniceInteger)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				fmt.Sprintf(
 					"BINARY_STRING_INDEX requires integer on top of stack, got %s (%T)",
 					indexAny.String(),
@@ -293,7 +293,7 @@ func (vm *VirtualMachine) executeOne(
 		stringAny := vm.popStack()
 		str, ok := stringAny.(*VeniceString)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				fmt.Sprintf(
 					"BINARY_STRING_INDEX requires string on top of stack, got %s (%T)",
 					stringAny.String(),
@@ -303,7 +303,7 @@ func (vm *VirtualMachine) executeOne(
 		}
 
 		if index.Value < 0 || index.Value >= len(str.Value) {
-			return -1, &ExecutionError{"index out of bounds"}
+			return -1, &InternalError{"index out of bounds"}
 		}
 
 		s := getUtf8Slice(str.Value, index.Value, index.Value+1)
@@ -347,7 +347,7 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.CallFunction:
 		functionObject, ok := vm.popStack().(*VeniceFunctionObject)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected function at top of virtual machine stack for CALL_FUNCTION",
 			}
 		}
@@ -355,7 +355,7 @@ func (vm *VirtualMachine) executeOne(
 		if functionObject.IsBuiltin {
 			builtin, ok := builtins[functionObject.Name]
 			if !ok {
-				return -1, &ExecutionError{
+				return -1, &InternalError{
 					fmt.Sprintf("unknown builtin `%s`", functionObject.Name),
 				}
 			}
@@ -410,7 +410,7 @@ func (vm *VirtualMachine) executeOne(
 		case *VeniceString:
 			vm.pushStack(NewVeniceStringIterator(topOfStack))
 		default:
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected list or map at top of virtual machine stack for GET_ITER",
 			}
 		}
@@ -430,7 +430,7 @@ func (vm *VirtualMachine) executeOne(
 		case *VeniceString:
 			vm.pushStack(&VeniceFunctionObject{fmt.Sprintf("string__%s", bcode.Name), true})
 		default:
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected class, list, map, or string object at top of virtual machine stack for LOOKUP_METHOD",
 			}
 		}
@@ -460,7 +460,7 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.PushEnumIndex:
 		topOfStack, ok := vm.peekStack().(*VeniceEnumObject)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected enum object at top of virtual machine stack for PUSH_ENUM_INDEX",
 			}
 		}
@@ -468,7 +468,7 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.PushField:
 		topOfStack, ok := vm.popStack().(*VeniceClassObject)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected class object at top of virtual machine stack for PUSH_FIELD",
 			}
 		}
@@ -477,13 +477,13 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.PushName:
 		value, ok := vm.Env.Get(bcode.Name)
 		if !ok {
-			return -1, &ExecutionError{fmt.Sprintf("undefined symbol: %s", bcode.Name)}
+			return -1, &InternalError{fmt.Sprintf("undefined symbol: %s", bcode.Name)}
 		}
 		vm.pushStack(value)
 	case *bytecode.PushTupleField:
 		topOfStack, ok := vm.popStack().(*VeniceTuple)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected tuple at top of virtual machine stack for PUSH_TUPLE_FIELD",
 			}
 		}
@@ -494,7 +494,7 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.RelJumpIfFalse:
 		topOfStack, ok := vm.popStack().(*VeniceBoolean)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected boolean at top of virtual machine stack for REL_JUMP_IF_FALSE",
 			}
 		}
@@ -505,7 +505,7 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.RelJumpIfFalseOrPop:
 		topOfStack, ok := vm.peekStack().(*VeniceBoolean)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected boolean at top of virtual machine stack for REL_JUMP_IF_FALSE_OR_POP",
 			}
 		}
@@ -518,7 +518,7 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.RelJumpIfTrueOrPop:
 		topOfStack, ok := vm.peekStack().(*VeniceBoolean)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected boolean at top of virtual machine stack for REL_JUMP_IF_TRUE_OR_POP",
 			}
 		}
@@ -536,7 +536,7 @@ func (vm *VirtualMachine) executeOne(
 
 		destination, ok := destinationAny.(*VeniceClassObject)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected class object at top of virtual machine stack for STORE_FIELD",
 			}
 		}
@@ -549,14 +549,14 @@ func (vm *VirtualMachine) executeOne(
 
 		destination, ok := destinationAny.(*VeniceList)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected list object at top of virtual machine stack for STORE_INDEX",
 			}
 		}
 
 		index, ok := indexAny.(*VeniceInteger)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected integer at top of virtual machine stack for STORE_INDEX",
 			}
 		}
@@ -569,7 +569,7 @@ func (vm *VirtualMachine) executeOne(
 
 		destination, ok := destinationAny.(*VeniceMap)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected map object at top of virtual machine stack for STORE_MAP_INDEX",
 			}
 		}
@@ -581,7 +581,7 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.UnaryMinus:
 		topOfStack, ok := vm.popStack().(*VeniceInteger)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected integer at top of virtual machine stack for UNARY_MINUS",
 			}
 		}
@@ -591,7 +591,7 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.UnaryNot:
 		topOfStack, ok := vm.popStack().(*VeniceBoolean)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected boolean at top of virtual machine stack for UNARY_NOT",
 			}
 		}
@@ -602,7 +602,7 @@ func (vm *VirtualMachine) executeOne(
 		topOfStackAny := vm.popStack()
 		topOfStack, ok := topOfStackAny.(*VeniceTuple)
 		if !ok {
-			return -1, &ExecutionError{
+			return -1, &InternalError{
 				"expected tuple at top of virtual machine stack for UNPACK_TUPLE",
 			}
 		}
@@ -611,7 +611,7 @@ func (vm *VirtualMachine) executeOne(
 			vm.pushStack(topOfStack.Values[i])
 		}
 	default:
-		return -1, &ExecutionError{fmt.Sprintf("unknown bytecode instruction: %T", bcode)}
+		return -1, &InternalError{fmt.Sprintf("unknown bytecode instruction: %T", bcode)}
 	}
 	return 1, nil
 }
@@ -647,7 +647,7 @@ func (vm *VirtualMachine) popTwoInts() (int, int, error) {
 func (vm *VirtualMachine) popInt() (int, error) {
 	topOfStack, ok := vm.popStack().(*VeniceInteger)
 	if !ok {
-		return 0, &ExecutionError{"expected integer at top of virtual machine stack"}
+		return 0, &InternalError{"expected integer at top of virtual machine stack"}
 	}
 	return topOfStack.Value, nil
 }
@@ -674,19 +674,19 @@ func (vm *VirtualMachine) popReal() (float64, error) {
 	case *VeniceRealNumber:
 		return topOfStack.Value, nil
 	default:
-		return 0, &ExecutionError{"expected real number at top of virtual machine stack"}
+		return 0, &InternalError{"expected real number at top of virtual machine stack"}
 	}
 }
 
 func (vm *VirtualMachine) popTwoBools() (*VeniceBoolean, *VeniceBoolean, error) {
 	right, ok := vm.popStack().(*VeniceBoolean)
 	if !ok {
-		return nil, nil, &ExecutionError{"expected boolean at top of virtual machine stack"}
+		return nil, nil, &InternalError{"expected boolean at top of virtual machine stack"}
 	}
 
 	left, ok := vm.popStack().(*VeniceBoolean)
 	if !ok {
-		return nil, nil, &ExecutionError{"expected boolean at top of virtual machine stack"}
+		return nil, nil, &InternalError{"expected boolean at top of virtual machine stack"}
 	}
 
 	return left, right, nil
@@ -708,10 +708,10 @@ func (env *Environment) Put(symbol string, value VeniceValue) {
 	env.Symbols[symbol] = value
 }
 
-type ExecutionError struct {
+type InternalError struct {
 	Message string
 }
 
-func (e *ExecutionError) Error() string {
+func (e *InternalError) Error() string {
 	return e.Message
 }
