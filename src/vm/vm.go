@@ -395,6 +395,9 @@ func (vm *VirtualMachine) executeOne(
 	case *bytecode.CheckLabel:
 		enum := vm.peekStack().(*VeniceEnumObject)
 		vm.pushStack(&VeniceBoolean{enum.Label == bcode.Name})
+	case *bytecode.DupTop:
+		x := vm.peekStack()
+		vm.pushStack(x)
 	case *bytecode.ForIter:
 		iter := vm.peekStack().(VeniceIterator)
 
@@ -535,6 +538,21 @@ func (vm *VirtualMachine) executeOne(
 		}
 	case *bytecode.Return:
 		return 0, nil
+	case *bytecode.RotThree:
+		if len(vm.Stack) < 3 {
+			return -1, &InternalError{
+				"expected at least three values on virtual machine stack for ROT_THREE",
+			}
+		}
+
+		n := len(vm.Stack)
+		first := vm.Stack[n-1]
+		second := vm.Stack[n-2]
+		third := vm.Stack[n-3]
+
+		vm.Stack[n-1] = second
+		vm.Stack[n-2] = third
+		vm.Stack[n-3] = first
 	case *bytecode.StoreField:
 		destinationAny := vm.popStack()
 		value := vm.popStack()

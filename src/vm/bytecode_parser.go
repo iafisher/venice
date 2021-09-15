@@ -227,6 +227,8 @@ func (p *bytecodeParser) parse() (*bytecode.CompiledProgram, error) {
 				continue
 			}
 			bcode = &bytecode.CheckLabel{name}
+		case "DUP_TOP":
+			bcode = &bytecode.DupTop{}
 		case "FOR_ITER":
 			n, ok := p.expectInt()
 			if !ok {
@@ -340,6 +342,8 @@ func (p *bytecodeParser) parse() (*bytecode.CompiledProgram, error) {
 			bcode = &bytecode.RelJumpIfTrueOrPop{n}
 		case "RETURN":
 			bcode = &bytecode.Return{}
+		case "ROT_THREE":
+			bcode = &bytecode.RotThree{}
 		case "STORE_FIELD":
 			n, ok := p.expectInt()
 			if !ok {

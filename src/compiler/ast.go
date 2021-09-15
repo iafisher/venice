@@ -258,6 +258,12 @@ type SymbolNode struct {
 	Location *lex.Location
 }
 
+type TemporaryScopeNode struct {
+	Symbol string
+	Value  ExpressionNode
+	Scope  ExpressionNode
+}
+
 type TernaryIfNode struct {
 	Condition   ExpressionNode
 	TrueClause  ExpressionNode

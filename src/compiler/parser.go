@@ -816,24 +816,6 @@ func (p *parser) matchInfix(left ExpressionNode, precedence int) (ExpressionNode
 	if err != nil {
 		return nil, err
 	}
-
-	// If the infix expression is a double comparison like `0 <= x < 100`, then refactor
-	// it into `0 <= x and x < 100`.
-	leftInfix, ok := left.(*InfixNode)
-	if ok {
-		if comparisonOperators[operator] && comparisonOperators[leftInfix.Operator] {
-			return &InfixNode{
-				Operator: "and",
-				Left:     left,
-				Right: &InfixNode{
-					Operator: operator,
-					Left:     leftInfix.Right,
-					Right:    right,
-				},
-			}, nil
-		}
-	}
-
 	return &InfixNode{operator, left, right}, nil
 }
 
@@ -1310,13 +1292,6 @@ var precedenceMap = map[string]int{
 	lex.TOKEN_OR:                     PRECEDENCE_OR,
 	lex.TOKEN_PLUS:                   PRECEDENCE_ADD_SUB,
 	lex.TOKEN_SLASH:                  PRECEDENCE_MUL_DIV,
-}
-
-var comparisonOperators = map[string]bool{
-	"<":  true,
-	"<=": true,
-	">":  true,
-	">=": true,
 }
 
 var compoundAssignOperators = map[string]string{

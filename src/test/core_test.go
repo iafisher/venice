@@ -109,6 +109,20 @@ func TestContinueStatement(t *testing.T) {
 	assertTypecheckError(t, "continue", "continue statement outside of loop")
 }
 
+func TestDoubleComparison(t *testing.T) {
+	// Regression test for #131
+	// The double comparison should not evaluate the middle operand twice.
+	assertEqual(
+		t,
+		`
+		let l = [1, 2, 3]
+		1 < l.pop() < 10
+		l
+		`,
+		L(I(1), I(2)),
+	)
+}
+
 func TestIndexing(t *testing.T) {
 	assertEqual(t, `let l = [1, 2, 3]; l[1]`, I(2))
 	assertEqual(t, `{1: "one", 2: "two", 3: "three"}[3]`, Some(S("three")))

@@ -1310,7 +1310,10 @@ func (compiler *Compiler) compileIndexNode(
 func (compiler *Compiler) compileInfixNode(
 	node *InfixNode,
 ) ([]bytecode.Bytecode, VeniceType, error) {
-	// TODO(2021-08-07): Boolean operators should short-circuit.
+	if isDoubleComparison(node) {
+		return compiler.compileDoubleComparison(node)
+	}
+
 	_, ok := opsToBytecodes[node.Operator]
 	if !ok {
 		return nil, nil, compiler.customError(node, "unknown operator `%s`", node.Operator)
@@ -1321,21 +1324,19 @@ func (compiler *Compiler) compileInfixNode(
 		return nil, nil, err
 	}
 
-	if !compiler.checkInfixLeftType(node.Operator, leftType) {
-		return nil, nil, compiler.customError(
-			node.Left, "invalid type for left operand of %s", node.Operator,
-		)
-	}
-
 	rightCode, rightType, err := compiler.compileExpression(node.Right)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	resultType, ok := compiler.checkInfixRightType(node.Operator, leftType, rightType)
+	resultType, ok := compiler.checkInfixTypes(node.Operator, leftType, rightType)
 	if !ok {
 		return nil, nil, compiler.customError(
-			node.Right, "invalid type for right operand of %s", node.Operator,
+			node,
+			"incompatible types for operator `%s`: %s and %s",
+			node.Operator,
+			leftType.String(),
+			rightType.String(),
 		)
 	}
 
@@ -1361,6 +1362,80 @@ func (compiler *Compiler) compileInfixNode(
 	}
 
 	return code, resultType, nil
+}
+
+func isDoubleComparison(node *InfixNode) bool {
+	leftNode, ok := node.Left.(*InfixNode)
+	if !ok {
+		return false
+	}
+
+	_, ok1 := comparisonOperators[node.Operator]
+	_, ok2 := comparisonOperators[leftNode.Operator]
+	return ok1 && ok2
+}
+
+func (compiler *Compiler) compileDoubleComparison(
+	node *InfixNode,
+) ([]bytecode.Bytecode, VeniceType, error) {
+	leftInfix := node.Left.(*InfixNode)
+
+	left := leftInfix.Left
+	middle := leftInfix.Right
+	right := node.Right
+
+	firstOp := leftInfix.Operator
+	secondOp := node.Operator
+
+	firstOpBytecode := opsToBytecodes[firstOp]
+	secondOpBytecode := opsToBytecodes[secondOp]
+
+	leftCode, leftType, err := compiler.compileExpression(left)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	middleCode, middleType, err := compiler.compileExpression(middle)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	rightCode, rightType, err := compiler.compileExpression(right)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	_, ok := compiler.checkInfixTypes(firstOp, leftType, middleType)
+	if !ok {
+		return nil, nil, compiler.customError(
+			node,
+			"incompatible types for operator `%s`: %s and %s",
+			firstOp,
+			leftType.String(),
+			middleType.String(),
+		)
+	}
+
+	_, ok = compiler.checkInfixTypes(firstOp, middleType, rightType)
+	if !ok {
+		return nil, nil, compiler.customError(
+			node,
+			"incompatible types for operator `%s`: %s and %s",
+			firstOp,
+			middleType.String(),
+			rightType.String(),
+		)
+	}
+
+	code := leftCode
+	code = append(code, middleCode...)
+	code = append(code, &bytecode.DupTop{})
+	code = append(code, &bytecode.RotThree{})
+	code = append(code, firstOpBytecode)
+	code = append(code, &bytecode.RelJumpIfFalseOrPop{len(rightCode) + 2})
+	code = append(code, rightCode...)
+	code = append(code, secondOpBytecode)
+	return code, VENICE_TYPE_BOOLEAN, nil
 }
 
 func (compiler *Compiler) compileListNode(
@@ -1612,43 +1687,37 @@ var opsToBytecodesReal = map[string]bytecode.Bytecode{
 	"-": &bytecode.BinaryRealSub{},
 }
 
-func (compiler *Compiler) checkInfixLeftType(operator string, leftType VeniceType) bool {
-	switch operator {
-	case "==", "in":
-		return true
-	case "and", "or":
-		return compiler.checkType(VENICE_TYPE_BOOLEAN, leftType)
-	case "++":
-		if _, ok := leftType.(*VeniceListType); ok {
-			return true
-		} else {
-			return compiler.checkType(VENICE_TYPE_STRING, leftType)
-		}
-	default:
-		return compiler.checkType(VENICE_TYPE_INTEGER, leftType) ||
-			compiler.checkType(VENICE_TYPE_REAL_NUMBER, leftType)
-	}
+var comparisonOperators = map[string]bool{
+	">":  true,
+	">=": true,
+	"<":  true,
+	"<=": true,
 }
 
-func (compiler *Compiler) checkInfixRightType(
-	operator string, leftType VeniceType, rightType VeniceType,
+func (compiler *Compiler) checkInfixTypes(
+	operator string,
+	leftType VeniceType,
+	rightType VeniceType,
 ) (VeniceType, bool) {
 	switch operator {
-	case "==", "!=":
-		return VENICE_TYPE_BOOLEAN, compiler.checkType(leftType, rightType)
 	case "and", "or":
 		return VENICE_TYPE_BOOLEAN,
-			compiler.checkType(VENICE_TYPE_BOOLEAN, rightType)
+			compiler.checkType(VENICE_TYPE_BOOLEAN, leftType) &&
+				compiler.checkType(VENICE_TYPE_BOOLEAN, rightType)
+	case "==", "!=":
+		return VENICE_TYPE_BOOLEAN, compiler.checkType(leftType, rightType)
+	case "++":
+		if _, ok := leftType.(*VeniceListType); ok {
+			return leftType, compiler.checkType(leftType, rightType)
+		} else {
+			return VENICE_TYPE_STRING,
+				compiler.checkType(VENICE_TYPE_STRING, leftType) &&
+					compiler.checkType(VENICE_TYPE_STRING, rightType)
+		}
 	case ">", ">=", "<", "<=":
 		return VENICE_TYPE_BOOLEAN,
-			compiler.checkType(VENICE_TYPE_INTEGER, rightType)
-	case "++":
-		if compiler.checkType(VENICE_TYPE_STRING, leftType) {
-			return VENICE_TYPE_STRING,
-				compiler.checkType(VENICE_TYPE_STRING, rightType)
-		} else {
-			return leftType, compiler.checkType(leftType, rightType)
-		}
+			compiler.checkType(VENICE_TYPE_INTEGER, leftType) &&
+				compiler.checkType(VENICE_TYPE_INTEGER, rightType)
 	case "in":
 		switch rightConcreteType := rightType.(type) {
 		case *VeniceStringType:
@@ -1664,8 +1733,10 @@ func (compiler *Compiler) checkInfixRightType(
 		}
 	case "/":
 		return VENICE_TYPE_REAL_NUMBER,
-			compiler.checkType(VENICE_TYPE_INTEGER, rightType) ||
-				compiler.checkType(VENICE_TYPE_REAL_NUMBER, rightType)
+			(compiler.checkType(VENICE_TYPE_INTEGER, leftType) ||
+				compiler.checkType(VENICE_TYPE_REAL_NUMBER, leftType)) &&
+				(compiler.checkType(VENICE_TYPE_INTEGER, rightType) ||
+					compiler.checkType(VENICE_TYPE_REAL_NUMBER, rightType))
 	default:
 		_, leftIsRealNumber := leftType.(*VeniceRealNumberType)
 		_, rightIsRealNumber := rightType.(*VeniceRealNumberType)
@@ -1676,8 +1747,11 @@ func (compiler *Compiler) checkInfixRightType(
 		} else {
 			returnType = VENICE_TYPE_INTEGER
 		}
-		return returnType, compiler.checkType(VENICE_TYPE_INTEGER, rightType) ||
-			compiler.checkType(VENICE_TYPE_REAL_NUMBER, rightType)
+		return returnType,
+			(compiler.checkType(VENICE_TYPE_INTEGER, leftType) ||
+				compiler.checkType(VENICE_TYPE_REAL_NUMBER, leftType)) &&
+				(compiler.checkType(VENICE_TYPE_INTEGER, rightType) ||
+					compiler.checkType(VENICE_TYPE_REAL_NUMBER, rightType))
 	}
 }
 

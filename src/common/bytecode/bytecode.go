@@ -104,6 +104,8 @@ type CheckLabel struct {
 	Name string
 }
 
+type DupTop struct{}
+
 type ForIter struct {
 	N int
 }
@@ -177,6 +179,8 @@ type RelJumpIfTrueOrPop struct {
 }
 
 type Return struct{}
+
+type RotThree struct{}
 
 type StoreField struct {
 	Index int
@@ -308,6 +312,10 @@ func (b *CheckLabel) String() string {
 	return fmt.Sprintf("CHECK_LABEL %q", b.Name)
 }
 
+func (b *DupTop) String() string {
+	return "DUP_TOP"
+}
+
 func (b *ForIter) String() string {
 	return fmt.Sprintf("FOR_ITER %d", b.N)
 }
@@ -395,6 +403,10 @@ func (b *Return) String() string {
 	return "RETURN"
 }
 
+func (b *RotThree) String() string {
+	return "ROT_THREE"
+}
+
 func (b *StoreField) String() string {
 	return fmt.Sprintf("STORE_FIELD %d", b.Index)
 }
@@ -451,6 +463,7 @@ func (b *BuildTuple) bytecode()          {}
 func (b *CallBuiltin) bytecode()         {}
 func (b *CallFunction) bytecode()        {}
 func (b *CheckLabel) bytecode()          {}
+func (b *DupTop) bytecode()              {}
 func (b *ForIter) bytecode()             {}
 func (b *GetIter) bytecode()             {}
 func (b *LookupMethod) bytecode()        {}
@@ -470,6 +483,7 @@ func (b *RelJumpIfFalse) bytecode()      {}
 func (b *RelJumpIfFalseOrPop) bytecode() {}
 func (b *RelJumpIfTrueOrPop) bytecode()  {}
 func (b *Return) bytecode()              {}
+func (b *RotThree) bytecode()            {}
 func (b *StoreField) bytecode()          {}
 func (b *StoreIndex) bytecode()          {}
 func (b *StoreMapIndex) bytecode()       {}

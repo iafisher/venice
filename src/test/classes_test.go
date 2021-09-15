@@ -85,7 +85,7 @@ func TestClassEquality(t *testing.T) {
 		let b2 = new Box2 { value: 42 }
 		b1 == b2
 		`,
-		"invalid type for right operand of ==",
+		"incompatible types for operator `==`: Box1 and Box2",
 	)
 }
 
