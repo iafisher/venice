@@ -86,6 +86,8 @@ func repl() {
 				cmd := splitLine[0]
 				if len(splitLine) > 1 {
 					line = splitLine[1]
+				} else {
+					line = ""
 				}
 
 				switch cmd {

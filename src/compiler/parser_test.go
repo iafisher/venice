@@ -165,6 +165,22 @@ func TestParseMatchStatements(t *testing.T) {
 	)
 }
 
+func TestParseMultiLineComments(t *testing.T) {
+	checkParseStatement(
+		t,
+		`
+		###
+		A comment
+		# Not the end of the comment
+		## Neither is this
+		But this is:
+		###
+		1 + 1
+		`,
+		`(expression-statement (infix + 1 1))`,
+	)
+}
+
 func TestParseSimpleExpressions(t *testing.T) {
 	checkParseExpression(t, "123", "123")
 	checkParseExpression(t, "abc", "abc")

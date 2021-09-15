@@ -1,17 +1,29 @@
 package lex
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestBlockComments(t *testing.T) {
 	tokens := getTokens(
-		`###
-		This is a block comment.
-		# This is part of the comment.
-
-		###`,
+		`
+		###
+		A comment
+		# Not the end of the comment
+		## Neither is this
+		But this is:
+		###
+		1 + 1
+		`,
 	)
 
-	checkTokensLength(t, tokens, 0)
+	checkToken(t, tokens[0], TOKEN_NEWLINE, "\n")
+	checkToken(t, tokens[1], TOKEN_NEWLINE, "\n")
+	checkToken(t, tokens[2], TOKEN_INT, "1")
+	checkToken(t, tokens[3], TOKEN_PLUS, "+")
+	checkToken(t, tokens[4], TOKEN_INT, "1")
+	checkToken(t, tokens[5], TOKEN_NEWLINE, "\n")
+	checkTokensLength(t, tokens, 6)
 }
 
 func TestKeywordTokens(t *testing.T) {

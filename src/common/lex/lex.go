@@ -37,12 +37,12 @@ func NewLexer(filePath string, program string) *Lexer {
 }
 
 func (l *Lexer) NextToken() *Token {
-	l.skipCommentsAndWhitespaceExceptNewlines()
+	l.skipCommentsAndWhitespace( /* skipNewlines = */ false)
 	return l.nextToken()
 }
 
 func (l *Lexer) NextTokenSkipNewlines() *Token {
-	l.skipCommentsAndAllWhitespace()
+	l.skipCommentsAndWhitespace( /* skipNewlines = */ true)
 	return l.nextToken()
 }
 
@@ -123,28 +123,7 @@ func (l *Lexer) nextToken() *Token {
 	}
 }
 
-func (l *Lexer) skipCommentsAndAllWhitespace() {
-	inComment := false
-	for l.index < len(l.program) {
-		ch := l.program[l.index]
-
-		if inComment {
-			if ch == '\n' {
-				inComment = false
-			}
-		} else {
-			if ch == '#' {
-				inComment = true
-			} else if !isWhitespace(ch) {
-				break
-			}
-		}
-
-		l.advance()
-	}
-}
-
-func (l *Lexer) skipCommentsAndWhitespaceExceptNewlines() {
+func (l *Lexer) skipCommentsAndWhitespace(skipNewlines bool) {
 	inLineComment := false
 	inBlockComment := false
 	for l.index < len(l.program) {
@@ -169,7 +148,7 @@ func (l *Lexer) skipCommentsAndWhitespaceExceptNewlines() {
 				} else {
 					inLineComment = true
 				}
-			} else if !isWhitespace(ch) || ch == '\n' {
+			} else if !isWhitespace(ch) || (!skipNewlines && ch == '\n') {
 				break
 			}
 		}
