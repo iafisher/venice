@@ -162,6 +162,19 @@ func builtinListFindLast(args ...VeniceValue) (VeniceValue, error) {
 	return VENICE_OPTIONAL_NONE, nil
 }
 
+func builtinListPop(args ...VeniceValue) (VeniceValue, error) {
+	countArgsOrPanic(args, 1)
+	listArg := args[0].(*VeniceList)
+
+	if len(listArg.Values) == 0 {
+		return nil, &PanicError{"index out of bounds"}
+	}
+
+	r := listArg.Values[len(listArg.Values)-1]
+	listArg.Values = listArg.Values[:len(listArg.Values)-1]
+	return r, nil
+}
+
 func builtinListRemove(args ...VeniceValue) (VeniceValue, error) {
 	countArgsOrPanic(args, 2)
 	listArg := args[0].(*VeniceList)
@@ -765,6 +778,7 @@ var builtins = map[string]func(args ...VeniceValue) (VeniceValue, error){
 	"list__extend":           builtinListExtend,
 	"list__find":             builtinListFind,
 	"list__find_last":        builtinListFindLast,
+	"list__pop":              builtinListPop,
 	"list__remove":           builtinListRemove,
 	"list__reversed":         builtinListReversed,
 	"list__reverse_in_place": builtinListReverseInPlace,

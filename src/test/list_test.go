@@ -113,6 +113,15 @@ func TestListBuiltins(t *testing.T) {
 		`,
 		None(),
 	)
+	assertEqual(
+		t,
+		`
+		let l = [1, 2, 3]
+		let x = l.pop()
+		(x, l)
+		`,
+		Tup(I(3), L(I(1), I(2))),
+	)
 	assertTypecheckError(
 		t,
 		`

@@ -169,6 +169,14 @@ var listBuiltins = map[string]VeniceType{
 		ReturnType: VeniceOptionalTypeOf(VENICE_TYPE_INTEGER),
 		IsBuiltin:  true,
 	},
+	"pop": &VeniceFunctionType{
+		Name: "pop",
+		ParamTypes: []VeniceType{
+			&VeniceListType{&VeniceSymbolType{"T"}},
+		},
+		ReturnType: &VeniceSymbolType{"T"},
+		IsBuiltin:  true,
+	},
 	"remove": &VeniceFunctionType{
 		Name: "remove",
 		ParamTypes: []VeniceType{
