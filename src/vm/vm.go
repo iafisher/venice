@@ -333,11 +333,19 @@ func (vm *VirtualMachine) executeOne(
 		}
 		vm.pushStack(&VeniceTuple{values})
 	case *bytecode.CallFunction:
-		functionObject, ok := vm.popStack().(*VeniceFunctionObject)
-		if !ok {
+		topOfStack := vm.popStack()
+
+		functionObject, isFunctionObject := topOfStack.(*VeniceFunctionObject)
+		boundMethodObject, isBoundMethodObject := topOfStack.(*VeniceBoundMethodObject)
+
+		if !isFunctionObject && !isBoundMethodObject {
 			return -1, &InternalError{
 				"expected function at top of virtual machine stack for CALL_FUNCTION",
 			}
+		}
+
+		if isBoundMethodObject {
+			functionObject = boundMethodObject.Function
 		}
 
 		if functionObject.IsBuiltin {
@@ -349,7 +357,14 @@ func (vm *VirtualMachine) executeOne(
 			}
 
 			args := make([]VeniceValue, 0, bcode.N)
-			for i := 0; i < bcode.N; i++ {
+
+			N := bcode.N
+			if isBoundMethodObject {
+				args = append(args, boundMethodObject.Object)
+				N--
+			}
+
+			for i := 0; i < N; i++ {
 				topOfStack := vm.popStack()
 				args = append(args, topOfStack)
 			}
@@ -364,9 +379,18 @@ func (vm *VirtualMachine) executeOne(
 				vm.pushStack(result)
 			}
 		} else {
+			N := bcode.N
+			if isBoundMethodObject {
+				N--
+			}
+
 			functionEnv := &Environment{vm.Env, map[string]VeniceValue{}}
-			functionStack := vm.Stack[len(vm.Stack)-bcode.N:]
-			vm.Stack = vm.Stack[:len(vm.Stack)-bcode.N]
+			functionStack := vm.Stack[len(vm.Stack)-N:]
+			vm.Stack = vm.Stack[:len(vm.Stack)-N]
+
+			if isBoundMethodObject {
+				functionStack = append(functionStack, boundMethodObject.Object)
+			}
 
 			if debug {
 				fmt.Println("DEBUG: Calling function in child virtual machine")
@@ -411,20 +435,38 @@ func (vm *VirtualMachine) executeOne(
 			}
 		}
 	case *bytecode.LookupMethod:
-		switch topOfStack := vm.peekStack().(type) {
+		switch topOfStack := vm.popStack().(type) {
 		case *VeniceClassObject:
 			vm.pushStack(
-				&VeniceFunctionObject{
-					fmt.Sprintf("%s__%s", topOfStack.ClassName, bcode.Name),
-					false,
+				&VeniceBoundMethodObject{
+					Function: &VeniceFunctionObject{
+						fmt.Sprintf("%s__%s", topOfStack.ClassName, bcode.Name),
+						false,
+					},
+					Object: topOfStack,
 				},
 			)
 		case *VeniceList:
-			vm.pushStack(&VeniceFunctionObject{fmt.Sprintf("list__%s", bcode.Name), true})
+			vm.pushStack(
+				&VeniceBoundMethodObject{
+					Function: &VeniceFunctionObject{fmt.Sprintf("list__%s", bcode.Name), true},
+					Object:   topOfStack,
+				},
+			)
 		case *VeniceMap:
-			vm.pushStack(&VeniceFunctionObject{fmt.Sprintf("map__%s", bcode.Name), true})
+			vm.pushStack(
+				&VeniceBoundMethodObject{
+					Function: &VeniceFunctionObject{fmt.Sprintf("map__%s", bcode.Name), true},
+					Object:   topOfStack,
+				},
+			)
 		case *VeniceString:
-			vm.pushStack(&VeniceFunctionObject{fmt.Sprintf("string__%s", bcode.Name), true})
+			vm.pushStack(
+				&VeniceBoundMethodObject{
+					Function: &VeniceFunctionObject{fmt.Sprintf("string__%s", bcode.Name), true},
+					Object:   topOfStack,
+				},
+			)
 		default:
 			return -1, &InternalError{
 				"expected class, list, map, or string object at top of virtual machine stack for LOOKUP_METHOD",

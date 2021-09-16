@@ -22,6 +22,11 @@ type VeniceValue interface {
  * Compound types
  */
 
+type VeniceBoundMethodObject struct {
+	Function *VeniceFunctionObject
+	Object   VeniceValue
+}
+
 type VeniceClassObject struct {
 	ClassName string
 	Values    []VeniceValue
@@ -122,6 +127,10 @@ func (v *VeniceBoolean) String() string {
 	} else {
 		return "false"
 	}
+}
+
+func (v *VeniceBoundMethodObject) String() string {
+	return v.Function.String()
 }
 
 func (v *VeniceClassObject) String() string {
@@ -246,6 +255,10 @@ func (v *VeniceBoolean) Compare(otherAny VeniceValue) bool {
 	}
 }
 
+func (v *VeniceBoundMethodObject) Compare(otherAny VeniceValue) bool {
+	return false
+}
+
 func (v *VeniceClassObject) Compare(otherAny VeniceValue) bool {
 	return false
 }
@@ -323,6 +336,10 @@ func (v *VeniceBoolean) Equals(otherAny VeniceValue) bool {
 	default:
 		return false
 	}
+}
+
+func (v *VeniceBoundMethodObject) Equals(otherAny VeniceValue) bool {
+	return false
 }
 
 func (v *VeniceClassObject) Equals(otherAny VeniceValue) bool {
@@ -488,6 +505,11 @@ func (v *VeniceBoolean) Hash(h maphash.Hash) uint64 {
 		h.WriteByte(0)
 	}
 	return h.Sum64()
+}
+
+func (v *VeniceBoundMethodObject) Hash(h maphash.Hash) uint64 {
+	// TODO(2021-09-16): Handle this properly.
+	return 0
 }
 
 func (v *VeniceClassObject) Hash(h maphash.Hash) uint64 {
@@ -751,16 +773,17 @@ func (v *VeniceMap) getHash(key VeniceValue) uint64 {
 	return key.Hash(v.hash) & uint64(len(v.table)-1)
 }
 
-func (v *VeniceBoolean) veniceValue()        {}
-func (v *VeniceClassObject) veniceValue()    {}
-func (v *VeniceEnumObject) veniceValue()     {}
-func (v *VeniceFunctionObject) veniceValue() {}
-func (v *VeniceInteger) veniceValue()        {}
-func (v *VeniceList) veniceValue()           {}
-func (v *VeniceListIterator) veniceValue()   {}
-func (v *VeniceMap) veniceValue()            {}
-func (v *VeniceMapIterator) veniceValue()    {}
-func (v *VeniceRealNumber) veniceValue()     {}
-func (v *VeniceString) veniceValue()         {}
-func (v *VeniceStringIterator) veniceValue() {}
-func (v *VeniceTuple) veniceValue()          {}
+func (v *VeniceBoolean) veniceValue()           {}
+func (v *VeniceBoundMethodObject) veniceValue() {}
+func (v *VeniceClassObject) veniceValue()       {}
+func (v *VeniceEnumObject) veniceValue()        {}
+func (v *VeniceFunctionObject) veniceValue()    {}
+func (v *VeniceInteger) veniceValue()           {}
+func (v *VeniceList) veniceValue()              {}
+func (v *VeniceListIterator) veniceValue()      {}
+func (v *VeniceMap) veniceValue()               {}
+func (v *VeniceMapIterator) veniceValue()       {}
+func (v *VeniceRealNumber) veniceValue()        {}
+func (v *VeniceString) veniceValue()            {}
+func (v *VeniceStringIterator) veniceValue()    {}
+func (v *VeniceTuple) veniceValue()             {}

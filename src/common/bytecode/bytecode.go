@@ -110,6 +110,10 @@ type BuildTuple struct {
 // Pop a function and N arguments from the top of stack (e.g., [arg3, arg2, arg1, f]),
 // call the function with the arguments, and push the return value onto the stack if it
 // is not void.
+//
+// Note that in case the top of the stack is a bound method object created by
+// LOOKUP_METHOD, N-1 arguments will be popped from the stack as the first argument will
+// be supplied by the bound method object.
 type CallFunction struct {
 	N int
 }
@@ -136,8 +140,8 @@ type ForIter struct {
 // stack.
 type GetIter struct{}
 
-// Push a function object representing the method called `Name` on the value on the top of
-// the stack.
+// Pop the top of the stack, lookup the method called `Name`, and push a function object
+// onto the stack.
 type LookupMethod struct {
 	Name string
 }
