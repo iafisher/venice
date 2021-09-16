@@ -93,12 +93,6 @@ func (vm *VirtualMachine) executeOne(
 			return -1, err
 		}
 		vm.pushStack(&VeniceInteger{left + right})
-	case *bytecode.BinaryAnd:
-		left, right, err := vm.popTwoBools()
-		if err != nil {
-			return -1, err
-		}
-		vm.pushStack(&VeniceBoolean{left.Value && right.Value})
 	case *bytecode.BinaryConcat:
 		rightAny := vm.popStack()
 		leftAny := vm.popStack()
@@ -247,12 +241,6 @@ func (vm *VirtualMachine) executeOne(
 		left := vm.popStack()
 		result := left.Equals(right)
 		vm.pushStack(&VeniceBoolean{!result})
-	case *bytecode.BinaryOr:
-		left, right, err := vm.popTwoBools()
-		if err != nil {
-			return -1, err
-		}
-		vm.pushStack(&VeniceBoolean{left.Value || right.Value})
 	case *bytecode.BinaryRealAdd:
 		left, right, err := vm.popTwoReals()
 		if err != nil {

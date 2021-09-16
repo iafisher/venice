@@ -1664,7 +1664,6 @@ func (compiler *Compiler) compileUnaryNode(
 
 var opsToBytecodes = map[string]bytecode.Bytecode{
 	"+":   &bytecode.BinaryAdd{},
-	"and": &bytecode.BinaryAnd{},
 	"++":  &bytecode.BinaryConcat{},
 	"==":  &bytecode.BinaryEq{},
 	">":   &bytecode.BinaryGt{},
@@ -1675,9 +1674,10 @@ var opsToBytecodes = map[string]bytecode.Bytecode{
 	"%":   &bytecode.BinaryModulo{},
 	"*":   &bytecode.BinaryMul{},
 	"!=":  &bytecode.BinaryNotEq{},
-	"or":  &bytecode.BinaryOr{},
 	"-":   &bytecode.BinarySub{},
 	"/":   nil,
+	"and": nil,
+	"or":  nil,
 }
 
 var opsToBytecodesReal = map[string]bytecode.Bytecode{

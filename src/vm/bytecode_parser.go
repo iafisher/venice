@@ -139,8 +139,6 @@ func (p *bytecodeParser) parse() (*bytecode.CompiledProgram, error) {
 		switch symbol {
 		case "BINARY_ADD":
 			bcode = &bytecode.BinaryAdd{}
-		case "BINARY_AND":
-			bcode = &bytecode.BinaryAnd{}
 		case "BINARY_CONCAT":
 			bcode = &bytecode.BinaryConcat{}
 		case "BINARY_EQ":
@@ -165,8 +163,6 @@ func (p *bytecodeParser) parse() (*bytecode.CompiledProgram, error) {
 			bcode = &bytecode.BinaryMul{}
 		case "BINARY_NOT_EQ":
 			bcode = &bytecode.BinaryNotEq{}
-		case "BINARY_OR":
-			bcode = &bytecode.BinaryOr{}
 		case "BINARY_REAL_ADD":
 			bcode = &bytecode.BinaryRealAdd{}
 		case "BINARY_REAL_DIV":
@@ -208,12 +204,6 @@ func (p *bytecodeParser) parse() (*bytecode.CompiledProgram, error) {
 				continue
 			}
 			bcode = &bytecode.BuildTuple{n}
-		case "CALL_BUILTIN":
-			n, ok := p.expectInt()
-			if !ok {
-				continue
-			}
-			bcode = &bytecode.CallBuiltin{n}
 		case "CALL_FUNCTION":
 			n, ok := p.expectInt()
 			if !ok {
