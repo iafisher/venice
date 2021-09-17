@@ -1221,12 +1221,11 @@ func (compiler *Compiler) compileFunctionArguments(
 
 	code := []bytecode.Bytecode{}
 	for i := len(args) - 1; i >= 0; i-- {
-		var paramType VeniceType
+		paramIndex := i
 		if isClassMethod {
-			paramType = functionType.ParamTypes[i+1]
-		} else {
-			paramType = functionType.ParamTypes[i]
+			paramIndex++
 		}
+		paramType := functionType.ParamTypes[paramIndex]
 
 		argCode, argType, err := compiler.compileExpressionWithTypeHint(args[i], paramType)
 		if err != nil {
@@ -1240,7 +1239,10 @@ func (compiler *Compiler) compileFunctionArguments(
 		if !ok {
 			return nil, nil, compiler.customError(
 				node,
-				"wrong function parameter type",
+				"wrong function parameter type for parameter %d (expected %s, got %s)",
+				i+1,
+				paramType,
+				argType,
 			)
 		}
 
@@ -1808,6 +1810,27 @@ func (compiler *Compiler) checkTypeCore(
 					return false
 				}
 			}
+		}
+
+		return true
+	case *VeniceFunctionType:
+		actualType, ok := actualTypeAny.(*VeniceFunctionType)
+		if !ok {
+			return false
+		}
+
+		if len(expectedType.ParamTypes) != len(actualType.ParamTypes) {
+			return false
+		}
+
+		for i := 0; i < len(expectedType.ParamTypes); i++ {
+			if !compiler.checkType(expectedType.ParamTypes[i], actualType.ParamTypes[i]) {
+				return false
+			}
+		}
+
+		if !compiler.checkType(expectedType.ReturnType, actualType.ReturnType) {
+			return false
 		}
 
 		return true
