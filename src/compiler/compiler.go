@@ -939,7 +939,6 @@ func (compiler *Compiler) compileExpressionWithTypeHint(
 		} else {
 			return []bytecode.Bytecode{&bytecode.PushName{node.Value}}, symbolType, nil
 		}
-		return []bytecode.Bytecode{&bytecode.PushName{node.Value}}, symbolType, nil
 	case *TernaryIfNode:
 		return compiler.compileTernaryIfNode(node)
 	case *TupleFieldAccessNode:
