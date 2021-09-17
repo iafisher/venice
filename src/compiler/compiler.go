@@ -1955,6 +1955,25 @@ func (compiler *Compiler) resolveType(typeNodeAny TypeNode) (VeniceType, error) 
 	}
 
 	switch typeNode := typeNodeAny.(type) {
+	case *FunctionTypeNode:
+		paramTypes := []VeniceType{}
+		for _, paramTypeNode := range typeNode.ParamTypeNodes {
+			paramType, err := compiler.resolveType(paramTypeNode)
+			if err != nil {
+				return nil, err
+			}
+			paramTypes = append(paramTypes, paramType)
+		}
+
+		returnType, err := compiler.resolveType(typeNode.ReturnTypeNode)
+		if err != nil {
+			return nil, err
+		}
+
+		return &VeniceFunctionType{
+			ParamTypes: paramTypes,
+			ReturnType: returnType,
+		}, nil
 	case *ListTypeNode:
 		itemType, err := compiler.resolveType(typeNode.ItemTypeNode)
 		if err != nil {

@@ -3,12 +3,20 @@ func bfs(grid: [[string]], start: (int, int), callback: func (string)) {
   let queue = [start]
   let visited: {(int, int): bool} = {}
   while queue.size() > 0 {
-    let xy = queue.pop(0)
-    callback(x)
+    # TODO: queue.pop(0)
+    let xy = queue[0]
+    queue.remove(0)
+
+    # TODO: tuple unpacking
+    let x = xy.0
+    let y = xy.1
+
+    callback(grid[x][y])
 
     let deltas = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    # TODO: tuple unpacking
     for delta in deltas {
-      neighbor_xy = (xy[0] + delta[0], xy[1] + delta[1])
+      let neighbor_xy = (x + delta.0, x + delta.1)
       if neighbor_xy not in visited {
         visited[neighbor_xy] = true
         queue.append(neighbor_xy)
@@ -19,9 +27,9 @@ func bfs(grid: [[string]], start: (int, int), callback: func (string)) {
 
 func main() {
   let grid = [
-    "a", "b", "c",
-    "d", "e", "f",
-    "g", "h", "i",
+    ["a", "b", "c"],
+    ["d", "e", "f"],
+    ["g", "h", "i"],
   ]
   bfs(grid, (1, 1), print)
 }
