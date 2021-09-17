@@ -1062,22 +1062,10 @@ func (p *parser) matchTypeNode() (TypeNode, error) {
 	} else if p.currentToken.Type == lex.TOKEN_LEFT_PAREN {
 		// Match a tuple type (e.g., `(int, string)`).
 		p.nextToken()
-		typeNodes := []TypeNode{}
-		for p.currentToken.Type != lex.TOKEN_RIGHT_PAREN {
-			typeNode, err := p.matchTypeNode()
-			if err != nil {
-				return nil, err
-			}
-			typeNodes = append(typeNodes, typeNode)
-
-			// TODO(2021-08-29): Disallow trailing comma.
-			if p.currentToken.Type == lex.TOKEN_COMMA {
-				p.nextToken()
-			} else if p.currentToken.Type != lex.TOKEN_RIGHT_PAREN {
-				return nil, p.unexpectedToken("comma or right parenthesis")
-			}
+		typeNodes, err := p.matchTypeSequence(lex.TOKEN_RIGHT_PAREN)
+		if err != nil {
+			return nil, err
 		}
-		p.nextToken()
 		return &TupleTypeNode{typeNodes, location}, nil
 	} else if p.currentToken.Type == lex.TOKEN_SYMBOL {
 		// Match a symbol type, possibly with generic parameters (e.g., `vector<int>`).
@@ -1085,28 +1073,9 @@ func (p *parser) matchTypeNode() (TypeNode, error) {
 		p.nextToken()
 		if p.currentToken.Type == lex.TOKEN_LESS_THAN {
 			p.nextToken()
-			typeNodes := []TypeNode{}
-
-			firstType, err := p.matchTypeNode()
+			typeNodes, err := p.matchTypeSequence(lex.TOKEN_GREATER_THAN)
 			if err != nil {
 				return nil, err
-			}
-			typeNodes = append(typeNodes, firstType)
-
-			for {
-				if p.currentToken.Type == lex.TOKEN_GREATER_THAN {
-					p.nextToken()
-					break
-				} else if p.currentToken.Type != lex.TOKEN_COMMA {
-					return nil, p.unexpectedToken("comma or right angle bracket")
-				}
-
-				p.nextToken()
-				subType, err := p.matchTypeNode()
-				if err != nil {
-					return nil, err
-				}
-				typeNodes = append(typeNodes, subType)
 			}
 
 			return &ParameterizedTypeNode{
@@ -1117,9 +1086,60 @@ func (p *parser) matchTypeNode() (TypeNode, error) {
 		} else {
 			return &SymbolNode{name, location}, nil
 		}
+	} else if p.currentToken.Type == lex.TOKEN_FUNC {
+		return p.matchFunctionTypeNode()
 	} else {
 		return nil, p.unexpectedToken("type name")
 	}
+}
+
+func (p *parser) matchFunctionTypeNode() (TypeNode, error) {
+	location := p.currentToken.Location
+	p.nextToken()
+	if p.currentToken.Type != lex.TOKEN_LEFT_PAREN {
+		return nil, p.unexpectedToken("left parenthesis")
+	}
+
+	p.nextToken()
+	paramTypeNodes, err := p.matchTypeSequence(lex.TOKEN_RIGHT_PAREN)
+	if err != nil {
+		return nil, err
+	}
+
+	var returnTypeNode TypeNode
+	if p.currentToken.Type == lex.TOKEN_ARROW {
+		p.nextToken()
+		returnTypeNode, err = p.matchTypeNode()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &FunctionTypeNode{
+		ParamTypeNodes: paramTypeNodes,
+		ReturnTypeNode: returnTypeNode,
+		Location:       location,
+	}, nil
+}
+
+func (p *parser) matchTypeSequence(delimiter string) ([]TypeNode, error) {
+	typeNodes := []TypeNode{}
+	for p.currentToken.Type != delimiter {
+		typeNode, err := p.matchTypeNode()
+		if err != nil {
+			return nil, err
+		}
+		typeNodes = append(typeNodes, typeNode)
+
+		// TODO(2021-08-29): Disallow trailing comma.
+		if p.currentToken.Type == lex.TOKEN_COMMA {
+			p.nextToken()
+		} else if p.currentToken.Type != delimiter {
+			return nil, p.unexpectedToken("comma or delimiter")
+		}
+	}
+	p.nextToken()
+	return typeNodes, nil
 }
 
 /**

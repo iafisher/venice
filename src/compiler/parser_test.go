@@ -194,6 +194,11 @@ func TestParseTypes(t *testing.T) {
 	checkParseType(t, "{string: bool}", "(map-type string bool)")
 	checkParseType(t, "[[int]]", "(list-type (list-type int))")
 	checkParseType(t, "{[[int]]: ({real: real})}", "(map-type (list-type (list-type int)) (tuple-type (map-type real real)))")
+	checkParseType(t, "func (int, int) -> int", "(function-type (int int) int)")
+	checkParseType(t, "func (int) -> int", "(function-type (int) int)")
+	checkParseType(t, "func (int)", "(function-type (int))")
+	checkParseType(t, "func () -> int", "(function-type () int)")
+	checkParseType(t, "func ()", "(function-type ())")
 }
 
 func TestParseUnaryOperators(t *testing.T) {

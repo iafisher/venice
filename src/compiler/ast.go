@@ -290,6 +290,12 @@ type UnaryNode struct {
  * Type nodes
  */
 
+type FunctionTypeNode struct {
+	ParamTypeNodes []TypeNode
+	ReturnTypeNode TypeNode
+	Location       *lex.Location
+}
+
 type ListTypeNode struct {
 	ItemTypeNode TypeNode
 	Location     *lex.Location
@@ -369,6 +375,10 @@ func (n *ForLoopNode) GetLocation() *lex.Location {
 }
 
 func (n *FunctionDeclarationNode) GetLocation() *lex.Location {
+	return n.Location
+}
+
+func (n *FunctionTypeNode) GetLocation() *lex.Location {
 	return n.Location
 }
 
@@ -645,6 +655,24 @@ func (n *FunctionDeclarationNode) String() string {
 	return sb.String()
 }
 
+func (n *FunctionTypeNode) String() string {
+	var sb strings.Builder
+	sb.WriteString("(function-type (")
+	for i, paramTypeNode := range n.ParamTypeNodes {
+		if i != 0 {
+			sb.WriteByte(' ')
+		}
+		sb.WriteString(paramTypeNode.String())
+	}
+	sb.WriteByte(')')
+	if n.ReturnTypeNode != nil {
+		sb.WriteByte(' ')
+		sb.WriteString(n.ReturnTypeNode.String())
+	}
+	sb.WriteByte(')')
+	return sb.String()
+}
+
 func (n *IfStatementNode) String() string {
 	var sb strings.Builder
 	sb.WriteString("(if")
@@ -893,6 +921,7 @@ func (n *MatchStatementNode) statementNode()      {}
 func (n *ReturnStatementNode) statementNode()     {}
 func (n *WhileLoopNode) statementNode()           {}
 
+func (n *FunctionTypeNode) typeNode()      {}
 func (n *ListTypeNode) typeNode()          {}
 func (n *MapTypeNode) typeNode()           {}
 func (n *ParameterizedTypeNode) typeNode() {}
