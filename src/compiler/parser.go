@@ -38,7 +38,7 @@ type parser struct {
 	brackets int
 }
 
-func newParser(filePath, input string) *parser {
+func newParser(filePath string, input string) *parser {
 	lexer := lex.NewLexer(filePath, input)
 	p := &parser{lexer: lexer, currentToken: nil, brackets: 0}
 	p.nextTokenSkipNewlines()
@@ -1077,6 +1077,7 @@ func (p *parser) matchTypeNode() (TypeNode, error) {
 				return nil, p.unexpectedToken("comma or right parenthesis")
 			}
 		}
+		p.nextToken()
 		return &TupleTypeNode{typeNodes, location}, nil
 	} else if p.currentToken.Type == lex.TOKEN_SYMBOL {
 		// Match a symbol type, possibly with generic parameters (e.g., `vector<int>`).

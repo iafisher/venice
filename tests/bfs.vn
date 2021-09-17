@@ -1,0 +1,27 @@
+# SKIP
+func bfs(grid: [[string]], start: (int, int), callback: func (string)) {
+  let queue = [start]
+  let visited: {(int, int): bool} = {}
+  while queue.size() > 0 {
+    let xy = queue.pop(0)
+    callback(x)
+
+    let deltas = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    for delta in deltas {
+      neighbor_xy = (xy[0] + delta[0], xy[1] + delta[1])
+      if neighbor_xy not in visited {
+        visited[neighbor_xy] = true
+        queue.append(neighbor_xy)
+      }
+    }
+  }
+}
+
+func main() {
+  let grid = [
+    "a", "b", "c",
+    "d", "e", "f",
+    "g", "h", "i",
+  ]
+  bfs(grid, (1, 1), print)
+}

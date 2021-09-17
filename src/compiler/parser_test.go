@@ -187,6 +187,15 @@ func TestParseSimpleExpressions(t *testing.T) {
 	checkParseExpression(t, "3.14", "3.140000")
 }
 
+func TestParseTypes(t *testing.T) {
+	checkParseType(t, "int", "int")
+	checkParseType(t, "(int, real)", "(tuple-type int real)")
+	checkParseType(t, "(int)", "(tuple-type int)")
+	checkParseType(t, "{string: bool}", "(map-type string bool)")
+	checkParseType(t, "[[int]]", "(list-type (list-type int))")
+	checkParseType(t, "{[[int]]: ({real: real})}", "(map-type (list-type (list-type int)) (tuple-type (map-type real real)))")
+}
+
 func TestParseUnaryOperators(t *testing.T) {
 	checkParseExpression(t, "-(123)", "(unary - 123)")
 	checkParseExpression(t, "- 123 + 2", "(infix + (unary - 123) 2)")
@@ -245,6 +254,21 @@ func checkParseStatements(t *testing.T, input string, expectedOutput string) {
 	}
 
 	actualOutput := parsedFile.String()
+	if actualOutput != expectedOutput {
+		t.Helper()
+		t.Fatalf("Expected %q, got %q", expectedOutput, actualOutput)
+	}
+}
+
+func checkParseType(t *testing.T, input string, expectedOutput string) {
+	p := newParser("", input)
+	node, err := p.matchTypeNode()
+	if err != nil {
+		t.Helper()
+		t.Fatalf("Parse error: %s\n\nInput: %q", err, input)
+	}
+
+	actualOutput := node.String()
 	if actualOutput != expectedOutput {
 		t.Helper()
 		t.Fatalf("Expected %q, got %q", expectedOutput, actualOutput)
