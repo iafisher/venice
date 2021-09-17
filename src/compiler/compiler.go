@@ -469,6 +469,17 @@ func (compiler *Compiler) compileForLoop(
 	}
 	code = append(code, bodyCode...)
 	code = append(code, &bytecode.RelJump{-jump})
+
+	for i, bcode := range code {
+		if placeholder, ok := bcode.(*bytecode.Placeholder); ok {
+			if placeholder.Name == "break" {
+				code[i] = &bytecode.RelJump{len(code) - i}
+			} else if placeholder.Name == "continue" {
+				code[i] = &bytecode.RelJump{(-i) + len(iterableCode) + 1}
+			}
+		}
+	}
+
 	return code, nil
 }
 
@@ -522,8 +533,7 @@ func (compiler *Compiler) compileFunctionDeclaration(node *FunctionDeclarationNo
 	}
 
 	paramLoadCode := make([]bytecode.Bytecode, 0, len(node.Params))
-	for i := len(node.Params) - 1; i >= 0; i-- {
-		param := node.Params[i]
+	for _, param := range node.Params {
 		paramLoadCode = append(paramLoadCode, &bytecode.StoreName{param.Name})
 	}
 	bodyCode = append(paramLoadCode, bodyCode...)
@@ -926,19 +936,7 @@ func (compiler *Compiler) compileExpressionWithTypeHint(
 				nodeAny, "undefined symbol `%s`", node.Value,
 			)
 		}
-		// TODO(2021-08-26): Do we need to handle function types separately?
-		if functionType, isFunctionType := symbolType.(*VeniceFunctionType); isFunctionType {
-			return []bytecode.Bytecode{
-					&bytecode.PushConstFunction{
-						Name:      functionType.Name,
-						IsBuiltin: functionType.IsBuiltin,
-					},
-				},
-				symbolType,
-				nil
-		} else {
-			return []bytecode.Bytecode{&bytecode.PushName{node.Value}}, symbolType, nil
-		}
+		return []bytecode.Bytecode{&bytecode.PushName{node.Value}}, symbolType, nil
 	case *TernaryIfNode:
 		return compiler.compileTernaryIfNode(node)
 	case *TupleFieldAccessNode:

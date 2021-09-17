@@ -232,3 +232,21 @@ func TestFunctionWithoutReturn(t *testing.T) {
 		"non-void function does not end with return statement",
 	)
 }
+
+func TestFunctionsAsParameters(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		func callback_hell(callback: func() -> int) -> int {
+			return callback()
+		}
+
+		func return42() -> int {
+			return 42
+		}
+
+		callback_hell(return42)
+		`,
+		I(42),
+	)
+}

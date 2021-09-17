@@ -35,6 +35,18 @@ func (vm *VirtualMachine) Execute(
 		}
 	}
 
+	for key := range compiledProgram.Code {
+		vm.Env.Put(key, &VeniceFunctionObject{Name: key, IsBuiltin: false})
+	}
+
+	for key := range builtins {
+		if strings.Contains(key, "__") {
+			continue
+		}
+
+		vm.Env.Put(key, &VeniceFunctionObject{Name: key, IsBuiltin: true})
+	}
+
 	return vm.executeFunction(compiledProgram, "main", debug)
 }
 
@@ -52,19 +64,15 @@ func (vm *VirtualMachine) executeFunction(
 
 		if debug {
 			fmt.Printf("DEBUG: Executing %s\n", bytecode)
-			fmt.Println("DEBUG: Stack (bottom to top)")
-			if len(vm.Stack) > 0 {
-				for _, value := range vm.Stack {
-					fmt.Printf("DEBUG:   %s\n", value.String())
-				}
-			} else {
-				fmt.Println("DEBUG:   <empty>")
-			}
 		}
 
 		jump, err := vm.executeOne(bytecode, compiledProgram, debug)
 		if err != nil {
 			return nil, err
+		}
+
+		if debug {
+			vm.printStack()
 		}
 
 		if jump == 0 {
@@ -392,11 +400,13 @@ func (vm *VirtualMachine) executeOne(
 				functionStack = append(functionStack, boundMethodObject.Object)
 			}
 
+			functionVm := &VirtualMachine{functionStack, functionEnv}
+
 			if debug {
 				fmt.Println("DEBUG: Calling function in child virtual machine")
+				functionVm.printStack()
 			}
 
-			functionVm := &VirtualMachine{functionStack, functionEnv}
 			value, err := functionVm.executeFunction(compiledProgram, functionObject.Name, debug)
 			if err != nil {
 				return -1, err
@@ -747,6 +757,17 @@ func (vm *VirtualMachine) popTwoBools() (*VeniceBoolean, *VeniceBoolean, error) 
 	}
 
 	return left, right, nil
+}
+
+func (vm *VirtualMachine) printStack() {
+	fmt.Println("DEBUG: Stack (bottom to top)")
+	if len(vm.Stack) > 0 {
+		for _, value := range vm.Stack {
+			fmt.Printf("DEBUG:   %s\n", value.String())
+		}
+	} else {
+		fmt.Println("DEBUG:   <empty>")
+	}
 }
 
 func (env *Environment) Get(symbol string) (VeniceValue, bool) {

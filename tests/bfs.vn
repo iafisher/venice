@@ -1,4 +1,68 @@
-# SKIP
+# OUTPUT
+# e
+# Pushing (0, 1)
+# Pushing (1, 2)
+# Pushing (2, 1)
+# Pushing (1, 0)
+# b
+# Skipping (invalid) (-1, 1)
+# Pushing (0, 2)
+# Pushing (1, 1)
+# Pushing (0, 0)
+# f
+# Skipping (0, 2)
+# Skipping (invalid) (1, 3)
+# Pushing (2, 2)
+# Skipping (1, 1)
+# h
+# Skipping (1, 1)
+# Skipping (2, 2)
+# Skipping (invalid) (3, 1)
+# Pushing (2, 0)
+# d
+# Skipping (0, 0)
+# Skipping (1, 1)
+# Skipping (2, 0)
+# Skipping (invalid) (1, -1)
+# c
+# Skipping (invalid) (-1, 2)
+# Skipping (invalid) (0, 3)
+# Skipping (1, 2)
+# Skipping (0, 1)
+# e
+# Skipping (0, 1)
+# Skipping (1, 2)
+# Skipping (2, 1)
+# Skipping (1, 0)
+# a
+# Skipping (invalid) (-1, 0)
+# Skipping (0, 1)
+# Skipping (1, 0)
+# Skipping (invalid) (0, -1)
+# i
+# Skipping (1, 2)
+# Skipping (invalid) (2, 3)
+# Skipping (invalid) (3, 2)
+# Skipping (2, 1)
+# g
+# Skipping (1, 0)
+# Skipping (2, 1)
+# Skipping (invalid) (3, 0)
+# Skipping (invalid) (2, -1)
+# END OUTPUT
+
+func is_valid_coordinate(grid: [[string]], x: int, y: int) -> bool {
+  if not (0 <= x < grid.size()) {
+    return false
+  }
+
+  if not (0 <= y < grid[x].size()) {
+    return false
+  }
+
+  return true
+}
+
 func bfs(grid: [[string]], start: (int, int), callback: func (string)) {
   let queue = [start]
   let visited: {(int, int): bool} = {}
@@ -13,16 +77,30 @@ func bfs(grid: [[string]], start: (int, int), callback: func (string)) {
 
     callback(grid[x][y])
 
-    let deltas = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    let deltas = [(-1, 0), (0, 1), (1, 0), (0, -1)]
     # TODO: tuple unpacking
     for delta in deltas {
-      let neighbor_xy = (x + delta.0, x + delta.1)
+      let neighbor_xy = (x + delta.0, y + delta.1)
+      let neighbor_xy_string = "(" ++ string(neighbor_xy.0) ++ ", " ++ string(neighbor_xy.1) ++ ")"
+      if not is_valid_coordinate(grid, neighbor_xy.0, neighbor_xy.1) {
+        print("Skipping (invalid) " ++ neighbor_xy_string)
+        continue
+      }
+
+
       if neighbor_xy not in visited {
+        print("Pushing " ++ neighbor_xy_string)
         visited[neighbor_xy] = true
         queue.append(neighbor_xy)
+      } else {
+        print("Skipping " ++ neighbor_xy_string)
       }
     }
   }
+}
+
+func print_string(x: string) {
+  print(x)
 }
 
 func main() {
@@ -31,5 +109,6 @@ func main() {
     ["d", "e", "f"],
     ["g", "h", "i"],
   ]
-  bfs(grid, (1, 1), print)
+  # TODO: Allow passing just `print`
+  bfs(grid, (1, 1), print_string)
 }
