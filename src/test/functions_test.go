@@ -250,3 +250,21 @@ func TestFunctionsAsParameters(t *testing.T) {
 		I(42),
 	)
 }
+
+func TestFunctionHoisting(t *testing.T) {
+	assertEqual(
+		t,
+		`
+		func calls_foo() -> int {
+			return foo()
+		}
+
+		func foo() -> int {
+			return 42
+		}
+
+		calls_foo()
+		`,
+		I(42),
+	)
+}

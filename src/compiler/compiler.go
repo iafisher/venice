@@ -40,6 +40,11 @@ func (compiler *Compiler) Compile(file *File) (*bytecode.CompiledProgram, error)
 func (compiler *Compiler) compileModule(
 	moduleName string, file *File,
 ) (*bytecode.CompiledProgram, VeniceType, error) {
+	err := compiler.hoistModuleDeclarations(file)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	for _, statementAny := range file.Statements {
 		switch statement := statementAny.(type) {
 		case *ClassDeclarationNode:
@@ -87,10 +92,126 @@ func (compiler *Compiler) compileModule(
 			if err != nil {
 				return nil, nil, err
 			}
-			compiler.compiledProgram.Code["main"] = append(compiler.compiledProgram.Code["main"], code...)
+			compiler.compiledProgram.Code["main"] = append(
+				compiler.compiledProgram.Code["main"],
+				code...,
+			)
 		}
 	}
-	return compiler.compiledProgram, moduleTypeFromSymbolTable(moduleName, compiler.symbolTable), nil
+	return compiler.compiledProgram,
+		moduleTypeFromSymbolTable(moduleName, compiler.symbolTable),
+		nil
+}
+
+func (compiler *Compiler) hoistModuleDeclarations(file *File) error {
+	// Put all types in the symbol table first.
+	for _, statementAny := range file.Statements {
+		switch statement := statementAny.(type) {
+		case *ClassDeclarationNode:
+			fields := make([]*VeniceClassField, 0, len(statement.Fields))
+			for _, field := range statement.Fields {
+				paramType, err := compiler.resolveType(field.FieldType)
+				if err != nil {
+					return err
+				}
+				fields = append(
+					fields,
+					&VeniceClassField{
+						field.Name, field.Public, paramType,
+					},
+				)
+			}
+
+			classType := &VeniceClassType{
+				Name:              statement.Name,
+				GenericParameters: []string{},
+				Fields:            fields,
+			}
+			compiler.typeSymbolTable.Put(statement.Name, classType)
+		case *EnumDeclarationNode:
+			if _, ok := compiler.typeSymbolTable.Get(statement.Name); ok {
+				return compiler.customError(
+					statement,
+					"symbol `%s` is already defined",
+					statement.Name,
+				)
+			}
+
+			// Put in a dummy entry for the enum in the type symbol table so that recursive
+			// enum types will type-check properly.
+			enumType := &VeniceEnumType{
+				Name:              statement.Name,
+				GenericParameters: nil,
+				Cases:             nil,
+			}
+			compiler.typeSymbolTable.Put(statement.Name, enumType)
+
+			if statement.GenericTypeParameter != "" {
+				compiler.typeSymbolTable = compiler.typeSymbolTable.SpawnChild()
+				compiler.typeSymbolTable.Put(
+					statement.GenericTypeParameter,
+					&VeniceSymbolType{statement.GenericTypeParameter},
+				)
+			}
+
+			caseTypes := make([]*VeniceCaseType, 0, len(statement.Cases))
+			for _, caseNode := range statement.Cases {
+				types := make([]VeniceType, 0, len(caseNode.Types))
+				for _, typeNode := range caseNode.Types {
+					veniceType, err := compiler.resolveType(typeNode)
+					if err != nil {
+						return err
+					}
+					types = append(types, veniceType)
+				}
+				caseTypes = append(caseTypes, &VeniceCaseType{caseNode.Label, types})
+
+				functionName := fmt.Sprintf("%s__%s", statement.Name, caseNode.Label)
+				compiler.compiledProgram.Code[functionName] = []bytecode.Bytecode{
+					&bytecode.PushEnum{caseNode.Label, len(caseNode.Types)},
+				}
+			}
+
+			if statement.GenericTypeParameter != "" {
+				compiler.typeSymbolTable = compiler.typeSymbolTable.Parent
+				enumType.GenericParameters = []string{statement.GenericTypeParameter}
+			}
+			enumType.Cases = caseTypes
+		}
+	}
+
+	// Then, put all functions (since they may depend on hoisted types).
+	for _, statementAny := range file.Statements {
+		switch statement := statementAny.(type) {
+		case *FunctionDeclarationNode:
+			paramTypes := make([]VeniceType, 0, len(statement.Params))
+			for _, param := range statement.Params {
+				paramType, err := compiler.resolveType(param.ParamType)
+				if err != nil {
+					return err
+				}
+
+				paramTypes = append(paramTypes, paramType)
+			}
+
+			declaredReturnType, err := compiler.resolveType(statement.ReturnType)
+			if err != nil {
+				return err
+			}
+
+			compiler.symbolTable.Put(
+				statement.Name,
+				&VeniceFunctionType{
+					Name:       statement.Name,
+					ParamTypes: paramTypes,
+					ReturnType: declaredReturnType,
+					IsBuiltin:  false,
+				},
+			)
+		}
+	}
+
+	return nil
 }
 
 func (compiler *Compiler) GetType(expr ExpressionNode) (VeniceType, error) {
@@ -334,77 +455,12 @@ func (compiler *Compiler) compileAssignStatementToSymbol(
 }
 
 func (compiler *Compiler) compileClassDeclaration(node *ClassDeclarationNode) error {
-	fields := make([]*VeniceClassField, 0, len(node.Fields))
-	paramTypes := make([]VeniceType, 0, len(node.Fields))
-	for _, field := range node.Fields {
-		paramType, err := compiler.resolveType(field.FieldType)
-		if err != nil {
-			return err
-		}
-		paramTypes = append(paramTypes, paramType)
-		fields = append(
-			fields,
-			&VeniceClassField{
-				field.Name, field.Public, paramType,
-			},
-		)
-	}
-
-	classType := &VeniceClassType{
-		Name:              node.Name,
-		GenericParameters: []string{},
-		Fields:            fields,
-	}
-	compiler.typeSymbolTable.Put(node.Name, classType)
+	// Currently all compilation is handled in the hoisting stage.
 	return nil
 }
 
 func (compiler *Compiler) compileEnumDeclaration(node *EnumDeclarationNode) error {
-	if _, ok := compiler.typeSymbolTable.Get(node.Name); ok {
-		return compiler.customError(node, "symbol `%s` is already defined", node.Name)
-	}
-
-	// Put in a dummy entry for the enum in the type symbol table so that recursive enum
-	// types will type-check properly.
-	enumType := &VeniceEnumType{
-		Name:              node.Name,
-		GenericParameters: nil,
-		Cases:             nil,
-	}
-	compiler.typeSymbolTable.Put(node.Name, enumType)
-
-	if node.GenericTypeParameter != "" {
-		compiler.typeSymbolTable = compiler.typeSymbolTable.SpawnChild()
-		compiler.typeSymbolTable.Put(
-			node.GenericTypeParameter,
-			&VeniceSymbolType{node.GenericTypeParameter},
-		)
-	}
-
-	caseTypes := make([]*VeniceCaseType, 0, len(node.Cases))
-	for _, caseNode := range node.Cases {
-		types := make([]VeniceType, 0, len(caseNode.Types))
-		for _, typeNode := range caseNode.Types {
-			veniceType, err := compiler.resolveType(typeNode)
-			if err != nil {
-				return err
-			}
-			types = append(types, veniceType)
-		}
-		caseTypes = append(caseTypes, &VeniceCaseType{caseNode.Label, types})
-
-		functionName := fmt.Sprintf("%s__%s", node.Name, caseNode.Label)
-		compiler.compiledProgram.Code[functionName] = []bytecode.Bytecode{
-			&bytecode.PushEnum{caseNode.Label, len(caseNode.Types)},
-		}
-	}
-
-	if node.GenericTypeParameter != "" {
-		compiler.typeSymbolTable = compiler.typeSymbolTable.Parent
-		enumType.GenericParameters = []string{node.GenericTypeParameter}
-	}
-	enumType.Cases = caseTypes
-
+	// Currently all compilation is handled in the hoisting stage.
 	return nil
 }
 
@@ -485,7 +541,6 @@ func (compiler *Compiler) compileForLoop(
 
 func (compiler *Compiler) compileFunctionDeclaration(node *FunctionDeclarationNode) error {
 	params := make([]string, 0, len(node.Params))
-	paramTypes := make([]VeniceType, 0, len(node.Params))
 	bodySymbolTable := compiler.symbolTable.SpawnChild()
 	for _, param := range node.Params {
 		paramType, err := compiler.resolveType(param.ParamType)
@@ -494,8 +549,6 @@ func (compiler *Compiler) compileFunctionDeclaration(node *FunctionDeclarationNo
 		}
 
 		params = append(params, param.Name)
-		paramTypes = append(paramTypes, paramType)
-
 		bodySymbolTable.Put(param.Name, paramType)
 	}
 
@@ -503,18 +556,6 @@ func (compiler *Compiler) compileFunctionDeclaration(node *FunctionDeclarationNo
 	if err != nil {
 		return err
 	}
-
-	// Put the function's entry in the symbol table before compiling the body so that
-	// recursive functions can call themselves.
-	compiler.symbolTable.Put(
-		node.Name,
-		&VeniceFunctionType{
-			Name:       node.Name,
-			ParamTypes: paramTypes,
-			ReturnType: declaredReturnType,
-			IsBuiltin:  false,
-		},
-	)
 
 	compiler.symbolTable = bodySymbolTable
 	compiler.functionInfo = &FunctionInfo{
