@@ -1,0 +1,23 @@
+# SKIP
+# OUTPUT
+# 144
+# END OUTPUT
+
+func fibonacci(n: int) -> int {
+  var i = 1
+  var fib_i = 1
+  var fib_i_minus_1 = 0
+
+  while i < n {
+    let tmp = fib_i
+    fib_i = fib_i + fib_i_minus_1
+    fib_i_minus_1 = tmp
+    i = i + 1
+  }
+
+  return fib_i
+}
+
+func main() {
+  print(fibonacci(12))
+}

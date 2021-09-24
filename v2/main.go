@@ -46,10 +46,10 @@ func compileProgram(filePath string) {
 	}
 
 	finalOutputPath := getFinalOutputPath(filePath)
-	cmd := exec.Command("gcc", "-o", finalOutputPath, assemblyOutputPath)
-	err = cmd.Run()
+	cmd := exec.Command("/usr/bin/gcc", "-o", finalOutputPath, assemblyOutputPath)
+	combinedOutput, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error while running gcc: %s", err)
+		fmt.Fprintf(os.Stderr, "%s", combinedOutput)
 		os.Exit(2)
 	}
 }

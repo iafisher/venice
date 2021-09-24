@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+import argparse
+import glob
+import os
+import subprocess
+import sys
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Run the unit and end-to-end tests for the Venice compiler."
+    )
+    args = parser.parse_args()
+
+    directory_path = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(directory_path)
+
+    info("Building Venice compiler")
+    r = build_compiler()
+    if not r:
+        failure()
+
+    print()
+    print()
+    info("Running unit tests")
+    r = run_unit_tests()
+
+    if not r:
+        failure()
+
+    print()
+    print()
+    info("Running end-to-end tests")
+    r = run_end_to_end_tests()
+
+    if not r:
+        failure()
+
+    success()
+
+
+def build_compiler():
+    completed_process = subprocess.run(["go", "build"])
+    return completed_process.returncode == 0
+
+
+def run_unit_tests():
+    completed_process = subprocess.run(
+        ["go", "test", "github.com/iafisher/venice/src/..."]
+    )
+
+    return completed_process.returncode == 0
+
+
+def run_end_to_end_tests():
+    test_failures = 0
+    for path in glob.iglob("tests/**/*.vn", recursive=True):
+        r = run_test_case(path)
+        if not r:
+            test_failures += 1
+
+    return test_failures == 0
+
+
+def run_test_case(path):
+    print(cyan("*") + " " + path + "... ", end="", flush=True)
+    header = read_header(path)
+    if not header:
+        raise Exception(f"{path} has no header")
+
+    if header[0] == "SKIP\n":
+        print(yellow("SKIPPED"))
+        return True
+
+    if header[0] != "OUTPUT\n":
+        raise Exception(f"header of {path} must begin with either SKIP or OUTPUT")
+
+    try:
+        end_index = header.index("END OUTPUT\n")
+    except ValueError:
+        raise Exception(f"header of {path} is missing END OUTPUT line")
+
+    expected_output = "".join(header[:end_index])
+
+    compiler_result = subprocess.run(
+        ["./venice", path],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        encoding="utf8",
+    )
+    if compiler_result.returncode != 0:
+        print(red("FAILED"))
+        print(compiler_result.stdout)
+        return False
+
+    program_path = os.path.splitext(path)[0]
+    program_result = subprocess.run(
+        [program_path],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        encoding="utf8",
+    )
+    if program_result.returncode != 0:
+        print(red("FAILED"))
+        print(program_result.stdout)
+        return False
+
+    if program_result.stdout != expected_output:
+        print(red("FAILED"))
+        print("  Expected output:")
+        print(textwrap.indent(expected_output, "    "))
+        print()
+        print("  Actual output:")
+        print(textwrap.indent(program_result.stdout, "    "))
+
+    print(green("passed"))
+    return True
+
+
+def read_header(path):
+    header = []
+    with open(path, "r", encoding="utf8") as f:
+        for line in f:
+            if not line.startswith("#"):
+                break
+
+            if line.startswith("# "):
+                line = line[2:]
+            else:
+                line = line[1:]
+
+            header.append(line)
+    return header
+
+
+def info(message):
+    print("[" + cyan(message) + "]")
+
+
+def failure():
+    print()
+    print()
+    print("Tests " + red("FAILED") + "!")
+    sys.exit(2)
+
+
+def success():
+    print()
+    print()
+    print("Tests " + green("passed") + ".")
+
+
+def cyan(s):
+    return color(s, "36")
+
+
+def green(s):
+    return color(s, "32")
+
+
+def red(s):
+    return color(s, "31")
+
+
+def yellow(s):
+    return color(s, "33")
+
+
+def color(s, color):
+    return colorcode(color) + s + colorcode("0")
+
+
+def colorcode(color):
+    return "\033[" + color + "m"
+
+
+if __name__ == "__main__":
+    main()
