@@ -35,19 +35,19 @@ def init(precommit):
     # Check Rust format with rustfmt.
     precommit.check(checks.RustFormat())
 
-    precommit.check(
-        checks.Command(
-            "UnitTests",
-            ["./test_unit"],
-            exclude=["*.md", "precommit.py"],
-        )
-    )
+#     precommit.check(
+#         checks.Command(
+#             "UnitTests",
+#             ["./test_unit"],
+#             exclude=["*.md", "precommit.py"],
+#         )
+#     )
 
-    precommit.check(
-        checks.Command(
-            "EndToEndTests", ["./test_e2e"], exclude=["*.md", "precommit.py"]
-        )
-    )
+#     precommit.check(
+#         checks.Command(
+#             "EndToEndTests", ["./test_e2e"], exclude=["*.md", "precommit.py"]
+#         )
+#     )
 
     # Run a custom command.
     # precommit.check(checks.Command("UnitTests", ["./test"]))
