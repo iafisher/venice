@@ -1,4 +1,6 @@
 # The Venice programming language
+**NOTE**: Venice is in the early stages of development, and not yet ready for production use.
+
 Venice is a modern, high-level, statically-typed programming language. It pairs the elegance and expressiveness of Python with the safety and modern language features of Rust.
 
 <!-- Venice's syntax is closest to Rust's, so we use that as the syntax declaration for the code block. -->
@@ -40,17 +42,3 @@ func serialize_json(j: Json) -> string {
 ```
 
 For a full introduction to the language, read the [tutorial](https://github.com/iafisher/venice/blob/master/docs/tutorial.md).
-
-**NOTE**: Venice is in the early stages of development, and not yet ready for production use.
-
-
-## Installation
-Install Venice with Go:
-
-```
-$ go get github.com/iafisher/venice
-```
-
-The Venice binary will be installed at `$GOBIN/venice`.
-
-Run `venice` to open the interactive read-eval-print loop (REPL), `venice compile example.vn` to compile a Venice program to bytecode, or `venice execute example.vn` to compile and execute a program in one step.
