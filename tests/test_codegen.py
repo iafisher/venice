@@ -31,8 +31,6 @@ class TestCodegen(unittest.TestCase):
                 """
                 #include <venice.h>
 
-                typedef void venice_int_t__void(venice_int_t);
-
                 void donothing(venice_int_t x) {
                   venice_int_t y = x + 1;
                 }
@@ -40,13 +38,44 @@ class TestCodegen(unittest.TestCase):
             ),
         )
 
+    def test_print_statement(self):
+        tree = make_statement(
+            ast.ExpressionStatement(
+                ast.FunctionCall(
+                    function="print", arguments=[ast.String("Hello, world")]
+                )
+            )
+        )
+
+        self.assertEqual(
+            codegen.codegen(tree),
+            S(
+                """
+                #include <venice.h>
+
+                void dummy() {
+                  venice_print(venice_string_new("Hello, world"));
+                }
+                """
+            ),
+        )
+
+
+def make_statement(statement: ast.Statement):
+    return ast.Module(
+        functions=[
+            ast.Function(
+                name="dummy",
+                parameters=[],
+                return_type=None,
+                body=[statement],
+            )
+        ]
+    )
+
 
 def S(s: str) -> str:
     """
     Dedents and strips a string so that it can be used in an assertEquals call.
     """
     return textwrap.dedent(s).strip() + "\n"
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -7,12 +7,19 @@ class Location:
     line: int
     column: int
 
+    def __str__(self) -> str:
+        return f"line {self.line}, column {self.column} of {self.file}"
+
 
 class VeniceError(Exception):
     pass
 
 
-class VeniceParseError(VeniceError):
+class VeniceInternalError(Exception):
+    pass
+
+
+class VeniceSyntaxError(VeniceError):
     pass
 
 

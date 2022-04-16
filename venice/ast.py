@@ -52,7 +52,7 @@ class Parameter(Node):
 
 ##
 # Statements
-#
+##
 
 
 @dataclass
@@ -64,6 +64,11 @@ class ExpressionStatement(Statement):
 class Let(Statement):
     symbol: str
     value: Expression
+
+
+@dataclass
+class Return(Statement):
+    value: Optional[Expression]
 
 
 ##

@@ -4,6 +4,9 @@
 *.DS_Store
 *.vnb
 *.wasm
+*.so
+*.o
+*.a
 
 # Python
 __pycache__
@@ -11,9 +14,6 @@ __pycache__
 *.pyc
 *.mypy_cache
 .venv
-
-# JavaScript
-node_modules
 
 # Rust
 /target

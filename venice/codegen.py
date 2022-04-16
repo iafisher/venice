@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 from . import ast, common
+from .common import VeniceSyntaxError, VeniceTypeError
 
 
 def codegen(tree: ast.Node) -> str:
@@ -28,6 +29,17 @@ class SymbolTable:
         self.symbols = {}
         self.enclosing = enclosing
 
+    @classmethod
+    def globals(cls) -> "SymbolTable":
+        symbol_table = cls()
+        symbol_table.put(
+            "print",
+            VeniceFunctionType(
+                parameter_types=[VENICE_STRING_TYPE], return_type=VENICE_VOID_TYPE
+            ),
+        )
+        return symbol_table
+
     def get(self, name: str) -> VeniceType:
         r = self.symbols.get(name)
         if r is None:
@@ -45,12 +57,14 @@ class SymbolTable:
 
 
 class CodeGenerator:
+    current_function = Optional["VeniceFunctionType"]
     function_typedefs: List["VeniceFunctionType"]
     symbol_table: SymbolTable
 
     def __init__(self) -> None:
+        self.current_function = None
         self.function_typedefs = []
-        self.symbol_table = SymbolTable()
+        self.symbol_table = SymbolTable.globals()
 
     def generate(self, node: ast.Node) -> str:
         return node.accept(self)
@@ -62,8 +76,8 @@ class CodeGenerator:
 
         return (
             "#include <venice.h>\n\n"
-            + "\n".join(t.to_typedef() for t in self.function_typedefs)
-            + "\n\n"
+            # + "\n".join(t.to_typedef() for t in self.function_typedefs)
+            # + "\n\n"
             + "\n\n".join(builder)
         )
 
@@ -101,15 +115,22 @@ class CodeGenerator:
         # Put the function's name in the symbol table before generating code for the
         # body, so that recursive functions can call themselves.
         self.symbol_table.put(node.name, function_type)
+        self.current_function = function_type
 
         builder.append(") {\n")
         self.symbol_table = function_symbol_table
         for statement in node.body:
             code = self.generate(statement)
             builder.append("  " + code + "\n")
-        self.symbol_table = self.symbol_table.enclosing
         builder.append("}\n")
+
+        self.symbol_table = self.symbol_table.enclosing
+        self.current_function = None
+
         return "".join(builder)
+
+    def visit_ExpressionStatement(self, node: ast.ExpressionStatement) -> str:
+        return self.generate(node.expression) + ";"
 
     def visit_Let(self, node: ast.Let) -> str:
         value_type = self.compute_type(node.value)
@@ -118,17 +139,50 @@ class CodeGenerator:
         value_code = self.generate(node.value)
         return f"{value_type.c_type()} {node.symbol} = {value_code};"
 
+    def visit_FunctionCall(self, node: ast.FunctionCall) -> str:
+        function_type = self.symbol_table.get(node.function)
+        if not isinstance(function_type, VeniceFunctionType):
+            raise VeniceTypeError("cannot call a non-function")
+
+        if len(node.arguments) != len(function_type.parameter_types):
+            raise VeniceTypeError(
+                f"expected {len(function_type.parameter_types)} argument(s), "
+                + f"got {len(node.arguments)}"
+            )
+
+        builder = []
+        if node.function in BUILTIN_FUNCTIONS:
+            builder.append(BUILTIN_FUNCTIONS[node.function])
+        else:
+            builder.append(node.function)
+        builder.append("(")
+        for arg, param_type in zip(node.arguments, function_type.parameter_types):
+            self.assert_type(arg, param_type)
+
+        builder.append(", ".join(self.generate(arg) for arg in node.arguments))
+        builder.append(")")
+        return "".join(builder)
+
     def visit_Infix(self, node: ast.Infix) -> str:
         return f"{self.generate(node.left)} {node.operator} {self.generate(node.right)}"
 
     def visit_Integer(self, node: ast.Integer) -> str:
         return str(node.value)
 
+    def visit_Return(self, node: ast.Return) -> str:
+        if self.current_function is None:
+            raise VeniceSyntaxError("return statement outside of a function")
+
+        self.assert_type(node.value, self.current_function.return_type)
+        value_code = self.generate(node.value)
+        return f"return {value_code};"
+
     def visit_Symbol(self, node: ast.Symbol) -> str:
         return node.value
 
     def visit_String(self, node: ast.String) -> str:
-        return repr(node.value)
+        # TODO: Need to make sure double quotes in the string's value are escaped.
+        return f'venice_string_new("{node.value}")'
 
     def compute_type(self, node: ast.Expression) -> VeniceType:
         if isinstance(node, ast.Infix):
@@ -148,7 +202,7 @@ class CodeGenerator:
         actual = self.compute_type(node)
         if not expected.match(actual):
             raise common.VeniceTypeError(
-                f"expected {expected!r}, got {actual!r} for {node!r}"
+                f"expected {expected}, got {actual} for {node!r}"
             )
         return actual
 
@@ -219,8 +273,16 @@ class VeniceAtomicType(VeniceType):
     def c_type(self) -> str:
         return self.name
 
+    def __str__(self):
+        return self.name
+
 
 VENICE_BOOL_TYPE = VeniceAtomicType("venice_bool_t")
 VENICE_INT_TYPE = VeniceAtomicType("venice_int_t")
 VENICE_VOID_TYPE = VeniceAtomicType("void")
 VENICE_STRING_TYPE = VeniceAtomicType("venice_string_t")
+
+
+BUILTIN_FUNCTIONS = {
+    "print": "venice_print",
+}
