@@ -88,7 +88,7 @@ class Parser:
             return ast.ExpressionStatement(expr)
 
     def match_let(self) -> ast.Let:
-        symbol = self._expect(TokenType.SYMBOL).name
+        symbol = self._expect(TokenType.SYMBOL).value
         self._expect(TokenType.ASSIGN)
         value = self.match_expression()
         self._expect(TokenType.SEMICOLON)
