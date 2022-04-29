@@ -1,5 +1,5 @@
 # The Venice programming language
-**NOTE**: Venice is in the early stages of development, and not yet ready for production use.
+**NOTE**: Venice is in the early stages of development, and not yet ready for use.
 
 Venice is a modern, high-level, statically-typed programming language. It pairs the elegance and expressiveness of Python with the safety and modern language features of Rust.
 
@@ -40,5 +40,3 @@ func serialize_json(j: Json) -> string {
   }
 }
 ```
-
-For a full introduction to the language, read the [tutorial](https://github.com/iafisher/venice/blob/master/docs/tutorial.md).
