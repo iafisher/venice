@@ -2,8 +2,8 @@ import enum
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from . import common
-from .common import Location
+from venice import common
+from venice.common import Location
 
 
 class TokenType(enum.Enum):

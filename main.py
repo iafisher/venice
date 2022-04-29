@@ -4,8 +4,10 @@ import os
 import subprocess
 import sys
 
-from venice import codegen, parser
+from venice.analysis import analyze
+from venice.backend import codegen
 from venice.common import VeniceSyntaxError, VeniceTypeError
+from venice.frontend import parser
 
 
 def main(path: str, *, native: bool = False) -> None:
@@ -17,6 +19,8 @@ def main(path: str, *, native: bool = False) -> None:
     except VeniceSyntaxError as e:
         print(f"Syntax error: {e}", file=sys.stderr)
         sys.exit(2)
+
+    analyze(tree)
 
     try:
         code = codegen.codegen(tree)

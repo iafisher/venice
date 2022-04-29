@@ -1,7 +1,8 @@
 import unittest
 
-from venice import ast, parser
+from venice import ast
 from venice.common import VeniceSyntaxError
+from venice.frontend import parser
 
 
 class TestParser(unittest.TestCase):

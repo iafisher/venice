@@ -1,7 +1,8 @@
 import textwrap
 import unittest
 
-from venice import ast, codegen
+from venice import ast
+from venice.backend import codegen
 
 
 class TestCodegen(unittest.TestCase):

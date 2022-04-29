@@ -1,7 +1,7 @@
 import unittest
 
-from venice import lexer
-from venice.lexer import TokenType
+from venice.frontend import lexer
+from venice.frontend.lexer import TokenType
 
 
 class TestLexer(unittest.TestCase):

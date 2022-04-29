@@ -61,6 +61,13 @@ class ExpressionStatement(Statement):
 
 
 @dataclass
+class If(Statement):
+    condition: Expression
+    body: List[Statement]
+    else_body: List[Statement]
+
+
+@dataclass
 class Let(Statement):
     symbol: str
     value: Expression

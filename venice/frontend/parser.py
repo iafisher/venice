@@ -1,7 +1,8 @@
 from typing import List, Optional, Union
 
-from . import ast
-from .common import VeniceInternalError, VeniceSyntaxError
+from venice import ast
+from venice.common import VeniceInternalError, VeniceSyntaxError
+
 from .lexer import Lexer, Token, TokenType
 
 

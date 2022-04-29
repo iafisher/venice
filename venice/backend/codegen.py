@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from . import ast, common
-from .common import VeniceSyntaxError, VeniceTypeError
+from venice import ast, common
+from venice.common import VeniceSyntaxError, VeniceTypeError
 
 
 def codegen(tree: ast.Node) -> str:
