@@ -2,4 +2,4 @@
 
 set -e
 
-pytest "$@"
+python3 main.py "$@"

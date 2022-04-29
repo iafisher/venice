@@ -1,98 +1,82 @@
-import unittest
-
 from venice import ast
 from venice.common import VeniceSyntaxError
 from venice.frontend import parser
 
 
-class TestParser(unittest.TestCase):
-    def test_parse_literals(self):
-        self.assertEqual(parse_expression("123"), ast.Integer(123))
-        self.assertEqual(parse_expression('"words"'), ast.String("words"))
-        self.assertEqual(parse_expression("abc"), ast.Symbol("abc"))
+def test_parse_literals():
+    assert parse_expression("123") == ast.Integer(123)
+    assert parse_expression('"words"') == ast.String("words")
+    assert parse_expression("abc") == ast.Symbol("abc")
 
-    def test_parse_function_call(self):
-        self.assertEqual(
-            parse_expression("add(1, 2)"),
-            ast.FunctionCall("add", [ast.Integer(1), ast.Integer(2)]),
-        )
 
-        self.assertEqual(
-            parse_statement("add(1, 2);"),
+def test_parse_function_call():
+    assert parse_expression("add(1, 2)") == ast.FunctionCall(
+        "add", [ast.Integer(1), ast.Integer(2)]
+    )
+
+    assert parse_statement("add(1, 2);") == ast.ExpressionStatement(
+        ast.FunctionCall("add", [ast.Integer(1), ast.Integer(2)])
+    )
+
+
+def test_parse_simple_functions():
+    assert parse_function(
+        """
+            func empty() {}
+            """
+    ) == ast.Function(
+        name="empty",
+        parameters=[],
+        body=[],
+        return_type=None,
+    )
+
+    assert parse_function(
+        """
+            func add(x: int, y: int) -> int {
+              return x + y;
+            }
+            """
+    ) == ast.Function(
+        name="add",
+        parameters=[
+            ast.Parameter(name="x", type=ast.SymbolType("int")),
+            ast.Parameter(name="y", type=ast.SymbolType("int")),
+        ],
+        body=[
+            ast.Return(ast.Infix("+", ast.Symbol("x"), ast.Symbol("y"))),
+        ],
+        return_type=ast.SymbolType("int"),
+    )
+
+    assert parse_function(
+        """
+            func add_and_print(x: int, y: int) -> void {
+              print(x + y);
+            }
+            """
+    ) == ast.Function(
+        name="add_and_print",
+        parameters=[
+            ast.Parameter(name="x", type=ast.SymbolType("int")),
+            ast.Parameter(name="y", type=ast.SymbolType("int")),
+        ],
+        body=[
             ast.ExpressionStatement(
-                ast.FunctionCall("add", [ast.Integer(1), ast.Integer(2)])
-            ),
-        )
+                ast.FunctionCall(
+                    function="print",
+                    arguments=[ast.Infix("+", ast.Symbol("x"), ast.Symbol("y"))],
+                )
+            )
+        ],
+        return_type=ast.SymbolType("void"),
+    )
 
-    def test_parse_simple_functions(self):
-        self.assertEqual(
-            parse_function(
-                """
-                func empty() {}
-                """
-            ),
-            ast.Function(
-                name="empty",
-                parameters=[],
-                body=[],
-                return_type=None,
-            ),
-        )
 
-        self.assertEqual(
-            parse_function(
-                """
-                func add(x: int, y: int) -> int {
-                  return x + y;
-                }
-                """
-            ),
-            ast.Function(
-                name="add",
-                parameters=[
-                    ast.Parameter(name="x", type=ast.SymbolType("int")),
-                    ast.Parameter(name="y", type=ast.SymbolType("int")),
-                ],
-                body=[
-                    ast.Return(ast.Infix("+", ast.Symbol("x"), ast.Symbol("y"))),
-                ],
-                return_type=ast.SymbolType("int"),
-            ),
-        )
-
-        self.assertEqual(
-            parse_function(
-                """
-                func add_and_print(x: int, y: int) -> void {
-                  print(x + y);
-                }
-                """
-            ),
-            ast.Function(
-                name="add_and_print",
-                parameters=[
-                    ast.Parameter(name="x", type=ast.SymbolType("int")),
-                    ast.Parameter(name="y", type=ast.SymbolType("int")),
-                ],
-                body=[
-                    ast.ExpressionStatement(
-                        ast.FunctionCall(
-                            function="print",
-                            arguments=[
-                                ast.Infix("+", ast.Symbol("x"), ast.Symbol("y"))
-                            ],
-                        )
-                    )
-                ],
-                return_type=ast.SymbolType("void"),
-            ),
-        )
-
-    def test_parse_expression_statement(self):
-        self.assertEqual(
-            parse_statement("1 + 2;"),
-            ast.ExpressionStatement(ast.Infix("+", ast.Integer(1), ast.Integer(2))),
-        )
+def test_parse_expression_statement():
+    assert parse_statement("1 + 2;") == ast.ExpressionStatement(
+        ast.Infix("+", ast.Integer(1), ast.Integer(2))
+    )
 
 
 def parse_expression(program: str) -> ast.Expression:
