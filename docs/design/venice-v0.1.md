@@ -9,12 +9,12 @@ Version 0.1 is designed to be minimal but still complete enough that useful medi
 
 
 ## Overview of the Venice language
-Venice is a modern, high-level, statically-typed programming language that compiles to x86-64 machine code. Among popular existing languages, Venice is most similar to Python, although it is statically typed and has a C-style syntax. It is at a similar level of abstraction as Java, and higher than Rust, C, and C++. For instance, a Venice programmer does not have access to raw pointers, and memory management is automatic. When ease of use comes into conflict with efficiency, ease of use is usually preferred. For more background on the motivation behind Venice, see my blog post ["Why am I writing a new programming language](https://iafisher.com/blog/2021/09/why-i-am-writing-a-new-programming-language).
+Venice is a modern, high-level, statically-typed programming language that compiles to x86-64 machine code. Among popular existing languages, Venice is most similar to Python, although it is statically typed and has a C-style syntax. It is at a similar level of abstraction as Java, and higher than Rust, C, and C++. For instance, a Venice programmer does not have access to raw pointers, and memory management is automatic. When ease of use comes into conflict with efficiency, ease of use is usually preferred. For more background on the motivation behind Venice, see my blog post ["Why am I writing a new programming language"](https://iafisher.com/blog/2021/09/why-i-am-writing-a-new-programming-language).
 
 
 ## Expressions
 ### Booleans and integers
-Booleans and integers in Venice are similar to other languages. In Venice 0.1, the only numeric type is `i64`, which represents a 64-bit signed integer. The names of the boolean literals are spelled `true` and `false`. There is no implicit conversion between booleans and integers.
+Booleans and integers in Venice are similar to other languages. The only numeric type is `i64`, which represents a 64-bit signed integer.[^may-change] The names of the boolean literals are spelled `true` and `false` and are case-sensitive. There is no implicit conversion between booleans and integers.
 
 Floating-point numbers, unsigned integer types, and integer types of different bit widths are not supported.[^may-change]
 
@@ -150,7 +150,7 @@ The `new` keyword is used to create an instance of a record type:
 let user: User = new User { name: "John Doe", visit_count: 0, is_admin: false };
 ```
 
-All fields must be explicitly specified by name.[^may-change]
+All fields must be explicitly specified by name.[^may-change] The order does not need the order of the fields in the record type's declaration.
 
 Fields can be accessed and re-assigned using the dot operator:
 
@@ -163,10 +163,10 @@ assert user.name == "Jane Doe";
 The standard boolean operators—`and`, `or`, and `not`—are supported in Venice 0.1. Boolean operators are lazy, e.g. the expression `x and y` won't result in the evaluation of `y` if `x` evaluates to false.
 
 ### Comparisons
-The operators `>`, `>=`, `<`, and `<=` can be used to compare integers and strings. `==` and its inverse `!=` can be used to check equality of any two values of the same type. For compound types (lists, tuples, and maps), the equality operator first checks that the containers have the same number of elements, then recursively checks that each element is equal to the other. All comparison operators yield a boolean value.
+The operators `>`, `>=`, `<`, and `<=` can be used to compare integers and strings. `==` and its inverse `!=` can be used to check equality of any two values of the same type. For compound types (lists, tuples, maps, and records), the equality operator first checks that the containers have the same number of elements (if applicable—two tuples or two records of the same type will always have the same number of elements), then recursively checks that each element is equal to the other. All comparison operators yield a boolean value.
 
 ### Arithmetic operations
-The arithmetic operators in Venice are `+`, `-`, `*`, `//`, and `%`, for addition, subtraction, multiplication, floor division, and modulo, respectively. The `/` operator is reserved for future use as the real division operator with floating-point numbers. `-` is also a unary negation operator. The behavior of a program upon integer overflow or underflow is undefined.[^may-change]
+The arithmetic operators in Venice are `+`, `-`, `*`, `//`, and `%`, for addition, subtraction, multiplication, floor division, and modulo, respectively. The `/` operator is reserved for future use as the real division operator with floating-point numbers. `-` also serves as the unary negation operator. The result of an arithmetic operation that causes integer overflow or underflow is undefined.[^may-change]
 
 Venice 0.1 has no bitwise operators, and the internal representation of integers (e.g., two's complement) is left unspecified.[^may-change]
 
