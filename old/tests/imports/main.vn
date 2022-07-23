@@ -1,8 +1,0 @@
-# OUTPUT
-# Hello
-# END OUTPUT
-import "./lib.vn" as lib
-
-func main() {
-  lib::hello()
-}

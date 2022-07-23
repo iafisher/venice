@@ -1,9 +1,0 @@
-#!/bin/bash
-
-set -eu
-
-main() {
-  go test github.com/iafisher/venice/src/...
-}
-
-main "$@"

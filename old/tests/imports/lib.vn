@@ -1,6 +1,0 @@
-# OUTPUT
-# END OUTPUT
-
-func hello() {
-  print("Hello")
-}
