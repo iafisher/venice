@@ -4,7 +4,7 @@ Pre-commit configuration for git.
 This file was created by precommit (https://github.com/iafisher/precommit).
 You are welcome to edit it yourself to customize your pre-commit hook.
 """
-from precommitlib import checks
+from iprecommit import checks
 
 
 def init(precommit):
@@ -35,6 +35,7 @@ def init(precommit):
     # Check Rust format with rustfmt.
     precommit.check(checks.RustFormat())
 
+
 #     precommit.check(
 #         checks.Command(
 #             "UnitTests",
@@ -49,12 +50,12 @@ def init(precommit):
 #         )
 #     )
 
-    # Run a custom command.
-    # precommit.check(checks.Command("UnitTests", ["./test"]))
+# Run a custom command.
+# precommit.check(checks.Command("UnitTests", ["./test"]))
 
-    # Run a custom command on each file.
-    # precommit.check(checks.Command("FileCheck", ["check_file"], pass_files=True))
+# Run a custom command on each file.
+# precommit.check(checks.Command("FileCheck", ["check_file"], pass_files=True))
 
-    # precommit.check(
-    #     checks.Command("UnitTests", ["./test"], exclude=["*.md", "precommit.py"])
-    # )
+# precommit.check(
+#     checks.Command("UnitTests", ["./test"], exclude=["*.md", "precommit.py"])
+# )
