@@ -1,4 +1,4 @@
-## Assigning to a parenthesized expression:
+## Assigning to a parenthesized expression
 ```
 (a) = 42;
 ```
