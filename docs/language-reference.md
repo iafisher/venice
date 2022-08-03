@@ -1,7 +1,4 @@
-# Venice 0.1
-Ian Fisher, July 2022
-
-
+# The Venice language reference
 ## Introduction
 This document describes version 0.1 of the Venice programming language. It is not intended as a tutorial.
 

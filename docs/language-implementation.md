@@ -1,13 +1,11 @@
-# Venice 0.1 implementation
-Ian Fisher, July 2022
-
+# The Venice implementation
 WORK IN PROGRESS
 
 ## Introduction
-This document describes the implementation of version 0.1 of the Venice language. For a description of the language itself, see the [version 0.1 design](https://github.com/iafisher/venice/blob/master/docs/design/venice-v0.1.md).
+This document describes the design of the compiler for the Venice programming language. For a description of the language itself, see the [language reference](https://github.com/iafisher/venice/blob/master/docs/language-reference.md).
 
 ## Goals
-The focus of the first version of the compiler, which will be written in Python, is correctness and simplicity. Efficiency, either in the sense of emitting efficient code or compiling programs quickly, is not a focus. Error messages for incorrect programs should give enough information for the programmer to be able to identify the error (i.e., the location in the source code and a clear description of the problem), but they do not need to be as detailed as, e.g., Rust's.
+The focus of the first version of the compiler, which will be written in Rust, is correctness and simplicity. Efficiency, either in the sense of emitting efficient code or compiling programs quickly, is not a focus. Error messages for incorrect programs should give enough information for the programmer to be able to identify the error (i.e., the location in the source code and a clear description of the problem), but they do not need to be as detailed as, e.g., Rust's.
 
 These goals may change in future versions of the compiler.
 
