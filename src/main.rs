@@ -8,8 +8,5 @@ mod vil;
 mod x86;
 
 fn main() {
-    let n = ptree::Node {
-        name: String::from("whatever"),
-    };
-    println!("{:?}", n);
+    println!("Hello, world!");
 }
