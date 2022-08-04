@@ -43,6 +43,7 @@ pub enum Statement {
     If(IfStatement),
     While(WhileStatement),
     For(ForStatement),
+    Return(ReturnStatement),
     Assert(AssertStatement),
 }
 
@@ -73,6 +74,10 @@ pub struct ForStatement {
     symbol2: Option<String>,
     iterator: TypedExpression,
     body: Vec<Statement>,
+}
+
+pub struct ReturnStatement {
+    value: TypedExpression,
 }
 
 pub struct AssertStatement {
