@@ -1,6 +1,6 @@
+use super::ast;
 use super::lexer;
-use super::ptree;
 
-fn parse(lexer: lexer::Lexer) -> Result<ptree::Program, String> {
+fn parse(lexer: lexer::Lexer) -> Result<ast::Program, String> {
     Err(String::from("not implemented"))
 }
