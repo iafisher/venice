@@ -228,22 +228,52 @@ pub struct SyntacticParameterizedType {
     pub parameters: Vec<SyntacticType>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Type {
     Boolean,
     I64,
     Str,
     Tuple(Vec<Type>),
     List(Box<Type>),
-    Map { key: Box<Type>, value: Box<Type> },
+    Map {
+        key: Box<Type>,
+        value: Box<Type>,
+    },
+    Function {
+        parameters: Vec<Type>,
+        return_type: Box<Type>,
+    },
     Record(String),
     Unknown,
+    Error,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ParameterizedType {
     symbol: String,
     parameters: Vec<Type>,
+}
+
+impl Type {
+    pub fn matches(&self, other: &Type) -> bool {
+        match (self, other) {
+            (Type::Boolean, Type::Boolean) => true,
+            (Type::I64, Type::I64) => true,
+            (Type::Str, Type::Str) => true,
+            (Type::Tuple(ts1), Type::Tuple(ts2)) => {
+                if ts1.len() != ts2.len() {
+                    return false;
+                }
+                for (t1, t2) in ts1.iter().zip(ts2.iter()) {
+                    if !t1.matches(t2) {
+                        return false;
+                    }
+                }
+                true
+            }
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Display for Program {
@@ -494,6 +524,45 @@ impl fmt::Display for SyntacticType {
                 }
                 write!(f, ")")
             }
+        }
+    }
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Type::I64 => write!(f, "i64"),
+            Type::Boolean => write!(f, "bool"),
+            Type::Str => write!(f, "string"),
+            Type::Tuple(ts) => {
+                write!(f, "(")?;
+                for (i, t) in ts.iter().enumerate() {
+                    write!(f, "{}", t)?;
+                    if i != ts.len() - 1 {
+                        write!(f, ", ")?;
+                    }
+                }
+                write!(f, ")")
+            }
+            Type::List(t) => {
+                write!(f, "list<{}>", t)
+            }
+            Type::Map { key, value } => {
+                write!(f, "map<{}, {}>", key, value)
+            }
+            Type::Function {
+                parameters,
+                return_type,
+            } => {
+                write!(f, "func<")?;
+                for t in parameters {
+                    write!(f, "{}, ", t)?;
+                }
+                write!(f, "{}>", return_type)
+            }
+            Type::Record(name) => write!(f, "{}", name),
+            Type::Unknown => write!(f, "unknown"),
+            Type::Error => write!(f, "unknown"),
         }
     }
 }

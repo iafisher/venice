@@ -2,6 +2,7 @@ mod analyzer;
 mod ast;
 mod codegen;
 mod common;
+mod errors;
 mod lexer;
 mod vil;
 mod x86;
