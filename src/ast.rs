@@ -163,6 +163,7 @@ pub struct BinaryExpression {
 #[derive(Debug)]
 pub enum UnaryOpType {
     Negate,
+    Not,
 }
 
 #[derive(Debug)]
@@ -186,7 +187,7 @@ pub struct IndexExpression {
 #[derive(Debug)]
 pub struct TupleIndexExpression {
     pub value: Box<Expression>,
-    pub index: u64,
+    pub index: usize,
 }
 
 #[derive(Debug)]

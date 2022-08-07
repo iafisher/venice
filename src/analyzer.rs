@@ -2,9 +2,14 @@ use super::ast;
 use super::errors;
 use std::collections::HashMap;
 
-fn analyze(ast: &mut ast::Program) -> Result<(), errors::VeniceError> {
+pub fn analyze(ast: &mut ast::Program) -> Result<(), Vec<errors::VeniceError>> {
     let mut analyzer = Analyzer::new();
-    analyzer.analyze_program(ast)
+    analyzer.analyze_program(ast);
+    if analyzer.errors.len() > 0 {
+        Err(analyzer.errors.clone())
+    } else {
+        Ok(())
+    }
 }
 
 struct SymbolTable {
@@ -67,6 +72,7 @@ impl SymbolTable {
 struct Analyzer {
     symbols: SymbolTable,
     types: SymbolTable,
+    current_function_return_type: Option<ast::Type>,
     errors: Vec<errors::VeniceError>,
 }
 
@@ -75,20 +81,14 @@ impl Analyzer {
         Analyzer {
             symbols: SymbolTable::new(),
             types: SymbolTable::builtin_types(),
+            current_function_return_type: None,
             errors: Vec::new(),
         }
     }
 
-    fn analyze_program(&mut self, ast: &mut ast::Program) -> Result<(), errors::VeniceError> {
+    fn analyze_program(&mut self, ast: &mut ast::Program) {
         for mut declaration in &mut ast.declarations {
             self.analyze_declaration(&mut declaration)
-        }
-
-        if self.errors.len() > 0 {
-            // TODO: return all errors, not just the first one.
-            Err(self.errors[0].clone())
-        } else {
-            Ok(())
         }
     }
 
@@ -126,29 +126,26 @@ impl Analyzer {
             },
         );
 
-        for stmt in &declaration.body {
-            self.analyze_statement(stmt);
-        }
+        self.current_function_return_type = Some(declaration.semantic_return_type.clone());
+        self.analyze_block(&mut declaration.body);
+        self.current_function_return_type = None;
 
-        // TODO: better approach would be to have a separate symbol table for the
-        // function's scope.
+        // TODO: A better approach would be to have a separate symbol table for the
+        // function's scope. And actually this doesn't work at all because the symbols
+        // defined in a function's body will persist after the function is finished.
         for parameter in &mut declaration.parameters {
             self.symbols.remove(&parameter.name);
         }
     }
 
     fn analyze_const_declaration(&mut self, declaration: &mut ast::ConstDeclaration) {
-        self.analyze_expression(&declaration.value);
+        self.analyze_expression(&mut declaration.value);
         declaration.semantic_type = self.resolve_type(&declaration.type_);
         if !declaration
             .semantic_type
             .matches(&declaration.value.semantic_type)
         {
-            let msg = format!(
-                "expected {}, got {}",
-                declaration.semantic_type, declaration.value.semantic_type,
-            );
-            self.error(&msg);
+            self.error_type_mismatch(&declaration.semantic_type, &declaration.value.semantic_type);
         }
 
         self.symbols.insert(
@@ -164,19 +161,336 @@ impl Analyzer {
         // TODO
     }
 
-    fn analyze_statement(&self, stmt: &ast::Statement) {
-        // TODO
+    fn analyze_block(&mut self, block: &mut Vec<ast::Statement>) {
+        for stmt in block {
+            self.analyze_statement(stmt);
+        }
     }
 
-    fn analyze_expression(&self, expr: &ast::Expression) {
+    fn analyze_statement(&mut self, stmt: &mut ast::Statement) {
+        match stmt {
+            ast::Statement::Let(s) => self.analyze_let_statement(s),
+            ast::Statement::Assign(s) => self.analyze_assign_statement(s),
+            ast::Statement::If(s) => self.analyze_if_statement(s),
+            ast::Statement::While(s) => self.analyze_while_statement(s),
+            ast::Statement::For(s) => self.analyze_for_statement(s),
+            ast::Statement::Return(s) => self.analyze_return_statement(s),
+            ast::Statement::Assert(s) => self.analyze_assert_statement(s),
+        }
+    }
+
+    fn analyze_let_statement(&mut self, stmt: &mut ast::LetStatement) {
+        self.analyze_expression(&mut stmt.value);
+        stmt.semantic_type = self.resolve_type(&stmt.type_);
+        if !stmt.semantic_type.matches(&stmt.value.semantic_type) {
+            self.error_type_mismatch(&stmt.semantic_type, &stmt.value.semantic_type);
+        }
+
+        self.symbols.insert(
+            &stmt.symbol,
+            SymbolTableEntry {
+                type_: stmt.semantic_type.clone(),
+                constant: false,
+            },
+        );
+    }
+
+    fn analyze_assign_statement(&mut self, stmt: &mut ast::AssignStatement) {
+        self.analyze_expression(&mut stmt.value);
+        if let Some(entry) = self.symbols.get(&stmt.symbol) {
+            if !entry.type_.matches(&stmt.value.semantic_type) {
+                self.error_type_mismatch(&entry.type_, &stmt.value.semantic_type);
+            }
+        } else {
+            let msg = format!("assignment to unknown symbol {}", stmt.symbol);
+            self.error(&msg);
+        }
+    }
+
+    fn analyze_if_statement(&mut self, stmt: &mut ast::IfStatement) {
+        let if_clause_type = self.analyze_expression(&mut stmt.if_clause.condition);
+        if !if_clause_type.matches(&ast::Type::Boolean) {
+            self.error_type_mismatch(&ast::Type::Boolean, &if_clause_type);
+        }
+        self.analyze_block(&mut stmt.if_clause.body);
+
+        for elif_clause in &mut stmt.elif_clauses {
+            let elif_clause_type = self.analyze_expression(&mut elif_clause.condition);
+            if !elif_clause_type.matches(&ast::Type::Boolean) {
+                self.error_type_mismatch(&ast::Type::Boolean, &elif_clause_type);
+            }
+            self.analyze_block(&mut elif_clause.body);
+        }
+
+        self.analyze_block(&mut stmt.else_clause);
+    }
+
+    fn analyze_while_statement(&mut self, stmt: &mut ast::WhileStatement) {
+        let condition_type = self.analyze_expression(&mut stmt.condition);
+        if !condition_type.matches(&ast::Type::Boolean) {
+            self.error_type_mismatch(&ast::Type::Boolean, &condition_type);
+        }
+        self.analyze_block(&mut stmt.body);
+    }
+
+    fn analyze_for_statement(&mut self, stmt: &mut ast::ForStatement) {}
+
+    fn analyze_return_statement(&mut self, stmt: &mut ast::ReturnStatement) {
+        let actual_return_type = self.analyze_expression(&mut stmt.value);
+        // TODO: Can the clone here be avoided?
+        if let Some(expected_return_type) = self.current_function_return_type.clone() {
+            if !expected_return_type.matches(&actual_return_type) {
+                self.error_type_mismatch(&expected_return_type, &actual_return_type);
+            }
+        } else {
+            self.error("return statement outside of function");
+        }
+    }
+
+    fn analyze_assert_statement(&mut self, stmt: &mut ast::AssertStatement) {
+        let type_ = self.analyze_expression(&mut stmt.condition);
+        if !type_.matches(&ast::Type::Boolean) {
+            self.error_type_mismatch(&ast::Type::Boolean, &type_);
+        }
+    }
+
+    fn analyze_expression(&mut self, expr: &mut ast::Expression) -> ast::Type {
+        match &mut expr.kind {
+            ast::ExpressionKind::Boolean(_) => ast::Type::Boolean,
+            ast::ExpressionKind::Integer(_) => ast::Type::I64,
+            ast::ExpressionKind::Str(_) => ast::Type::Str,
+            ast::ExpressionKind::Symbol(s) => {
+                if let Some(entry) = self.symbols.get(&s) {
+                    entry.type_
+                } else {
+                    self.error("unknown symbol");
+                    ast::Type::Error
+                }
+            }
+            ast::ExpressionKind::Binary(ref mut e) => self.analyze_binary_expression(e),
+            ast::ExpressionKind::Unary(ref mut e) => self.analyze_unary_expression(e),
+            ast::ExpressionKind::Call(ref mut e) => self.analyze_call_expression(e),
+            ast::ExpressionKind::Index(ref mut e) => self.analyze_index_expression(e),
+            ast::ExpressionKind::TupleIndex(ref mut e) => self.analyze_tuple_index_expression(e),
+            ast::ExpressionKind::Attribute(ref mut e) => self.analyze_attribute_expression(e),
+            ast::ExpressionKind::List(ref mut e) => self.analyze_list_literal(e),
+            ast::ExpressionKind::Tuple(ref mut e) => self.analyze_tuple_literal(e),
+            ast::ExpressionKind::Map(ref mut e) => self.analyze_map_literal(e),
+            ast::ExpressionKind::Record(ref mut e) => self.analyze_record_literal(e),
+        }
+    }
+
+    fn analyze_binary_expression(&mut self, expr: &mut ast::BinaryExpression) -> ast::Type {
+        let left_type = self.analyze_expression(&mut expr.left);
+        let right_type = self.analyze_expression(&mut expr.right);
+        match expr.op {
+            ast::BinaryOpType::Concat => match left_type {
+                ast::Type::Str => {
+                    if !right_type.matches(&ast::Type::Str) {
+                        self.error_type_mismatch(&ast::Type::Str, &right_type);
+                        ast::Type::Error
+                    } else {
+                        ast::Type::Str
+                    }
+                }
+                ast::Type::List(ref t) => {
+                    if !left_type.matches(&right_type) {
+                        self.error_type_mismatch(&left_type, &right_type);
+                        ast::Type::Error
+                    } else {
+                        left_type.clone()
+                    }
+                }
+                _ => {
+                    let msg = format!("cannot concatenate value of type {}", left_type);
+                    self.error(&msg);
+                    ast::Type::Error
+                }
+            },
+            ast::BinaryOpType::Or | ast::BinaryOpType::And => {
+                self.assert_type(&left_type, &ast::Type::Boolean);
+                self.assert_type(&right_type, &ast::Type::Boolean);
+                ast::Type::Boolean
+            }
+            ast::BinaryOpType::Equals | ast::BinaryOpType::NotEquals => {
+                self.assert_type(&left_type, &right_type);
+                ast::Type::Boolean
+            }
+            ast::BinaryOpType::LessThan
+            | ast::BinaryOpType::LessThanEquals
+            | ast::BinaryOpType::GreaterThan
+            | ast::BinaryOpType::GreaterThanEquals => {
+                self.assert_type(&left_type, &ast::Type::I64);
+                self.assert_type(&right_type, &ast::Type::I64);
+                ast::Type::Boolean
+            }
+            _ => {
+                self.assert_type(&left_type, &ast::Type::I64);
+                self.assert_type(&right_type, &ast::Type::I64);
+                ast::Type::I64
+            }
+        }
+    }
+
+    fn analyze_unary_expression(&mut self, expr: &mut ast::UnaryExpression) -> ast::Type {
+        let operand_type = self.analyze_expression(&mut expr.operand);
+        match expr.op {
+            ast::UnaryOpType::Negate => {
+                self.assert_type(&operand_type, &ast::Type::I64);
+                ast::Type::I64
+            }
+            ast::UnaryOpType::Not => {
+                self.assert_type(&operand_type, &ast::Type::Boolean);
+                ast::Type::Boolean
+            }
+        }
+    }
+
+    fn analyze_call_expression(&mut self, expr: &mut ast::CallExpression) -> ast::Type {
+        if let Some(entry) = self.symbols.get(&expr.function) {
+            if let ast::Type::Function {
+                parameters,
+                return_type,
+            } = entry.type_
+            {
+                if parameters.len() != expr.arguments.len() {
+                    let msg = format!(
+                        "expected {} parameter(s), got {}",
+                        parameters.len(),
+                        expr.arguments.len()
+                    );
+                    self.error(&msg);
+                }
+
+                for argument in &mut expr.arguments {
+                    self.analyze_expression(argument);
+                }
+
+                for (parameter, argument) in parameters.iter().zip(expr.arguments.iter()) {
+                    self.assert_type(&parameter, &argument.semantic_type);
+                }
+
+                *return_type
+            } else {
+                let msg = format!("cannot call non-function type {}", entry.type_);
+                self.error(&msg);
+                ast::Type::Error
+            }
+        } else {
+            let msg = format!("unknown symbol {}", expr.function);
+            self.error(&msg);
+            ast::Type::Error
+        }
+    }
+
+    fn analyze_index_expression(&mut self, expr: &mut ast::IndexExpression) -> ast::Type {
+        let value_type = self.analyze_expression(&mut expr.value);
+        let index_type = self.analyze_expression(&mut expr.index);
+
+        match value_type {
+            ast::Type::List(t) => {
+                self.assert_type(&index_type, &ast::Type::I64);
+                *t.clone()
+            }
+            ast::Type::Map { key, value } => {
+                self.assert_type(&index_type, &key);
+                *value.clone()
+            }
+            _ => {
+                let msg = format!("cannot index non-list, non-map type {}", value_type);
+                self.error(&msg);
+                ast::Type::Error
+            }
+        }
+    }
+
+    fn analyze_tuple_index_expression(
+        &mut self,
+        expr: &mut ast::TupleIndexExpression,
+    ) -> ast::Type {
+        let value_type = self.analyze_expression(&mut expr.value);
+        if let ast::Type::Tuple(ts) = value_type {
+            if expr.index >= ts.len() {
+                self.error("tuple index out of range");
+                ast::Type::Error
+            } else {
+                ts[expr.index].clone()
+            }
+        } else {
+            let msg = format!("cannot index non-tuple type {}", value_type);
+            self.error(&msg);
+            ast::Type::Error
+        }
+    }
+
+    fn analyze_attribute_expression(&mut self, expr: &mut ast::AttributeExpression) -> ast::Type {
         // TODO
+        ast::Type::Error
+    }
+
+    fn analyze_list_literal(&mut self, expr: &mut ast::ListLiteral) -> ast::Type {
+        if expr.items.len() == 0 {
+            self.error("cannot type-check empty list literal");
+            return ast::Type::Error;
+        }
+
+        let item_type = self.analyze_expression(&mut expr.items[0]);
+        for i in 1..expr.items.len() {
+            let another_item_type = self.analyze_expression(&mut expr.items[i]);
+            self.assert_type(&another_item_type, &item_type);
+        }
+        ast::Type::List(Box::new(item_type))
+    }
+
+    fn analyze_tuple_literal(&mut self, expr: &mut ast::TupleLiteral) -> ast::Type {
+        let mut types = Vec::new();
+        for item in &mut expr.items {
+            types.push(self.analyze_expression(item));
+        }
+        ast::Type::Tuple(types)
+    }
+
+    fn analyze_map_literal(&mut self, expr: &mut ast::MapLiteral) -> ast::Type {
+        if expr.items.len() == 0 {
+            self.error("cannot type-check empty map literal");
+            return ast::Type::Error;
+        }
+
+        let key_type = self.analyze_expression(&mut expr.items[0].0);
+        let value_type = self.analyze_expression(&mut expr.items[0].1);
+        for i in 1..expr.items.len() {
+            let another_key_type = self.analyze_expression(&mut expr.items[i].0);
+            self.assert_type(&another_key_type, &key_type);
+            let another_value_type = self.analyze_expression(&mut expr.items[i].1);
+            self.assert_type(&another_value_type, &value_type);
+        }
+        ast::Type::Map {
+            key: Box::new(key_type),
+            value: Box::new(value_type),
+        }
+    }
+
+    fn analyze_record_literal(&mut self, expr: &mut ast::RecordLiteral) -> ast::Type {
+        // TODO
+        ast::Type::Error
     }
 
     fn resolve_type(&self, type_: &ast::SyntacticType) -> ast::Type {
         ast::Type::Error
     }
 
+    fn assert_type(&mut self, actual: &ast::Type, expected: &ast::Type) {
+        if !actual.matches(expected) {
+            self.error_type_mismatch(expected, actual);
+        }
+    }
+
     fn error(&mut self, message: &str) {
         self.errors.push(errors::VeniceError::new(message));
+    }
+
+    fn error_type_mismatch(&mut self, expected: &ast::Type, actual: &ast::Type) {
+        let msg = format!("expected {}, got {}", expected, actual);
+        self.error(&msg);
     }
 }

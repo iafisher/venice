@@ -50,7 +50,7 @@ fn main() {
     }
     ";
 
-    let fibonacci_ast = ast::Program {
+    let mut fibonacci_ast = ast::Program {
         declarations: vec![ast::Declaration::Function(ast::FunctionDeclaration {
             name: String::from("fibonacci"),
             parameters: vec![ast::FunctionParameter {
@@ -131,4 +131,10 @@ fn main() {
     };
 
     println!("{}", fibonacci_ast);
+    let r = analyzer::analyze(&mut fibonacci_ast);
+    if let Err(errors) = r {
+        for error in errors {
+            println!("error: {}", error.message);
+        }
+    }
 }
