@@ -8,7 +8,13 @@ fn analyze(ast: &mut ast::Program) -> Result<(), errors::VeniceError> {
 }
 
 struct SymbolTable {
-    symbols: HashMap<String, ast::Type>,
+    symbols: HashMap<String, SymbolTableEntry>,
+}
+
+#[derive(Clone)]
+struct SymbolTableEntry {
+    pub type_: ast::Type,
+    pub constant: bool,
 }
 
 impl SymbolTable {
@@ -20,19 +26,37 @@ impl SymbolTable {
 
     pub fn builtin_types() -> Self {
         let mut symbols = HashMap::new();
-        symbols.insert(String::from("i64"), ast::Type::I64);
-        symbols.insert(String::from("bool"), ast::Type::Boolean);
-        symbols.insert(String::from("string"), ast::Type::Str);
+        symbols.insert(
+            String::from("i64"),
+            SymbolTableEntry {
+                type_: ast::Type::I64,
+                constant: true,
+            },
+        );
+        symbols.insert(
+            String::from("bool"),
+            SymbolTableEntry {
+                type_: ast::Type::Boolean,
+                constant: true,
+            },
+        );
+        symbols.insert(
+            String::from("string"),
+            SymbolTableEntry {
+                type_: ast::Type::Str,
+                constant: true,
+            },
+        );
 
         SymbolTable { symbols: symbols }
     }
 
-    pub fn get(&self, key: &str) -> Option<ast::Type> {
+    pub fn get(&self, key: &str) -> Option<SymbolTableEntry> {
         self.symbols.get(key).cloned()
     }
 
-    pub fn insert(&mut self, key: &str, type_: ast::Type) {
-        self.symbols.insert(String::from(key), type_.clone());
+    pub fn insert(&mut self, key: &str, entry: SymbolTableEntry) {
+        self.symbols.insert(String::from(key), entry.clone());
     }
 
     pub fn remove(&mut self, key: &str) {
@@ -82,14 +106,23 @@ impl Analyzer {
         for parameter in &mut declaration.parameters {
             let t = self.resolve_type(&parameter.type_);
             parameter.semantic_type = t.clone();
-            self.symbols.insert(&parameter.name, t.clone());
+            self.symbols.insert(
+                &parameter.name,
+                SymbolTableEntry {
+                    type_: t.clone(),
+                    constant: false,
+                },
+            );
             parameter_types.push(t);
         }
         self.types.insert(
             &declaration.name,
-            ast::Type::Function {
-                parameters: parameter_types,
-                return_type: Box::new(declaration.semantic_return_type.clone()),
+            SymbolTableEntry {
+                type_: ast::Type::Function {
+                    parameters: parameter_types,
+                    return_type: Box::new(declaration.semantic_return_type.clone()),
+                },
+                constant: true,
             },
         );
 
@@ -118,8 +151,13 @@ impl Analyzer {
             self.error(&msg);
         }
 
-        self.symbols
-            .insert(&declaration.symbol, declaration.semantic_type.clone());
+        self.symbols.insert(
+            &declaration.symbol,
+            SymbolTableEntry {
+                type_: declaration.semantic_type.clone(),
+                constant: true,
+            },
+        );
     }
 
     fn analyze_record_declaration(&mut self, declaration: &mut ast::RecordDeclaration) {
