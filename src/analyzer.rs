@@ -1,4 +1,5 @@
 use super::ast;
+use super::common;
 use super::errors;
 use std::collections::HashMap;
 
@@ -145,7 +146,11 @@ impl Analyzer {
             .semantic_type
             .matches(&declaration.value.semantic_type)
         {
-            self.error_type_mismatch(&declaration.semantic_type, &declaration.value.semantic_type);
+            self.error_type_mismatch(
+                &declaration.semantic_type,
+                &declaration.value.semantic_type,
+                declaration.location.clone(),
+            );
         }
 
         self.symbols.insert(
@@ -183,7 +188,11 @@ impl Analyzer {
         self.analyze_expression(&mut stmt.value);
         stmt.semantic_type = self.resolve_type(&stmt.type_);
         if !stmt.semantic_type.matches(&stmt.value.semantic_type) {
-            self.error_type_mismatch(&stmt.semantic_type, &stmt.value.semantic_type);
+            self.error_type_mismatch(
+                &stmt.semantic_type,
+                &stmt.value.semantic_type,
+                stmt.location.clone(),
+            );
         }
 
         self.symbols.insert(
@@ -199,25 +208,37 @@ impl Analyzer {
         self.analyze_expression(&mut stmt.value);
         if let Some(entry) = self.symbols.get(&stmt.symbol) {
             if !entry.type_.matches(&stmt.value.semantic_type) {
-                self.error_type_mismatch(&entry.type_, &stmt.value.semantic_type);
+                self.error_type_mismatch(
+                    &entry.type_,
+                    &stmt.value.semantic_type,
+                    stmt.location.clone(),
+                );
             }
         } else {
             let msg = format!("assignment to unknown symbol {}", stmt.symbol);
-            self.error(&msg);
+            self.error(&msg, stmt.location.clone());
         }
     }
 
     fn analyze_if_statement(&mut self, stmt: &mut ast::IfStatement) {
         let if_clause_type = self.analyze_expression(&mut stmt.if_clause.condition);
         if !if_clause_type.matches(&ast::Type::Boolean) {
-            self.error_type_mismatch(&ast::Type::Boolean, &if_clause_type);
+            self.error_type_mismatch(
+                &ast::Type::Boolean,
+                &if_clause_type,
+                stmt.if_clause.condition.location.clone(),
+            );
         }
         self.analyze_block(&mut stmt.if_clause.body);
 
         for elif_clause in &mut stmt.elif_clauses {
             let elif_clause_type = self.analyze_expression(&mut elif_clause.condition);
             if !elif_clause_type.matches(&ast::Type::Boolean) {
-                self.error_type_mismatch(&ast::Type::Boolean, &elif_clause_type);
+                self.error_type_mismatch(
+                    &ast::Type::Boolean,
+                    &elif_clause_type,
+                    elif_clause.condition.location.clone(),
+                );
             }
             self.analyze_block(&mut elif_clause.body);
         }
@@ -228,7 +249,11 @@ impl Analyzer {
     fn analyze_while_statement(&mut self, stmt: &mut ast::WhileStatement) {
         let condition_type = self.analyze_expression(&mut stmt.condition);
         if !condition_type.matches(&ast::Type::Boolean) {
-            self.error_type_mismatch(&ast::Type::Boolean, &condition_type);
+            self.error_type_mismatch(
+                &ast::Type::Boolean,
+                &condition_type,
+                stmt.condition.location.clone(),
+            );
         }
         self.analyze_block(&mut stmt.body);
     }
@@ -240,17 +265,24 @@ impl Analyzer {
         // TODO: Can the clone here be avoided?
         if let Some(expected_return_type) = self.current_function_return_type.clone() {
             if !expected_return_type.matches(&actual_return_type) {
-                self.error_type_mismatch(&expected_return_type, &actual_return_type);
+                self.error_type_mismatch(
+                    &expected_return_type,
+                    &actual_return_type,
+                    stmt.location.clone(),
+                );
             }
         } else {
-            self.error("return statement outside of function");
+            self.error(
+                "return statement outside of function",
+                stmt.location.clone(),
+            );
         }
     }
 
     fn analyze_assert_statement(&mut self, stmt: &mut ast::AssertStatement) {
         let type_ = self.analyze_expression(&mut stmt.condition);
         if !type_.matches(&ast::Type::Boolean) {
-            self.error_type_mismatch(&ast::Type::Boolean, &type_);
+            self.error_type_mismatch(&ast::Type::Boolean, &type_, stmt.condition.location.clone());
         }
     }
 
@@ -263,7 +295,7 @@ impl Analyzer {
                 if let Some(entry) = self.symbols.get(&s) {
                     entry.type_
                 } else {
-                    self.error("unknown symbol");
+                    self.error("unknown symbol", expr.location.clone());
                     ast::Type::Error
                 }
             }
@@ -287,7 +319,11 @@ impl Analyzer {
             ast::BinaryOpType::Concat => match left_type {
                 ast::Type::Str => {
                     if !right_type.matches(&ast::Type::Str) {
-                        self.error_type_mismatch(&ast::Type::Str, &right_type);
+                        self.error_type_mismatch(
+                            &ast::Type::Str,
+                            &right_type,
+                            expr.right.location.clone(),
+                        );
                         ast::Type::Error
                     } else {
                         ast::Type::Str
@@ -295,7 +331,11 @@ impl Analyzer {
                 }
                 ast::Type::List(ref t) => {
                     if !left_type.matches(&right_type) {
-                        self.error_type_mismatch(&left_type, &right_type);
+                        self.error_type_mismatch(
+                            &left_type,
+                            &right_type,
+                            expr.right.location.clone(),
+                        );
                         ast::Type::Error
                     } else {
                         left_type.clone()
@@ -303,30 +343,34 @@ impl Analyzer {
                 }
                 _ => {
                     let msg = format!("cannot concatenate value of type {}", left_type);
-                    self.error(&msg);
+                    self.error(&msg, expr.left.location.clone());
                     ast::Type::Error
                 }
             },
             ast::BinaryOpType::Or | ast::BinaryOpType::And => {
-                self.assert_type(&left_type, &ast::Type::Boolean);
-                self.assert_type(&right_type, &ast::Type::Boolean);
+                self.assert_type(&left_type, &ast::Type::Boolean, expr.left.location.clone());
+                self.assert_type(
+                    &right_type,
+                    &ast::Type::Boolean,
+                    expr.right.location.clone(),
+                );
                 ast::Type::Boolean
             }
             ast::BinaryOpType::Equals | ast::BinaryOpType::NotEquals => {
-                self.assert_type(&left_type, &right_type);
+                self.assert_type(&left_type, &right_type, expr.left.location.clone());
                 ast::Type::Boolean
             }
             ast::BinaryOpType::LessThan
             | ast::BinaryOpType::LessThanEquals
             | ast::BinaryOpType::GreaterThan
             | ast::BinaryOpType::GreaterThanEquals => {
-                self.assert_type(&left_type, &ast::Type::I64);
-                self.assert_type(&right_type, &ast::Type::I64);
+                self.assert_type(&left_type, &ast::Type::I64, expr.left.location.clone());
+                self.assert_type(&right_type, &ast::Type::I64, expr.right.location.clone());
                 ast::Type::Boolean
             }
             _ => {
-                self.assert_type(&left_type, &ast::Type::I64);
-                self.assert_type(&right_type, &ast::Type::I64);
+                self.assert_type(&left_type, &ast::Type::I64, expr.left.location.clone());
+                self.assert_type(&right_type, &ast::Type::I64, expr.right.location.clone());
                 ast::Type::I64
             }
         }
@@ -336,11 +380,19 @@ impl Analyzer {
         let operand_type = self.analyze_expression(&mut expr.operand);
         match expr.op {
             ast::UnaryOpType::Negate => {
-                self.assert_type(&operand_type, &ast::Type::I64);
+                self.assert_type(
+                    &operand_type,
+                    &ast::Type::I64,
+                    expr.operand.location.clone(),
+                );
                 ast::Type::I64
             }
             ast::UnaryOpType::Not => {
-                self.assert_type(&operand_type, &ast::Type::Boolean);
+                self.assert_type(
+                    &operand_type,
+                    &ast::Type::Boolean,
+                    expr.operand.location.clone(),
+                );
                 ast::Type::Boolean
             }
         }
@@ -359,7 +411,7 @@ impl Analyzer {
                         parameters.len(),
                         expr.arguments.len()
                     );
-                    self.error(&msg);
+                    self.error(&msg, expr.location.clone());
                 }
 
                 for argument in &mut expr.arguments {
@@ -367,18 +419,22 @@ impl Analyzer {
                 }
 
                 for (parameter, argument) in parameters.iter().zip(expr.arguments.iter()) {
-                    self.assert_type(&parameter, &argument.semantic_type);
+                    self.assert_type(
+                        &parameter,
+                        &argument.semantic_type,
+                        argument.location.clone(),
+                    );
                 }
 
                 *return_type
             } else {
                 let msg = format!("cannot call non-function type {}", entry.type_);
-                self.error(&msg);
+                self.error(&msg, expr.location.clone());
                 ast::Type::Error
             }
         } else {
             let msg = format!("unknown symbol {}", expr.function);
-            self.error(&msg);
+            self.error(&msg, expr.location.clone());
             ast::Type::Error
         }
     }
@@ -389,16 +445,16 @@ impl Analyzer {
 
         match value_type {
             ast::Type::List(t) => {
-                self.assert_type(&index_type, &ast::Type::I64);
+                self.assert_type(&index_type, &ast::Type::I64, expr.index.location.clone());
                 *t.clone()
             }
             ast::Type::Map { key, value } => {
-                self.assert_type(&index_type, &key);
+                self.assert_type(&index_type, &key, expr.index.location.clone());
                 *value.clone()
             }
             _ => {
                 let msg = format!("cannot index non-list, non-map type {}", value_type);
-                self.error(&msg);
+                self.error(&msg, expr.value.location.clone());
                 ast::Type::Error
             }
         }
@@ -411,14 +467,14 @@ impl Analyzer {
         let value_type = self.analyze_expression(&mut expr.value);
         if let ast::Type::Tuple(ts) = value_type {
             if expr.index >= ts.len() {
-                self.error("tuple index out of range");
+                self.error("tuple index out of range", expr.location.clone());
                 ast::Type::Error
             } else {
                 ts[expr.index].clone()
             }
         } else {
             let msg = format!("cannot index non-tuple type {}", value_type);
-            self.error(&msg);
+            self.error(&msg, expr.location.clone());
             ast::Type::Error
         }
     }
@@ -430,14 +486,21 @@ impl Analyzer {
 
     fn analyze_list_literal(&mut self, expr: &mut ast::ListLiteral) -> ast::Type {
         if expr.items.len() == 0 {
-            self.error("cannot type-check empty list literal");
+            self.error(
+                "cannot type-check empty list literal",
+                expr.location.clone(),
+            );
             return ast::Type::Error;
         }
 
         let item_type = self.analyze_expression(&mut expr.items[0]);
         for i in 1..expr.items.len() {
             let another_item_type = self.analyze_expression(&mut expr.items[i]);
-            self.assert_type(&another_item_type, &item_type);
+            self.assert_type(
+                &another_item_type,
+                &item_type,
+                expr.items[i].location.clone(),
+            );
         }
         ast::Type::List(Box::new(item_type))
     }
@@ -452,7 +515,7 @@ impl Analyzer {
 
     fn analyze_map_literal(&mut self, expr: &mut ast::MapLiteral) -> ast::Type {
         if expr.items.len() == 0 {
-            self.error("cannot type-check empty map literal");
+            self.error("cannot type-check empty map literal", expr.location.clone());
             return ast::Type::Error;
         }
 
@@ -460,9 +523,17 @@ impl Analyzer {
         let value_type = self.analyze_expression(&mut expr.items[0].1);
         for i in 1..expr.items.len() {
             let another_key_type = self.analyze_expression(&mut expr.items[i].0);
-            self.assert_type(&another_key_type, &key_type);
+            self.assert_type(
+                &another_key_type,
+                &key_type,
+                expr.items[i].0.location.clone(),
+            );
             let another_value_type = self.analyze_expression(&mut expr.items[i].1);
-            self.assert_type(&another_value_type, &value_type);
+            self.assert_type(
+                &another_value_type,
+                &value_type,
+                expr.items[i].1.location.clone(),
+            );
         }
         ast::Type::Map {
             key: Box::new(key_type),
@@ -479,18 +550,29 @@ impl Analyzer {
         ast::Type::Error
     }
 
-    fn assert_type(&mut self, actual: &ast::Type, expected: &ast::Type) {
+    fn assert_type(
+        &mut self,
+        actual: &ast::Type,
+        expected: &ast::Type,
+        location: common::Location,
+    ) {
         if !actual.matches(expected) {
-            self.error_type_mismatch(expected, actual);
+            self.error_type_mismatch(expected, actual, location);
         }
     }
 
-    fn error(&mut self, message: &str) {
-        self.errors.push(errors::VeniceError::new(message));
+    fn error(&mut self, message: &str, location: common::Location) {
+        self.errors
+            .push(errors::VeniceError::new(message, location));
     }
 
-    fn error_type_mismatch(&mut self, expected: &ast::Type, actual: &ast::Type) {
+    fn error_type_mismatch(
+        &mut self,
+        expected: &ast::Type,
+        actual: &ast::Type,
+        location: common::Location,
+    ) {
         let msg = format!("expected {}, got {}", expected, actual);
-        self.error(&msg);
+        self.error(&msg, location);
     }
 }

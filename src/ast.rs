@@ -1,3 +1,4 @@
+use super::common;
 use std::fmt;
 
 #[derive(Debug)]
@@ -19,6 +20,7 @@ pub struct FunctionDeclaration {
     pub return_type: SyntacticType,
     pub semantic_return_type: Type,
     pub body: Vec<Statement>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
@@ -34,12 +36,14 @@ pub struct ConstDeclaration {
     pub type_: SyntacticType,
     pub semantic_type: Type,
     pub value: Expression,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct RecordDeclaration {
     pub name: String,
     pub fields: Vec<RecordField>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
@@ -66,12 +70,14 @@ pub struct LetStatement {
     pub type_: SyntacticType,
     pub semantic_type: Type,
     pub value: Expression,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct AssignStatement {
     pub symbol: String,
     pub value: Expression,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
@@ -79,6 +85,7 @@ pub struct IfStatement {
     pub if_clause: IfClause,
     pub elif_clauses: Vec<IfClause>,
     pub else_clause: Vec<Statement>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
@@ -91,6 +98,7 @@ pub struct IfClause {
 pub struct WhileStatement {
     pub condition: Expression,
     pub body: Vec<Statement>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
@@ -99,22 +107,26 @@ pub struct ForStatement {
     pub symbol2: Option<String>,
     pub iterator: Expression,
     pub body: Vec<Statement>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct ReturnStatement {
     pub value: Expression,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct AssertStatement {
     pub condition: Expression,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct Expression {
     pub kind: ExpressionKind,
     pub semantic_type: Type,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
@@ -158,6 +170,7 @@ pub struct BinaryExpression {
     pub op: BinaryOpType,
     pub left: Box<Expression>,
     pub right: Box<Expression>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
@@ -170,51 +183,60 @@ pub enum UnaryOpType {
 pub struct UnaryExpression {
     pub op: UnaryOpType,
     pub operand: Box<Expression>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct CallExpression {
     pub function: String,
     pub arguments: Vec<Expression>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct IndexExpression {
     pub value: Box<Expression>,
     pub index: Box<Expression>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct TupleIndexExpression {
     pub value: Box<Expression>,
     pub index: usize,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct AttributeExpression {
     pub value: Box<Expression>,
     pub attribute: String,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct ListLiteral {
     pub items: Vec<Expression>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct TupleLiteral {
     pub items: Vec<Expression>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct MapLiteral {
     pub items: Vec<(Expression, Expression)>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct RecordLiteral {
     pub name: String,
     pub items: Vec<(String, Expression)>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
