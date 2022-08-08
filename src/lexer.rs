@@ -49,6 +49,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
+    /// Constructs a new lexer.
     pub fn new(file: &str, program: &str) -> Self {
         let location = common::Location {
             file: String::from(file),
@@ -73,16 +74,17 @@ impl Lexer {
         lexer
     }
 
+    /// Returns the current token without advancing.
     pub fn token(&self) -> Token {
         self.token.clone()
     }
 
-    pub fn next(&mut self) {
+    /// Advances to the next token and returns it.
+    pub fn next(&mut self) -> Token {
         self.skip_whitespace();
 
         if self.index >= self.program.len() {
-            self.make_token(TokenType::EOF);
-            return;
+            return self.make_token(TokenType::EOF);
         }
 
         self.start = self.index;
@@ -93,13 +95,13 @@ impl Lexer {
             self.increment_index();
             self.make_token(TokenType::Plus)
         } else if c.is_numeric() {
-            self.read_number();
+            self.read_number()
         } else {
-            self.make_token(TokenType::Unknown);
+            self.make_token(TokenType::Unknown)
         }
     }
 
-    fn read_number(&mut self) {
+    fn read_number(&mut self) -> Token {
         while self.index < self.program.len() && self.ch().is_numeric() {
             self.increment_index();
         }
@@ -112,7 +114,7 @@ impl Lexer {
         }
     }
 
-    fn make_token(&mut self, type_: TokenType) {
+    fn make_token(&mut self, type_: TokenType) -> Token {
         let token = Token::new(
             type_,
             &self.program[self.start..self.index],
@@ -121,6 +123,7 @@ impl Lexer {
         self.start = self.index;
         self.start_location = self.location.clone();
         self.token = token;
+        self.token.clone()
     }
 
     fn increment_index(&mut self) {
@@ -154,16 +157,15 @@ mod tests {
             lexer.token(),
             Token::without_location(TokenType::Integer, "1")
         );
-        lexer.next();
-        assert_eq!(lexer.token(), Token::without_location(TokenType::Plus, "+"),);
-        lexer.next();
+        assert_eq!(lexer.next(), Token::without_location(TokenType::Plus, "+"),);
         assert_eq!(
-            lexer.token(),
+            lexer.next(),
             Token::without_location(TokenType::Integer, "1")
         );
-        lexer.next();
-        assert_eq!(lexer.token(), Token::without_location(TokenType::EOF, ""));
-        lexer.next();
-        assert_eq!(lexer.token(), Token::without_location(TokenType::EOF, ""));
+        assert_eq!(lexer.next(), Token::without_location(TokenType::EOF, ""));
+
+        // Make sure that multiple calls to lexer.next() at the end of the token stream
+        // continue to return the EOF token.
+        assert_eq!(lexer.next(), Token::without_location(TokenType::EOF, ""));
     }
 }
