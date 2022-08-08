@@ -29,33 +29,7 @@ def init(precommit):
     # Check Python static type annotations with mypy.
     # precommit.check(checks.PythonTypes())
 
-    # Lint JavaScript code with ESLint.
-    # precommit.check(checks.JavaScriptLint())
-
     # Check Rust format with rustfmt.
     precommit.check(checks.RustFormat())
 
-
-#     precommit.check(
-#         checks.Command(
-#             "UnitTests",
-#             ["./test_unit"],
-#             exclude=["*.md", "precommit.py"],
-#         )
-#     )
-
-#     precommit.check(
-#         checks.Command(
-#             "EndToEndTests", ["./test_e2e"], exclude=["*.md", "precommit.py"]
-#         )
-#     )
-
-# Run a custom command.
-# precommit.check(checks.Command("UnitTests", ["./test"]))
-
-# Run a custom command on each file.
-# precommit.check(checks.Command("FileCheck", ["check_file"], pass_files=True))
-
-# precommit.check(
-#     checks.Command("UnitTests", ["./test"], exclude=["*.md", "precommit.py"])
-# )
+    precommit.check(checks.Command("UnitTests", ["cargo", "test"], include=["*.rs"]))
