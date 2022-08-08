@@ -35,7 +35,10 @@ fn Symbol(s: &str) -> ast::Expression {
 }
 
 fn I64() -> ast::SyntacticType {
-    ast::SyntacticType::Literal(String::from("i64"))
+    ast::SyntacticType {
+        kind: ast::SyntacticTypeKind::Literal(String::from("i64")),
+        location: common::Location::empty(),
+    }
 }
 
 fn location(line: u32, column: u32) -> common::Location {
@@ -166,5 +169,7 @@ fn main() {
         for error in errors {
             println!("error: {} ({})", error.message, error.location);
         }
+    } else {
+        println!("\nNo errors!");
     }
 }

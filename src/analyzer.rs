@@ -287,7 +287,7 @@ impl Analyzer {
     }
 
     fn analyze_expression(&mut self, expr: &mut ast::Expression) -> ast::Type {
-        match &mut expr.kind {
+        expr.semantic_type = match &mut expr.kind {
             ast::ExpressionKind::Boolean(_) => ast::Type::Boolean,
             ast::ExpressionKind::Integer(_) => ast::Type::I64,
             ast::ExpressionKind::Str(_) => ast::Type::Str,
@@ -309,7 +309,8 @@ impl Analyzer {
             ast::ExpressionKind::Tuple(ref mut e) => self.analyze_tuple_literal(e),
             ast::ExpressionKind::Map(ref mut e) => self.analyze_map_literal(e),
             ast::ExpressionKind::Record(ref mut e) => self.analyze_record_literal(e),
-        }
+        };
+        expr.semantic_type.clone()
     }
 
     fn analyze_binary_expression(&mut self, expr: &mut ast::BinaryExpression) -> ast::Type {
@@ -546,8 +547,22 @@ impl Analyzer {
         ast::Type::Error
     }
 
-    fn resolve_type(&self, type_: &ast::SyntacticType) -> ast::Type {
-        ast::Type::Error
+    fn resolve_type(&mut self, type_: &ast::SyntacticType) -> ast::Type {
+        match &type_.kind {
+            ast::SyntacticTypeKind::Literal(s) => {
+                if let Some(semantic_type_) = self.types.get(&s) {
+                    semantic_type_.type_
+                } else {
+                    let msg = format!("unknown type {}", s);
+                    self.error(&msg, type_.location.clone());
+                    ast::Type::Error
+                }
+            }
+            _ => {
+                // TODO
+                ast::Type::Error
+            }
+        }
     }
 
     fn assert_type(

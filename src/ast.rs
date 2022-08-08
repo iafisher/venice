@@ -240,7 +240,13 @@ pub struct RecordLiteral {
 }
 
 #[derive(Debug)]
-pub enum SyntacticType {
+pub struct SyntacticType {
+    pub kind: SyntacticTypeKind,
+    pub location: common::Location,
+}
+
+#[derive(Debug)]
+pub enum SyntacticTypeKind {
     Literal(String),
     Parameterized(SyntacticParameterizedType),
 }
@@ -538,9 +544,9 @@ impl fmt::Display for RecordLiteral {
 
 impl fmt::Display for SyntacticType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SyntacticType::Literal(s) => write!(f, "(type {})", s),
-            SyntacticType::Parameterized(ptype) => {
+        match &self.kind {
+            SyntacticTypeKind::Literal(s) => write!(f, "(type {})", s),
+            SyntacticTypeKind::Parameterized(ptype) => {
                 write!(f, "(type {}", ptype.symbol)?;
                 for parameter in &ptype.parameters {
                     write!(f, " {}", parameter)?;
