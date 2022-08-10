@@ -1,5 +1,5 @@
 pub struct Program {
-    declarations: Vec<Declaration>,
+    pub declarations: Vec<Declaration>,
 }
 
 pub enum Declaration {
@@ -8,26 +8,26 @@ pub enum Declaration {
 }
 
 pub struct FunctionDeclaration {
-    name: String,
-    parameters: Vec<FunctionParameter>,
-    return_type: Type,
-    blocks: Vec<Block>,
+    pub name: String,
+    pub parameters: Vec<FunctionParameter>,
+    pub return_type: Type,
+    pub blocks: Vec<Block>,
 }
 
 pub struct FunctionParameter {
-    name: String,
-    type_: Type,
+    pub name: String,
+    pub type_: Type,
 }
 
 pub struct ConstDeclaration {
-    symbol: String,
-    value: TypedExpression,
+    pub symbol: String,
+    pub value: TypedExpression,
 }
 
 pub struct Block {
-    name: String,
-    instructions: Vec<Instruction>,
-    exit: ExitInstruction,
+    pub name: String,
+    pub instructions: Vec<Instruction>,
+    pub exit: ExitInstruction,
 }
 
 pub enum Instruction {
@@ -68,24 +68,31 @@ pub enum Instruction {
         function: String,
         arguments: Vec<TypedExpression>,
     },
+    CmpLt {
+        symbol: String,
+        left: TypedExpression,
+        right: TypedExpression,
+    },
 }
 
 pub enum ExitInstruction {
-    Ret(Expression),
-    Break {
-        condition: Expression,
+    Ret(TypedExpression),
+    Jump(String),
+    JumpCond {
+        condition: TypedExpression,
         label_true: String,
         label_false: String,
     },
 }
 
 pub struct TypedExpression {
-    type_: Type,
-    value: Expression,
+    pub type_: Type,
+    pub value: Expression,
 }
 
 pub enum Expression {
     Integer(i64),
+    Symbol(String),
 }
 
 pub enum Type {

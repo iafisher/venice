@@ -52,4 +52,143 @@ fn main() {
 
     println!("\nTyped AST:\n");
     println!("  {}", ast);
+
+    let vil_program = vil::Program {
+        declarations: vec![vil::Declaration::Function(vil::FunctionDeclaration {
+            name: String::from("fibonacci"),
+            parameters: vec![vil::FunctionParameter {
+                name: String::from("n"),
+                type_: vil::Type::I64,
+            }],
+            return_type: vil::Type::I64,
+            blocks: vec![
+                vil::Block {
+                    name: String::from("f0"),
+                    instructions: vec![
+                        vil::Instruction::Alloca {
+                            symbol: String::from("fib_i"),
+                            type_: vil::Type::I64,
+                            size: 8,
+                        },
+                        vil::Instruction::Store {
+                            symbol: String::from("fib_i"),
+                            expression: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Integer(1),
+                            },
+                        },
+                        vil::Instruction::Alloca {
+                            symbol: String::from("fib_i_minus_1"),
+                            type_: vil::Type::I64,
+                            size: 8,
+                        },
+                        vil::Instruction::Store {
+                            symbol: String::from("fib_i_minus_1"),
+                            expression: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Integer(0),
+                            },
+                        },
+                        vil::Instruction::Alloca {
+                            symbol: String::from("i"),
+                            type_: vil::Type::I64,
+                            size: 8,
+                        },
+                        vil::Instruction::Store {
+                            symbol: String::from("i"),
+                            expression: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Integer(1),
+                            },
+                        },
+                    ],
+                    exit: vil::ExitInstruction::Jump(String::from("loop0_cmp")),
+                },
+                vil::Block {
+                    name: String::from("loop0_cmp"),
+                    instructions: vec![
+                        vil::Instruction::Alloca {
+                            symbol: String::from("t0"),
+                            type_: vil::Type::I64,
+                            size: 8,
+                        },
+                        vil::Instruction::CmpLt {
+                            symbol: String::from("t0"),
+                            left: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Symbol(String::from("i")),
+                            },
+                            right: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Symbol(String::from("n")),
+                            },
+                        },
+                    ],
+                    exit: vil::ExitInstruction::JumpCond {
+                        condition: vil::TypedExpression {
+                            type_: vil::Type::I64,
+                            value: vil::Expression::Symbol(String::from("t0")),
+                        },
+                        label_true: String::from("loop0"),
+                        label_false: String::from("loop0_end"),
+                    },
+                },
+                vil::Block {
+                    name: String::from("loop0"),
+                    instructions: vec![
+                        vil::Instruction::Alloca {
+                            symbol: String::from("tmp"),
+                            type_: vil::Type::I64,
+                            size: 8,
+                        },
+                        vil::Instruction::Store {
+                            symbol: String::from("tmp"),
+                            expression: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Symbol(String::from("fib_i")),
+                            },
+                        },
+                        vil::Instruction::Add {
+                            symbol: String::from("fib_i"),
+                            left: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Symbol(String::from("fib_i")),
+                            },
+                            right: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Symbol(String::from("fib_i_minus_1")),
+                            },
+                        },
+                        vil::Instruction::Store {
+                            symbol: String::from("fib_i_minus_1"),
+                            expression: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Symbol(String::from("tmp")),
+                            },
+                        },
+                        vil::Instruction::Add {
+                            symbol: String::from("i"),
+                            left: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Symbol(String::from("i")),
+                            },
+                            right: vil::TypedExpression {
+                                type_: vil::Type::I64,
+                                value: vil::Expression::Integer(1),
+                            },
+                        },
+                    ],
+                    exit: vil::ExitInstruction::Jump(String::from("loop0_cmp")),
+                },
+                vil::Block {
+                    name: String::from("loop0_end"),
+                    instructions: vec![],
+                    exit: vil::ExitInstruction::Ret(vil::TypedExpression {
+                        type_: vil::Type::I64,
+                        value: vil::Expression::Symbol(String::from("fib_i")),
+                    }),
+                },
+            ],
+        })],
+    };
 }
