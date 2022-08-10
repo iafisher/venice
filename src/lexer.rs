@@ -174,7 +174,7 @@ impl Lexer {
     pub fn next(&mut self) -> Token {
         self.skip_whitespace();
 
-        if self.index >= self.program.len() {
+        if self.done() {
             return self.make_token(TokenType::EOF);
         }
 
@@ -206,8 +206,12 @@ impl Lexer {
         }
     }
 
+    pub fn done(&self) -> bool {
+        self.index >= self.program.len()
+    }
+
     fn read_number(&mut self) -> Token {
-        while self.index < self.program.len() && self.ch().is_numeric() {
+        while !self.done() && self.ch().is_numeric() {
             self.increment_index();
         }
         self.make_token(TokenType::Integer)
@@ -216,7 +220,7 @@ impl Lexer {
     fn read_string(&mut self) -> Token {
         // Move past the opening quotation mark.
         self.increment_index();
-        while self.index < self.program.len() {
+        while !self.done() {
             let c = self.ch();
             if c == '"' {
                 self.increment_index();
@@ -235,7 +239,7 @@ impl Lexer {
     }
 
     fn read_symbol(&mut self) -> Token {
-        while self.index < self.program.len() && is_symbol_character(self.ch()) {
+        while !self.done() && is_symbol_character(self.ch()) {
             self.increment_index()
         }
         let value = &self.program[self.start..self.index];
@@ -247,7 +251,7 @@ impl Lexer {
     }
 
     fn skip_whitespace(&mut self) {
-        while self.index < self.program.len() && self.ch().is_whitespace() {
+        while !self.done() && self.ch().is_whitespace() {
             self.increment_index();
         }
     }
@@ -265,7 +269,7 @@ impl Lexer {
     }
 
     fn increment_index(&mut self) {
-        if self.index >= self.program.len() {
+        if self.done() {
             return;
         }
 
