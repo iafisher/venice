@@ -39,7 +39,8 @@ fn main() {
     }
 
     let mut ast = ast_result.unwrap();
-    println!("{}", ast);
+    println!("Parse tree:\n");
+    println!("  {}", ast);
 
     let typecheck_result = analyzer::analyze(&mut ast);
     if let Err(errors) = typecheck_result {
@@ -49,5 +50,6 @@ fn main() {
         std::process::exit(1);
     }
 
-    println!("{}", ast);
+    println!("\nTyped AST:\n");
+    println!("  {}", ast);
 }

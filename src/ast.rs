@@ -328,10 +328,31 @@ impl fmt::Display for Declaration {
 impl fmt::Display for FunctionDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "(func {} (", self.name)?;
-        for parameter in &self.parameters {
-            write!(f, " ({} {})", parameter.name, parameter.type_)?;
+        for (i, parameter) in self.parameters.iter().enumerate() {
+            if i != 0 {
+                write!(f, " ")?;
+            }
+
+            match parameter.semantic_type {
+                Type::Unknown => {
+                    write!(f, "({} {})", parameter.name, parameter.type_)?;
+                }
+                _ => {
+                    write!(f, "{}:{}", parameter.name, parameter.semantic_type)?;
+                }
+            }
         }
-        write!(f, ") {}", self.return_type)?;
+
+        write!(f, ") ")?;
+        match self.semantic_return_type {
+            Type::Unknown => {
+                write!(f, "{}", self.return_type)?;
+            }
+            _ => {
+                write!(f, "{}", self.semantic_return_type)?;
+            }
+        }
+
         for statement in &self.body {
             write!(f, " {}", statement)?;
         }
@@ -341,7 +362,18 @@ impl fmt::Display for FunctionDeclaration {
 
 impl fmt::Display for ConstDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(const {} {} {})", self.symbol, self.type_, self.value)
+        match self.semantic_type {
+            Type::Unknown => {
+                write!(f, "(const {} {} {})", self.symbol, self.type_, self.value)
+            }
+            _ => {
+                write!(
+                    f,
+                    "(const {} {} {})",
+                    self.symbol, self.semantic_type, self.value
+                )
+            }
+        }
     }
 }
 
@@ -349,7 +381,14 @@ impl fmt::Display for RecordDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "(record-decl {}", self.name)?;
         for field in &self.fields {
-            write!(f, "({} {})", field.name, field.type_)?;
+            match field.semantic_type {
+                Type::Unknown => {
+                    write!(f, "({} {})", field.name, field.type_)?;
+                }
+                _ => {
+                    write!(f, "({} {})", field.name, field.semantic_type)?;
+                }
+            }
         }
         write!(f, ")")
     }
@@ -371,7 +410,18 @@ impl fmt::Display for Statement {
 
 impl fmt::Display for LetStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(let {} {} {})", self.symbol, self.type_, self.value)
+        match self.semantic_type {
+            Type::Unknown => {
+                write!(f, "(let {} {} {})", self.symbol, self.type_, self.value)
+            }
+            _ => {
+                write!(
+                    f,
+                    "(let {}:{} {})",
+                    self.symbol, self.semantic_type, self.value
+                )
+            }
+        }
     }
 }
 
@@ -404,7 +454,7 @@ impl fmt::Display for IfStatement {
 
 impl fmt::Display for WhileStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(while {}", self.condition)?;
+        write!(f, "(while {} ", self.condition)?;
         format_block(f, &self.body)?;
         write!(f, ")")
     }
@@ -437,7 +487,14 @@ impl fmt::Display for AssertStatement {
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.kind)
+        match self.semantic_type {
+            Type::Unknown => {
+                write!(f, "{}", self.kind)
+            }
+            _ => {
+                write!(f, "({}):{}", self.kind, self.semantic_type)
+            }
+        }
     }
 }
 
