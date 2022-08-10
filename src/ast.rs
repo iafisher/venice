@@ -150,19 +150,19 @@ pub enum ExpressionKind {
 #[derive(Debug)]
 pub enum BinaryOpType {
     Add,
-    Subtract,
-    Divide,
-    Modulo,
-    Multiply,
-    Concat,
-    Or,
     And,
-    LessThan,
-    LessThanEquals,
+    Concat,
+    Divide,
+    Equals,
     GreaterThan,
     GreaterThanEquals,
-    Equals,
+    LessThan,
+    LessThanEquals,
+    Modulo,
+    Multiply,
     NotEquals,
+    Or,
+    Subtract,
 }
 
 #[derive(Debug)]

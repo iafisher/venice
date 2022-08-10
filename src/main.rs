@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate lazy_static;
 
-use std::process;
-
 mod analyzer;
 mod ast;
 mod codegen;
@@ -17,10 +15,10 @@ fn main() {
     let fibonacci_program = r"
     func fibonacci(n: i64) -> i64 {
       let fib_i: i64 = 1;
-      let fib_i_minus_1 : i64 = 0;
+      let fib_i_minus_1: i64 = 0;
       let i: i64 = 1;
 
-      while (i < n) {
+      while i < n {
         let tmp: i64 = fib_i;
         fib_i = fib_i + fib_i_minus_1;
         fib_i_minus_1 = tmp;
@@ -31,7 +29,7 @@ fn main() {
     }
     ";
 
-    let lexer = lexer::Lexer::new("<string>", fibonacci_program);
+    let mut lexer = lexer::Lexer::new("<string>", fibonacci_program);
     let ast_result = parser::parse(lexer);
     if let Err(errors) = ast_result {
         for error in errors {

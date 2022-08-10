@@ -1,10 +1,11 @@
 use super::common;
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum TokenType {
     // Literals
     Integer,
+    // TODO: rename to String
     Str,
     Symbol,
     // Operators
@@ -47,6 +48,7 @@ pub enum TokenType {
     Not,
     Or,
     Record,
+    Return,
     While,
     // Miscellaneous
     EOF,
@@ -55,9 +57,9 @@ pub enum TokenType {
 
 #[derive(Clone, Debug)]
 pub struct Token {
-    type_: TokenType,
-    value: String,
-    location: common::Location,
+    pub type_: TokenType,
+    pub value: String,
+    pub location: common::Location,
 }
 
 impl Token {
@@ -65,7 +67,7 @@ impl Token {
         Token {
             type_: type_,
             value: String::from(value),
-            location: common::Location::empty(),
+            location: location,
         }
     }
 }
@@ -134,6 +136,7 @@ lazy_static! {
         m.insert("not", TokenType::Not);
         m.insert("or", TokenType::Or);
         m.insert("record", TokenType::Record);
+        m.insert("return", TokenType::Return);
         m.insert("while", TokenType::While);
         m
     };
@@ -155,12 +158,14 @@ impl Lexer {
             start_location: location.clone(),
             token: Token {
                 type_: TokenType::Unknown,
-                value: String::from(""),
+                value: String::new(),
                 location: location,
             },
         };
         // "Prime the pump" so that we can immediately call token() to retrieve the
         // first token.
+        //
+        // TODO: remove this?
         lexer.next();
         lexer
     }
@@ -352,7 +357,7 @@ mod tests {
     fn keywords() {
         let mut lexer = Lexer::new(
             "<string>",
-            "let assert record new and or not if else while for in const func",
+            "let assert record new and or not if else while for in const func return",
         );
         assert_eq!(lexer.token(), token(TokenType::Let, "let"));
         assert_eq!(lexer.next(), token(TokenType::Assert, "assert"));
@@ -368,6 +373,7 @@ mod tests {
         assert_eq!(lexer.next(), token(TokenType::In, "in"));
         assert_eq!(lexer.next(), token(TokenType::Const, "const"));
         assert_eq!(lexer.next(), token(TokenType::Func, "func"));
+        assert_eq!(lexer.next(), token(TokenType::Return, "return"));
     }
 
     #[test]
