@@ -5,13 +5,34 @@ use std::collections::HashMap;
 pub enum TokenType {
     // Literals
     Integer,
+    Str,
     Symbol,
     // Operators
+    Assign,
+    Concat,
+    GreaterThan,
+    GreaterThanEquals,
+    Equals,
+    LessThan,
+    LessThanEquals,
     Minus,
+    NotEquals,
     Percent,
     Plus,
     Slash,
     Star,
+    // Punctuation
+    Arrow,
+    Colon,
+    Comma,
+    CurlyClose,
+    CurlyOpen,
+    Dot,
+    ParenClose,
+    ParenOpen,
+    SquareClose,
+    Semicolon,
+    SquareOpen,
     // Keywords
     And,
     Assert,
@@ -68,11 +89,34 @@ pub struct Lexer {
 lazy_static! {
     static ref ONE_CHAR_TOKENS: HashMap<char, TokenType> = {
         let mut m = HashMap::new();
+        m.insert('=', TokenType::Assign);
+        m.insert(':', TokenType::Colon);
+        m.insert(',', TokenType::Comma);
+        m.insert('}', TokenType::CurlyClose);
+        m.insert('{', TokenType::CurlyOpen);
+        m.insert('.', TokenType::Dot);
+        m.insert('>', TokenType::GreaterThan);
+        m.insert('<', TokenType::LessThan);
         m.insert('-', TokenType::Minus);
+        m.insert(')', TokenType::ParenClose);
+        m.insert('(', TokenType::ParenOpen);
         m.insert('%', TokenType::Percent);
         m.insert('+', TokenType::Plus);
+        m.insert(';', TokenType::Semicolon);
         m.insert('/', TokenType::Slash);
+        m.insert(']', TokenType::SquareClose);
+        m.insert('[', TokenType::SquareOpen);
         m.insert('*', TokenType::Star);
+        m
+    };
+    static ref TWO_CHAR_TOKENS: HashMap<(char, char), TokenType> = {
+        let mut m = HashMap::new();
+        m.insert(('-', '>'), TokenType::Arrow);
+        m.insert(('=', '='), TokenType::Equals);
+        m.insert(('>', '='), TokenType::GreaterThanEquals);
+        m.insert(('<', '='), TokenType::LessThanEquals);
+        m.insert(('!', '='), TokenType::NotEquals);
+        m.insert(('+', '+'), TokenType::Concat);
         m
     };
     static ref KEYWORDS: HashMap<&'static str, TokenType> = {
@@ -138,11 +182,23 @@ impl Lexer {
         self.start_location = self.location.clone();
 
         let c = self.ch();
+
+        if self.index + 1 < self.program.len() {
+            let c2 = self.peek(1);
+            if let Some(type_) = TWO_CHAR_TOKENS.get(&(c, c2)) {
+                self.increment_index();
+                self.increment_index();
+                return self.make_token(*type_);
+            }
+        }
+
         if let Some(type_) = ONE_CHAR_TOKENS.get(&c) {
             self.increment_index();
             self.make_token(*type_)
         } else if c.is_ascii_digit() {
             self.read_number()
+        } else if c == '"' {
+            self.read_string()
         } else if is_symbol_first_character(c) {
             self.read_symbol()
         } else {
@@ -155,6 +211,27 @@ impl Lexer {
             self.increment_index();
         }
         self.make_token(TokenType::Integer)
+    }
+
+    fn read_string(&mut self) -> Token {
+        // Move past the opening quotation mark.
+        self.increment_index();
+        while self.index < self.program.len() {
+            let c = self.ch();
+            if c == '"' {
+                self.increment_index();
+                break;
+            } else if c == '\\' {
+                // TODO: what if backslash is last character in program?
+                self.increment_index();
+                self.increment_index();
+            } else {
+                self.increment_index();
+            }
+        }
+
+        // TODO: handle unclosed string literals (newlines and EOF)
+        self.make_token(TokenType::Str)
     }
 
     fn read_symbol(&mut self) -> Token {
@@ -205,6 +282,10 @@ impl Lexer {
         // TODO: more efficient way to do this?
         self.program.chars().nth(self.index).unwrap()
     }
+
+    fn peek(&self, n: usize) -> char {
+        self.program.chars().nth(self.index + n).unwrap()
+    }
 }
 
 fn is_symbol_first_character(c: char) -> bool {
@@ -238,12 +319,20 @@ mod tests {
 
     #[test]
     fn operators() {
-        let mut lexer = Lexer::new("<string>", "+-*/%");
+        let mut lexer = Lexer::new("<string>", "+-*/%++ < > != == <= >= =");
         assert_eq!(lexer.token(), token(TokenType::Plus, "+"));
         assert_eq!(lexer.next(), token(TokenType::Minus, "-"));
         assert_eq!(lexer.next(), token(TokenType::Star, "*"));
         assert_eq!(lexer.next(), token(TokenType::Slash, "/"));
         assert_eq!(lexer.next(), token(TokenType::Percent, "%"));
+        assert_eq!(lexer.next(), token(TokenType::Concat, "++"));
+        assert_eq!(lexer.next(), token(TokenType::LessThan, "<"));
+        assert_eq!(lexer.next(), token(TokenType::GreaterThan, ">"));
+        assert_eq!(lexer.next(), token(TokenType::NotEquals, "!="));
+        assert_eq!(lexer.next(), token(TokenType::Equals, "=="));
+        assert_eq!(lexer.next(), token(TokenType::LessThanEquals, "<="));
+        assert_eq!(lexer.next(), token(TokenType::GreaterThanEquals, ">="));
+        assert_eq!(lexer.next(), token(TokenType::Assign, "="));
         assert_eq!(lexer.next(), token(TokenType::EOF, ""));
     }
 
@@ -275,5 +364,34 @@ mod tests {
         assert_eq!(lexer.next(), token(TokenType::In, "in"));
         assert_eq!(lexer.next(), token(TokenType::Const, "const"));
         assert_eq!(lexer.next(), token(TokenType::Func, "func"));
+    }
+
+    #[test]
+    fn punctuation() {
+        let mut lexer = Lexer::new("<string>", ".,()[]{}->:;");
+        assert_eq!(lexer.token(), token(TokenType::Dot, "."));
+        assert_eq!(lexer.next(), token(TokenType::Comma, ","));
+        assert_eq!(lexer.next(), token(TokenType::ParenOpen, "("));
+        assert_eq!(lexer.next(), token(TokenType::ParenClose, ")"));
+        assert_eq!(lexer.next(), token(TokenType::SquareOpen, "["));
+        assert_eq!(lexer.next(), token(TokenType::SquareClose, "]"));
+        assert_eq!(lexer.next(), token(TokenType::CurlyOpen, "{"));
+        assert_eq!(lexer.next(), token(TokenType::CurlyClose, "}"));
+        assert_eq!(lexer.next(), token(TokenType::Arrow, "->"));
+        assert_eq!(lexer.next(), token(TokenType::Colon, ":"));
+        assert_eq!(lexer.next(), token(TokenType::Semicolon, ";"));
+    }
+
+    #[test]
+    fn simple_string_literal() {
+        let mut lexer = Lexer::new("<string>", "\"abc\"");
+        assert_eq!(lexer.token(), token(TokenType::Str, "\"abc\""));
+    }
+
+    #[test]
+    fn string_literal_with_backslash() {
+        // A two-character string literal: a backslash followed by a double quote
+        let mut lexer = Lexer::new("<string>", r#""\"""#);
+        assert_eq!(lexer.token(), token(TokenType::Str, r#""\"""#));
     }
 }

@@ -7,10 +7,11 @@ mod codegen;
 mod common;
 mod errors;
 mod lexer;
+mod parser;
 mod vil;
 mod x86;
 
-fn Integer(x: i64) -> ast::Expression {
+fn my_int(x: i64) -> ast::Expression {
     ast::Expression {
         kind: ast::ExpressionKind::Integer(x),
         semantic_type: ast::Type::Unknown,
@@ -18,15 +19,7 @@ fn Integer(x: i64) -> ast::Expression {
     }
 }
 
-fn String(s: &str) -> ast::Expression {
-    ast::Expression {
-        kind: ast::ExpressionKind::Str(String::from(s)),
-        semantic_type: ast::Type::Unknown,
-        location: common::Location::empty(),
-    }
-}
-
-fn Symbol(s: &str) -> ast::Expression {
+fn my_symbol(s: &str) -> ast::Expression {
     ast::Expression {
         kind: ast::ExpressionKind::Symbol(String::from(s)),
         semantic_type: ast::Type::Unknown,
@@ -34,7 +27,7 @@ fn Symbol(s: &str) -> ast::Expression {
     }
 }
 
-fn I64() -> ast::SyntacticType {
+fn my_i64_type() -> ast::SyntacticType {
     ast::SyntacticType {
         kind: ast::SyntacticTypeKind::Literal(String::from("i64")),
         location: common::Location::empty(),
@@ -72,40 +65,40 @@ fn main() {
             name: String::from("fibonacci"),
             parameters: vec![ast::FunctionParameter {
                 name: String::from("n"),
-                type_: I64(),
+                type_: my_i64_type(),
                 semantic_type: ast::Type::Unknown,
             }],
-            return_type: I64(),
+            return_type: my_i64_type(),
             semantic_return_type: ast::Type::Unknown,
             location: location(1, 1),
             body: vec![
                 ast::Statement::Let(ast::LetStatement {
                     symbol: String::from("fib_i"),
-                    type_: I64(),
+                    type_: my_i64_type(),
                     semantic_type: ast::Type::Unknown,
-                    value: Integer(1),
+                    value: my_int(1),
                     location: location(2, 3),
                 }),
                 ast::Statement::Let(ast::LetStatement {
                     symbol: String::from("fib_i_minus_1"),
-                    type_: I64(),
+                    type_: my_i64_type(),
                     semantic_type: ast::Type::Unknown,
-                    value: Integer(0),
+                    value: my_int(0),
                     location: location(3, 3),
                 }),
                 ast::Statement::Let(ast::LetStatement {
                     symbol: String::from("i"),
-                    type_: I64(),
+                    type_: my_i64_type(),
                     semantic_type: ast::Type::Unknown,
-                    value: Integer(1),
+                    value: my_int(1),
                     location: location(4, 3),
                 }),
                 ast::Statement::While(ast::WhileStatement {
                     condition: ast::Expression {
                         kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
                             op: ast::BinaryOpType::LessThan,
-                            left: Box::new(Symbol("i")),
-                            right: Box::new(Symbol("n")),
+                            left: Box::new(my_symbol("i")),
+                            right: Box::new(my_symbol("n")),
                             location: location(6, 9),
                         }),
                         semantic_type: ast::Type::Unknown,
@@ -115,9 +108,9 @@ fn main() {
                     body: vec![
                         ast::Statement::Let(ast::LetStatement {
                             symbol: String::from("tmp"),
-                            type_: I64(),
+                            type_: my_i64_type(),
                             semantic_type: ast::Type::Unknown,
-                            value: Symbol("fib_i"),
+                            value: my_symbol("fib_i"),
                             location: location(7, 5),
                         }),
                         ast::Statement::Assign(ast::AssignStatement {
@@ -125,8 +118,8 @@ fn main() {
                             value: ast::Expression {
                                 kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
                                     op: ast::BinaryOpType::Add,
-                                    left: Box::new(Symbol("fib_i")),
-                                    right: Box::new(Symbol("fib_i_minus_1")),
+                                    left: Box::new(my_symbol("fib_i")),
+                                    right: Box::new(my_symbol("fib_i_minus_1")),
                                     location: location(8, 13),
                                 }),
                                 semantic_type: ast::Type::Unknown,
@@ -136,7 +129,7 @@ fn main() {
                         }),
                         ast::Statement::Assign(ast::AssignStatement {
                             symbol: String::from("fib_i_minus_1"),
-                            value: Symbol("tmp"),
+                            value: my_symbol("tmp"),
                             location: location(9, 5),
                         }),
                         ast::Statement::Assign(ast::AssignStatement {
@@ -144,8 +137,8 @@ fn main() {
                             value: ast::Expression {
                                 kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
                                     op: ast::BinaryOpType::Add,
-                                    left: Box::new(Symbol("i")),
-                                    right: Box::new(Integer(1)),
+                                    left: Box::new(my_symbol("i")),
+                                    right: Box::new(my_int(1)),
                                     location: location(10, 9),
                                 }),
                                 semantic_type: ast::Type::Unknown,
@@ -156,7 +149,7 @@ fn main() {
                     ],
                 }),
                 ast::Statement::Return(ast::ReturnStatement {
-                    value: Symbol("fib_i"),
+                    value: my_symbol("fib_i"),
                     location: location(13, 3),
                 }),
             ],

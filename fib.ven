@@ -1,0 +1,14 @@
+func fibonacci(n: i64) -> i64 {
+  let fib_i: i64 = 1;
+  let fib_i_minus_1 : i64 = 0;
+  let i: i64 = 1;
+
+  while (i < n) {
+    let tmp: i64 = fib_i;
+    fib_i = fib_i + fib_i_minus_1;
+    fib_i_minus_1 = tmp;
+    i = i + 1;
+  }
+
+  return fib_i;
+}
