@@ -53,6 +53,11 @@ fn main() {
     println!("\nTyped AST:\n");
     println!("  {}", ast);
 
+    let vil_program = codegen::generate_ir(&ast).unwrap();
+    println!("\nVIL:\n");
+    println!("{}", vil_program);
+
+    /*
     let vil_program = vil::Program {
         declarations: vec![vil::Declaration::Function(vil::FunctionDeclaration {
             name: String::from("fibonacci"),
@@ -191,4 +196,5 @@ fn main() {
             ],
         })],
     };
+    */
 }
