@@ -145,9 +145,9 @@ impl Parser {
     fn match_statement(&mut self) -> Result<ast::Statement, ()> {
         let token = self.lexer.token();
         match token.type_ {
-            TokenType::Symbol => self
-                .match_assign_statement()
-                .map(|stmt| ast::Statement::Assign(stmt)),
+            TokenType::Assert => self
+                .match_assert_statement()
+                .map(|stmt| ast::Statement::Assert(stmt)),
             TokenType::If => self
                 .match_if_statement()
                 .map(|stmt| ast::Statement::If(stmt)),
@@ -157,6 +157,9 @@ impl Parser {
             TokenType::Return => self
                 .match_return_statement()
                 .map(|stmt| ast::Statement::Return(stmt)),
+            TokenType::Symbol => self
+                .match_assign_statement()
+                .map(|stmt| ast::Statement::Assign(stmt)),
             TokenType::While => self
                 .match_while_statement()
                 .map(|stmt| ast::Statement::While(stmt)),
@@ -165,6 +168,24 @@ impl Parser {
                 Err(())
             }
         }
+    }
+
+    fn match_assert_statement(&mut self) -> Result<ast::AssertStatement, ()> {
+        let mut token = self.lexer.token();
+        let location = token.location.clone();
+        self.expect_token(&token, TokenType::Assert, "assert")?;
+
+        self.lexer.next();
+        let condition = self.match_expression()?;
+
+        token = self.lexer.token();
+        self.expect_token(&token, TokenType::Semicolon, ";")?;
+        self.lexer.next();
+
+        Ok(ast::AssertStatement {
+            condition: condition,
+            location: location,
+        })
     }
 
     fn match_assign_statement(&mut self) -> Result<ast::AssignStatement, ()> {
@@ -482,6 +503,12 @@ mod tests {
     fn test_assign_statement() {
         let stmt = parse_statement("x = 42;");
         assert_eq!(format!("{}", stmt), "(assign x 42)");
+    }
+
+    #[test]
+    fn test_assert_statement() {
+        let stmt = parse_statement("assert false;");
+        assert_eq!(format!("{}", stmt), "(assert false)");
     }
 
     #[test]
