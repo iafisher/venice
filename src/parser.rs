@@ -143,7 +143,7 @@ impl Parser {
     }
 
     fn match_statement(&mut self) -> Result<ast::Statement, ()> {
-        let mut token = self.lexer.token();
+        let token = self.lexer.token();
         match token.type_ {
             TokenType::Symbol => self
                 .match_assign_statement()

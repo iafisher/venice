@@ -29,7 +29,7 @@ fn main() {
     }
     ";
 
-    let mut lexer = lexer::Lexer::new("<string>", fibonacci_program);
+    let lexer = lexer::Lexer::new("<string>", fibonacci_program);
     let ast_result = parser::parse(lexer);
     if let Err(errors) = ast_result {
         for error in errors {
