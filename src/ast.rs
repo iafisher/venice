@@ -443,7 +443,7 @@ impl fmt::Display for IfStatement {
         }
 
         if self.else_clause.len() > 0 {
-            write!(f, "(else ")?;
+            write!(f, " (else ")?;
             format_block(f, &self.else_clause)?;
             write!(f, ")")?;
         }

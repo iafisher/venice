@@ -148,6 +148,9 @@ impl Parser {
             TokenType::Symbol => self
                 .match_assign_statement()
                 .map(|stmt| ast::Statement::Assign(stmt)),
+            TokenType::If => self
+                .match_if_statement()
+                .map(|stmt| ast::Statement::If(stmt)),
             TokenType::Let => self
                 .match_let_statement()
                 .map(|stmt| ast::Statement::Let(stmt)),
@@ -185,6 +188,41 @@ impl Parser {
             value: value,
             location: location,
         })
+    }
+
+    fn match_if_statement(&mut self) -> Result<ast::IfStatement, ()> {
+        let token = self.lexer.token();
+        let location = token.location.clone();
+        self.expect_token(&token, TokenType::If, "if")?;
+
+        self.lexer.next();
+        let condition = self.match_expression()?;
+        let body = self.match_block()?;
+
+        if self.lexer.token().type_ == TokenType::Else {
+            self.lexer.next();
+            // TODO: handle else-ifs
+            let else_body = self.match_block()?;
+            Ok(ast::IfStatement {
+                if_clause: ast::IfClause {
+                    condition: condition,
+                    body: body,
+                },
+                elif_clauses: Vec::new(),
+                else_clause: else_body,
+                location: location,
+            })
+        } else {
+            Ok(ast::IfStatement {
+                if_clause: ast::IfClause {
+                    condition: condition,
+                    body: body,
+                },
+                elif_clauses: Vec::new(),
+                else_clause: Vec::new(),
+                location: location,
+            })
+        }
     }
 
     fn match_let_statement(&mut self) -> Result<ast::LetStatement, ()> {
@@ -422,4 +460,61 @@ fn token_type_to_binary_op_type(type_: TokenType) -> ast::BinaryOpType {
 fn parse_string_literal(s: &str) -> Result<String, ()> {
     // TODO
     Ok(String::from(&s[1..s.len() - 1]))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_simple_expression() {
+        let expr = parse_expression("12 + 34");
+        assert_eq!(format!("{}", expr), "(binary Add 12 34)");
+    }
+
+    #[test]
+    fn test_let_statement() {
+        let stmt = parse_statement("let x: i64 = 0;");
+        assert_eq!(format!("{}", stmt), "(let x (type i64) 0)");
+    }
+
+    #[test]
+    fn test_assign_statement() {
+        let stmt = parse_statement("x = 42;");
+        assert_eq!(format!("{}", stmt), "(assign x 42)");
+    }
+
+    #[test]
+    fn test_if_statement() {
+        let stmt = parse_statement("if true {\n  x = 42;\n} else {\n  x = 0;\n}\n");
+        assert_eq!(
+            format!("{}", stmt),
+            "(if true (block (assign x 42)) (else (block (assign x 0)))"
+        );
+    }
+
+    fn parse_statement(program: &str) -> ast::Statement {
+        let mut parser = Parser::new(lexer::Lexer::new("<string>", &program));
+        let r = parser.match_statement();
+
+        let mut message = String::new();
+        for (i, error) in parser.errors.iter().enumerate() {
+            message.push_str(&format!("{}", error.message));
+            if i != parser.errors.len() - 1 {
+                message.push('\n');
+            }
+        }
+
+        assert!(r.is_ok(), "{}", message);
+        assert!(parser.lexer.done());
+        r.unwrap()
+    }
+
+    fn parse_expression(program: &str) -> ast::Expression {
+        let mut parser = Parser::new(lexer::Lexer::new("<string>", &program));
+        let r = parser.match_expression();
+        assert!(r.is_ok());
+        assert!(parser.lexer.done());
+        r.unwrap()
+    }
 }
