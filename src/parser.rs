@@ -327,18 +327,28 @@ impl Parser {
         loop {
             if let Some(other_precedence) = PRECEDENCE.get(&token.type_) {
                 if precedence < *other_precedence {
-                    self.lexer.next();
-                    let right = self.match_expression_with_precedence(*other_precedence)?;
-                    expr = ast::Expression {
-                        kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
-                            op: token_type_to_binary_op_type(token.type_),
-                            left: Box::new(expr),
-                            right: Box::new(right),
+                    if token.type_ == TokenType::ParenOpen {
+                        self.lexer.next();
+                        let call = self.match_function_call(&expr, token.location.clone())?;
+                        expr = ast::Expression {
+                            kind: ast::ExpressionKind::Call(call),
+                            semantic_type: ast::Type::Unknown,
                             location: token.location.clone(),
-                        }),
-                        semantic_type: ast::Type::Unknown,
-                        location: token.location.clone(),
-                    };
+                        };
+                    } else {
+                        self.lexer.next();
+                        let right = self.match_expression_with_precedence(*other_precedence)?;
+                        expr = ast::Expression {
+                            kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                                op: token_type_to_binary_op_type(token.type_),
+                                left: Box::new(expr),
+                                right: Box::new(right),
+                                location: token.location.clone(),
+                            }),
+                            semantic_type: ast::Type::Unknown,
+                            location: token.location.clone(),
+                        };
+                    }
                     token = self.lexer.token();
                     continue;
                 }
@@ -346,6 +356,51 @@ impl Parser {
             break;
         }
         Ok(expr)
+    }
+
+    fn match_function_call(
+        &mut self,
+        expr: &ast::Expression,
+        location: common::Location,
+    ) -> Result<ast::CallExpression, ()> {
+        if let ast::ExpressionKind::Symbol(function) = &expr.kind {
+            let arguments = self.match_expression_list()?;
+            let token = self.lexer.token();
+            self.expect_token(&token, TokenType::ParenClose, ")")?;
+            self.lexer.next();
+            Ok(ast::CallExpression {
+                function: function.to_string(),
+                arguments: arguments,
+                location: location,
+            })
+        } else {
+            self.error("function must be a symbol", expr.location.clone());
+            Err(())
+        }
+    }
+
+    fn match_expression_list(&mut self) -> Result<Vec<ast::Expression>, ()> {
+        let mut items = Vec::new();
+        loop {
+            let mut token = self.lexer.token();
+            if token.type_ == TokenType::ParenClose || token.type_ == TokenType::SquareClose {
+                break;
+            }
+
+            let expr = self.match_expression()?;
+            items.push(expr);
+
+            token = self.lexer.token();
+            if token.type_ == TokenType::ParenClose || token.type_ == TokenType::SquareClose {
+                break;
+            } else if token.type_ == TokenType::Comma {
+                self.lexer.next();
+            } else {
+                self.unexpected(&token, "comma or closing bracket");
+                return Err(());
+            }
+        }
+        Ok(items)
     }
 
     fn match_literal(&mut self) -> Result<ast::Expression, ()> {
@@ -450,8 +505,16 @@ const PRECEDENCE_CALL: u32 = 4;
 lazy_static! {
     static ref PRECEDENCE: HashMap<TokenType, u32> = {
         let mut m = HashMap::new();
+        m.insert(TokenType::GreaterThan, PRECEDENCE_COMPARISON);
+        m.insert(TokenType::GreaterThanEquals, PRECEDENCE_COMPARISON);
         m.insert(TokenType::LessThan, PRECEDENCE_COMPARISON);
+        m.insert(TokenType::LessThanEquals, PRECEDENCE_COMPARISON);
+        m.insert(TokenType::Minus, PRECEDENCE_ADDITION);
         m.insert(TokenType::Plus, PRECEDENCE_ADDITION);
+        m.insert(TokenType::Slash, PRECEDENCE_MULTIPLICATION);
+        m.insert(TokenType::Star, PRECEDENCE_MULTIPLICATION);
+        // '(' is the "operator" for function calls.
+        m.insert(TokenType::ParenOpen, PRECEDENCE_CALL);
         m
     };
 }
@@ -488,35 +551,56 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_simple_expression() {
+    fn simple_expression() {
         let expr = parse_expression("12 + 34");
         assert_eq!(format!("{}", expr), "(binary Add 12 34)");
     }
 
     #[test]
-    fn test_let_statement() {
+    fn let_statement() {
         let stmt = parse_statement("let x: i64 = 0;");
         assert_eq!(format!("{}", stmt), "(let x (type i64) 0)");
     }
 
     #[test]
-    fn test_assign_statement() {
+    fn assign_statement() {
         let stmt = parse_statement("x = 42;");
         assert_eq!(format!("{}", stmt), "(assign x 42)");
     }
 
     #[test]
-    fn test_assert_statement() {
+    fn assert_statement() {
         let stmt = parse_statement("assert false;");
         assert_eq!(format!("{}", stmt), "(assert false)");
     }
 
     #[test]
-    fn test_if_statement() {
+    fn return_statement() {
+        let stmt = parse_statement("return 42;");
+        assert_eq!(format!("{}", stmt), "(return 42)");
+    }
+
+    #[test]
+    fn if_statement() {
         let stmt = parse_statement("if true {\n  x = 42;\n} else {\n  x = 0;\n}\n");
         assert_eq!(
             format!("{}", stmt),
             "(if true (block (assign x 42)) (else (block (assign x 0)))"
+        );
+    }
+
+    #[test]
+    fn precedence() {
+        let expr = parse_expression("1 * 2 + 3");
+        assert_eq!(format!("{}", expr), "(binary Add (binary Multiply 1 2) 3)");
+    }
+
+    #[test]
+    fn function_call() {
+        let expr = parse_expression("2 * f(1, 2 + x, 3)");
+        assert_eq!(
+            format!("{}", expr),
+            "(binary Multiply 2 (call f (1 (binary Add 2 x) 3)))"
         );
     }
 
@@ -540,8 +624,21 @@ mod tests {
     fn parse_expression(program: &str) -> ast::Expression {
         let mut parser = Parser::new(lexer::Lexer::new("<string>", &program));
         let r = parser.match_expression();
-        assert!(r.is_ok());
-        assert!(parser.lexer.done());
+
+        let mut message = String::new();
+        for (i, error) in parser.errors.iter().enumerate() {
+            message.push_str(&format!("{}", error.message));
+            if i != parser.errors.len() - 1 {
+                message.push('\n');
+            }
+        }
+
+        assert!(r.is_ok(), "{}", message);
+        assert!(
+            parser.lexer.done(),
+            "trailing input: {}",
+            parser.lexer.token().value
+        );
         r.unwrap()
     }
 }

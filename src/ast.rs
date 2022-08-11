@@ -533,11 +533,14 @@ impl fmt::Display for UnaryExpression {
 
 impl fmt::Display for CallExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(call {}", self.function)?;
-        for argument in &self.arguments {
-            write!(f, " {}", argument)?;
+        write!(f, "(call {} (", self.function)?;
+        for (i, argument) in self.arguments.iter().enumerate() {
+            if i != 0 {
+                write!(f, " ")?;
+            }
+            write!(f, "{}", argument)?;
         }
-        write!(f, ")")
+        write!(f, "))")
     }
 }
 
