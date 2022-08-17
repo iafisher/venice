@@ -27,7 +27,20 @@ For instance,
 %3 = add %0 %1
 ```
 
-Most instructions operate solely on registers. A small set of instructions are used to interact with main memory.
+Most instructions operate solely on registers (which are represented in VIL code as a number preceded by a percent sign). A small set of instructions are used to interact with main memory.
+
+### Register manipulation
+The `set` instruction places a constant value in a register:
+
+```
+%0 = set 42
+```
+
+The `move` instruction copies a value from one register to another:
+
+```
+%1 = move %0
+```
 
 ### Memory access
 The `alloca` instruction is used to declare named memory locations.
@@ -57,3 +70,12 @@ TODO
 - `cmpeq/cmpneq/cmplt/cmpgt/cmplte/cmpgte <r1> <r2>`: Sets the comparison flag to 1 if the instruction's condition holds between the two operands, to 0 otherwise.
 - `jump <label>`: Jump unconditionally to the label.
 - `jumpif <label1>, <label2>`: Jumps to the first label if the comparison flag is set to 1, to the second label otherwise.
+
+### Functions
+TODO
+
+### Constants
+TODO
+
+### Static data
+TODO

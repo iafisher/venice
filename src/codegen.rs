@@ -8,6 +8,7 @@ pub fn generate_ir(ast: &ast::Program) -> Result<vil::Program, String> {
             declarations: Vec::new(),
         },
         label_counter: 0,
+        register_counter: 0,
         symbol_counter: 0,
     };
     generator.generate_program(ast);
@@ -17,6 +18,7 @@ pub fn generate_ir(ast: &ast::Program) -> Result<vil::Program, String> {
 struct Generator {
     program: vil::Program,
     label_counter: u32,
+    register_counter: u32,
     symbol_counter: u32,
 }
 
@@ -52,9 +54,9 @@ impl Generator {
         self.generate_block(&declaration.body);
     }
 
-    fn generate_expression(&mut self, expr: &ast::Expression) -> String {
+    fn generate_expression(&mut self, expr: &ast::Expression) -> vil::Register {
         // TODO
-        self.claim_symbol("t")
+        self.claim_register()
     }
 
     fn generate_block(&mut self, block: &Vec<ast::Statement>) {
@@ -76,31 +78,14 @@ impl Generator {
 
     fn generate_let_statement(&mut self, stmt: &ast::LetStatement) {
         let symbol = self.claim_symbol(&stmt.symbol);
-        self.push(vil::Instruction::Alloca {
-            symbol: symbol.clone(),
-            // TODO
-            type_: vil::Type::I64,
-            // TODO
-            size: 8,
-        });
-        let value_symbol = self.generate_expression(&stmt.value);
-        self.push(vil::Instruction::Store {
-            symbol: symbol,
-            expression: vil::TypedExpression {
-                // TODO
-                type_: vil::Type::I64,
-                value: vil::Expression::Symbol(value_symbol),
-            },
-        });
+        self.push(vil::Instruction::Alloca(symbol.clone(), 8));
+        let register = self.generate_expression(&stmt.value);
+        self.push(vil::Instruction::Store(symbol, register, 0));
     }
 
     fn generate_return_statement(&mut self, stmt: &ast::ReturnStatement) {
-        let symbol = self.generate_expression(&stmt.value);
-        self.set_exit(vil::ExitInstruction::Ret(vil::TypedExpression {
-            // TODO
-            type_: vil::Type::I64,
-            value: vil::Expression::Symbol(symbol),
-        }));
+        let register = self.generate_expression(&stmt.value);
+        self.set_exit(vil::ExitInstruction::Ret(register));
     }
 
     fn generate_while_statement(&mut self, stmt: &ast::WhileStatement) {
@@ -124,15 +109,14 @@ impl Generator {
         let end_label = self.claim_label("while_end");
 
         self.start_block(cond_label.clone());
-        let symbol = self.generate_expression(&stmt.condition);
-        self.set_exit(vil::ExitInstruction::JumpCond {
-            condition: vil::TypedExpression {
-                type_: vil::Type::I64,
-                value: vil::Expression::Symbol(symbol.clone()),
-            },
-            label_true: loop_label.clone(),
-            label_false: end_label.clone(),
-        });
+        let register = self.generate_expression(&stmt.condition);
+        let tmp = self.claim_register();
+        self.push(vil::Instruction::Set(tmp.clone(), vil::Immediate(0)));
+        self.push(vil::Instruction::CmpEq(register, tmp));
+        self.set_exit(vil::ExitInstruction::JumpIf(
+            loop_label.clone(),
+            end_label.clone(),
+        ));
 
         self.start_block(loop_label);
         self.generate_block(&stmt.body);
@@ -141,9 +125,9 @@ impl Generator {
         self.start_block(end_label);
     }
 
-    fn start_block(&mut self, label: String) {
+    fn start_block(&mut self, label: vil::Label) {
         let block = vil::Block {
-            name: label.clone(),
+            name: label.0.clone(),
             instructions: Vec::new(),
             exit: vil::ExitInstruction::Placeholder,
         };
@@ -157,16 +141,22 @@ impl Generator {
         self.current_function().blocks.push(block);
     }
 
-    fn claim_label(&mut self, prefix: &str) -> String {
+    fn claim_label(&mut self, prefix: &str) -> vil::Label {
         let label = format!("{}_{}", prefix, self.label_counter);
         self.label_counter += 1;
-        label
+        vil::Label(label)
     }
 
-    fn claim_symbol(&mut self, prefix: &str) -> String {
+    fn claim_symbol(&mut self, prefix: &str) -> vil::Memory {
         let symbol = format!("{}_{}", prefix, self.symbol_counter);
         self.symbol_counter += 1;
-        symbol
+        vil::Memory(symbol)
+    }
+
+    fn claim_register(&mut self) -> vil::Register {
+        let register = vil::Register(self.register_counter);
+        self.register_counter += 1;
+        register
     }
 
     fn set_exit(&mut self, exit: vil::ExitInstruction) {

@@ -18,7 +18,8 @@ pub struct FunctionParameter {
 
 pub struct ConstDeclaration {
     pub symbol: String,
-    pub value: TypedExpression,
+    pub type_: Type,
+    pub value: Immediate,
 }
 
 pub struct Block {
@@ -28,70 +29,41 @@ pub struct Block {
 }
 
 pub enum Instruction {
-    Alloca {
-        symbol: String,
-        type_: Type,
-        size: usize,
-    },
-    Store {
-        symbol: String,
-        expression: TypedExpression,
-    },
-    Load {
-        symbol: String,
-        expression: TypedExpression,
-    },
-    Add {
-        symbol: String,
-        left: TypedExpression,
-        right: TypedExpression,
-    },
-    Sub {
-        symbol: String,
-        left: TypedExpression,
-        right: TypedExpression,
-    },
-    Mul {
-        symbol: String,
-        left: TypedExpression,
-        right: TypedExpression,
-    },
-    Div {
-        symbol: String,
-        left: TypedExpression,
-        right: TypedExpression,
-    },
-    Call {
-        function: String,
-        arguments: Vec<TypedExpression>,
-    },
-    CmpLt {
-        symbol: String,
-        left: TypedExpression,
-        right: TypedExpression,
-    },
+    Set(Register, Immediate),
+    Move(Register, Register),
+    Alloca(Memory, u64),
+    Load(Register, Memory, u64),
+    Store(Memory, Register, u64),
+    Add(Register, Register, Register),
+    Sub(Register, Register, Register),
+    Mul(Register, Register, Register),
+    Div(Register, Register, Register),
+    Call(Register, FunctionLabel, Vec<Register>),
+    CmpEq(Register, Register),
+    CmpNeq(Register, Register),
+    CmpLt(Register, Register),
+    CmpLte(Register, Register),
+    CmpGt(Register, Register),
+    CmpGte(Register, Register),
 }
 
 pub enum ExitInstruction {
-    Ret(TypedExpression),
-    Jump(String),
-    JumpCond {
-        condition: TypedExpression,
-        label_true: String,
-        label_false: String,
-    },
+    Ret(Register),
+    Jump(Label),
+    JumpIf(Label, Label),
     Placeholder,
 }
 
-pub struct TypedExpression {
-    pub type_: Type,
-    pub value: Expression,
-}
-
-pub enum Expression {
-    Integer(i64),
-    Symbol(String),
-}
+#[derive(Clone)]
+pub struct Register(pub u32);
+#[derive(Clone)]
+pub struct Immediate(pub i64);
+#[derive(Clone)]
+pub struct Memory(pub String);
+#[derive(Clone)]
+pub struct Label(pub String);
+#[derive(Clone)]
+pub struct FunctionLabel(pub String);
 
 pub enum Type {
     I64,
@@ -137,26 +109,59 @@ impl fmt::Display for Block {
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Instruction::Alloca {
-                symbol,
-                type_,
-                size,
-            } => {
-                write!(f, "  {} = alloca:{} {}", symbol, type_, size)
+            Instruction::Set(r, x) => write!(f, "  {} = set {}", r, x),
+            Instruction::Move(r1, r2) => write!(f, "  {} = move {}", r1, r2),
+            Instruction::Alloca(mem, size) => write!(f, "  {} = alloca {}", mem, size),
+            Instruction::Load(r, mem, offset) => write!(f, "  {} = load {}, {}", r, mem, offset),
+            Instruction::Store(mem, r, offset) => write!(f, "  {} = store {}, {}", mem, r, offset),
+            Instruction::Add(r1, r2, r3) => write!(f, "  {} = add {}, {}", r1, r2, r3),
+            Instruction::Sub(r1, r2, r3) => write!(f, "  {} = sub {}, {}", r1, r2, r3),
+            Instruction::Mul(r1, r2, r3) => write!(f, "  {} = mul {}, {}", r1, r2, r3),
+            Instruction::Div(r1, r2, r3) => write!(f, "  {} = div {}, {}", r1, r2, r3),
+            Instruction::Call(r, func, rs) => {
+                write!(f, "  {} = call {}", r, func)?;
+                for r in rs {
+                    write!(f, ", {}", r)?;
+                }
+                fmt::Result::Ok(())
             }
-            Instruction::Add {
-                symbol,
-                left,
-                right,
-            } => format_binary_op(f, "add", symbol, left, right),
-            Instruction::Store { symbol, expression } => {
-                write!(f, "  store {}, {}", symbol, expression)
-            }
-            _ => {
-                // TODO
-                write!(f, "  <unknown>")
-            }
+            Instruction::CmpEq(r1, r2) => write!(f, "  cmpeq {}, {}", r1, r2),
+            Instruction::CmpNeq(r1, r2) => write!(f, "  cmpneq {}, {}", r1, r2),
+            Instruction::CmpLt(r1, r2) => write!(f, "  cmplt {}, {}", r1, r2),
+            Instruction::CmpLte(r1, r2) => write!(f, "  cmplte {}, {}", r1, r2),
+            Instruction::CmpGt(r1, r2) => write!(f, "  cmpgt {}, {}", r1, r2),
+            Instruction::CmpGte(r1, r2) => write!(f, "  cmpgte {}, {}", r1, r2),
         }
+    }
+}
+
+impl fmt::Display for Register {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "%{}", self.0)
+    }
+}
+
+impl fmt::Display for Immediate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Display for Memory {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "%{}", self.0)
+    }
+}
+
+impl fmt::Display for Label {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "%{}", self.0)
+    }
+}
+
+impl fmt::Display for FunctionLabel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "%{}", self.0)
     }
 }
 
@@ -164,30 +169,9 @@ impl fmt::Display for ExitInstruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ExitInstruction::Ret(expr) => write!(f, "  ret {}", expr),
-            ExitInstruction::Jump(label) => write!(f, "  jmp {}", label),
-            ExitInstruction::JumpCond {
-                condition,
-                label_true,
-                label_false,
-            } => {
-                write!(f, "  jmp {}, {} {}", condition, label_true, label_false)
-            }
+            ExitInstruction::Jump(label) => write!(f, "  jump {}", label),
+            ExitInstruction::JumpIf(label1, label2) => write!(f, "  jumpif {}, {}", label1, label2),
             ExitInstruction::Placeholder => write!(f, "  <placeholder>"),
-        }
-    }
-}
-
-impl fmt::Display for TypedExpression {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}", self.value, self.type_)
-    }
-}
-
-impl fmt::Display for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Expression::Integer(x) => write!(f, "{}", x),
-            Expression::Symbol(s) => write!(f, "{}", s),
         }
     }
 }
@@ -199,14 +183,4 @@ impl fmt::Display for Type {
             Type::Pointer(t) => write!(f, "ptr<{}>", t),
         }
     }
-}
-
-fn format_binary_op(
-    f: &mut fmt::Formatter<'_>,
-    op: &str,
-    destination: &str,
-    left: &TypedExpression,
-    right: &TypedExpression,
-) -> fmt::Result {
-    write!(f, "  {} = {} {} {}", destination, op, left, right)
 }
