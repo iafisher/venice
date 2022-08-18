@@ -6,6 +6,7 @@ pub struct Program {
 }
 
 pub struct Block {
+    label: String,
     instructions: Vec<Instruction>,
 }
 

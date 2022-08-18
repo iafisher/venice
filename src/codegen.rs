@@ -55,8 +55,71 @@ impl Generator {
     }
 
     fn generate_expression(&mut self, expr: &ast::Expression) -> vil::Register {
-        // TODO
-        self.claim_register()
+        let r = self.claim_register();
+        match &expr.kind {
+            ast::ExpressionKind::Boolean(x) => {
+                self.push(vil::Instruction::Set(r.clone(), vil::Immediate(*x as i64)));
+            }
+            ast::ExpressionKind::Integer(x) => {
+                self.push(vil::Instruction::Set(r.clone(), vil::Immediate(*x)));
+            }
+            ast::ExpressionKind::Binary(b) => self.generate_binary_expression(&b, r.clone()),
+            _ => {
+                // TODO
+            }
+        }
+        r
+    }
+
+    fn generate_binary_expression(&mut self, expr: &ast::BinaryExpression, r: vil::Register) {
+        let old_register_counter = r.0 + 1;
+
+        let left = self.generate_expression(&expr.left);
+        let right = self.generate_expression(&expr.right);
+
+        match expr.op {
+            ast::BinaryOpType::Add => {
+                self.push(vil::Instruction::Add(r, left, right));
+            }
+            ast::BinaryOpType::Divide => {
+                self.push(vil::Instruction::Div(r, left, right));
+            }
+            ast::BinaryOpType::Equals => {
+                self.push(vil::Instruction::CmpEq(left, right));
+                self.push(vil::Instruction::SetCmp(r));
+            }
+            ast::BinaryOpType::GreaterThan => {
+                self.push(vil::Instruction::CmpGt(left, right));
+                self.push(vil::Instruction::SetCmp(r));
+            }
+            ast::BinaryOpType::GreaterThanEquals => {
+                self.push(vil::Instruction::CmpGte(left, right));
+                self.push(vil::Instruction::SetCmp(r));
+            }
+            ast::BinaryOpType::LessThan => {
+                self.push(vil::Instruction::CmpLt(left, right));
+                self.push(vil::Instruction::SetCmp(r));
+            }
+            ast::BinaryOpType::LessThanEquals => {
+                self.push(vil::Instruction::CmpLte(left, right));
+                self.push(vil::Instruction::SetCmp(r));
+            }
+            ast::BinaryOpType::Multiply => {
+                self.push(vil::Instruction::Mul(r, left, right));
+            }
+            ast::BinaryOpType::NotEquals => {
+                self.push(vil::Instruction::CmpNeq(left, right));
+                self.push(vil::Instruction::SetCmp(r));
+            }
+            ast::BinaryOpType::Subtract => {
+                self.push(vil::Instruction::Sub(r, left, right));
+            }
+            _ => {
+                // TODO
+            }
+        }
+
+        self.register_counter = old_register_counter;
     }
 
     fn generate_block(&mut self, block: &Vec<ast::Statement>) {
@@ -67,6 +130,7 @@ impl Generator {
 
     fn generate_statement(&mut self, stmt: &ast::Statement) {
         match stmt {
+            ast::Statement::Assign(stmt) => self.generate_assign_statement(stmt),
             ast::Statement::Let(stmt) => self.generate_let_statement(stmt),
             ast::Statement::Return(stmt) => self.generate_return_statement(stmt),
             ast::Statement::While(stmt) => self.generate_while_statement(stmt),
@@ -76,8 +140,19 @@ impl Generator {
         }
     }
 
+    fn generate_assign_statement(&mut self, stmt: &ast::AssignStatement) {
+        let entry = stmt.symbol.entry.as_ref().unwrap();
+        let register = self.generate_expression(&stmt.value);
+        self.push(vil::Instruction::Store(
+            vil::Memory(entry.unique_name.clone()),
+            register,
+            0,
+        ));
+    }
+
     fn generate_let_statement(&mut self, stmt: &ast::LetStatement) {
-        let symbol = self.claim_symbol(&stmt.symbol);
+        let entry = stmt.symbol.entry.as_ref().unwrap();
+        let symbol = vil::Memory(entry.unique_name.clone());
         self.push(vil::Instruction::Alloca(symbol.clone(), 8));
         let register = self.generate_expression(&stmt.value);
         self.push(vil::Instruction::Store(symbol, register, 0));

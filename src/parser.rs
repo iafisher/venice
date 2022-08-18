@@ -205,7 +205,11 @@ impl Parser {
         self.lexer.next();
 
         Ok(ast::AssignStatement {
-            symbol: symbol,
+            symbol: ast::SymbolExpression {
+                name: symbol,
+                entry: None,
+                location: location.clone(),
+            },
             value: value,
             location: location,
         })
@@ -272,7 +276,11 @@ impl Parser {
         self.lexer.next();
 
         Ok(ast::LetStatement {
-            symbol: symbol,
+            symbol: ast::SymbolExpression {
+                name: symbol,
+                entry: None,
+                location: location.clone(),
+            },
             type_: type_,
             semantic_type: ast::Type::Unknown,
             value: value,
@@ -363,13 +371,13 @@ impl Parser {
         expr: &ast::Expression,
         location: common::Location,
     ) -> Result<ast::CallExpression, ()> {
-        if let ast::ExpressionKind::Symbol(function) = &expr.kind {
+        if let ast::ExpressionKind::Symbol(ast::SymbolExpression { name, .. }) = &expr.kind {
             let arguments = self.match_expression_list()?;
             let token = self.lexer.token();
             self.expect_token(&token, TokenType::ParenClose, ")")?;
             self.lexer.next();
             Ok(ast::CallExpression {
-                function: function.to_string(),
+                function: name.to_string(),
                 arguments: arguments,
                 location: location,
             })
@@ -435,7 +443,11 @@ impl Parser {
             TokenType::Symbol => {
                 self.lexer.next();
                 Ok(ast::Expression {
-                    kind: ast::ExpressionKind::Symbol(token.value),
+                    kind: ast::ExpressionKind::Symbol(ast::SymbolExpression {
+                        name: token.value,
+                        entry: None,
+                        location: token.location.clone(),
+                    }),
                     semantic_type: ast::Type::Unknown,
                     location: token.location.clone(),
                 })

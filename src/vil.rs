@@ -45,6 +45,7 @@ pub enum Instruction {
     CmpLte(Register, Register),
     CmpGt(Register, Register),
     CmpGte(Register, Register),
+    SetCmp(Register),
 }
 
 pub enum ExitInstruction {
@@ -131,6 +132,7 @@ impl fmt::Display for Instruction {
             Instruction::CmpLte(r1, r2) => write!(f, "  cmplte {}, {}", r1, r2),
             Instruction::CmpGt(r1, r2) => write!(f, "  cmpgt {}, {}", r1, r2),
             Instruction::CmpGte(r1, r2) => write!(f, "  cmpgte {}, {}", r1, r2),
+            Instruction::SetCmp(r) => write!(f, "  {} = setcmp", r),
         }
     }
 }

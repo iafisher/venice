@@ -66,7 +66,7 @@ pub enum Statement {
 
 #[derive(Debug)]
 pub struct LetStatement {
-    pub symbol: String,
+    pub symbol: SymbolExpression,
     pub type_: SyntacticType,
     pub semantic_type: Type,
     pub value: Expression,
@@ -75,7 +75,7 @@ pub struct LetStatement {
 
 #[derive(Debug)]
 pub struct AssignStatement {
-    pub symbol: String,
+    pub symbol: SymbolExpression,
     pub value: Expression,
     pub location: common::Location,
 }
@@ -134,7 +134,7 @@ pub enum ExpressionKind {
     Boolean(bool),
     Integer(i64),
     Str(String),
-    Symbol(String),
+    Symbol(SymbolExpression),
     Binary(BinaryExpression),
     Unary(UnaryExpression),
     Call(CallExpression),
@@ -145,6 +145,13 @@ pub enum ExpressionKind {
     Tuple(TupleLiteral),
     Map(MapLiteral),
     Record(RecordLiteral),
+}
+
+#[derive(Debug)]
+pub struct SymbolExpression {
+    pub name: String,
+    pub entry: Option<SymbolEntry>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
@@ -281,6 +288,13 @@ pub enum Type {
 pub struct ParameterizedType {
     symbol: String,
     parameters: Vec<Type>,
+}
+
+#[derive(Clone, Debug)]
+pub struct SymbolEntry {
+    pub unique_name: String,
+    pub type_: Type,
+    pub constant: bool,
 }
 
 impl Type {
@@ -516,6 +530,12 @@ impl fmt::Display for ExpressionKind {
             ExpressionKind::Map(e) => write!(f, "{}", e),
             ExpressionKind::Record(e) => write!(f, "{}", e),
         }
+    }
+}
+
+impl fmt::Display for SymbolExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)
     }
 }
 

@@ -14,13 +14,7 @@ pub fn analyze(ast: &mut ast::Program) -> Result<(), Vec<errors::VeniceError>> {
 }
 
 struct SymbolTable {
-    symbols: HashMap<String, SymbolTableEntry>,
-}
-
-#[derive(Clone)]
-struct SymbolTableEntry {
-    pub type_: ast::Type,
-    pub constant: bool,
+    symbols: HashMap<String, ast::SymbolEntry>,
 }
 
 impl SymbolTable {
@@ -34,21 +28,24 @@ impl SymbolTable {
         let mut symbols = HashMap::new();
         symbols.insert(
             String::from("i64"),
-            SymbolTableEntry {
+            ast::SymbolEntry {
+                unique_name: String::new(),
                 type_: ast::Type::I64,
                 constant: true,
             },
         );
         symbols.insert(
             String::from("bool"),
-            SymbolTableEntry {
+            ast::SymbolEntry {
+                unique_name: String::new(),
                 type_: ast::Type::Boolean,
                 constant: true,
             },
         );
         symbols.insert(
             String::from("string"),
-            SymbolTableEntry {
+            ast::SymbolEntry {
+                unique_name: String::new(),
                 type_: ast::Type::Str,
                 constant: true,
             },
@@ -57,11 +54,11 @@ impl SymbolTable {
         SymbolTable { symbols: symbols }
     }
 
-    pub fn get(&self, key: &str) -> Option<SymbolTableEntry> {
+    pub fn get(&self, key: &str) -> Option<ast::SymbolEntry> {
         self.symbols.get(key).cloned()
     }
 
-    pub fn insert(&mut self, key: &str, entry: SymbolTableEntry) {
+    pub fn insert(&mut self, key: &str, entry: ast::SymbolEntry) {
         self.symbols.insert(String::from(key), entry.clone());
     }
 
@@ -75,6 +72,7 @@ struct Analyzer {
     types: SymbolTable,
     current_function_return_type: Option<ast::Type>,
     errors: Vec<errors::VeniceError>,
+    unique_name_counter: u64,
 }
 
 impl Analyzer {
@@ -84,6 +82,7 @@ impl Analyzer {
             types: SymbolTable::builtin_types(),
             current_function_return_type: None,
             errors: Vec::new(),
+            unique_name_counter: 0,
         }
     }
 
@@ -107,18 +106,22 @@ impl Analyzer {
         for parameter in &mut declaration.parameters {
             let t = self.resolve_type(&parameter.type_);
             parameter.semantic_type = t.clone();
+            let unique_name = self.claim_unique_name(&parameter.name);
             self.symbols.insert(
                 &parameter.name,
-                SymbolTableEntry {
+                ast::SymbolEntry {
+                    unique_name: unique_name,
                     type_: t.clone(),
                     constant: false,
                 },
             );
             parameter_types.push(t);
         }
+        let unique_name = self.claim_unique_name(&declaration.name);
         self.types.insert(
             &declaration.name,
-            SymbolTableEntry {
+            ast::SymbolEntry {
+                unique_name: unique_name,
                 type_: ast::Type::Function {
                     parameters: parameter_types,
                     return_type: Box::new(declaration.semantic_return_type.clone()),
@@ -153,9 +156,11 @@ impl Analyzer {
             );
         }
 
+        let unique_name = self.claim_unique_name(&declaration.symbol);
         self.symbols.insert(
             &declaration.symbol,
-            SymbolTableEntry {
+            ast::SymbolEntry {
+                unique_name: unique_name,
                 type_: declaration.semantic_type.clone(),
                 constant: true,
             },
@@ -195,18 +200,21 @@ impl Analyzer {
             );
         }
 
-        self.symbols.insert(
-            &stmt.symbol,
-            SymbolTableEntry {
-                type_: stmt.semantic_type.clone(),
-                constant: false,
-            },
-        );
+        let unique_name = self.claim_unique_name(&stmt.symbol.name);
+        let entry = ast::SymbolEntry {
+            unique_name: unique_name,
+            type_: stmt.semantic_type.clone(),
+            constant: false,
+        };
+
+        stmt.symbol.entry = Some(entry.clone());
+        self.symbols.insert(&stmt.symbol.name, entry);
     }
 
     fn analyze_assign_statement(&mut self, stmt: &mut ast::AssignStatement) {
         self.analyze_expression(&mut stmt.value);
-        if let Some(entry) = self.symbols.get(&stmt.symbol) {
+        if let Some(entry) = self.symbols.get(&stmt.symbol.name) {
+            stmt.symbol.entry = Some(entry.clone());
             if !entry.type_.matches(&stmt.value.semantic_type) {
                 self.error_type_mismatch(
                     &entry.type_,
@@ -291,14 +299,7 @@ impl Analyzer {
             ast::ExpressionKind::Boolean(_) => ast::Type::Boolean,
             ast::ExpressionKind::Integer(_) => ast::Type::I64,
             ast::ExpressionKind::Str(_) => ast::Type::Str,
-            ast::ExpressionKind::Symbol(s) => {
-                if let Some(entry) = self.symbols.get(&s) {
-                    entry.type_
-                } else {
-                    self.error("unknown symbol", expr.location.clone());
-                    ast::Type::Error
-                }
-            }
+            ast::ExpressionKind::Symbol(ref mut e) => self.analyze_symbol_expression(e),
             ast::ExpressionKind::Binary(ref mut e) => self.analyze_binary_expression(e),
             ast::ExpressionKind::Unary(ref mut e) => self.analyze_unary_expression(e),
             ast::ExpressionKind::Call(ref mut e) => self.analyze_call_expression(e),
@@ -311,6 +312,16 @@ impl Analyzer {
             ast::ExpressionKind::Record(ref mut e) => self.analyze_record_literal(e),
         };
         expr.semantic_type.clone()
+    }
+
+    fn analyze_symbol_expression(&mut self, expr: &mut ast::SymbolExpression) -> ast::Type {
+        if let Some(entry) = self.symbols.get(&expr.name) {
+            expr.entry = Some(entry.clone());
+            entry.type_
+        } else {
+            self.error("unknown symbol", expr.location.clone());
+            ast::Type::Error
+        }
     }
 
     fn analyze_binary_expression(&mut self, expr: &mut ast::BinaryExpression) -> ast::Type {
@@ -563,6 +574,12 @@ impl Analyzer {
                 ast::Type::Error
             }
         }
+    }
+
+    fn claim_unique_name(&mut self, prefix: &str) -> String {
+        let c = self.unique_name_counter;
+        self.unique_name_counter += 1;
+        format!("{}__{}", prefix, c)
     }
 
     fn assert_type(
