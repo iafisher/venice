@@ -1,8 +1,7 @@
 use super::ast;
 use super::vil;
-use super::x86;
 
-pub fn generate_ir(ast: &ast::Program) -> Result<vil::Program, String> {
+pub fn generate(ast: &ast::Program) -> Result<vil::Program, String> {
     let mut generator = Generator {
         program: vil::Program {
             declarations: Vec::new(),
@@ -252,8 +251,4 @@ impl Generator {
         let index = function.blocks.len() - 1;
         &mut function.blocks[index]
     }
-}
-
-fn generate_x86(vil: vil::Program) -> Result<x86::Program, String> {
-    Err(String::from("not implemented"))
 }

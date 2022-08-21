@@ -53,9 +53,13 @@ fn main() {
     println!("\nTyped AST:\n");
     println!("  {}", ast);
 
-    let vil_program = codegen::generate_ir(&ast).unwrap();
+    let vil_program = codegen::generate(&ast).unwrap();
     println!("\nVIL:\n");
     println!("{}", vil_program);
+
+    let x86_program = x86::generate(&vil_program).unwrap();
+    println!("\nx86:\n");
+    println!("{}", x86_program);
 
     /*
     let vil_program = vil::Program {
