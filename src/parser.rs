@@ -310,7 +310,7 @@ impl Parser {
     }
 
     fn match_while_statement(&mut self) -> Result<ast::WhileStatement, ()> {
-        let mut token = self.lexer.token();
+        let token = self.lexer.token();
         let location = token.location.clone();
         self.expect_token(&token, TokenType::While, "while")?;
 
