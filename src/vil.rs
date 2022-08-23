@@ -28,6 +28,7 @@ pub struct Block {
     pub exit: ExitInstruction,
 }
 
+#[derive(Debug)]
 pub enum Instruction {
     Set(Register, Immediate),
     Move(Register, Register),
@@ -48,6 +49,7 @@ pub enum Instruction {
     SetCmp(Register),
 }
 
+#[derive(Debug)]
 pub enum ExitInstruction {
     Ret(Register),
     Jump(Label),
@@ -55,15 +57,15 @@ pub enum ExitInstruction {
     Placeholder,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Register(pub u32);
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Immediate(pub i64);
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Memory(pub String);
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Label(pub String);
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct FunctionLabel(pub String);
 
 pub enum Type {

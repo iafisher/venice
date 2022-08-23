@@ -142,13 +142,13 @@ class Block:
 ### CFGs to machine code
 TODO
 
-## The Venice Intermediate Language
-TODO
+#### Complications
+- VIL has infinite number of registers while all real machines have a fixed, low number.
+- Some operations only operate on certain registers, e.g. `idiv` only works on `rdx` and `rax`.
+- Variadic functions require setting `al` to the number of vector registers used.
 
-- Arithmetic instructions (`add`, `sub`, `mul`, `div`)
-- Load and store instructions
-- Branching instructions (conditional and unconditional)
-- `call`
+## The Venice Intermediate Language
+See <https://github.com/iafisher/venice/blob/master/docs/vil.md> for the specification of the Venice Intermediate Language.
 
 ## Venice runtime
 TODO
