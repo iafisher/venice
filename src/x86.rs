@@ -23,7 +23,9 @@ pub struct Block {
 pub enum Instruction {
     Add(Value, Value),
     Jmp(String),
-    Movq(Value, Value),
+    Mov(Value, Value),
+    Pop(Value),
+    Push(Value),
     Ret,
     Sub(Value, Value),
     ToDo(String),
@@ -82,7 +84,7 @@ impl Generator {
         self.total_offset = 0;
         self.program.blocks.push(Block {
             label: declaration.name.clone(),
-            instructions: Vec::new(),
+            instructions: vec![Instruction::Push(RBP), Instruction::Mov(RBP, RSP)],
         });
 
         for block in &declaration.blocks {
@@ -117,22 +119,22 @@ impl Generator {
                 self.offsets.insert(mem.0.clone(), self.total_offset);
             }
             vil::Instruction::Set(r, imm) => {
-                instructions.push(Instruction::Movq(R(r), Value::Immediate(imm.0)));
+                instructions.push(Instruction::Mov(R(r), Value::Immediate(imm.0)));
             }
             vil::Instruction::Move(r1, r2) => {
-                instructions.push(Instruction::Movq(R(r1), R(r2)));
+                instructions.push(Instruction::Mov(R(r1), R(r2)));
             }
             vil::Instruction::Add(r1, r2, r3) => {
-                instructions.push(Instruction::Movq(R(r1), R(r3)));
+                instructions.push(Instruction::Mov(R(r1), R(r3)));
                 instructions.push(Instruction::Add(R(r1), R(r2)));
             }
             vil::Instruction::Sub(r1, r2, r3) => {
-                instructions.push(Instruction::Movq(R(r1), R(r3)));
+                instructions.push(Instruction::Mov(R(r1), R(r3)));
                 instructions.push(Instruction::Sub(R(r1), R(r2)));
             }
             vil::Instruction::Load(r, mem, offset) => {
                 let real_offset = *self.offsets.get(&mem.0).unwrap() + *offset as u32;
-                instructions.push(Instruction::Movq(
+                instructions.push(Instruction::Mov(
                     R(r),
                     Value::Memory {
                         scale: 1,
@@ -157,7 +159,8 @@ impl Generator {
     ) {
         match instruction {
             vil::ExitInstruction::Ret(r) => {
-                instructions.push(Instruction::Movq(RAX, R(r)));
+                instructions.push(Instruction::Mov(RAX, R(r)));
+                instructions.push(Instruction::Pop(RBP));
                 instructions.push(Instruction::Ret);
             }
             vil::ExitInstruction::Jump(l) => {
@@ -209,7 +212,9 @@ impl fmt::Display for Instruction {
         match self {
             Instruction::Add(x, y) => write!(f, "add {}, {}", x, y),
             Instruction::Jmp(l) => write!(f, "jmp {}", l),
-            Instruction::Movq(x, y) => write!(f, "movq {}, {}", x, y),
+            Instruction::Mov(x, y) => write!(f, "mov {}, {}", x, y),
+            Instruction::Pop(x) => write!(f, "pop {}", x),
+            Instruction::Push(x) => write!(f, "push {}", x),
             Instruction::Ret => write!(f, "ret"),
             Instruction::Sub(x, y) => write!(f, "sub {}, {}", x, y),
             Instruction::ToDo(s) => write!(f, "<todo: {}>", s),
