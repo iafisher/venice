@@ -154,7 +154,7 @@ pub struct SymbolExpression {
     pub location: common::Location,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum BinaryOpType {
     Add,
     And,

@@ -84,31 +84,25 @@ impl Generator {
                 self.push(vil::Instruction::Div(r, left, right));
             }
             ast::BinaryOpType::Equals => {
-                self.push(vil::Instruction::CmpEq(left, right));
-                self.push(vil::Instruction::SetCmp(r));
+                self.generate_binary_comparison(expr.op, left, right, r);
             }
             ast::BinaryOpType::GreaterThan => {
-                self.push(vil::Instruction::CmpGt(left, right));
-                self.push(vil::Instruction::SetCmp(r));
+                self.generate_binary_comparison(expr.op, left, right, r);
             }
             ast::BinaryOpType::GreaterThanEquals => {
-                self.push(vil::Instruction::CmpGte(left, right));
-                self.push(vil::Instruction::SetCmp(r));
+                self.generate_binary_comparison(expr.op, left, right, r);
             }
             ast::BinaryOpType::LessThan => {
-                self.push(vil::Instruction::CmpLt(left, right));
-                self.push(vil::Instruction::SetCmp(r));
+                self.generate_binary_comparison(expr.op, left, right, r);
             }
             ast::BinaryOpType::LessThanEquals => {
-                self.push(vil::Instruction::CmpLte(left, right));
-                self.push(vil::Instruction::SetCmp(r));
+                self.generate_binary_comparison(expr.op, left, right, r);
             }
             ast::BinaryOpType::Multiply => {
                 self.push(vil::Instruction::Mul(r, left, right));
             }
             ast::BinaryOpType::NotEquals => {
-                self.push(vil::Instruction::CmpNeq(left, right));
-                self.push(vil::Instruction::SetCmp(r));
+                self.generate_binary_comparison(expr.op, left, right, r);
             }
             ast::BinaryOpType::Subtract => {
                 self.push(vil::Instruction::Sub(r, left, right));
@@ -119,6 +113,53 @@ impl Generator {
         }
 
         self.register_counter = old_register_counter;
+    }
+
+    fn generate_binary_comparison(
+        &mut self,
+        op: ast::BinaryOpType,
+        left: vil::Register,
+        right: vil::Register,
+        r: vil::Register,
+    ) {
+        let true_label = self.claim_label("eq");
+        let false_label = self.claim_label("eq");
+        let end_label = self.claim_label("eq_end");
+
+        self.push(vil::Instruction::Cmp(left, right));
+
+        let exit = match op {
+            ast::BinaryOpType::Equals => {
+                vil::ExitInstruction::JumpEq(true_label.clone(), false_label.clone())
+            }
+            ast::BinaryOpType::GreaterThan => {
+                vil::ExitInstruction::JumpGt(true_label.clone(), false_label.clone())
+            }
+            ast::BinaryOpType::GreaterThanEquals => {
+                vil::ExitInstruction::JumpGte(true_label.clone(), false_label.clone())
+            }
+            ast::BinaryOpType::LessThan => {
+                vil::ExitInstruction::JumpLt(true_label.clone(), false_label.clone())
+            }
+            ast::BinaryOpType::LessThanEquals => {
+                vil::ExitInstruction::JumpLte(true_label.clone(), false_label.clone())
+            }
+            ast::BinaryOpType::NotEquals => {
+                vil::ExitInstruction::JumpNeq(true_label.clone(), false_label.clone())
+            }
+            _ => panic!("not a binary comparison"),
+        };
+        self.set_exit(exit);
+
+        self.start_block(true_label);
+        self.push(vil::Instruction::Set(r.clone(), vil::Immediate(1)));
+        self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
+
+        self.start_block(false_label);
+        self.push(vil::Instruction::Set(r, vil::Immediate(0)));
+        self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
+
+        self.start_block(end_label);
     }
 
     fn generate_block(&mut self, block: &Vec<ast::Statement>) {
@@ -186,8 +227,8 @@ impl Generator {
         let register = self.generate_expression(&stmt.condition);
         let tmp = self.claim_register();
         self.push(vil::Instruction::Set(tmp.clone(), vil::Immediate(0)));
-        self.push(vil::Instruction::CmpEq(register, tmp));
-        self.set_exit(vil::ExitInstruction::JumpIf(
+        self.push(vil::Instruction::Cmp(register, tmp));
+        self.set_exit(vil::ExitInstruction::JumpEq(
             loop_label.clone(),
             end_label.clone(),
         ));

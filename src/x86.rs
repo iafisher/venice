@@ -22,7 +22,14 @@ pub struct Block {
 
 pub enum Instruction {
     Add(Value, Value),
+    Cmp(Value, Value),
+    Je(String),
+    Jg(String),
+    Jge(String),
+    Jl(String),
+    Jle(String),
     Jmp(String),
+    Jne(String),
     Mov(Value, Value),
     Pop(Value),
     Push(Value),
@@ -144,7 +151,21 @@ impl Generator {
                     },
                 ));
             }
-            vil::Instruction::Store(mem, r, offset) => {}
+            vil::Instruction::Store(mem, r, offset) => {
+                let real_offset = *self.offsets.get(&mem.0).unwrap() + *offset as u32;
+                instructions.push(Instruction::Mov(
+                    Value::Memory {
+                        scale: 1,
+                        displacement: real_offset,
+                        base: RSP_reg,
+                        index: None,
+                    },
+                    R(r),
+                ));
+            }
+            vil::Instruction::Cmp(r1, r2) => {
+                instructions.push(Instruction::Cmp(R(r1), R(r2)));
+            }
             x => {
                 // TODO
                 instructions.push(Instruction::ToDo(format!("{:?}", x)));
@@ -165,6 +186,30 @@ impl Generator {
             }
             vil::ExitInstruction::Jump(l) => {
                 instructions.push(Instruction::Jmp(l.0.clone()));
+            }
+            vil::ExitInstruction::JumpEq(true_label, false_label) => {
+                instructions.push(Instruction::Je(true_label.0.clone()));
+                instructions.push(Instruction::Jmp(false_label.0.clone()));
+            }
+            vil::ExitInstruction::JumpGt(true_label, false_label) => {
+                instructions.push(Instruction::Jg(true_label.0.clone()));
+                instructions.push(Instruction::Jmp(false_label.0.clone()));
+            }
+            vil::ExitInstruction::JumpGte(true_label, false_label) => {
+                instructions.push(Instruction::Jge(true_label.0.clone()));
+                instructions.push(Instruction::Jmp(false_label.0.clone()));
+            }
+            vil::ExitInstruction::JumpLt(true_label, false_label) => {
+                instructions.push(Instruction::Jl(true_label.0.clone()));
+                instructions.push(Instruction::Jmp(false_label.0.clone()));
+            }
+            vil::ExitInstruction::JumpLte(true_label, false_label) => {
+                instructions.push(Instruction::Jle(true_label.0.clone()));
+                instructions.push(Instruction::Jmp(false_label.0.clone()));
+            }
+            vil::ExitInstruction::JumpNeq(true_label, false_label) => {
+                instructions.push(Instruction::Jne(true_label.0.clone()));
+                instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
             x => {
                 // TODO
@@ -211,7 +256,14 @@ impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Instruction::Add(x, y) => write!(f, "add {}, {}", x, y),
+            Instruction::Cmp(x, y) => write!(f, "cmp {}, {}", x, y),
+            Instruction::Je(l) => write!(f, "je {}", l),
+            Instruction::Jg(l) => write!(f, "jg {}", l),
+            Instruction::Jge(l) => write!(f, "jge {}", l),
+            Instruction::Jl(l) => write!(f, "jl {}", l),
+            Instruction::Jle(l) => write!(f, "jle {}", l),
             Instruction::Jmp(l) => write!(f, "jmp {}", l),
+            Instruction::Jne(l) => write!(f, "jne {}", l),
             Instruction::Mov(x, y) => write!(f, "mov {}, {}", x, y),
             Instruction::Pop(x) => write!(f, "pop {}", x),
             Instruction::Push(x) => write!(f, "push {}", x),

@@ -40,20 +40,19 @@ pub enum Instruction {
     Mul(Register, Register, Register),
     Div(Register, Register, Register),
     Call(Register, FunctionLabel, Vec<Register>),
-    CmpEq(Register, Register),
-    CmpNeq(Register, Register),
-    CmpLt(Register, Register),
-    CmpLte(Register, Register),
-    CmpGt(Register, Register),
-    CmpGte(Register, Register),
-    SetCmp(Register),
+    Cmp(Register, Register),
 }
 
 #[derive(Debug)]
 pub enum ExitInstruction {
     Ret(Register),
     Jump(Label),
-    JumpIf(Label, Label),
+    JumpEq(Label, Label),
+    JumpNeq(Label, Label),
+    JumpLt(Label, Label),
+    JumpLte(Label, Label),
+    JumpGt(Label, Label),
+    JumpGte(Label, Label),
     Placeholder,
 }
 
@@ -128,13 +127,7 @@ impl fmt::Display for Instruction {
                 }
                 fmt::Result::Ok(())
             }
-            Instruction::CmpEq(r1, r2) => write!(f, "  cmpeq {}, {}", r1, r2),
-            Instruction::CmpNeq(r1, r2) => write!(f, "  cmpneq {}, {}", r1, r2),
-            Instruction::CmpLt(r1, r2) => write!(f, "  cmplt {}, {}", r1, r2),
-            Instruction::CmpLte(r1, r2) => write!(f, "  cmplte {}, {}", r1, r2),
-            Instruction::CmpGt(r1, r2) => write!(f, "  cmpgt {}, {}", r1, r2),
-            Instruction::CmpGte(r1, r2) => write!(f, "  cmpgte {}, {}", r1, r2),
-            Instruction::SetCmp(r) => write!(f, "  {} = setcmp", r),
+            Instruction::Cmp(r1, r2) => write!(f, "  cmp {}, {}", r1, r2),
         }
     }
 }
@@ -174,7 +167,12 @@ impl fmt::Display for ExitInstruction {
         match self {
             ExitInstruction::Ret(expr) => write!(f, "  ret {}", expr),
             ExitInstruction::Jump(label) => write!(f, "  jump {}", label),
-            ExitInstruction::JumpIf(label1, label2) => write!(f, "  jumpif {}, {}", label1, label2),
+            ExitInstruction::JumpEq(l1, l2) => write!(f, "  jump_eq {} {}", l1, l2),
+            ExitInstruction::JumpNeq(l1, l2) => write!(f, "  jump_neq {} {}", l1, l2),
+            ExitInstruction::JumpLt(l1, l2) => write!(f, "  jump_lt {} {}", l1, l2),
+            ExitInstruction::JumpLte(l1, l2) => write!(f, "  jump_lte {} {}", l1, l2),
+            ExitInstruction::JumpGt(l1, l2) => write!(f, "  jump_gt {} {}", l1, l2),
+            ExitInstruction::JumpGte(l1, l2) => write!(f, "  jump_gte {} {}", l1, l2),
             ExitInstruction::Placeholder => write!(f, "  <placeholder>"),
         }
     }
