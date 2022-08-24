@@ -7,8 +7,9 @@ main() {
   object_path=${input_path/%.s/.o}
   output_path=${input_path%.s}
 
+  ( cd runtime && make )
   nasm -f elf64 -o "$object_path" "$input_path"
-  ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o "$output_path" -lc "$object_path"
+  ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 runtime/libvenice.so -o "$output_path" -lc "$object_path"
 }
 
 main "$@"
