@@ -1,14 +1,19 @@
+use std::collections::HashMap;
+
 use super::ast;
 use super::vil;
 
 pub fn generate(ast: &ast::Program) -> Result<vil::Program, String> {
     let mut generator = Generator {
         program: vil::Program {
+            externs: Vec::new(),
             declarations: Vec::new(),
+            strings: HashMap::new(),
         },
         label_counter: 0,
         register_counter: 0,
         symbol_counter: 0,
+        string_counter: 0,
     };
     generator.generate_program(ast);
     Ok(generator.program)
@@ -19,6 +24,7 @@ struct Generator {
     label_counter: u32,
     register_counter: u32,
     symbol_counter: u32,
+    string_counter: u32,
 }
 
 impl Generator {
@@ -57,12 +63,27 @@ impl Generator {
         let r = self.claim_register();
         match &expr.kind {
             ast::ExpressionKind::Boolean(x) => {
-                self.push(vil::Instruction::Set(r.clone(), vil::Immediate(*x as i64)));
+                self.push(vil::Instruction::Set(
+                    r.clone(),
+                    vil::Immediate::Integer(*x as i64),
+                ));
             }
             ast::ExpressionKind::Integer(x) => {
-                self.push(vil::Instruction::Set(r.clone(), vil::Immediate(*x)));
+                self.push(vil::Instruction::Set(
+                    r.clone(),
+                    vil::Immediate::Integer(*x),
+                ));
+            }
+            ast::ExpressionKind::Str(s) => {
+                let label = self.claim_string_label();
+                self.program.strings.insert(label.clone(), s.clone());
+                self.push(vil::Instruction::Set(
+                    r.clone(),
+                    vil::Immediate::Label(label),
+                ));
             }
             ast::ExpressionKind::Binary(b) => self.generate_binary_expression(&b, r.clone()),
+            ast::ExpressionKind::Call(e) => self.generate_call_expression(e, r.clone()),
             _ => {
                 // TODO
             }
@@ -152,14 +173,33 @@ impl Generator {
         self.set_exit(exit);
 
         self.start_block(true_label);
-        self.push(vil::Instruction::Set(r.clone(), vil::Immediate(1)));
+        self.push(vil::Instruction::Set(r.clone(), vil::Immediate::Integer(1)));
         self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
 
         self.start_block(false_label);
-        self.push(vil::Instruction::Set(r, vil::Immediate(0)));
+        self.push(vil::Instruction::Set(r, vil::Immediate::Integer(0)));
         self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
 
         self.start_block(end_label);
+    }
+
+    fn generate_call_expression(&mut self, expr: &ast::CallExpression, r: vil::Register) {
+        let mut argument_registers = Vec::new();
+        for argument in &expr.arguments {
+            let argument_register = self.generate_expression(argument);
+            argument_registers.push(argument_register);
+        }
+
+        let entry = expr.function.entry.as_ref().unwrap();
+        if entry.external {
+            self.program.externs.push(entry.unique_name.clone());
+        }
+
+        self.push(vil::Instruction::Call(
+            r,
+            vil::FunctionLabel(entry.unique_name.clone()),
+            argument_registers,
+        ));
     }
 
     fn generate_block(&mut self, block: &Vec<ast::Statement>) {
@@ -174,6 +214,9 @@ impl Generator {
             ast::Statement::Let(stmt) => self.generate_let_statement(stmt),
             ast::Statement::Return(stmt) => self.generate_return_statement(stmt),
             ast::Statement::While(stmt) => self.generate_while_statement(stmt),
+            ast::Statement::Expression(expr) => {
+                let _ = self.generate_expression(expr);
+            }
             _ => {
                 // TODO
             }
@@ -226,7 +269,10 @@ impl Generator {
         self.start_block(cond_label.clone());
         let register = self.generate_expression(&stmt.condition);
         let tmp = self.claim_register();
-        self.push(vil::Instruction::Set(tmp.clone(), vil::Immediate(0)));
+        self.push(vil::Instruction::Set(
+            tmp.clone(),
+            vil::Immediate::Integer(0),
+        ));
         self.push(vil::Instruction::Cmp(register, tmp));
         self.set_exit(vil::ExitInstruction::JumpEq(
             loop_label.clone(),
@@ -272,6 +318,12 @@ impl Generator {
         let register = vil::Register(self.register_counter);
         self.register_counter += 1;
         register
+    }
+
+    fn claim_string_label(&mut self) -> String {
+        let label = format!("s_{}", self.string_counter);
+        self.string_counter += 1;
+        label
     }
 
     fn set_exit(&mut self, exit: vil::ExitInstruction) {

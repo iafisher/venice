@@ -1,7 +1,10 @@
+use std::collections::HashMap;
 use std::fmt;
 
 pub struct Program {
+    pub externs: Vec<String>,
     pub declarations: Vec<FunctionDeclaration>,
+    pub strings: HashMap<String, String>,
 }
 
 pub struct FunctionDeclaration {
@@ -59,7 +62,10 @@ pub enum ExitInstruction {
 #[derive(Clone, Debug)]
 pub struct Register(pub u32);
 #[derive(Clone, Debug)]
-pub struct Immediate(pub i64);
+pub enum Immediate {
+    Integer(i64),
+    Label(String),
+}
 #[derive(Clone, Debug)]
 pub struct Memory(pub String);
 #[derive(Clone, Debug)]
@@ -74,9 +80,24 @@ pub enum Type {
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.externs.len() > 0 {
+            for extern_ in &self.externs {
+                write!(f, "extern {};\n", extern_)?;
+            }
+            write!(f, "\n\n")?;
+        }
+
         for declaration in &self.declarations {
             write!(f, "{}", declaration)?;
         }
+
+        if self.strings.len() > 0 {
+            write!(f, "\n\n")?;
+            for (string_name, string_value) in &self.strings {
+                write!(f, "data {} = {:?};\n", string_name, string_value)?;
+            }
+        }
+
         Ok(())
     }
 }
@@ -140,7 +161,10 @@ impl fmt::Display for Register {
 
 impl fmt::Display for Immediate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        match self {
+            Immediate::Integer(x) => write!(f, "{}", x),
+            Immediate::Label(s) => write!(f, "{}", s),
+        }
     }
 }
 

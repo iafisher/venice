@@ -32,6 +32,7 @@ impl SymbolTable {
                 unique_name: String::new(),
                 type_: ast::Type::I64,
                 constant: true,
+                external: false,
             },
         );
         symbols.insert(
@@ -40,6 +41,7 @@ impl SymbolTable {
                 unique_name: String::new(),
                 type_: ast::Type::Boolean,
                 constant: true,
+                external: false,
             },
         );
         symbols.insert(
@@ -48,10 +50,38 @@ impl SymbolTable {
                 unique_name: String::new(),
                 type_: ast::Type::Str,
                 constant: true,
+                external: false,
+            },
+        );
+        symbols.insert(
+            String::from("void"),
+            ast::SymbolEntry {
+                unique_name: String::new(),
+                type_: ast::Type::Void,
+                constant: true,
+                external: false,
             },
         );
 
         SymbolTable { symbols: symbols }
+    }
+
+    pub fn builtin_globals() -> Self {
+        let mut symbols = HashMap::new();
+        symbols.insert(
+            String::from("println"),
+            ast::SymbolEntry {
+                unique_name: String::from("venice_println"),
+                type_: ast::Type::Function {
+                    parameters: vec![ast::Type::Str],
+                    return_type: Box::new(ast::Type::Void),
+                },
+                constant: true,
+                external: true,
+            },
+        );
+
+        SymbolTable { symbols }
     }
 
     pub fn get(&self, key: &str) -> Option<ast::SymbolEntry> {
@@ -78,7 +108,7 @@ struct Analyzer {
 impl Analyzer {
     fn new() -> Self {
         Analyzer {
-            symbols: SymbolTable::new(),
+            symbols: SymbolTable::builtin_globals(),
             types: SymbolTable::builtin_types(),
             current_function_return_type: None,
             errors: Vec::new(),
@@ -113,6 +143,7 @@ impl Analyzer {
                     unique_name: unique_name,
                     type_: t.clone(),
                     constant: false,
+                    external: false,
                 },
             );
             parameter_types.push(t);
@@ -127,6 +158,7 @@ impl Analyzer {
                     return_type: Box::new(declaration.semantic_return_type.clone()),
                 },
                 constant: true,
+                external: false,
             },
         );
 
@@ -163,6 +195,7 @@ impl Analyzer {
                 unique_name: unique_name,
                 type_: declaration.semantic_type.clone(),
                 constant: true,
+                external: false,
             },
         );
     }
@@ -186,6 +219,9 @@ impl Analyzer {
             ast::Statement::For(s) => self.analyze_for_statement(s),
             ast::Statement::Return(s) => self.analyze_return_statement(s),
             ast::Statement::Assert(s) => self.analyze_assert_statement(s),
+            ast::Statement::Expression(expr) => {
+                let _ = self.analyze_expression(expr);
+            }
         }
     }
 
@@ -205,6 +241,7 @@ impl Analyzer {
             unique_name: unique_name,
             type_: stmt.semantic_type.clone(),
             constant: false,
+            external: false,
         };
 
         stmt.symbol.entry = Some(entry.clone());
@@ -411,12 +448,13 @@ impl Analyzer {
     }
 
     fn analyze_call_expression(&mut self, expr: &mut ast::CallExpression) -> ast::Type {
-        if let Some(entry) = self.symbols.get(&expr.function) {
+        if let Some(entry) = self.symbols.get(&expr.function.name) {
             if let ast::Type::Function {
                 parameters,
                 return_type,
-            } = entry.type_
+            } = &entry.type_
             {
+                expr.function.entry = Some(entry.clone());
                 if parameters.len() != expr.arguments.len() {
                     let msg = format!(
                         "expected {} parameter(s), got {}",
@@ -438,7 +476,7 @@ impl Analyzer {
                     );
                 }
 
-                *return_type
+                *return_type.clone()
             } else {
                 let msg = format!("cannot call non-function type {}", entry.type_);
                 self.error(&msg, expr.location.clone());

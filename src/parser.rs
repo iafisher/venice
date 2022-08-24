@@ -54,6 +54,8 @@ impl Parser {
                 );
                 self.errors
                     .push(errors::VeniceError::new(&msg, token.location));
+
+                self.skip_past(TokenType::CurlyClose);
                 Err(())
             }
         }
@@ -143,7 +145,7 @@ impl Parser {
     }
 
     fn match_statement(&mut self) -> Result<ast::Statement, ()> {
-        let token = self.lexer.token();
+        let mut token = self.lexer.token();
         match token.type_ {
             TokenType::Assert => self
                 .match_assert_statement()
@@ -157,15 +159,23 @@ impl Parser {
             TokenType::Return => self
                 .match_return_statement()
                 .map(|stmt| ast::Statement::Return(stmt)),
-            TokenType::Symbol => self
-                .match_assign_statement()
-                .map(|stmt| ast::Statement::Assign(stmt)),
             TokenType::While => self
                 .match_while_statement()
                 .map(|stmt| ast::Statement::While(stmt)),
             _ => {
-                self.unexpected(&token, "start of statement");
-                Err(())
+                let expr = self.match_expression()?;
+                token = self.lexer.token();
+                if token.type_ == TokenType::Assign {
+                    self.match_assign_statement(expr)
+                        .map(|stmt| ast::Statement::Assign(stmt))
+                } else if token.type_ == TokenType::Semicolon {
+                    self.lexer.next();
+                    Ok(ast::Statement::Expression(expr))
+                } else {
+                    self.lexer.next();
+                    self.unexpected(&token, "start of statement");
+                    Err(())
+                }
             }
         }
     }
@@ -188,13 +198,19 @@ impl Parser {
         })
     }
 
-    fn match_assign_statement(&mut self) -> Result<ast::AssignStatement, ()> {
+    fn match_assign_statement(
+        &mut self,
+        expr: ast::Expression,
+    ) -> Result<ast::AssignStatement, ()> {
+        let symbol = if let ast::ExpressionKind::Symbol(symbol_expr) = expr.kind {
+            symbol_expr.name
+        } else {
+            self.error("can only assign to symbols", expr.location.clone());
+            return Err(());
+        };
+
         let mut token = self.lexer.token();
         let location = token.location.clone();
-        self.expect_token(&token, TokenType::Symbol, "symbol")?;
-        let symbol = token.value;
-
-        token = self.lexer.next();
         self.expect_token(&token, TokenType::Assign, "=")?;
 
         self.lexer.next();
@@ -377,7 +393,11 @@ impl Parser {
             self.expect_token(&token, TokenType::ParenClose, ")")?;
             self.lexer.next();
             Ok(ast::CallExpression {
-                function: name.to_string(),
+                function: ast::SymbolExpression {
+                    name: name.clone(),
+                    entry: None,
+                    location: location.clone(),
+                },
                 arguments: arguments,
                 location: location,
             })
@@ -505,6 +525,21 @@ impl Parser {
     fn error(&mut self, message: &str, location: common::Location) {
         self.errors
             .push(errors::VeniceError::new(&message, location));
+    }
+
+    fn skip_past(&mut self, token_type: lexer::TokenType) {
+        self.lexer.next();
+        loop {
+            let token = self.lexer.token();
+            if token.type_ == TokenType::EOF {
+                break;
+            }
+            if token.type_ == token_type {
+                self.lexer.next();
+                break;
+            }
+            self.lexer.next();
+        }
     }
 }
 

@@ -62,6 +62,7 @@ pub enum Statement {
     For(ForStatement),
     Return(ReturnStatement),
     Assert(AssertStatement),
+    Expression(Expression),
 }
 
 #[derive(Debug)]
@@ -195,7 +196,7 @@ pub struct UnaryExpression {
 
 #[derive(Debug)]
 pub struct CallExpression {
-    pub function: String,
+    pub function: SymbolExpression,
     pub arguments: Vec<Expression>,
     pub location: common::Location,
 }
@@ -269,6 +270,7 @@ pub enum Type {
     Boolean,
     I64,
     Str,
+    Void,
     Tuple(Vec<Type>),
     List(Box<Type>),
     Map {
@@ -295,6 +297,7 @@ pub struct SymbolEntry {
     pub unique_name: String,
     pub type_: Type,
     pub constant: bool,
+    pub external: bool,
 }
 
 impl Type {
@@ -418,6 +421,7 @@ impl fmt::Display for Statement {
             Statement::For(stmt) => write!(f, "{}", stmt),
             Statement::Return(stmt) => write!(f, "{}", stmt),
             Statement::Assert(stmt) => write!(f, "{}", stmt),
+            Statement::Expression(stmt) => write!(f, "{}", stmt),
         }
     }
 }
@@ -517,7 +521,7 @@ impl fmt::Display for ExpressionKind {
         match self {
             ExpressionKind::Boolean(e) => write!(f, "{}", e),
             ExpressionKind::Integer(e) => write!(f, "{}", e),
-            ExpressionKind::Str(e) => write!(f, "{}", e),
+            ExpressionKind::Str(e) => write!(f, "{:?}", e),
             ExpressionKind::Symbol(e) => write!(f, "{}", e),
             ExpressionKind::Binary(e) => write!(f, "{}", e),
             ExpressionKind::Unary(e) => write!(f, "{}", e),
@@ -643,6 +647,7 @@ impl fmt::Display for Type {
             Type::I64 => write!(f, "i64"),
             Type::Boolean => write!(f, "bool"),
             Type::Str => write!(f, "string"),
+            Type::Void => write!(f, "void"),
             Type::Tuple(ts) => {
                 write!(f, "(")?;
                 for (i, t) in ts.iter().enumerate() {

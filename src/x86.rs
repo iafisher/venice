@@ -22,6 +22,7 @@ pub struct Block {
 
 pub enum Instruction {
     Add(Value, Value),
+    Call(String),
     Cmp(Value, Value),
     Je(String),
     Jg(String),
@@ -41,6 +42,7 @@ pub enum Instruction {
 pub enum Value {
     Immediate(i64),
     Register(Register),
+    Label(String),
     Memory {
         scale: u8,
         displacement: u32,
@@ -81,8 +83,17 @@ impl Generator {
     }
 
     fn generate_program(&mut self, vil: &vil::Program) {
+        self.program.externs = vil.externs.clone();
+
         for declaration in &vil.declarations {
             self.generate_declaration(&declaration);
+        }
+
+        for (string_name, string_value) in &vil.strings {
+            self.program.data.push(Data {
+                name: string_name.clone(),
+                value: DataValue::Str(string_value.clone()),
+            });
         }
     }
 
@@ -125,9 +136,14 @@ impl Generator {
                 self.total_offset += *size as u32;
                 self.offsets.insert(mem.0.clone(), self.total_offset);
             }
-            vil::Instruction::Set(r, imm) => {
-                instructions.push(Instruction::Mov(R(r), Value::Immediate(imm.0)));
-            }
+            vil::Instruction::Set(r, imm) => match imm {
+                vil::Immediate::Integer(x) => {
+                    instructions.push(Instruction::Mov(R(r), Value::Immediate(*x)));
+                }
+                vil::Immediate::Label(s) => {
+                    instructions.push(Instruction::Mov(R(r), Value::Label(s.clone())));
+                }
+            },
             vil::Instruction::Move(r1, r2) => {
                 instructions.push(Instruction::Mov(R(r1), R(r2)));
             }
@@ -165,6 +181,21 @@ impl Generator {
             }
             vil::Instruction::Cmp(r1, r2) => {
                 instructions.push(Instruction::Cmp(R(r1), R(r2)));
+            }
+            vil::Instruction::Call(r, label, args) => {
+                // TODO: handle additional arguments on the stack.
+                if args.len() > 6 {
+                    panic!("too many arguments");
+                }
+
+                // TODO: use register names instead of indices.
+                let call_registers: [u8; 6] = [5, 4, 3, 2, 6, 7];
+                for (i, arg) in args.iter().enumerate() {
+                    let call_register = Value::Register(Register(call_registers[i]));
+                    instructions.push(Instruction::Mov(call_register, R(arg)));
+                }
+                instructions.push(Instruction::Call(label.0.clone()));
+                instructions.push(Instruction::Mov(RAX, R(r)));
             }
             x => {
                 // TODO
@@ -225,19 +256,39 @@ fn R(r: &vil::Register) -> Value {
 
 const RAX_reg: Register = Register(0);
 const RAX: Value = Value::Register(RAX_reg);
-const RBP_reg: Register = Register(15);
+const RBP_reg: Register = Register(14);
 const RBP: Value = Value::Register(RBP_reg);
-const RSP_reg: Register = Register(16);
+const RSP_reg: Register = Register(15);
 const RSP: Value = Value::Register(RSP_reg);
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO: externs
+        if self.externs.len() > 0 {
+            for extern_ in &self.externs {
+                write!(f, "extern {}\n", extern_)?;
+            }
+            write!(f, "\n\n")?;
+        }
+
         // TODO: globals
+
+        write!(f, "section .text\n\n")?;
+
+        write!(f, "global _start\n")?;
+        write!(f, "_start:\n")?;
+        write!(f, "  call main\n")?;
+        write!(f, "  mov rdi, rax\n")?;
+        write!(f, "  mov rax, 60\n")?;
+        write!(f, "  syscall\n")?;
+        write!(f, "\n")?;
+
         for block in &self.blocks {
             write!(f, "{}\n", block)?;
         }
-        // TODO: data
+        write!(f, "section .data\n\n")?;
+        for datum in &self.data {
+            write!(f, "  {}\n", datum)?;
+        }
         Ok(())
     }
 }
@@ -256,6 +307,7 @@ impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Instruction::Add(x, y) => write!(f, "add {}, {}", x, y),
+            Instruction::Call(l) => write!(f, "call {}", l),
             Instruction::Cmp(x, y) => write!(f, "cmp {}, {}", x, y),
             Instruction::Je(l) => write!(f, "je {}", l),
             Instruction::Jg(l) => write!(f, "jg {}", l),
@@ -279,6 +331,7 @@ impl fmt::Display for Value {
         match self {
             Value::Immediate(x) => write!(f, "{}", x),
             Value::Register(r) => write!(f, "{}", r),
+            Value::Label(s) => write!(f, "{}", s),
             Value::Memory {
                 scale,
                 displacement,
@@ -311,18 +364,27 @@ impl fmt::Display for Register {
             3 => write!(f, "rdx"),
             4 => write!(f, "rsi"),
             5 => write!(f, "rdi"),
-            6 => write!(f, "rdi"),
-            7 => write!(f, "r8"),
-            8 => write!(f, "r9"),
-            9 => write!(f, "r10"),
-            10 => write!(f, "r11"),
-            11 => write!(f, "r12"),
-            12 => write!(f, "r13"),
-            13 => write!(f, "r14"),
-            14 => write!(f, "r15"),
-            15 => write!(f, "rbp"),
-            16 => write!(f, "rsp"),
+            6 => write!(f, "r8"),
+            7 => write!(f, "r9"),
+            8 => write!(f, "r10"),
+            9 => write!(f, "r11"),
+            10 => write!(f, "r12"),
+            11 => write!(f, "r13"),
+            12 => write!(f, "r14"),
+            13 => write!(f, "r15"),
+            14 => write!(f, "rbp"),
+            15 => write!(f, "rsp"),
             x => write!(f, "r{}", x),
+        }
+    }
+}
+
+impl fmt::Display for Data {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.value {
+            DataValue::Str(s) => {
+                write!(f, "{} db {:?}, 0", self.name, s)
+            }
         }
     }
 }
