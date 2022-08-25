@@ -1,0 +1,8 @@
+func main() -> i64 {
+  if true {
+    println("pass");
+  } else {
+    println("fail");
+  }
+  return 0;
+}

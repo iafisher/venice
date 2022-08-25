@@ -447,6 +447,22 @@ impl Parser {
                     Err(())
                 }
             }
+            TokenType::True => {
+                self.lexer.next();
+                Ok(ast::Expression {
+                    kind: ast::ExpressionKind::Boolean(true),
+                    semantic_type: ast::Type::Unknown,
+                    location: token.location.clone(),
+                })
+            }
+            TokenType::False => {
+                self.lexer.next();
+                Ok(ast::Expression {
+                    kind: ast::ExpressionKind::Boolean(false),
+                    semantic_type: ast::Type::Unknown,
+                    location: token.location.clone(),
+                })
+            }
             TokenType::Str => {
                 self.lexer.next();
                 if let Ok(s) = parse_string_literal(&token.value) {

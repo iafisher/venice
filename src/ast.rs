@@ -55,14 +55,14 @@ pub struct RecordField {
 
 #[derive(Debug)]
 pub enum Statement {
-    Let(LetStatement),
-    Assign(AssignStatement),
-    If(IfStatement),
-    While(WhileStatement),
-    For(ForStatement),
-    Return(ReturnStatement),
     Assert(AssertStatement),
+    Assign(AssignStatement),
     Expression(Expression),
+    For(ForStatement),
+    If(IfStatement),
+    Let(LetStatement),
+    Return(ReturnStatement),
+    While(WhileStatement),
 }
 
 #[derive(Debug)]

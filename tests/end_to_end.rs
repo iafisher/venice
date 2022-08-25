@@ -9,7 +9,12 @@ use std::str;
 
 #[test]
 fn test_hello() {
-    test_e2e("hello");
+    test_e2e("00_hello");
+}
+
+#[test]
+fn test_simple_if() {
+    test_e2e("00_simple_if");
 }
 
 fn test_e2e(folder: &str) {
@@ -30,14 +35,16 @@ fn test_e2e(folder: &str) {
     };
 
     // Run the compiler.
-    let mut output = Command::new("target/debug/venice")
+    let status = Command::new("target/debug/venice")
         .arg(&input_path)
-        .output()
+        .spawn()
+        .unwrap()
+        .wait()
         .unwrap();
-    assert!(output.status.success());
+    assert!(status.success());
 
     // Run the binary itself.
-    output = Command::new(&bin_path).output().unwrap();
+    let output = Command::new(&bin_path).output().unwrap();
     assert!(output.status.success());
 
     // Check the output.

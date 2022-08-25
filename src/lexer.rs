@@ -8,6 +8,8 @@ pub enum TokenType {
     // TODO: rename to String
     Str,
     Symbol,
+    True,
+    False,
     // Operators
     Assign,
     Concat,
@@ -127,6 +129,7 @@ lazy_static! {
         m.insert("assert", TokenType::Assert);
         m.insert("const", TokenType::Const);
         m.insert("else", TokenType::Else);
+        m.insert("false", TokenType::False);
         m.insert("for", TokenType::For);
         m.insert("func", TokenType::Func);
         m.insert("if", TokenType::If);
@@ -137,6 +140,7 @@ lazy_static! {
         m.insert("or", TokenType::Or);
         m.insert("record", TokenType::Record);
         m.insert("return", TokenType::Return);
+        m.insert("true", TokenType::True);
         m.insert("while", TokenType::While);
         m
     };
@@ -357,7 +361,7 @@ mod tests {
     fn keywords() {
         let mut lexer = Lexer::new(
             "<string>",
-            "let assert record new and or not if else while for in const func return",
+            "let assert record new and or not if else while for in const func return true false",
         );
         assert_eq!(lexer.token(), token(TokenType::Let, "let"));
         assert_eq!(lexer.next(), token(TokenType::Assert, "assert"));
@@ -374,6 +378,8 @@ mod tests {
         assert_eq!(lexer.next(), token(TokenType::Const, "const"));
         assert_eq!(lexer.next(), token(TokenType::Func, "func"));
         assert_eq!(lexer.next(), token(TokenType::Return, "return"));
+        assert_eq!(lexer.next(), token(TokenType::True, "true"));
+        assert_eq!(lexer.next(), token(TokenType::False, "false"));
     }
 
     #[test]

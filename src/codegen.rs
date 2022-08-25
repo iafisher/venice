@@ -211,12 +211,13 @@ impl Generator {
     fn generate_statement(&mut self, stmt: &ast::Statement) {
         match stmt {
             ast::Statement::Assign(stmt) => self.generate_assign_statement(stmt),
-            ast::Statement::Let(stmt) => self.generate_let_statement(stmt),
-            ast::Statement::Return(stmt) => self.generate_return_statement(stmt),
-            ast::Statement::While(stmt) => self.generate_while_statement(stmt),
             ast::Statement::Expression(expr) => {
                 let _ = self.generate_expression(expr);
             }
+            ast::Statement::If(stmt) => self.generate_if_statement(stmt),
+            ast::Statement::Let(stmt) => self.generate_let_statement(stmt),
+            ast::Statement::Return(stmt) => self.generate_return_statement(stmt),
+            ast::Statement::While(stmt) => self.generate_while_statement(stmt),
             _ => {
                 // TODO
             }
@@ -231,6 +232,57 @@ impl Generator {
             register,
             0,
         ));
+    }
+
+    fn generate_if_statement(&mut self, stmt: &ast::IfStatement) {
+        // if cond {
+        //   body1
+        // } else {
+        //   body2
+        // }
+        //
+        // becomes
+        //
+        //   <cond>
+        //   jump_eq body1, body2
+        //
+        // body1:
+        //   <body1>
+        //   jump end
+        //
+        // body2:
+        //   <body2>
+        //   jump end
+        //
+        // end:
+
+        let true_label = self.claim_label("if_true");
+        let false_label = self.claim_label("if_false");
+        let end_label = self.claim_label("if_end");
+
+        let register = self.generate_expression(&stmt.if_clause.condition);
+        let tmp = self.claim_register();
+        self.push(vil::Instruction::Set(
+            tmp.clone(),
+            vil::Immediate::Integer(0),
+        ));
+        self.push(vil::Instruction::Cmp(register, tmp));
+        self.set_exit(vil::ExitInstruction::JumpEq(
+            false_label.clone(),
+            true_label.clone(),
+        ));
+
+        self.start_block(true_label);
+        self.generate_block(&stmt.if_clause.body);
+        self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
+
+        // TODO: handle elif_clauses
+
+        self.start_block(false_label);
+        self.generate_block(&stmt.else_clause);
+        self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
+
+        self.start_block(end_label);
     }
 
     fn generate_let_statement(&mut self, stmt: &ast::LetStatement) {
@@ -255,11 +307,11 @@ impl Generator {
         //
         // loop_cond:
         //   <cond>
-        //   br loop, loop_end
+        //   jump_eq loop, loop_end
         //
         // loop:
         //   <body>
-        //   br loop_cond
+        //   jump loop_cond
         //
         // loop_end:
         let cond_label = self.claim_label("while_cond");
