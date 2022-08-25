@@ -1,3 +1,11 @@
+use clap::Parser;
+use std::fs;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::{BufReader, BufWriter};
+use std::path::PathBuf;
+use std::process::Command;
+
 #[macro_use]
 extern crate lazy_static;
 
@@ -11,34 +19,29 @@ mod parser;
 mod vil;
 mod x86;
 
+/// The compiler for the Venice programming language
+#[derive(Parser, Debug)]
+struct Cli {
+    /// Path to the Venice program to execute.
+    #[clap(value_parser)]
+    path: String,
+
+    /// Prints intermediate data structures and preserves intermediate files.
+    #[clap(long)]
+    debug: bool,
+}
+
 fn main() {
-    /*
-    let program = r"
-    func fibonacci(n: i64) -> i64 {
-      let fib_i: i64 = 1;
-      let fib_i_minus_1: i64 = 0;
-      let i: i64 = 1;
+    let cli = Cli::parse();
 
-      while i < n {
-        let tmp: i64 = fib_i;
-        fib_i = fib_i + fib_i_minus_1;
-        fib_i_minus_1 = tmp;
-        i = i + 1;
-      }
+    let file = File::open(&cli.path).expect("could not open file");
+    let mut buf_reader = BufReader::new(file);
+    let mut program = String::new();
+    buf_reader
+        .read_to_string(&mut program)
+        .expect("could not read from file");
 
-      return fib_i;
-    }
-    ";
-    */
-
-    let program = r#"
-    func main() -> i64 {
-      println("Hello, world!");
-      return 0;
-    }
-    "#;
-
-    let lexer = lexer::Lexer::new("<string>", program);
+    let lexer = lexer::Lexer::new(&cli.path, &program);
     let ast_result = parser::parse(lexer);
     if let Err(errors) = ast_result {
         for error in errors {
@@ -48,8 +51,10 @@ fn main() {
     }
 
     let mut ast = ast_result.unwrap();
-    println!("Parse tree:\n");
-    println!("  {}", ast);
+    if cli.debug {
+        println!("Parse tree:\n");
+        println!("  {}", ast);
+    }
 
     let typecheck_result = analyzer::analyze(&mut ast);
     if let Err(errors) = typecheck_result {
@@ -59,14 +64,68 @@ fn main() {
         std::process::exit(1);
     }
 
-    println!("\nTyped AST:\n");
-    println!("  {}", ast);
+    if cli.debug {
+        println!("\nTyped AST:\n");
+        println!("  {}", ast);
+    }
 
     let vil_program = codegen::generate(&ast).unwrap();
-    println!("\nVIL:\n");
-    println!("{}", vil_program);
+    if cli.debug {
+        println!("\nVIL:\n");
+        println!("{}", vil_program);
+    }
 
     let x86_program = x86::generate(&vil_program).unwrap();
-    println!("\nx86:\n");
-    println!("{}", x86_program);
+    if cli.debug {
+        println!("\nx86:\n");
+        println!("{}", x86_program);
+    }
+
+    let mut asm_output_path = PathBuf::from(&cli.path);
+    asm_output_path.set_extension("s");
+    {
+        let f = File::create(&asm_output_path).expect("could not create file");
+        let mut writer = BufWriter::new(f);
+        writer
+            .write_all(&format!("{}", x86_program).into_bytes())
+            .expect("could not write to file");
+    }
+
+    let mut object_output_path = PathBuf::from(&cli.path);
+    object_output_path.set_extension("o");
+    let mut output_path = PathBuf::from(&cli.path);
+    output_path.set_extension("");
+
+    let mut child = Command::new("nasm")
+        .arg("-f")
+        .arg("elf64")
+        .arg("-o")
+        .arg(&object_output_path)
+        .arg(&asm_output_path)
+        .spawn()
+        .expect("failed to execute nasm");
+    let mut error_code = child.wait().expect("failed to wait on child");
+    if !error_code.success() {
+        panic!("nasm returned non-zero exit code");
+    }
+
+    child = Command::new("ld")
+        .arg("-dynamic-linker")
+        .arg("/lib64/ld-linux-x86-64.so.2")
+        .arg("runtime/libvenice.so")
+        .arg("-o")
+        .arg(&output_path)
+        .arg("-lc")
+        .arg(&object_output_path)
+        .spawn()
+        .expect("failed to execute ld");
+    error_code = child.wait().expect("failed to wait on child");
+    if !error_code.success() {
+        panic!("ld returned non-zero exit code");
+    }
+
+    if !cli.debug {
+        fs::remove_file(&asm_output_path);
+        fs::remove_file(&object_output_path);
+    }
 }
