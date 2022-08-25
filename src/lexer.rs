@@ -394,14 +394,14 @@ mod tests {
 
     #[test]
     fn simple_string_literal() {
-        let mut lexer = Lexer::new("<string>", "\"abc\"");
+        let lexer = Lexer::new("<string>", "\"abc\"");
         assert_eq!(lexer.token(), token(TokenType::Str, "\"abc\""));
     }
 
     #[test]
     fn string_literal_with_backslash() {
         // A two-character string literal: a backslash followed by a double quote
-        let mut lexer = Lexer::new("<string>", r#""\"""#);
+        let lexer = Lexer::new("<string>", r#""\"""#);
         assert_eq!(lexer.token(), token(TokenType::Str, r#""\"""#));
     }
 }

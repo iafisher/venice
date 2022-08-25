@@ -73,6 +73,6 @@ fn read_file(path: &str) -> String {
     let f = File::open(path).unwrap();
     let mut buf_reader = BufReader::new(f);
     let mut s = String::new();
-    buf_reader.read_to_string(&mut s);
+    buf_reader.read_to_string(&mut s).unwrap();
     s
 }

@@ -51,6 +51,12 @@ pub enum Value {
     },
 }
 
+impl Value {
+    fn r(r: &vil::Register) -> Self {
+        Value::Register(Register(r.0.try_into().unwrap()))
+    }
+}
+
 pub struct Register(u8);
 
 pub struct Data {
@@ -138,31 +144,31 @@ impl Generator {
             }
             vil::Instruction::Set(r, imm) => match imm {
                 vil::Immediate::Integer(x) => {
-                    instructions.push(Instruction::Mov(R(r), Value::Immediate(*x)));
+                    instructions.push(Instruction::Mov(Value::r(r), Value::Immediate(*x)));
                 }
                 vil::Immediate::Label(s) => {
-                    instructions.push(Instruction::Mov(R(r), Value::Label(s.clone())));
+                    instructions.push(Instruction::Mov(Value::r(r), Value::Label(s.clone())));
                 }
             },
             vil::Instruction::Move(r1, r2) => {
-                instructions.push(Instruction::Mov(R(r1), R(r2)));
+                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
             vil::Instruction::Add(r1, r2, r3) => {
-                instructions.push(Instruction::Mov(R(r1), R(r3)));
-                instructions.push(Instruction::Add(R(r1), R(r2)));
+                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r3)));
+                instructions.push(Instruction::Add(Value::r(r1), Value::r(r2)));
             }
             vil::Instruction::Sub(r1, r2, r3) => {
-                instructions.push(Instruction::Mov(R(r1), R(r3)));
-                instructions.push(Instruction::Sub(R(r1), R(r2)));
+                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r3)));
+                instructions.push(Instruction::Sub(Value::r(r1), Value::r(r2)));
             }
             vil::Instruction::Load(r, mem, offset) => {
                 let real_offset = *self.offsets.get(&mem.0).unwrap() + *offset as u32;
                 instructions.push(Instruction::Mov(
-                    R(r),
+                    Value::r(r),
                     Value::Memory {
                         scale: 1,
                         displacement: real_offset,
-                        base: RSP_reg,
+                        base: RSP_REGISTER,
                         index: None,
                     },
                 ));
@@ -173,14 +179,14 @@ impl Generator {
                     Value::Memory {
                         scale: 1,
                         displacement: real_offset,
-                        base: RSP_reg,
+                        base: RSP_REGISTER,
                         index: None,
                     },
-                    R(r),
+                    Value::r(r),
                 ));
             }
             vil::Instruction::Cmp(r1, r2) => {
-                instructions.push(Instruction::Cmp(R(r1), R(r2)));
+                instructions.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
             vil::Instruction::Call(r, label, args) => {
                 // TODO: handle additional arguments on the stack.
@@ -192,10 +198,10 @@ impl Generator {
                 let call_registers: [u8; 6] = [5, 4, 3, 2, 6, 7];
                 for (i, arg) in args.iter().enumerate() {
                     let call_register = Value::Register(Register(call_registers[i]));
-                    instructions.push(Instruction::Mov(call_register, R(arg)));
+                    instructions.push(Instruction::Mov(call_register, Value::r(arg)));
                 }
                 instructions.push(Instruction::Call(label.0.clone()));
-                instructions.push(Instruction::Mov(RAX, R(r)));
+                instructions.push(Instruction::Mov(RAX, Value::r(r)));
             }
             x => {
                 // TODO
@@ -211,7 +217,7 @@ impl Generator {
     ) {
         match instruction {
             vil::ExitInstruction::Ret(r) => {
-                instructions.push(Instruction::Mov(RAX, R(r)));
+                instructions.push(Instruction::Mov(RAX, Value::r(r)));
                 instructions.push(Instruction::Pop(RBP));
                 instructions.push(Instruction::Ret);
             }
@@ -250,16 +256,12 @@ impl Generator {
     }
 }
 
-fn R(r: &vil::Register) -> Value {
-    Value::Register(Register(r.0.try_into().unwrap()))
-}
-
-const RAX_reg: Register = Register(0);
-const RAX: Value = Value::Register(RAX_reg);
-const RBP_reg: Register = Register(14);
-const RBP: Value = Value::Register(RBP_reg);
-const RSP_reg: Register = Register(15);
-const RSP: Value = Value::Register(RSP_reg);
+const RAX_REGISTER: Register = Register(0);
+const RAX: Value = Value::Register(RAX_REGISTER);
+const RBP_REGISTER: Register = Register(14);
+const RBP: Value = Value::Register(RBP_REGISTER);
+const RSP_REGISTER: Register = Register(15);
+const RSP: Value = Value::Register(RSP_REGISTER);
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

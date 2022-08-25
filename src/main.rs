@@ -125,7 +125,7 @@ fn main() {
     }
 
     if !cli.debug {
-        fs::remove_file(&asm_output_path);
-        fs::remove_file(&object_output_path);
+        let _ = fs::remove_file(&asm_output_path);
+        let _ = fs::remove_file(&object_output_path);
     }
 }
