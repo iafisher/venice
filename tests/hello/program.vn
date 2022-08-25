@@ -1,0 +1,4 @@
+func main() -> i64 {
+  println("Hello, world!");
+  return 0;
+}
