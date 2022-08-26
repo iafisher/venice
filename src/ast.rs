@@ -1,3 +1,10 @@
+// Venice abstract syntax trees
+//
+// Many nodes have both `type_` and `semantic_type` fields; the former represents
+// a syntactic type while the latter represents a type that has been resolved concretely
+// by the type-checker. The AST emitted by the parser has only syntactic types; semantic
+// types are only added by the analyzer.
+
 use super::common;
 use std::fmt;
 

@@ -1,8 +1,13 @@
+// The analyzer traverses the program's abstract syntax tree and augments it with type
+// information.
+
 use super::ast;
 use super::common;
 use super::errors;
 use std::collections::HashMap;
 
+/// Analyzes the abstract syntax tree. The nodes of the tree are mutated to add type
+/// and symbol information.
 pub fn analyze(ast: &mut ast::Program) -> Result<(), Vec<errors::VeniceError>> {
     let mut analyzer = Analyzer::new();
     analyzer.analyze_program(ast);

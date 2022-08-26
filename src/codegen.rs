@@ -1,9 +1,13 @@
+// Code generation from an abstract syntax tree to a VIL program.
+
 use std::collections::HashMap;
 
 use super::ast;
+use super::errors;
 use super::vil;
 
-pub fn generate(ast: &ast::Program) -> Result<vil::Program, String> {
+/// Generates a VIL program from an abstract syntax tree.
+pub fn generate(ast: &ast::Program) -> Result<vil::Program, errors::VeniceError> {
     let mut generator = Generator {
         program: vil::Program {
             externs: Vec::new(),
@@ -20,11 +24,16 @@ pub fn generate(ast: &ast::Program) -> Result<vil::Program, String> {
 }
 
 struct Generator {
+    // The program which is incrementally built up.
     program: vil::Program,
+
+    // Counters for generating unique symbols.
     label_counter: u32,
-    register_counter: u32,
     symbol_counter: u32,
     string_counter: u32,
+
+    // The counter of current registers in use.
+    register_counter: u32,
 }
 
 impl Generator {

@@ -1,3 +1,5 @@
+// The lexer breaks the input program into a stream of tokens that the parser consumes.
+
 use super::common;
 use std::collections::HashMap;
 
@@ -146,7 +148,9 @@ lazy_static! {
 }
 
 impl Lexer {
-    /// Constructs a new lexer.
+    /// Constructs a new lexer. `file` is the name of the file and `program` is the
+    /// contents. By convention, if the program does not reside on disk then `file` is
+    /// set `<string>`.
     pub fn new(file: &str, program: &str) -> Self {
         let location = common::Location {
             file: String::from(file),

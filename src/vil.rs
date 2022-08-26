@@ -1,3 +1,6 @@
+// The Venice Intermediate Language (VIL) is the intermediate representation used inside
+// the Venice compiler. It is a high-level, machine-independent assembly language.
+
 use std::collections::HashMap;
 use std::fmt;
 

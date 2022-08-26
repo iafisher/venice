@@ -34,6 +34,7 @@ struct Cli {
 fn main() {
     let cli = Cli::parse();
 
+    // Open the input file.
     let file = File::open(&cli.path).expect("could not open file");
     let mut buf_reader = BufReader::new(file);
     let mut program = String::new();
@@ -41,6 +42,7 @@ fn main() {
         .read_to_string(&mut program)
         .expect("could not read from file");
 
+    // Lex and parse the program.
     let lexer = lexer::Lexer::new(&cli.path, &program);
     let ast_result = parser::parse(lexer);
     if let Err(errors) = ast_result {
@@ -56,6 +58,7 @@ fn main() {
         println!("  {}", ast);
     }
 
+    // Type-check the program.
     let typecheck_result = analyzer::analyze(&mut ast);
     if let Err(errors) = typecheck_result {
         for error in errors {
@@ -69,18 +72,21 @@ fn main() {
         println!("  {}", ast);
     }
 
+    // Generate a VIL program.
     let vil_program = codegen::generate(&ast).unwrap();
     if cli.debug {
         println!("\nVIL:\n");
         println!("{}", vil_program);
     }
 
+    // Generate an x86 program.
     let x86_program = x86::generate(&vil_program).unwrap();
     if cli.debug {
         println!("\nx86:\n");
         println!("{}", x86_program);
     }
 
+    // Write the assembly program to disk.
     let mut asm_output_path = PathBuf::from(&cli.path);
     asm_output_path.set_extension("s");
     {
@@ -96,6 +102,7 @@ fn main() {
     let mut output_path = PathBuf::from(&cli.path);
     output_path.set_extension("");
 
+    // Invoke nasm to turn the textual assembly program into a binary object file.
     let mut child = Command::new("nasm")
         // TODO: only use debugging flags when explicitly requested
         .arg("-g")
@@ -113,6 +120,10 @@ fn main() {
         panic!("nasm returned non-zero exit code");
     }
 
+    // Invoke ld to link the binary object file into an ELF executable. It is necessary
+    // to supply the various glibc libraries and initialization code because the Venice
+    // runtime relies on libc. See https://stackoverflow.com/questions/3577922/ for more
+    // information.
     child = Command::new("ld")
         .arg("-dynamic-linker")
         // TODO: don't hard-code these values
@@ -132,6 +143,7 @@ fn main() {
         panic!("ld returned non-zero exit code");
     }
 
+    // Clean up the intermediate files.
     if !cli.debug {
         let _ = fs::remove_file(&asm_output_path);
         let _ = fs::remove_file(&object_output_path);

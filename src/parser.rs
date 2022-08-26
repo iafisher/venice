@@ -1,3 +1,6 @@
+// The parser transforms the stream of tokens emitted by the lexer into an abstract
+// syntax tree.
+
 use super::ast;
 use super::common;
 use super::errors;

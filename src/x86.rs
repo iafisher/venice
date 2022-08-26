@@ -1,3 +1,5 @@
+// Compiles a VIL program into concrete x86 machine code.
+
 use super::vil;
 use std::collections::HashMap;
 use std::fmt;
