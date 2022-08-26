@@ -5,8 +5,7 @@ use std::collections::HashMap;
 pub enum TokenType {
     // Literals
     Integer,
-    // TODO: rename to String
-    Str,
+    String,
     Symbol,
     True,
     False,
@@ -244,7 +243,7 @@ impl Lexer {
         }
 
         // TODO: handle unclosed string literals (newlines and EOF)
-        self.make_token(TokenType::Str)
+        self.make_token(TokenType::String)
     }
 
     fn read_symbol(&mut self) -> Token {
@@ -401,13 +400,13 @@ mod tests {
     #[test]
     fn simple_string_literal() {
         let lexer = Lexer::new("<string>", "\"abc\"");
-        assert_eq!(lexer.token(), token(TokenType::Str, "\"abc\""));
+        assert_eq!(lexer.token(), token(TokenType::String, "\"abc\""));
     }
 
     #[test]
     fn string_literal_with_backslash() {
         // A two-character string literal: a backslash followed by a double quote
         let lexer = Lexer::new("<string>", r#""\"""#);
-        assert_eq!(lexer.token(), token(TokenType::Str, r#""\"""#));
+        assert_eq!(lexer.token(), token(TokenType::String, r#""\"""#));
     }
 }

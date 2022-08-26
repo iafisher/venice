@@ -463,11 +463,11 @@ impl Parser {
                     location: token.location.clone(),
                 })
             }
-            TokenType::Str => {
+            TokenType::String => {
                 self.lexer.next();
                 if let Ok(s) = parse_string_literal(&token.value) {
                     Ok(ast::Expression {
-                        kind: ast::ExpressionKind::Str(s),
+                        kind: ast::ExpressionKind::String(s),
                         semantic_type: ast::Type::Unknown,
                         location: token.location.clone(),
                     })

@@ -48,7 +48,7 @@ impl SymbolTable {
             String::from("string"),
             ast::SymbolEntry {
                 unique_name: String::new(),
-                type_: ast::Type::Str,
+                type_: ast::Type::String,
                 constant: true,
                 external: false,
             },
@@ -74,7 +74,7 @@ impl SymbolTable {
             ast::SymbolEntry {
                 unique_name: String::from("venice_println"),
                 type_: ast::Type::Function {
-                    parameters: vec![ast::Type::Str],
+                    parameters: vec![ast::Type::String],
                     return_type: Box::new(ast::Type::Void),
                 },
                 constant: true,
@@ -349,7 +349,7 @@ impl Analyzer {
         expr.semantic_type = match &mut expr.kind {
             ast::ExpressionKind::Boolean(_) => ast::Type::Boolean,
             ast::ExpressionKind::Integer(_) => ast::Type::I64,
-            ast::ExpressionKind::Str(_) => ast::Type::Str,
+            ast::ExpressionKind::String(_) => ast::Type::String,
             ast::ExpressionKind::Symbol(ref mut e) => self.analyze_symbol_expression(e),
             ast::ExpressionKind::Binary(ref mut e) => self.analyze_binary_expression(e),
             ast::ExpressionKind::Unary(ref mut e) => self.analyze_unary_expression(e),
@@ -380,16 +380,16 @@ impl Analyzer {
         let right_type = self.analyze_expression(&mut expr.right);
         match expr.op {
             ast::BinaryOpType::Concat => match left_type {
-                ast::Type::Str => {
-                    if !right_type.matches(&ast::Type::Str) {
+                ast::Type::String => {
+                    if !right_type.matches(&ast::Type::String) {
                         self.error_type_mismatch(
-                            &ast::Type::Str,
+                            &ast::Type::String,
                             &right_type,
                             expr.right.location.clone(),
                         );
                         ast::Type::Error
                     } else {
-                        ast::Type::Str
+                        ast::Type::String
                     }
                 }
                 ast::Type::List(ref t) => {

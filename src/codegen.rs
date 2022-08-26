@@ -75,7 +75,7 @@ impl Generator {
                     vil::Immediate::Integer(*x),
                 ));
             }
-            ast::ExpressionKind::Str(s) => {
+            ast::ExpressionKind::String(s) => {
                 let label = self.claim_string_label();
                 self.program.strings.insert(label.clone(), s.clone());
                 self.push(vil::Instruction::Set(

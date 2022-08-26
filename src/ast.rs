@@ -134,7 +134,7 @@ pub struct Expression {
 pub enum ExpressionKind {
     Boolean(bool),
     Integer(i64),
-    Str(String),
+    String(String),
     Symbol(SymbolExpression),
     Binary(BinaryExpression),
     Unary(UnaryExpression),
@@ -269,7 +269,7 @@ pub struct SyntacticParameterizedType {
 pub enum Type {
     Boolean,
     I64,
-    Str,
+    String,
     Void,
     Tuple(Vec<Type>),
     List(Box<Type>),
@@ -305,7 +305,7 @@ impl Type {
         match (self, other) {
             (Type::Boolean, Type::Boolean) => true,
             (Type::I64, Type::I64) => true,
-            (Type::Str, Type::Str) => true,
+            (Type::String, Type::String) => true,
             (Type::Tuple(ts1), Type::Tuple(ts2)) => {
                 if ts1.len() != ts2.len() {
                     return false;
@@ -521,7 +521,7 @@ impl fmt::Display for ExpressionKind {
         match self {
             ExpressionKind::Boolean(e) => write!(f, "{}", e),
             ExpressionKind::Integer(e) => write!(f, "{}", e),
-            ExpressionKind::Str(e) => write!(f, "{:?}", e),
+            ExpressionKind::String(e) => write!(f, "{:?}", e),
             ExpressionKind::Symbol(e) => write!(f, "{}", e),
             ExpressionKind::Binary(e) => write!(f, "{}", e),
             ExpressionKind::Unary(e) => write!(f, "{}", e),
@@ -646,7 +646,7 @@ impl fmt::Display for Type {
         match self {
             Type::I64 => write!(f, "i64"),
             Type::Boolean => write!(f, "bool"),
-            Type::Str => write!(f, "string"),
+            Type::String => write!(f, "string"),
             Type::Void => write!(f, "void"),
             Type::Tuple(ts) => {
                 write!(f, "(")?;
