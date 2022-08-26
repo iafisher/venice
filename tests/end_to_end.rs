@@ -14,12 +14,12 @@ fn test_hello() {
 
 #[test]
 fn test_simple_if() {
-    test_e2e("00_simple_if");
+    test_e2e("01_simple_if");
 }
 
 #[test]
 fn test_countdown() {
-    test_e2e("00_countdown");
+    test_e2e("02_countdown");
 }
 
 fn test_e2e(folder: &str) {
