@@ -1,0 +1,9 @@
+func two_plus_two() -> i64 {
+  return 2 + 2;
+}
+
+func main() -> i64 {
+  let x: i64 = two_plus_two();
+  printint(x);
+  return 0;
+}

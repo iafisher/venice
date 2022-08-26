@@ -54,8 +54,9 @@ impl Generator {
     }
 
     fn generate_function_declaration(&mut self, declaration: &ast::FunctionDeclaration) {
+        let name = &declaration.name.entry.as_ref().unwrap().unique_name;
         let vil_declaration = vil::FunctionDeclaration {
-            name: declaration.name.clone(),
+            name: name.clone(),
             // TODO
             parameters: Vec::new(),
             // TODO
@@ -63,7 +64,7 @@ impl Generator {
             blocks: Vec::new(),
         };
         self.program.declarations.push(vil_declaration);
-        let label = self.claim_label(&declaration.name);
+        let label = self.claim_label(&name);
         self.start_block(label);
 
         self.generate_block(&declaration.body);

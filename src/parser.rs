@@ -115,7 +115,11 @@ impl Parser {
 
         let body = self.match_block()?;
         Ok(ast::FunctionDeclaration {
-            name: name,
+            name: ast::SymbolExpression {
+                name: name.clone(),
+                entry: None,
+                location: location.clone(),
+            },
             parameters: parameters,
             return_type: return_type,
             semantic_return_type: ast::Type::Unknown,

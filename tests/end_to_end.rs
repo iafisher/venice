@@ -22,6 +22,11 @@ fn test_countdown() {
     test_e2e("02_countdown");
 }
 
+#[test]
+fn test_simple_function() {
+    test_e2e("03_simple_function");
+}
+
 fn test_e2e(folder: &str) {
     let bin_path = build_path(folder, "program");
     let input_path = build_path(folder, "program.vn");

@@ -167,19 +167,27 @@ impl Analyzer {
             );
             parameter_types.push(t);
         }
-        let unique_name = self.claim_unique_name(&declaration.name);
-        self.types.insert(
-            &declaration.name,
-            ast::SymbolEntry {
-                unique_name: unique_name,
-                type_: ast::Type::Function {
-                    parameters: parameter_types,
-                    return_type: Box::new(declaration.semantic_return_type.clone()),
-                },
-                constant: true,
-                external: false,
+
+        let unique_name = if declaration.name.name == "main" {
+            // Keep main's name the same so that the linker can find it.
+            String::from("main")
+        } else {
+            self.claim_unique_name(&declaration.name.name)
+        };
+
+        let entry = ast::SymbolEntry {
+            unique_name: unique_name,
+            type_: ast::Type::Function {
+                parameters: parameter_types,
+                return_type: Box::new(declaration.semantic_return_type.clone()),
             },
-        );
+            constant: true,
+            external: false,
+        };
+
+        self.symbols.insert(&declaration.name.name, entry.clone());
+
+        declaration.name.entry = Some(entry);
 
         self.current_function_return_type = Some(declaration.semantic_return_type.clone());
         self.analyze_block(&mut declaration.body);

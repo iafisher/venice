@@ -22,7 +22,7 @@ pub enum Declaration {
 
 #[derive(Debug)]
 pub struct FunctionDeclaration {
-    pub name: String,
+    pub name: SymbolExpression,
     pub parameters: Vec<FunctionParameter>,
     pub return_type: SyntacticType,
     pub semantic_return_type: Type,

@@ -205,7 +205,7 @@ impl Generator {
                     instructions.push(Instruction::Mov(call_register, Value::r(arg)));
                 }
                 instructions.push(Instruction::Call(label.0.clone()));
-                instructions.push(Instruction::Mov(RAX, Value::r(r)));
+                instructions.push(Instruction::Mov(Value::r(r), RAX));
             }
             vil::Instruction::ToDo(s) => {
                 // TODO
