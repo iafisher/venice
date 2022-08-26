@@ -44,6 +44,7 @@ pub enum Instruction {
     Div(Register, Register, Register),
     Call(Register, FunctionLabel, Vec<Register>),
     Cmp(Register, Register),
+    ToDo(String),
 }
 
 #[derive(Debug)]
@@ -149,6 +150,7 @@ impl fmt::Display for Instruction {
                 fmt::Result::Ok(())
             }
             Instruction::Cmp(r1, r2) => write!(f, "  cmp {}, {}", r1, r2),
+            Instruction::ToDo(s) => write!(f, "  <todo: {}>", s),
         }
     }
 }

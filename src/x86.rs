@@ -141,8 +141,8 @@ impl Generator {
                     RSP,
                     Value::Immediate((*size).try_into().unwrap()),
                 ));
-                self.total_offset += *size as u32;
                 self.offsets.insert(mem.0.clone(), self.total_offset);
+                self.total_offset += *size as u32;
             }
             vil::Instruction::Set(r, imm) => match imm {
                 vil::Immediate::Integer(x) => {
@@ -160,8 +160,8 @@ impl Generator {
                 instructions.push(Instruction::Add(Value::r(r1), Value::r(r2)));
             }
             vil::Instruction::Sub(r1, r2, r3) => {
-                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r3)));
-                instructions.push(Instruction::Sub(Value::r(r1), Value::r(r2)));
+                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
+                instructions.push(Instruction::Sub(Value::r(r1), Value::r(r3)));
             }
             vil::Instruction::Load(r, mem, offset) => {
                 let real_offset = *self.offsets.get(&mem.0).unwrap() + *offset as u32;
@@ -205,6 +205,10 @@ impl Generator {
                 instructions.push(Instruction::Call(label.0.clone()));
                 instructions.push(Instruction::Mov(RAX, Value::r(r)));
             }
+            vil::Instruction::ToDo(s) => {
+                // TODO
+                instructions.push(Instruction::ToDo(s.clone()));
+            }
             x => {
                 // TODO
                 instructions.push(Instruction::ToDo(format!("{:?}", x)));
@@ -221,6 +225,11 @@ impl Generator {
             vil::ExitInstruction::Ret(r) => {
                 instructions.push(Instruction::Mov(RAX, Value::r(r)));
                 instructions.push(Instruction::Pop(RBP));
+                // TODO: does this always work?
+                instructions.push(Instruction::Add(
+                    RSP,
+                    Value::Immediate(self.total_offset as i64),
+                ));
                 instructions.push(Instruction::Ret);
             }
             vil::ExitInstruction::Jump(l) => {
@@ -339,9 +348,6 @@ impl fmt::Display for Value {
                 base,
                 index,
             } => {
-                if *displacement != 0 {
-                    write!(f, "{}", displacement)?;
-                }
                 write!(f, "[")?;
                 if *scale != 1 {
                     write!(f, "{}*", scale)?;
@@ -349,6 +355,9 @@ impl fmt::Display for Value {
                 write!(f, "{}", base)?;
                 if let Some(index) = index {
                     write!(f, "+{}", index)?;
+                }
+                if *displacement != 0 {
+                    write!(f, "+{}", displacement)?;
                 }
                 write!(f, "]")
             }

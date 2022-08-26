@@ -68,12 +68,26 @@ impl SymbolTable {
 
     pub fn builtin_globals() -> Self {
         let mut symbols = HashMap::new();
+        // TODO: unique names here could conflict with actual user symbols.
         symbols.insert(
             String::from("println"),
             ast::SymbolEntry {
                 unique_name: String::from("venice_println"),
                 type_: ast::Type::Function {
                     parameters: vec![ast::Type::Str],
+                    return_type: Box::new(ast::Type::Void),
+                },
+                constant: true,
+                external: true,
+            },
+        );
+        // TODO: remove printint once there's a better way to print integers.
+        symbols.insert(
+            String::from("printint"),
+            ast::SymbolEntry {
+                unique_name: String::from("venice_printint"),
+                type_: ast::Type::Function {
+                    parameters: vec![ast::Type::I64],
                     return_type: Box::new(ast::Type::Void),
                 },
                 constant: true,

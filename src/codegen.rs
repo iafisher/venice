@@ -39,6 +39,7 @@ impl Generator {
             ast::Declaration::Function(decl) => self.generate_function_declaration(decl),
             _ => {
                 // TODO
+                self.push(vil::Instruction::ToDo(String::from("declaration")));
             }
         }
     }
@@ -84,8 +85,17 @@ impl Generator {
             }
             ast::ExpressionKind::Binary(b) => self.generate_binary_expression(&b, r.clone()),
             ast::ExpressionKind::Call(e) => self.generate_call_expression(e, r.clone()),
-            _ => {
+            ast::ExpressionKind::Symbol(symbol) => {
+                let entry = symbol.entry.as_ref().unwrap();
+                self.push(vil::Instruction::Load(
+                    r.clone(),
+                    vil::Memory(entry.unique_name.clone()),
+                    0,
+                ));
+            }
+            x => {
                 // TODO
+                self.push(vil::Instruction::ToDo(format!("{:?}", x)));
             }
         }
         r
@@ -323,7 +333,7 @@ impl Generator {
         let tmp = self.claim_register();
         self.push(vil::Instruction::Set(
             tmp.clone(),
-            vil::Immediate::Integer(0),
+            vil::Immediate::Integer(1),
         ));
         self.push(vil::Instruction::Cmp(register, tmp));
         self.set_exit(vil::ExitInstruction::JumpEq(
