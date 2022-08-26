@@ -6,5 +6,6 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
+# TODO: Remove -g debugging flag.
 libvenice.so: venice.c
-	gcc -fPIC -shared -o $@ $^
+	gcc -fPIC -shared -g -o $@ $^

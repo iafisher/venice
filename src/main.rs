@@ -97,6 +97,10 @@ fn main() {
     output_path.set_extension("");
 
     let mut child = Command::new("nasm")
+        // TODO: only use debugging flags when explicitly requested
+        .arg("-g")
+        .arg("-F")
+        .arg("dwarf")
         .arg("-f")
         .arg("elf64")
         .arg("-o")
@@ -111,12 +115,16 @@ fn main() {
 
     child = Command::new("ld")
         .arg("-dynamic-linker")
+        // TODO: don't hard-code these values
         .arg("/lib64/ld-linux-x86-64.so.2")
+        .arg("/usr/lib/x86_64-linux-gnu/crt1.o")
+        .arg("/usr/lib/x86_64-linux-gnu/crti.o")
         .arg("runtime/libvenice.so")
-        .arg("-o")
-        .arg(&output_path)
         .arg("-lc")
         .arg(&object_output_path)
+        .arg("/usr/lib/x86_64-linux-gnu/crtn.o")
+        .arg("-o")
+        .arg(&output_path)
         .spawn()
         .expect("failed to execute ld");
     error_code = child.wait().expect("failed to wait on child");

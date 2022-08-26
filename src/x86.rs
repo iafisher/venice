@@ -10,12 +10,12 @@ pub fn generate(vil: &vil::Program) -> Result<Program, String> {
 
 pub struct Program {
     externs: Vec<String>,
-    globals: Vec<String>,
     blocks: Vec<Block>,
     data: Vec<Data>,
 }
 
 pub struct Block {
+    global: bool,
     label: String,
     instructions: Vec<Instruction>,
 }
@@ -79,7 +79,6 @@ impl Generator {
         Generator {
             program: Program {
                 externs: Vec::new(),
-                globals: Vec::new(),
                 blocks: Vec::new(),
                 data: Vec::new(),
             },
@@ -107,6 +106,8 @@ impl Generator {
         self.offsets.clear();
         self.total_offset = 0;
         self.program.blocks.push(Block {
+            // TODO: replace this with more robust logic
+            global: declaration.name == "main",
             label: declaration.name.clone(),
             instructions: vec![Instruction::Push(RBP), Instruction::Mov(RBP, RSP)],
         });
@@ -123,6 +124,7 @@ impl Generator {
         }
         self.generate_exit_instruction(&mut instructions, &block.exit);
         self.program.blocks.push(Block {
+            global: false,
             label: block.name.clone(),
             instructions: instructions,
         });
@@ -275,28 +277,25 @@ impl fmt::Display for Program {
         // TODO: globals
 
         write!(f, "section .text\n\n")?;
-
-        write!(f, "global _start\n")?;
-        write!(f, "_start:\n")?;
-        write!(f, "  call main\n")?;
-        write!(f, "  mov rdi, rax\n")?;
-        write!(f, "  mov rax, 60\n")?;
-        write!(f, "  syscall\n")?;
-        write!(f, "\n")?;
-
         for block in &self.blocks {
             write!(f, "{}\n", block)?;
         }
+
         write!(f, "section .data\n\n")?;
         for datum in &self.data {
             write!(f, "  {}\n", datum)?;
         }
+
         Ok(())
     }
 }
 
 impl fmt::Display for Block {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.global {
+            write!(f, "global {}\n", self.label)?;
+        }
+
         write!(f, "{}:\n", self.label)?;
         for instruction in &self.instructions {
             write!(f, "  {}\n", instruction)?;
