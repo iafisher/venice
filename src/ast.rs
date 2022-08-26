@@ -32,7 +32,7 @@ pub struct FunctionDeclaration {
 
 #[derive(Debug)]
 pub struct FunctionParameter {
-    pub name: String,
+    pub name: SymbolExpression,
     pub type_: SyntacticType,
     pub semantic_type: Type,
 }

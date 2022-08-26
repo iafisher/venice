@@ -1,0 +1,9 @@
+func sub(x: i64, y: i64) -> i64 {
+  return x - y;
+}
+
+func main() -> i64 {
+  let x: i64 = sub(47, 5);
+  printint(x);
+  return 0;
+}

@@ -19,6 +19,7 @@ pub struct FunctionDeclaration {
 
 pub struct FunctionParameter {
     pub name: String,
+    pub unique_name: String,
     pub type_: Type,
 }
 

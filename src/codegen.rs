@@ -55,10 +55,20 @@ impl Generator {
 
     fn generate_function_declaration(&mut self, declaration: &ast::FunctionDeclaration) {
         let name = &declaration.name.entry.as_ref().unwrap().unique_name;
+        let mut parameters = Vec::new();
+        for parameter in &declaration.parameters {
+            let entry = parameter.name.entry.as_ref().unwrap();
+            parameters.push(vil::FunctionParameter {
+                name: parameter.name.name.clone(),
+                unique_name: entry.unique_name.clone(),
+                // TODO
+                type_: vil::Type::I64,
+            });
+        }
+
         let vil_declaration = vil::FunctionDeclaration {
             name: name.clone(),
-            // TODO
-            parameters: Vec::new(),
+            parameters: parameters,
             // TODO
             return_type: vil::Type::I64,
             blocks: Vec::new(),

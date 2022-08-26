@@ -75,15 +75,17 @@ impl Parser {
         token = self.lexer.next();
         self.expect_token(&token, TokenType::ParenOpen, "(")?;
 
+        self.lexer.next();
         let mut parameters = Vec::new();
         loop {
-            token = self.lexer.next();
+            token = self.lexer.token();
             if token.type_ == TokenType::ParenClose {
                 break;
             }
 
             self.expect_token(&token, TokenType::Symbol, "parameter name")?;
             let parameter_name = token.value;
+            let parameter_location = token.location.clone();
 
             token = self.lexer.next();
             self.expect_token(&token, TokenType::Colon, ":")?;
@@ -91,7 +93,11 @@ impl Parser {
             self.lexer.next();
             let type_ = self.match_type()?;
             parameters.push(ast::FunctionParameter {
-                name: parameter_name,
+                name: ast::SymbolExpression {
+                    name: parameter_name,
+                    entry: None,
+                    location: parameter_location,
+                },
                 type_: type_,
                 semantic_type: ast::Type::Unknown,
             });
@@ -672,6 +678,42 @@ mod tests {
             format!("{}", expr),
             "(binary Multiply 2 (call f (1 (binary Add 2 x) 3)))"
         );
+    }
+
+    #[test]
+    fn function_declaration() {
+        let decl = parse_function_declaration("func inc(x: i64) -> i64 {\n  return x + 1;\n}\n");
+        assert_eq!(
+            format!("{}", decl),
+            "(func inc ((x (type i64))) (type i64) (return (binary Add x 1)))"
+        );
+    }
+
+    #[test]
+    fn function_declaration_with_two_parameters() {
+        let decl =
+            parse_function_declaration("func add(x: i64, y: i64) -> i64 {\n  return x + y;\n}\n");
+        assert_eq!(
+            format!("{}", decl),
+            "(func add ((x (type i64)) (y (type i64))) (type i64) (return (binary Add x y)))"
+        );
+    }
+
+    fn parse_function_declaration(program: &str) -> ast::FunctionDeclaration {
+        let mut parser = Parser::new(lexer::Lexer::new("<string>", &program));
+        let r = parser.match_function_declaration();
+
+        let mut message = String::new();
+        for (i, error) in parser.errors.iter().enumerate() {
+            message.push_str(&format!("{}", error.message));
+            if i != parser.errors.len() - 1 {
+                message.push('\n');
+            }
+        }
+
+        assert!(r.is_ok(), "{}", message);
+        assert!(parser.lexer.done());
+        r.unwrap()
     }
 
     fn parse_statement(program: &str) -> ast::Statement {

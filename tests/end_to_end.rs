@@ -27,6 +27,11 @@ fn test_simple_function() {
     test_e2e("03_simple_function");
 }
 
+#[test]
+fn test_simple_function_with_args() {
+    test_e2e("04_simple_function_with_args");
+}
+
 fn test_e2e(folder: &str) {
     let bin_path = build_path(folder, "program");
     let input_path = build_path(folder, "program.vn");

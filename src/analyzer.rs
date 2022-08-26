@@ -155,17 +155,16 @@ impl Analyzer {
         for parameter in &mut declaration.parameters {
             let t = self.resolve_type(&parameter.type_);
             parameter.semantic_type = t.clone();
-            let unique_name = self.claim_unique_name(&parameter.name);
-            self.symbols.insert(
-                &parameter.name,
-                ast::SymbolEntry {
-                    unique_name: unique_name,
-                    type_: t.clone(),
-                    constant: false,
-                    external: false,
-                },
-            );
+            let unique_name = self.claim_unique_name(&parameter.name.name);
+            let entry = ast::SymbolEntry {
+                unique_name: unique_name,
+                type_: t.clone(),
+                constant: false,
+                external: false,
+            };
+            self.symbols.insert(&parameter.name.name, entry.clone());
             parameter_types.push(t);
+            parameter.name.entry = Some(entry);
         }
 
         let unique_name = if declaration.name.name == "main" {
@@ -197,7 +196,7 @@ impl Analyzer {
         // function's scope. And actually this doesn't work at all because the symbols
         // defined in a function's body will persist after the function is finished.
         for parameter in &mut declaration.parameters {
-            self.symbols.remove(&parameter.name);
+            self.symbols.remove(&parameter.name.name);
         }
     }
 

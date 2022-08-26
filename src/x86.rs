@@ -47,7 +47,7 @@ pub enum Value {
     Label(String),
     Memory {
         scale: u8,
-        displacement: u32,
+        displacement: i32,
         base: Register,
         index: Option<Register>,
     },
@@ -59,6 +59,7 @@ impl Value {
     }
 }
 
+#[derive(Clone)]
 pub struct Register(u8);
 
 pub struct Data {
@@ -107,13 +108,44 @@ impl Generator {
     fn generate_declaration(&mut self, declaration: &vil::FunctionDeclaration) {
         self.offsets.clear();
         self.total_offset = 0;
-        self.program.blocks.push(Block {
+        let mut block = Block {
             // TODO: replace this with more robust logic
             global: declaration.name == "main",
             label: declaration.name.clone(),
-            instructions: vec![Instruction::Push(RBP), Instruction::Mov(RBP, RSP)],
-        });
+            instructions: Vec::new(),
+        };
 
+        block.instructions.push(Instruction::Push(RBP));
+        block.instructions.push(Instruction::Mov(RBP, RSP));
+        self.total_offset += 8;
+
+        if declaration.parameters.len() > 6 {
+            panic!("too many parameter");
+        }
+
+        // Move the function's parameters from registers onto the stack, where the rest
+        // of the function's body expects them to be.
+        for (i, parameter) in declaration.parameters.iter().enumerate() {
+            // TODO: calculate size accurately
+            let size: u32 = 8;
+            block
+                .instructions
+                .push(Instruction::Sub(RSP, Value::Immediate(size as i64)));
+            block.instructions.push(Instruction::Mov(
+                Value::Memory {
+                    scale: 1,
+                    displacement: -(self.total_offset as i32),
+                    base: RBP_REGISTER,
+                    index: None,
+                },
+                Value::Register(CALL_REGISTERS[i].clone()),
+            ));
+            self.offsets
+                .insert(parameter.unique_name.clone(), self.total_offset);
+            self.total_offset += size;
+        }
+
+        self.program.blocks.push(block);
         for block in &declaration.blocks {
             self.generate_block(&block);
         }
@@ -171,8 +203,8 @@ impl Generator {
                     Value::r(r),
                     Value::Memory {
                         scale: 1,
-                        displacement: real_offset,
-                        base: RSP_REGISTER,
+                        displacement: -(real_offset as i32),
+                        base: RBP_REGISTER,
                         index: None,
                     },
                 ));
@@ -182,8 +214,8 @@ impl Generator {
                 instructions.push(Instruction::Mov(
                     Value::Memory {
                         scale: 1,
-                        displacement: real_offset,
-                        base: RSP_REGISTER,
+                        displacement: -(real_offset as i32),
+                        base: RBP_REGISTER,
                         index: None,
                     },
                     Value::r(r),
@@ -198,10 +230,8 @@ impl Generator {
                     panic!("too many arguments");
                 }
 
-                // TODO: use register names instead of indices.
-                let call_registers: [u8; 6] = [5, 4, 3, 2, 6, 7];
                 for (i, arg) in args.iter().enumerate() {
-                    let call_register = Value::Register(Register(call_registers[i]));
+                    let call_register = Value::Register(CALL_REGISTERS[i].clone());
                     instructions.push(Instruction::Mov(call_register, Value::r(arg)));
                 }
                 instructions.push(Instruction::Call(label.0.clone()));
@@ -226,12 +256,17 @@ impl Generator {
         match instruction {
             vil::ExitInstruction::Ret(r) => {
                 instructions.push(Instruction::Mov(RAX, Value::r(r)));
+                // TODO: The total offset is always at least 8 because RBP starts at
+                // the value of RSP before the function was called, but this check is
+                // really janky.
+                if self.total_offset > 8 {
+                    // TODO: does this always work?
+                    instructions.push(Instruction::Add(
+                        RSP,
+                        Value::Immediate((self.total_offset - 8) as i64),
+                    ));
+                }
                 instructions.push(Instruction::Pop(RBP));
-                // TODO: does this always work?
-                instructions.push(Instruction::Add(
-                    RSP,
-                    Value::Immediate(self.total_offset as i64),
-                ));
                 instructions.push(Instruction::Ret);
             }
             vil::ExitInstruction::Jump(l) => {
@@ -275,6 +310,21 @@ const RBP_REGISTER: Register = Register(14);
 const RBP: Value = Value::Register(RBP_REGISTER);
 const RSP_REGISTER: Register = Register(15);
 const RSP: Value = Value::Register(RSP_REGISTER);
+
+const RDI_REGISTER: Register = Register(5);
+const RSI_REGISTER: Register = Register(4);
+const RDX_REGISTER: Register = Register(3);
+const RCX_REGISTER: Register = Register(2);
+const R8_REGISTER: Register = Register(6);
+const R9_REGISTER: Register = Register(7);
+const CALL_REGISTERS: [Register; 6] = [
+    RDI_REGISTER,
+    RSI_REGISTER,
+    RDX_REGISTER,
+    RCX_REGISTER,
+    R8_REGISTER,
+    R9_REGISTER,
+];
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -359,7 +409,11 @@ impl fmt::Display for Value {
                     write!(f, "+{}", index)?;
                 }
                 if *displacement != 0 {
-                    write!(f, "+{}", displacement)?;
+                    if *displacement < 0 {
+                        write!(f, "-{}", -displacement)?;
+                    } else {
+                        write!(f, "+{}", displacement)?;
+                    }
                 }
                 write!(f, "]")
             }
