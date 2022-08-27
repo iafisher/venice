@@ -15,6 +15,7 @@ pub struct FunctionDeclaration {
     pub parameters: Vec<FunctionParameter>,
     pub return_type: Type,
     pub blocks: Vec<Block>,
+    pub stack_frame_size: u32,
 }
 
 pub struct FunctionParameter {

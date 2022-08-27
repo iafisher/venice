@@ -107,7 +107,7 @@ impl Generator {
 
     fn generate_declaration(&mut self, declaration: &vil::FunctionDeclaration) {
         self.offsets.clear();
-        self.total_offset = 0;
+        self.total_offset = 8;
         let mut block = Block {
             // TODO: replace this with more robust logic
             global: declaration.name == "main",
@@ -117,7 +117,10 @@ impl Generator {
 
         block.instructions.push(Instruction::Push(RBP));
         block.instructions.push(Instruction::Mov(RBP, RSP));
-        self.total_offset += 8;
+        block.instructions.push(Instruction::Sub(
+            RSP,
+            Value::Immediate(declaration.stack_frame_size.into()),
+        ));
 
         if declaration.parameters.len() > 6 {
             panic!("too many parameter");
@@ -126,11 +129,6 @@ impl Generator {
         // Move the function's parameters from registers onto the stack, where the rest
         // of the function's body expects them to be.
         for (i, parameter) in declaration.parameters.iter().enumerate() {
-            // TODO: calculate size accurately
-            let size: u32 = 8;
-            block
-                .instructions
-                .push(Instruction::Sub(RSP, Value::Immediate(size as i64)));
             block.instructions.push(Instruction::Mov(
                 Value::Memory {
                     scale: 1,
@@ -142,21 +140,21 @@ impl Generator {
             ));
             self.offsets
                 .insert(parameter.unique_name.clone(), self.total_offset);
-            self.total_offset += size;
+            self.total_offset += 8;
         }
 
         self.program.blocks.push(block);
         for block in &declaration.blocks {
-            self.generate_block(&block);
+            self.generate_block(&declaration, &block);
         }
     }
 
-    fn generate_block(&mut self, block: &vil::Block) {
+    fn generate_block(&mut self, declaration: &vil::FunctionDeclaration, block: &vil::Block) {
         let mut instructions = Vec::new();
         for instruction in &block.instructions {
             self.generate_instruction(&mut instructions, &instruction);
         }
-        self.generate_exit_instruction(&mut instructions, &block.exit);
+        self.generate_exit_instruction(&declaration, &mut instructions, &block.exit);
         self.program.blocks.push(Block {
             global: false,
             label: block.name.clone(),
@@ -171,10 +169,6 @@ impl Generator {
     ) {
         match instruction {
             vil::Instruction::Alloca(mem, size) => {
-                instructions.push(Instruction::Sub(
-                    RSP,
-                    Value::Immediate((*size).try_into().unwrap()),
-                ));
                 self.offsets.insert(mem.0.clone(), self.total_offset);
                 self.total_offset += *size as u32;
             }
@@ -250,22 +244,17 @@ impl Generator {
 
     fn generate_exit_instruction(
         &mut self,
+        declaration: &vil::FunctionDeclaration,
         instructions: &mut Vec<Instruction>,
         instruction: &vil::ExitInstruction,
     ) {
         match instruction {
             vil::ExitInstruction::Ret(r) => {
                 instructions.push(Instruction::Mov(RAX, Value::r(r)));
-                // TODO: The total offset is always at least 8 because RBP starts at
-                // the value of RSP before the function was called, but this check is
-                // really janky.
-                if self.total_offset > 8 {
-                    // TODO: does this always work?
-                    instructions.push(Instruction::Add(
-                        RSP,
-                        Value::Immediate((self.total_offset - 8) as i64),
-                    ));
-                }
+                instructions.push(Instruction::Add(
+                    RSP,
+                    Value::Immediate(declaration.stack_frame_size.into()),
+                ));
                 instructions.push(Instruction::Pop(RBP));
                 instructions.push(Instruction::Ret);
             }

@@ -66,12 +66,15 @@ impl Generator {
             });
         }
 
+        let stack_frame_size = 8 * (parameters.len() as u32);
         let vil_declaration = vil::FunctionDeclaration {
             name: name.clone(),
             parameters: parameters,
             // TODO
             return_type: vil::Type::I64,
             blocks: Vec::new(),
+            // TODO: parameters are not necessarily all 8 bytes
+            stack_frame_size: stack_frame_size,
         };
         self.program.declarations.push(vil_declaration);
         let label = self.claim_label(&name);
@@ -319,6 +322,8 @@ impl Generator {
         let entry = stmt.symbol.entry.as_ref().unwrap();
         let symbol = vil::Memory(entry.unique_name.clone());
         self.push(vil::Instruction::Alloca(symbol.clone(), 8));
+        self.current_function().stack_frame_size += 8;
+
         let register = self.generate_expression(&stmt.value);
         self.push(vil::Instruction::Store(symbol, register, 0));
     }
