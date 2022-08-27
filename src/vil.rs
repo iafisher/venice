@@ -34,36 +34,30 @@ pub struct ConstDeclaration {
 pub struct Block {
     pub name: String,
     pub instructions: Vec<Instruction>,
-    pub exit: ExitInstruction,
 }
 
 #[derive(Debug)]
 pub enum Instruction {
-    Set(Register, Immediate),
-    Move(Register, Register),
-    Alloca(Memory, u64),
-    Load(Register, Memory, u64),
-    Store(Memory, Register, u64),
     Add(Register, Register, Register),
-    Sub(Register, Register, Register),
-    Mul(Register, Register, Register),
-    Div(Register, Register, Register),
+    Alloca(Memory, u64),
     Call(Register, FunctionLabel, Vec<Register>),
     Cmp(Register, Register),
-    ToDo(String),
-}
-
-#[derive(Debug)]
-pub enum ExitInstruction {
-    Ret(Register),
+    Div(Register, Register, Register),
     Jump(Label),
     JumpEq(Label, Label),
-    JumpNeq(Label, Label),
-    JumpLt(Label, Label),
-    JumpLte(Label, Label),
     JumpGt(Label, Label),
     JumpGte(Label, Label),
-    Placeholder,
+    JumpLt(Label, Label),
+    JumpLte(Label, Label),
+    JumpNeq(Label, Label),
+    Load(Register, Memory, u64),
+    Move(Register, Register),
+    Mul(Register, Register, Register),
+    Ret(Register),
+    Set(Register, Immediate),
+    Store(Memory, Register, u64),
+    Sub(Register, Register, Register),
+    ToDo(String),
 }
 
 #[derive(Clone, Debug)]
@@ -132,22 +126,15 @@ impl fmt::Display for Block {
         for instruction in &self.instructions {
             write!(f, "{}\n", instruction)?;
         }
-        write!(f, "{}\n", self.exit)
+        fmt::Result::Ok(())
     }
 }
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Instruction::Set(r, x) => write!(f, "  {} = set {}", r, x),
-            Instruction::Move(r1, r2) => write!(f, "  {} = move {}", r1, r2),
-            Instruction::Alloca(mem, size) => write!(f, "  {} = alloca {}", mem, size),
-            Instruction::Load(r, mem, offset) => write!(f, "  {} = load {}, {}", r, mem, offset),
-            Instruction::Store(mem, r, offset) => write!(f, "  {} = store {}, {}", mem, r, offset),
             Instruction::Add(r1, r2, r3) => write!(f, "  {} = add {}, {}", r1, r2, r3),
-            Instruction::Sub(r1, r2, r3) => write!(f, "  {} = sub {}, {}", r1, r2, r3),
-            Instruction::Mul(r1, r2, r3) => write!(f, "  {} = mul {}, {}", r1, r2, r3),
-            Instruction::Div(r1, r2, r3) => write!(f, "  {} = div {}, {}", r1, r2, r3),
+            Instruction::Alloca(mem, size) => write!(f, "  {} = alloca {}", mem, size),
             Instruction::Call(r, func, rs) => {
                 write!(f, "  {} = call {}", r, func)?;
                 for r in rs {
@@ -156,6 +143,21 @@ impl fmt::Display for Instruction {
                 fmt::Result::Ok(())
             }
             Instruction::Cmp(r1, r2) => write!(f, "  cmp {}, {}", r1, r2),
+            Instruction::Div(r1, r2, r3) => write!(f, "  {} = div {}, {}", r1, r2, r3),
+            Instruction::Load(r, mem, offset) => write!(f, "  {} = load {}, {}", r, mem, offset),
+            Instruction::Jump(label) => write!(f, "  jump {}", label),
+            Instruction::JumpEq(l1, l2) => write!(f, "  jump_eq {} {}", l1, l2),
+            Instruction::JumpGt(l1, l2) => write!(f, "  jump_gt {} {}", l1, l2),
+            Instruction::JumpGte(l1, l2) => write!(f, "  jump_gte {} {}", l1, l2),
+            Instruction::JumpLt(l1, l2) => write!(f, "  jump_lt {} {}", l1, l2),
+            Instruction::JumpLte(l1, l2) => write!(f, "  jump_lte {} {}", l1, l2),
+            Instruction::JumpNeq(l1, l2) => write!(f, "  jump_neq {} {}", l1, l2),
+            Instruction::Move(r1, r2) => write!(f, "  {} = move {}", r1, r2),
+            Instruction::Mul(r1, r2, r3) => write!(f, "  {} = mul {}, {}", r1, r2, r3),
+            Instruction::Ret(expr) => write!(f, "  ret {}", expr),
+            Instruction::Set(r, x) => write!(f, "  {} = set {}", r, x),
+            Instruction::Store(mem, r, offset) => write!(f, "  {} = store {}, {}", mem, r, offset),
+            Instruction::Sub(r1, r2, r3) => write!(f, "  {} = sub {}, {}", r1, r2, r3),
             Instruction::ToDo(s) => write!(f, "  <todo: {}>", s),
         }
     }
@@ -191,22 +193,6 @@ impl fmt::Display for Label {
 impl fmt::Display for FunctionLabel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "%{}", self.0)
-    }
-}
-
-impl fmt::Display for ExitInstruction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ExitInstruction::Ret(expr) => write!(f, "  ret {}", expr),
-            ExitInstruction::Jump(label) => write!(f, "  jump {}", label),
-            ExitInstruction::JumpEq(l1, l2) => write!(f, "  jump_eq {} {}", l1, l2),
-            ExitInstruction::JumpNeq(l1, l2) => write!(f, "  jump_neq {} {}", l1, l2),
-            ExitInstruction::JumpLt(l1, l2) => write!(f, "  jump_lt {} {}", l1, l2),
-            ExitInstruction::JumpLte(l1, l2) => write!(f, "  jump_lte {} {}", l1, l2),
-            ExitInstruction::JumpGt(l1, l2) => write!(f, "  jump_gt {} {}", l1, l2),
-            ExitInstruction::JumpGte(l1, l2) => write!(f, "  jump_gte {} {}", l1, l2),
-            ExitInstruction::Placeholder => write!(f, "  <placeholder>"),
-        }
     }
 }
 

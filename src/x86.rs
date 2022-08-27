@@ -152,9 +152,8 @@ impl Generator {
     fn generate_block(&mut self, declaration: &vil::FunctionDeclaration, block: &vil::Block) {
         let mut instructions = Vec::new();
         for instruction in &block.instructions {
-            self.generate_instruction(&mut instructions, &instruction);
+            self.generate_instruction(&declaration, &mut instructions, &instruction);
         }
-        self.generate_exit_instruction(&declaration, &mut instructions, &block.exit);
         self.program.blocks.push(Block {
             global: false,
             label: block.name.clone(),
@@ -164,6 +163,8 @@ impl Generator {
 
     fn generate_instruction(
         &mut self,
+        // TODO: better way of exposing this information
+        declaration: &vil::FunctionDeclaration,
         instructions: &mut Vec<Instruction>,
         instruction: &vil::Instruction,
     ) {
@@ -231,25 +232,7 @@ impl Generator {
                 instructions.push(Instruction::Call(label.0.clone()));
                 instructions.push(Instruction::Mov(Value::r(r), RAX));
             }
-            vil::Instruction::ToDo(s) => {
-                // TODO
-                instructions.push(Instruction::ToDo(s.clone()));
-            }
-            x => {
-                // TODO
-                instructions.push(Instruction::ToDo(format!("{:?}", x)));
-            }
-        }
-    }
-
-    fn generate_exit_instruction(
-        &mut self,
-        declaration: &vil::FunctionDeclaration,
-        instructions: &mut Vec<Instruction>,
-        instruction: &vil::ExitInstruction,
-    ) {
-        match instruction {
-            vil::ExitInstruction::Ret(r) => {
+            vil::Instruction::Ret(r) => {
                 instructions.push(Instruction::Mov(RAX, Value::r(r)));
                 instructions.push(Instruction::Add(
                     RSP,
@@ -258,32 +241,36 @@ impl Generator {
                 instructions.push(Instruction::Pop(RBP));
                 instructions.push(Instruction::Ret);
             }
-            vil::ExitInstruction::Jump(l) => {
+            vil::Instruction::Jump(l) => {
                 instructions.push(Instruction::Jmp(l.0.clone()));
             }
-            vil::ExitInstruction::JumpEq(true_label, false_label) => {
+            vil::Instruction::JumpEq(true_label, false_label) => {
                 instructions.push(Instruction::Je(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::ExitInstruction::JumpGt(true_label, false_label) => {
+            vil::Instruction::JumpGt(true_label, false_label) => {
                 instructions.push(Instruction::Jg(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::ExitInstruction::JumpGte(true_label, false_label) => {
+            vil::Instruction::JumpGte(true_label, false_label) => {
                 instructions.push(Instruction::Jge(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::ExitInstruction::JumpLt(true_label, false_label) => {
+            vil::Instruction::JumpLt(true_label, false_label) => {
                 instructions.push(Instruction::Jl(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::ExitInstruction::JumpLte(true_label, false_label) => {
+            vil::Instruction::JumpLte(true_label, false_label) => {
                 instructions.push(Instruction::Jle(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::ExitInstruction::JumpNeq(true_label, false_label) => {
+            vil::Instruction::JumpNeq(true_label, false_label) => {
                 instructions.push(Instruction::Jne(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
+            }
+            vil::Instruction::ToDo(s) => {
+                // TODO
+                instructions.push(Instruction::ToDo(s.clone()));
             }
             x => {
                 // TODO

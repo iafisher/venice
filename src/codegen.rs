@@ -78,7 +78,7 @@ impl Generator {
         };
         self.program.declarations.push(vil_declaration);
         let label = self.claim_label(&name);
-        self.start_block(label);
+        self.start_block(label, None);
 
         self.generate_block(&declaration.body);
     }
@@ -184,36 +184,33 @@ impl Generator {
 
         let exit = match op {
             ast::BinaryOpType::Equals => {
-                vil::ExitInstruction::JumpEq(true_label.clone(), false_label.clone())
+                vil::Instruction::JumpEq(true_label.clone(), false_label.clone())
             }
             ast::BinaryOpType::GreaterThan => {
-                vil::ExitInstruction::JumpGt(true_label.clone(), false_label.clone())
+                vil::Instruction::JumpGt(true_label.clone(), false_label.clone())
             }
             ast::BinaryOpType::GreaterThanEquals => {
-                vil::ExitInstruction::JumpGte(true_label.clone(), false_label.clone())
+                vil::Instruction::JumpGte(true_label.clone(), false_label.clone())
             }
             ast::BinaryOpType::LessThan => {
-                vil::ExitInstruction::JumpLt(true_label.clone(), false_label.clone())
+                vil::Instruction::JumpLt(true_label.clone(), false_label.clone())
             }
             ast::BinaryOpType::LessThanEquals => {
-                vil::ExitInstruction::JumpLte(true_label.clone(), false_label.clone())
+                vil::Instruction::JumpLte(true_label.clone(), false_label.clone())
             }
             ast::BinaryOpType::NotEquals => {
-                vil::ExitInstruction::JumpNeq(true_label.clone(), false_label.clone())
+                vil::Instruction::JumpNeq(true_label.clone(), false_label.clone())
             }
             _ => panic!("not a binary comparison"),
         };
-        self.set_exit(exit);
 
-        self.start_block(true_label);
+        self.start_block(true_label, Some(exit));
         self.push(vil::Instruction::Set(r.clone(), vil::Immediate::Integer(1)));
-        self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
 
-        self.start_block(false_label);
+        self.start_block(false_label, Some(vil::Instruction::Jump(end_label.clone())));
         self.push(vil::Instruction::Set(r, vil::Immediate::Integer(0)));
-        self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
 
-        self.start_block(end_label);
+        self.start_block(end_label.clone(), Some(vil::Instruction::Jump(end_label)));
     }
 
     fn generate_call_expression(&mut self, expr: &ast::CallExpression, r: vil::Register) {
@@ -304,39 +301,19 @@ impl Generator {
             vil::Immediate::Integer(0),
         ));
         self.push(vil::Instruction::Cmp(register, tmp));
-        self.set_exit(vil::ExitInstruction::JumpEq(
-            false_label.clone(),
+
+        self.start_block(
             true_label.clone(),
-        ));
-
-        self.start_block(true_label);
+            Some(vil::Instruction::JumpEq(false_label.clone(), true_label)),
+        );
         self.generate_block(&stmt.if_clause.body);
-
-        // TODO: must be a more elegant way to do this
-        let mut needs_end_label = false;
-        match self.current_block().exit {
-            vil::ExitInstruction::Placeholder => {
-                needs_end_label = true;
-                self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
-            }
-            _ => {}
-        }
 
         // TODO: handle elif_clauses
 
-        self.start_block(false_label);
+        self.start_block(false_label, Some(vil::Instruction::Jump(end_label.clone())));
         self.generate_block(&stmt.else_clause);
-        match self.current_block().exit {
-            vil::ExitInstruction::Placeholder => {
-                needs_end_label = true;
-                self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
-            }
-            _ => {}
-        }
 
-        if needs_end_label {
-            self.start_block(end_label);
-        }
+        self.start_block(end_label.clone(), Some(vil::Instruction::Jump(end_label)));
     }
 
     fn generate_let_statement(&mut self, stmt: &ast::LetStatement) {
@@ -351,7 +328,7 @@ impl Generator {
 
     fn generate_return_statement(&mut self, stmt: &ast::ReturnStatement) {
         let register = self.generate_expression(&stmt.value);
-        self.set_exit(vil::ExitInstruction::Ret(register));
+        self.push(vil::Instruction::Ret(register));
     }
 
     fn generate_while_statement(&mut self, stmt: &ast::WhileStatement) {
@@ -374,7 +351,10 @@ impl Generator {
         let loop_label = self.claim_label("while");
         let end_label = self.claim_label("while_end");
 
-        self.start_block(cond_label.clone());
+        self.start_block(
+            cond_label.clone(),
+            Some(vil::Instruction::Jump(cond_label.clone())),
+        );
         let register = self.generate_expression(&stmt.condition);
         let tmp = self.claim_register();
         self.push(vil::Instruction::Set(
@@ -382,29 +362,24 @@ impl Generator {
             vil::Immediate::Integer(1),
         ));
         self.push(vil::Instruction::Cmp(register, tmp));
-        self.set_exit(vil::ExitInstruction::JumpEq(
+
+        self.start_block(
             loop_label.clone(),
-            end_label.clone(),
-        ));
-
-        self.start_block(loop_label);
+            Some(vil::Instruction::JumpEq(loop_label, end_label.clone())),
+        );
         self.generate_block(&stmt.body);
-        self.set_exit(vil::ExitInstruction::Jump(cond_label));
 
-        self.start_block(end_label);
+        self.start_block(end_label, Some(vil::Instruction::Jump(cond_label)));
     }
 
-    fn start_block(&mut self, label: vil::Label) {
+    fn start_block(&mut self, label: vil::Label, exit_previous: Option<vil::Instruction>) {
         let block = vil::Block {
             name: label.0.clone(),
             instructions: Vec::new(),
-            exit: vil::ExitInstruction::Placeholder,
         };
 
-        if self.current_function().blocks.len() > 0 {
-            if let vil::ExitInstruction::Placeholder = self.current_block().exit {
-                self.set_exit(vil::ExitInstruction::Jump(label));
-            }
+        if let Some(exit_previous) = exit_previous {
+            self.push(exit_previous);
         }
 
         self.current_function().blocks.push(block);
@@ -432,10 +407,6 @@ impl Generator {
         let label = format!("s_{}", self.string_counter);
         self.string_counter += 1;
         label
-    }
-
-    fn set_exit(&mut self, exit: vil::ExitInstruction) {
-        self.current_block().exit = exit;
     }
 
     fn push(&mut self, instruction: vil::Instruction) {
