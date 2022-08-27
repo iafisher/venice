@@ -15,7 +15,6 @@ pub struct FunctionDeclaration {
     pub name: String,
     pub return_type: Type,
     pub blocks: Vec<Block>,
-    pub max_register_count: u8,
 }
 
 pub struct ConstDeclaration {
@@ -153,7 +152,6 @@ impl fmt::Display for Program {
 impl fmt::Display for FunctionDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "\n")?;
-        write!(f, "// max_register_count = {}\n", self.max_register_count)?;
         write!(f, "func {} -> {} {{\n", self.name, self.return_type)?;
         for block in &self.blocks {
             write!(f, "{}", block)?;

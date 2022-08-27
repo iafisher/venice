@@ -6,7 +6,6 @@ extern venice_printint;
 
 
 
-// max_register_count = 7
 func fibonacci__1 -> i64 {
 
 fibonacci__1_0:
@@ -91,7 +90,6 @@ if_end_6:
 if_end_3:
 }
 
-// max_register_count = 2
 func main -> i64 {
 
 main_7:

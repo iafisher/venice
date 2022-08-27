@@ -6,7 +6,6 @@ extern venice_println;
 
 
 
-// max_register_count = 2
 func main -> i64 {
 
 main_0:

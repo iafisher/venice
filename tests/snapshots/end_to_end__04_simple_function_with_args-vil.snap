@@ -6,7 +6,6 @@ extern venice_printint;
 
 
 
-// max_register_count = 3
 func sub__2 -> i64 {
 
 sub__2_0:
@@ -33,7 +32,6 @@ sub__2_0:
   ret
 }
 
-// max_register_count = 3
 func main -> i64 {
 
 main_1:

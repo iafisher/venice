@@ -63,7 +63,6 @@ impl Generator {
             // TODO
             return_type: vil::Type::I64,
             blocks: Vec::new(),
-            max_register_count: 0,
         };
         self.info = declaration.info.clone();
         self.program.declarations.push(vil_declaration);
@@ -431,10 +430,6 @@ impl Generator {
     }
 
     fn reset_register_counter(&mut self, count: u8) {
-        self.current_function().max_register_count = cmp::max(
-            self.current_function().max_register_count,
-            self.register_counter,
-        );
         self.register_counter = count;
     }
 
