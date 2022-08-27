@@ -130,6 +130,7 @@ impl Parser {
             return_type: return_type,
             semantic_return_type: ast::Type::Unknown,
             body: body,
+            info: None,
             location: location,
         })
     }

@@ -27,7 +27,13 @@ pub struct FunctionDeclaration {
     pub return_type: SyntacticType,
     pub semantic_return_type: Type,
     pub body: Vec<Statement>,
+    pub info: Option<FunctionInfo>,
     pub location: common::Location,
+}
+
+#[derive(Clone, Debug)]
+pub struct FunctionInfo {
+    pub stack_frame_size: u32,
 }
 
 #[derive(Debug)]

@@ -120,6 +120,7 @@ struct Analyzer {
     symbols: SymbolTable,
     types: SymbolTable,
     current_function_return_type: Option<ast::Type>,
+    current_function_info: Option<ast::FunctionInfo>,
     errors: Vec<errors::VeniceError>,
     unique_name_counter: u64,
 }
@@ -130,6 +131,7 @@ impl Analyzer {
             symbols: SymbolTable::builtin_globals(),
             types: SymbolTable::builtin_types(),
             current_function_return_type: None,
+            current_function_info: None,
             errors: Vec::new(),
             unique_name_counter: 0,
         }
@@ -188,9 +190,14 @@ impl Analyzer {
 
         declaration.name.entry = Some(entry);
 
+        self.current_function_info = Some(ast::FunctionInfo {
+            // TODO: not all parameters are 8 bytes
+            stack_frame_size: 8 * (declaration.parameters.len() as u32),
+        });
         self.current_function_return_type = Some(declaration.semantic_return_type.clone());
         self.analyze_block(&mut declaration.body);
         self.current_function_return_type = None;
+        declaration.info = self.current_function_info.take();
 
         // TODO: A better approach would be to have a separate symbol table for the
         // function's scope. And actually this doesn't work at all because the symbols
@@ -272,6 +279,11 @@ impl Analyzer {
 
         stmt.symbol.entry = Some(entry.clone());
         self.symbols.insert(&stmt.symbol.name, entry);
+        // TODO: not all symbols are 8 bytes
+        self.current_function_info
+            .as_mut()
+            .unwrap()
+            .stack_frame_size += 8;
     }
 
     fn analyze_assign_statement(&mut self, stmt: &mut ast::AssignStatement) {
