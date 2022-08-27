@@ -257,55 +257,10 @@ impl Generator {
     }
 }
 
-const RDI_REGISTER: Register = Register(0);
-const RSI_REGISTER: Register = Register(1);
-const RDX_REGISTER: Register = Register(2);
-const RCX_REGISTER: Register = Register(3);
-const R8_REGISTER: Register = Register(4);
-const R9_REGISTER: Register = Register(5);
-const R10_REGISTER: Register = Register(6);
-const R11_REGISTER: Register = Register(7);
-const R12_REGISTER: Register = Register(8);
-const R13_REGISTER: Register = Register(9);
-const R14_REGISTER: Register = Register(10);
-const R15_REGISTER: Register = Register(11);
-const RBX_REGISTER: Register = Register(12);
-const RAX_REGISTER: Register = Register(13);
-const RAX: Value = Value::Register(RAX_REGISTER);
 const RSP_REGISTER: Register = Register(14);
 const RSP: Value = Value::Register(RSP_REGISTER);
 const RBP_REGISTER: Register = Register(15);
 const RBP: Value = Value::Register(RBP_REGISTER);
-
-const CALL_REGISTERS: &[Register] = &[
-    RDI_REGISTER,
-    RSI_REGISTER,
-    RDX_REGISTER,
-    RCX_REGISTER,
-    R8_REGISTER,
-    R9_REGISTER,
-];
-
-const CALLEE_SAVE_REGISTERS: &[Register] = &[
-    RBP_REGISTER,
-    RBX_REGISTER,
-    R12_REGISTER,
-    R13_REGISTER,
-    R14_REGISTER,
-    R15_REGISTER,
-];
-
-const CALLER_SAVE_REGISTERS: &[Register] = &[
-    RAX_REGISTER,
-    RCX_REGISTER,
-    RDX_REGISTER,
-    RDI_REGISTER,
-    RSI_REGISTER,
-    R8_REGISTER,
-    R9_REGISTER,
-    R10_REGISTER,
-    R11_REGISTER,
-];
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
