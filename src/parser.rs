@@ -491,13 +491,13 @@ impl Parser {
         }
     }
 
-    fn match_type(&mut self) -> Result<ptree::SyntacticType, ()> {
+    fn match_type(&mut self) -> Result<ptree::Type, ()> {
         let token = self.lexer.token();
         self.expect_token(&token, TokenType::Symbol, "type")?;
         self.lexer.next();
         // TODO: handle parameterized types
-        Ok(ptree::SyntacticType {
-            kind: ptree::SyntacticTypeKind::Literal(token.value),
+        Ok(ptree::Type {
+            kind: ptree::TypeKind::Literal(token.value),
             location: token.location.clone(),
         })
     }

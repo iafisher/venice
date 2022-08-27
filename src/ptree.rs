@@ -17,7 +17,7 @@ pub enum Declaration {
 pub struct FunctionDeclaration {
     pub name: String,
     pub parameters: Vec<FunctionParameter>,
-    pub return_type: SyntacticType,
+    pub return_type: Type,
     pub body: Vec<Statement>,
     pub location: common::Location,
 }
@@ -30,13 +30,13 @@ pub struct FunctionInfo {
 #[derive(Debug)]
 pub struct FunctionParameter {
     pub name: String,
-    pub type_: SyntacticType,
+    pub type_: Type,
 }
 
 #[derive(Debug)]
 pub struct ConstDeclaration {
     pub symbol: String,
-    pub type_: SyntacticType,
+    pub type_: Type,
     pub value: Expression,
     pub location: common::Location,
 }
@@ -51,7 +51,7 @@ pub struct RecordDeclaration {
 #[derive(Debug)]
 pub struct RecordField {
     pub name: String,
-    pub type_: SyntacticType,
+    pub type_: Type,
 }
 
 #[derive(Debug)]
@@ -69,7 +69,7 @@ pub enum Statement {
 #[derive(Debug)]
 pub struct LetStatement {
     pub symbol: String,
-    pub type_: SyntacticType,
+    pub type_: Type,
     pub value: Expression,
     pub location: common::Location,
 }
@@ -225,13 +225,13 @@ pub struct RecordLiteral {
 }
 
 #[derive(Debug)]
-pub struct SyntacticType {
-    pub kind: SyntacticTypeKind,
+pub struct Type {
+    pub kind: TypeKind,
     pub location: common::Location,
 }
 
 #[derive(Debug)]
-pub enum SyntacticTypeKind {
+pub enum TypeKind {
     Literal(String),
     Parameterized(SyntacticParameterizedType),
 }
@@ -239,32 +239,7 @@ pub enum SyntacticTypeKind {
 #[derive(Debug)]
 pub struct SyntacticParameterizedType {
     pub symbol: String,
-    pub parameters: Vec<SyntacticType>,
-}
-
-#[derive(Clone, Debug)]
-pub enum Type {
-    Boolean,
-    I64,
-    String,
-    Void,
-    Tuple(Vec<Type>),
-    List(Box<Type>),
-    Map {
-        key: Box<Type>,
-        value: Box<Type>,
-    },
-    Function {
-        parameters: Vec<Type>,
-        return_type: Box<Type>,
-    },
-    Record(String),
-}
-
-#[derive(Clone, Debug)]
-pub struct ParameterizedType {
-    symbol: String,
-    parameters: Vec<Type>,
+    pub parameters: Vec<Type>,
 }
 
 impl fmt::Display for Program {
@@ -522,55 +497,17 @@ impl fmt::Display for RecordLiteral {
     }
 }
 
-impl fmt::Display for SyntacticType {
+impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
-            SyntacticTypeKind::Literal(s) => write!(f, "(type {})", s),
-            SyntacticTypeKind::Parameterized(ptype) => {
+            TypeKind::Literal(s) => write!(f, "(type {})", s),
+            TypeKind::Parameterized(ptype) => {
                 write!(f, "(type {}", ptype.symbol)?;
                 for parameter in &ptype.parameters {
                     write!(f, " {}", parameter)?;
                 }
                 write!(f, ")")
             }
-        }
-    }
-}
-
-impl fmt::Display for Type {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Type::I64 => write!(f, "i64"),
-            Type::Boolean => write!(f, "bool"),
-            Type::String => write!(f, "string"),
-            Type::Void => write!(f, "void"),
-            Type::Tuple(ts) => {
-                write!(f, "(")?;
-                for (i, t) in ts.iter().enumerate() {
-                    write!(f, "{}", t)?;
-                    if i != ts.len() - 1 {
-                        write!(f, ", ")?;
-                    }
-                }
-                write!(f, ")")
-            }
-            Type::List(t) => {
-                write!(f, "list<{}>", t)
-            }
-            Type::Map { key, value } => {
-                write!(f, "map<{}, {}>", key, value)
-            }
-            Type::Function {
-                parameters,
-                return_type,
-            } => {
-                write!(f, "func<")?;
-                for t in parameters {
-                    write!(f, "{}, ", t)?;
-                }
-                write!(f, "{}>", return_type)
-            }
-            Type::Record(name) => write!(f, "{}", name),
         }
     }
 }

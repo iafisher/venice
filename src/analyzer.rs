@@ -724,9 +724,9 @@ impl Analyzer {
         ast::EXPRESSION_ERROR.clone()
     }
 
-    fn resolve_type(&mut self, type_: &ptree::SyntacticType) -> ast::Type {
+    fn resolve_type(&mut self, type_: &ptree::Type) -> ast::Type {
         match &type_.kind {
-            ptree::SyntacticTypeKind::Literal(s) => {
+            ptree::TypeKind::Literal(s) => {
                 if let Some(semantic_type_) = self.types.get(s) {
                     semantic_type_.type_
                 } else {
