@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 
 use super::ast;
+use super::common;
 use super::errors;
 use super::vil;
 
@@ -56,12 +57,12 @@ impl Generator {
     }
 
     fn generate_function_declaration(&mut self, declaration: &ast::FunctionDeclaration) {
-        let name = &declaration.name.entry.as_ref().unwrap().unique_name;
+        let name = &declaration.name.unique_name;
         let vil_declaration = vil::FunctionDeclaration {
             name: name.clone(),
             blocks: Vec::new(),
         };
-        self.info = declaration.info.clone();
+        self.info = Some(declaration.info.clone());
         self.program.declarations.push(vil_declaration);
         let label = self.claim_label(&name);
         self.start_block(label, None);
@@ -71,13 +72,12 @@ impl Generator {
             self.push(vil::Instruction::CalleeSave(vil::Register::gp(i)));
         }
 
-        let info = self.info.as_ref().unwrap();
-        self.push(vil::Instruction::FrameSetUp(info.stack_frame_size));
+        let stack_frame_size = self.info.as_ref().unwrap().stack_frame_size;
+        self.push(vil::Instruction::FrameSetUp(stack_frame_size));
 
         // Move parameters from registers onto the stack.
         for (i, parameter) in declaration.parameters.iter().enumerate() {
-            let entry = parameter.name.entry.as_ref().unwrap();
-            let symbol = vil::Memory(entry.unique_name.clone());
+            let symbol = vil::Memory(parameter.name.unique_name.clone());
             // TODO: parameters are not necessarily all 8 bytes
             self.push(vil::Instruction::Alloca(symbol.clone(), 8));
             self.push(vil::Instruction::Store(
@@ -119,10 +119,9 @@ impl Generator {
             }
             ast::ExpressionKind::Call(e) => self.generate_call_expression(e, r.clone()),
             ast::ExpressionKind::Symbol(symbol) => {
-                let entry = symbol.entry.as_ref().unwrap();
                 self.push(vil::Instruction::Load(
                     r.clone(),
-                    vil::Memory(entry.unique_name.clone()),
+                    vil::Memory(symbol.unique_name.clone()),
                     0,
                 ));
             }
@@ -169,16 +168,16 @@ impl Generator {
         let right = self.generate_expression(&expr.right);
 
         match expr.op {
-            ast::BinaryOpType::Add => {
+            common::BinaryOpType::Add => {
                 self.push(vil::Instruction::Add(r, left, right));
             }
-            ast::BinaryOpType::Divide => {
+            common::BinaryOpType::Divide => {
                 self.push(vil::Instruction::Div(r, left, right));
             }
-            ast::BinaryOpType::Multiply => {
+            common::BinaryOpType::Multiply => {
                 self.push(vil::Instruction::Mul(r, left, right));
             }
-            ast::BinaryOpType::Subtract => {
+            common::BinaryOpType::Subtract => {
                 self.push(vil::Instruction::Sub(r, left, right));
             }
             _ => {
@@ -226,9 +225,9 @@ impl Generator {
             ));
         }
 
-        let entry = expr.function.entry.as_ref().unwrap();
-        if entry.external {
-            self.program.externs.push(entry.unique_name.clone());
+        let unique_name = &expr.function.unique_name;
+        if expr.function.external {
+            self.program.externs.push(unique_name.clone());
         }
 
         // Save caller-save registers.
@@ -236,7 +235,7 @@ impl Generator {
         self.push(vil::Instruction::CallerSave(vil::Register::gp(1)));
 
         self.push(vil::Instruction::Call(vil::FunctionLabel(
-            entry.unique_name.clone(),
+            unique_name.clone(),
         )));
 
         // Restore caller-save registers.
@@ -273,10 +272,9 @@ impl Generator {
     }
 
     fn generate_assign_statement(&mut self, stmt: &ast::AssignStatement) {
-        let entry = stmt.symbol.entry.as_ref().unwrap();
         let register = self.generate_expression(&stmt.value);
         self.push(vil::Instruction::Store(
-            vil::Memory(entry.unique_name.clone()),
+            vil::Memory(stmt.symbol.unique_name.clone()),
             register,
             0,
         ));
@@ -309,25 +307,22 @@ impl Generator {
         let end_label = self.claim_label("if_end");
 
         self.generate_expression_as_condition(
-            &stmt.if_clause.condition,
+            &stmt.condition,
             true_label.clone(),
             false_label.clone(),
         );
 
         self.start_block(true_label, None);
-        self.generate_block(&stmt.if_clause.body);
-
-        // TODO: handle elif_clauses
+        self.generate_block(&stmt.body);
 
         self.start_block(false_label, Some(vil::Instruction::Jump(end_label.clone())));
-        self.generate_block(&stmt.else_clause);
+        self.generate_block(&stmt.else_body);
 
         self.start_block(end_label.clone(), Some(vil::Instruction::Jump(end_label)));
     }
 
     fn generate_let_statement(&mut self, stmt: &ast::LetStatement) {
-        let entry = stmt.symbol.entry.as_ref().unwrap();
-        let symbol = vil::Memory(entry.unique_name.clone());
+        let symbol = vil::Memory(stmt.symbol.unique_name.clone());
         self.push(vil::Instruction::Alloca(symbol.clone(), 8));
 
         let register = self.generate_expression(&stmt.value);
@@ -443,18 +438,20 @@ impl Generator {
 }
 
 fn get_comparison_instruction(
-    op: ast::ComparisonOpType,
+    op: common::ComparisonOpType,
     true_label: vil::Label,
     false_label: vil::Label,
 ) -> vil::Instruction {
     match op {
-        ast::ComparisonOpType::Equals => vil::Instruction::JumpEq(true_label, false_label),
-        ast::ComparisonOpType::GreaterThan => vil::Instruction::JumpGt(true_label, false_label),
-        ast::ComparisonOpType::GreaterThanEquals => {
+        common::ComparisonOpType::Equals => vil::Instruction::JumpEq(true_label, false_label),
+        common::ComparisonOpType::GreaterThan => vil::Instruction::JumpGt(true_label, false_label),
+        common::ComparisonOpType::GreaterThanEquals => {
             vil::Instruction::JumpGte(true_label, false_label)
         }
-        ast::ComparisonOpType::LessThan => vil::Instruction::JumpLt(true_label, false_label),
-        ast::ComparisonOpType::LessThanEquals => vil::Instruction::JumpLte(true_label, false_label),
-        ast::ComparisonOpType::NotEquals => vil::Instruction::JumpNeq(true_label, false_label),
+        common::ComparisonOpType::LessThan => vil::Instruction::JumpLt(true_label, false_label),
+        common::ComparisonOpType::LessThanEquals => {
+            vil::Instruction::JumpLte(true_label, false_label)
+        }
+        common::ComparisonOpType::NotEquals => vil::Instruction::JumpNeq(true_label, false_label),
     }
 }

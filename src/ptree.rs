@@ -11,16 +11,15 @@ pub enum Declaration {
     Function(FunctionDeclaration),
     Const(ConstDeclaration),
     Record(RecordDeclaration),
-    Error,
 }
 
 #[derive(Debug)]
 pub struct FunctionDeclaration {
-    pub name: SymbolEntry,
+    pub name: String,
     pub parameters: Vec<FunctionParameter>,
-    pub return_type: Type,
+    pub return_type: SyntacticType,
     pub body: Vec<Statement>,
-    pub info: FunctionInfo,
+    pub location: common::Location,
 }
 
 #[derive(Clone, Debug)]
@@ -30,27 +29,29 @@ pub struct FunctionInfo {
 
 #[derive(Debug)]
 pub struct FunctionParameter {
-    pub name: SymbolEntry,
-    pub type_: Type,
+    pub name: String,
+    pub type_: SyntacticType,
 }
 
 #[derive(Debug)]
 pub struct ConstDeclaration {
-    pub symbol: SymbolEntry,
-    pub type_: Type,
+    pub symbol: String,
+    pub type_: SyntacticType,
     pub value: Expression,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct RecordDeclaration {
-    pub name: SymbolEntry,
+    pub name: String,
     pub fields: Vec<RecordField>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct RecordField {
     pub name: String,
-    pub type_: Type,
+    pub type_: SyntacticType,
 }
 
 #[derive(Debug)]
@@ -63,65 +64,77 @@ pub enum Statement {
     Let(LetStatement),
     Return(ReturnStatement),
     While(WhileStatement),
-    Error,
 }
 
 #[derive(Debug)]
 pub struct LetStatement {
-    pub symbol: SymbolEntry,
-    pub type_: Type,
+    pub symbol: String,
+    pub type_: SyntacticType,
     pub value: Expression,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct AssignStatement {
-    pub symbol: SymbolEntry,
+    pub symbol: String,
     pub value: Expression,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct IfStatement {
+    pub if_clause: IfClause,
+    pub elif_clauses: Vec<IfClause>,
+    pub else_body: Vec<Statement>,
+    pub location: common::Location,
+}
+
+#[derive(Debug)]
+pub struct IfClause {
     pub condition: Expression,
     pub body: Vec<Statement>,
-    pub else_body: Vec<Statement>,
 }
 
 #[derive(Debug)]
 pub struct WhileStatement {
     pub condition: Expression,
     pub body: Vec<Statement>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct ForStatement {
-    pub symbol: SymbolEntry,
-    pub symbol2: Option<SymbolEntry>,
+    pub symbol: String,
+    pub symbol2: Option<String>,
     pub iterator: Expression,
     pub body: Vec<Statement>,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct ReturnStatement {
     pub value: Expression,
+    pub location: common::Location,
 }
 
 #[derive(Debug)]
 pub struct AssertStatement {
     pub condition: Expression,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Expression {
     pub kind: ExpressionKind,
-    pub type_: Type,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum ExpressionKind {
     Boolean(bool),
     Integer(i64),
     String(String),
-    Symbol(SymbolEntry),
+    Symbol(String),
     Binary(BinaryExpression),
     Comparison(ComparisonExpression),
     Unary(UnaryExpression),
@@ -133,77 +146,100 @@ pub enum ExpressionKind {
     Tuple(TupleLiteral),
     Map(MapLiteral),
     Record(RecordLiteral),
-    Error,
 }
 
-pub const EXPRESSION_ERROR: Expression = Expression {
-    kind: ExpressionKind::Error,
-    type_: Type::Error,
-};
-
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct BinaryExpression {
     pub op: common::BinaryOpType,
     pub left: Box<Expression>,
     pub right: Box<Expression>,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ComparisonExpression {
     pub op: common::ComparisonOpType,
     pub left: Box<Expression>,
     pub right: Box<Expression>,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct UnaryExpression {
     pub op: common::UnaryOpType,
     pub operand: Box<Expression>,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct CallExpression {
-    pub function: SymbolEntry,
+    pub function: String,
     pub arguments: Vec<Expression>,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct IndexExpression {
     pub value: Box<Expression>,
     pub index: Box<Expression>,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct TupleIndexExpression {
     pub value: Box<Expression>,
     pub index: usize,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct AttributeExpression {
     pub value: Box<Expression>,
     pub attribute: String,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ListLiteral {
     pub items: Vec<Expression>,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct TupleLiteral {
     pub items: Vec<Expression>,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct MapLiteral {
     pub items: Vec<(Expression, Expression)>,
+    pub location: common::Location,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct RecordLiteral {
-    pub name: SymbolEntry,
+    pub name: String,
     pub items: Vec<(String, Expression)>,
+    pub location: common::Location,
+}
+
+#[derive(Debug)]
+pub struct SyntacticType {
+    pub kind: SyntacticTypeKind,
+    pub location: common::Location,
+}
+
+#[derive(Debug)]
+pub enum SyntacticTypeKind {
+    Literal(String),
+    Parameterized(SyntacticParameterizedType),
+}
+
+#[derive(Debug)]
+pub struct SyntacticParameterizedType {
+    pub symbol: String,
+    pub parameters: Vec<SyntacticType>,
 }
 
 #[derive(Clone, Debug)]
@@ -231,14 +267,6 @@ pub enum Type {
 pub struct ParameterizedType {
     symbol: String,
     parameters: Vec<Type>,
-}
-
-#[derive(Clone, Debug)]
-pub struct SymbolEntry {
-    pub unique_name: String,
-    pub type_: Type,
-    pub constant: bool,
-    pub external: bool,
 }
 
 impl Type {
@@ -279,7 +307,6 @@ impl fmt::Display for Declaration {
             Declaration::Function(declaration) => write!(f, "{}", declaration),
             Declaration::Const(declaration) => write!(f, "{}", declaration),
             Declaration::Record(declaration) => write!(f, "{}", declaration),
-            Declaration::Error => write!(f, "error"),
         }
     }
 }
@@ -292,7 +319,7 @@ impl fmt::Display for FunctionDeclaration {
                 write!(f, " ")?;
             }
 
-            write!(f, "{}:{}", parameter.name, parameter.type_)?;
+            write!(f, "({} {})", parameter.name, parameter.type_)?;
         }
 
         write!(f, ") ")?;
@@ -332,14 +359,13 @@ impl fmt::Display for Statement {
             Statement::Return(stmt) => write!(f, "{}", stmt),
             Statement::Assert(stmt) => write!(f, "{}", stmt),
             Statement::Expression(stmt) => write!(f, "{}", stmt),
-            Statement::Error => write!(f, "error"),
         }
     }
 }
 
 impl fmt::Display for LetStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(let {}:{} {})", self.symbol, self.type_, self.value)
+        write!(f, "(let {} {} {})", self.symbol, self.type_, self.value)
     }
 }
 
@@ -351,8 +377,15 @@ impl fmt::Display for AssignStatement {
 
 impl fmt::Display for IfStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(if {} ", self.condition)?;
-        format_block(f, &self.body)?;
+        write!(f, "(if {} ", self.if_clause.condition)?;
+        format_block(f, &self.if_clause.body)?;
+
+        for elif_clause in &self.elif_clauses {
+            write!(f, " (elif {} ", elif_clause.condition)?;
+            format_block(f, &elif_clause.body)?;
+            write!(f, ")")?;
+        }
+
         if self.else_body.len() > 0 {
             write!(f, " (else ")?;
             format_block(f, &self.else_body)?;
@@ -398,7 +431,7 @@ impl fmt::Display for AssertStatement {
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}):{}", self.kind, self.type_)
+        write!(f, "{}", self.kind)
     }
 }
 
@@ -420,7 +453,6 @@ impl fmt::Display for ExpressionKind {
             ExpressionKind::Tuple(e) => write!(f, "{}", e),
             ExpressionKind::Map(e) => write!(f, "{}", e),
             ExpressionKind::Record(e) => write!(f, "{}", e),
-            ExpressionKind::Error => write!(f, "error"),
         }
     }
 }
@@ -514,6 +546,21 @@ impl fmt::Display for RecordLiteral {
     }
 }
 
+impl fmt::Display for SyntacticType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.kind {
+            SyntacticTypeKind::Literal(s) => write!(f, "(type {})", s),
+            SyntacticTypeKind::Parameterized(ptype) => {
+                write!(f, "(type {}", ptype.symbol)?;
+                for parameter in &ptype.parameters {
+                    write!(f, " {}", parameter)?;
+                }
+                write!(f, ")")
+            }
+        }
+    }
+}
+
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -551,12 +598,6 @@ impl fmt::Display for Type {
             Type::Unknown => write!(f, "unknown"),
             Type::Error => write!(f, "unknown"),
         }
-    }
-}
-
-impl fmt::Display for SymbolEntry {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.unique_name)
     }
 }
 

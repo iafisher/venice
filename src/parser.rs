@@ -1,20 +1,20 @@
 // The parser transforms the stream of tokens emitted by the lexer into an abstract
 // syntax tree.
 
-use super::ast;
 use super::common;
 use super::errors;
 use super::lexer;
 use super::lexer::TokenType;
+use super::ptree;
 use std::collections::HashMap;
 
-pub fn parse(lexer: lexer::Lexer) -> Result<ast::Program, Vec<errors::VeniceError>> {
+pub fn parse(lexer: lexer::Lexer) -> Result<ptree::Program, Vec<errors::VeniceError>> {
     let mut parser = Parser::new(lexer);
-    let ast = parser.parse();
+    let ptree = parser.parse();
     if parser.errors.len() > 0 {
         Err(parser.errors.clone())
     } else {
-        Ok(ast)
+        Ok(ptree)
     }
 }
 
@@ -31,24 +31,24 @@ impl Parser {
         }
     }
 
-    fn parse(&mut self) -> ast::Program {
+    fn parse(&mut self) -> ptree::Program {
         let mut declarations = Vec::new();
         while !self.lexer.done() {
             if let Ok(declaration) = self.match_declaration() {
                 declarations.push(declaration);
             }
         }
-        ast::Program {
+        ptree::Program {
             declarations: declarations,
         }
     }
 
-    fn match_declaration(&mut self) -> Result<ast::Declaration, ()> {
+    fn match_declaration(&mut self) -> Result<ptree::Declaration, ()> {
         let token = self.lexer.token();
         match token.type_ {
             TokenType::Func => self
                 .match_function_declaration()
-                .map(|d| ast::Declaration::Function(d)),
+                .map(|d| ptree::Declaration::Function(d)),
             // TODO: handle const and record declarations
             _ => {
                 let msg = format!(
@@ -64,7 +64,7 @@ impl Parser {
         }
     }
 
-    fn match_function_declaration(&mut self) -> Result<ast::FunctionDeclaration, ()> {
+    fn match_function_declaration(&mut self) -> Result<ptree::FunctionDeclaration, ()> {
         let location = self.lexer.token().location.clone();
         self.expect_token(&self.lexer.token(), TokenType::Func, "func keyword")?;
 
@@ -92,14 +92,9 @@ impl Parser {
 
             self.lexer.next();
             let type_ = self.match_type()?;
-            parameters.push(ast::FunctionParameter {
-                name: ast::SymbolExpression {
-                    name: parameter_name,
-                    entry: None,
-                    location: parameter_location,
-                },
+            parameters.push(ptree::FunctionParameter {
+                name: parameter_name,
                 type_: type_,
-                semantic_type: ast::Type::Unknown,
             });
 
             token = self.lexer.token();
@@ -120,22 +115,16 @@ impl Parser {
         let return_type = self.match_type()?;
 
         let body = self.match_block()?;
-        Ok(ast::FunctionDeclaration {
-            name: ast::SymbolExpression {
-                name: name.clone(),
-                entry: None,
-                location: location.clone(),
-            },
+        Ok(ptree::FunctionDeclaration {
+            name: name.clone(),
             parameters: parameters,
             return_type: return_type,
-            semantic_return_type: ast::Type::Unknown,
             body: body,
-            info: None,
             location: location,
         })
     }
 
-    fn match_block(&mut self) -> Result<Vec<ast::Statement>, ()> {
+    fn match_block(&mut self) -> Result<Vec<ptree::Statement>, ()> {
         let mut token = self.lexer.token();
         self.expect_token(&token, TokenType::CurlyOpen, "{")?;
         self.lexer.next();
@@ -158,33 +147,33 @@ impl Parser {
         Ok(statements)
     }
 
-    fn match_statement(&mut self) -> Result<ast::Statement, ()> {
+    fn match_statement(&mut self) -> Result<ptree::Statement, ()> {
         let mut token = self.lexer.token();
         match token.type_ {
             TokenType::Assert => self
                 .match_assert_statement()
-                .map(|stmt| ast::Statement::Assert(stmt)),
+                .map(|stmt| ptree::Statement::Assert(stmt)),
             TokenType::If => self
                 .match_if_statement()
-                .map(|stmt| ast::Statement::If(stmt)),
+                .map(|stmt| ptree::Statement::If(stmt)),
             TokenType::Let => self
                 .match_let_statement()
-                .map(|stmt| ast::Statement::Let(stmt)),
+                .map(|stmt| ptree::Statement::Let(stmt)),
             TokenType::Return => self
                 .match_return_statement()
-                .map(|stmt| ast::Statement::Return(stmt)),
+                .map(|stmt| ptree::Statement::Return(stmt)),
             TokenType::While => self
                 .match_while_statement()
-                .map(|stmt| ast::Statement::While(stmt)),
+                .map(|stmt| ptree::Statement::While(stmt)),
             _ => {
                 let expr = self.match_expression()?;
                 token = self.lexer.token();
                 if token.type_ == TokenType::Assign {
                     self.match_assign_statement(expr)
-                        .map(|stmt| ast::Statement::Assign(stmt))
+                        .map(|stmt| ptree::Statement::Assign(stmt))
                 } else if token.type_ == TokenType::Semicolon {
                     self.lexer.next();
-                    Ok(ast::Statement::Expression(expr))
+                    Ok(ptree::Statement::Expression(expr))
                 } else {
                     self.lexer.next();
                     self.unexpected(&token, "start of statement");
@@ -194,7 +183,7 @@ impl Parser {
         }
     }
 
-    fn match_assert_statement(&mut self) -> Result<ast::AssertStatement, ()> {
+    fn match_assert_statement(&mut self) -> Result<ptree::AssertStatement, ()> {
         let mut token = self.lexer.token();
         let location = token.location.clone();
         self.expect_token(&token, TokenType::Assert, "assert")?;
@@ -206,7 +195,7 @@ impl Parser {
         self.expect_token(&token, TokenType::Semicolon, ";")?;
         self.lexer.next();
 
-        Ok(ast::AssertStatement {
+        Ok(ptree::AssertStatement {
             condition: condition,
             location: location,
         })
@@ -214,10 +203,10 @@ impl Parser {
 
     fn match_assign_statement(
         &mut self,
-        expr: ast::Expression,
-    ) -> Result<ast::AssignStatement, ()> {
-        let symbol = if let ast::ExpressionKind::Symbol(symbol_expr) = expr.kind {
-            symbol_expr.name
+        expr: ptree::Expression,
+    ) -> Result<ptree::AssignStatement, ()> {
+        let symbol = if let ptree::ExpressionKind::Symbol(symbol) = expr.kind {
+            symbol
         } else {
             self.error("can only assign to symbols", expr.location.clone());
             return Err(());
@@ -234,18 +223,14 @@ impl Parser {
         self.expect_token(&token, TokenType::Semicolon, ";")?;
         self.lexer.next();
 
-        Ok(ast::AssignStatement {
-            symbol: ast::SymbolExpression {
-                name: symbol,
-                entry: None,
-                location: location.clone(),
-            },
+        Ok(ptree::AssignStatement {
+            symbol: symbol,
             value: value,
             location: location,
         })
     }
 
-    fn match_if_statement(&mut self) -> Result<ast::IfStatement, ()> {
+    fn match_if_statement(&mut self) -> Result<ptree::IfStatement, ()> {
         let mut token = self.lexer.token();
         let location = token.location.clone();
         self.expect_token(&token, TokenType::If, "if")?;
@@ -263,37 +248,37 @@ impl Parser {
                     self.lexer.next();
                     let elif_condition = self.match_expression()?;
                     let elif_body = self.match_block()?;
-                    elif_clauses.push(ast::IfClause {
+                    elif_clauses.push(ptree::IfClause {
                         condition: elif_condition,
                         body: elif_body,
                     });
                 } else {
                     let else_body = self.match_block()?;
-                    return Ok(ast::IfStatement {
-                        if_clause: ast::IfClause {
+                    return Ok(ptree::IfStatement {
+                        if_clause: ptree::IfClause {
                             condition: condition,
                             body: body,
                         },
                         elif_clauses: elif_clauses,
-                        else_clause: else_body,
+                        else_body: else_body,
                         location: location,
                     });
                 }
             } else {
-                return Ok(ast::IfStatement {
-                    if_clause: ast::IfClause {
+                return Ok(ptree::IfStatement {
+                    if_clause: ptree::IfClause {
                         condition: condition,
                         body: body,
                     },
                     elif_clauses: elif_clauses,
-                    else_clause: Vec::new(),
+                    else_body: Vec::new(),
                     location: location,
                 });
             }
         }
     }
 
-    fn match_let_statement(&mut self) -> Result<ast::LetStatement, ()> {
+    fn match_let_statement(&mut self) -> Result<ptree::LetStatement, ()> {
         let mut token = self.lexer.token();
         let location = token.location.clone();
         self.expect_token(&token, TokenType::Let, "let")?;
@@ -318,20 +303,15 @@ impl Parser {
         self.expect_token(&token, TokenType::Semicolon, ";")?;
         self.lexer.next();
 
-        Ok(ast::LetStatement {
-            symbol: ast::SymbolExpression {
-                name: symbol,
-                entry: None,
-                location: location.clone(),
-            },
+        Ok(ptree::LetStatement {
+            symbol: symbol,
             type_: type_,
-            semantic_type: ast::Type::Unknown,
             value: value,
             location: location,
         })
     }
 
-    fn match_return_statement(&mut self) -> Result<ast::ReturnStatement, ()> {
+    fn match_return_statement(&mut self) -> Result<ptree::ReturnStatement, ()> {
         let mut token = self.lexer.token();
         let location = token.location.clone();
         // TODO: remove all of these? they are redundant unless I've made a programming
@@ -346,13 +326,13 @@ impl Parser {
         self.expect_token(&token, TokenType::Semicolon, ";")?;
         self.lexer.next();
 
-        Ok(ast::ReturnStatement {
+        Ok(ptree::ReturnStatement {
             value: value,
             location: location,
         })
     }
 
-    fn match_while_statement(&mut self) -> Result<ast::WhileStatement, ()> {
+    fn match_while_statement(&mut self) -> Result<ptree::WhileStatement, ()> {
         let token = self.lexer.token();
         let location = token.location.clone();
         self.expect_token(&token, TokenType::While, "while")?;
@@ -360,18 +340,21 @@ impl Parser {
         self.lexer.next();
         let condition = self.match_expression()?;
         let body = self.match_block()?;
-        Ok(ast::WhileStatement {
+        Ok(ptree::WhileStatement {
             condition: condition,
             body: body,
             location: location,
         })
     }
 
-    fn match_expression(&mut self) -> Result<ast::Expression, ()> {
+    fn match_expression(&mut self) -> Result<ptree::Expression, ()> {
         self.match_expression_with_precedence(PRECEDENCE_LOWEST)
     }
 
-    fn match_expression_with_precedence(&mut self, precedence: u32) -> Result<ast::Expression, ()> {
+    fn match_expression_with_precedence(
+        &mut self,
+        precedence: u32,
+    ) -> Result<ptree::Expression, ()> {
         let mut expr = self.match_literal()?;
 
         let mut token = self.lexer.token();
@@ -381,34 +364,33 @@ impl Parser {
                     if token.type_ == TokenType::ParenOpen {
                         self.lexer.next();
                         let call = self.match_function_call(&expr, token.location.clone())?;
-                        expr = ast::Expression {
-                            kind: ast::ExpressionKind::Call(call),
-                            semantic_type: ast::Type::Unknown,
+                        expr = ptree::Expression {
+                            kind: ptree::ExpressionKind::Call(call),
                             location: token.location.clone(),
                         };
                     } else {
                         self.lexer.next();
                         let right = self.match_expression_with_precedence(*other_precedence)?;
                         if is_binary_comparison_op(token.type_) {
-                            expr = ast::Expression {
-                                kind: ast::ExpressionKind::Comparison(ast::ComparisonExpression {
-                                    op: token_type_to_comparison_op_type(token.type_),
-                                    left: Box::new(expr),
-                                    right: Box::new(right),
-                                    location: token.location.clone(),
-                                }),
-                                semantic_type: ast::Type::Unknown,
+                            expr = ptree::Expression {
+                                kind: ptree::ExpressionKind::Comparison(
+                                    ptree::ComparisonExpression {
+                                        op: token_type_to_comparison_op_type(token.type_),
+                                        left: Box::new(expr),
+                                        right: Box::new(right),
+                                        location: token.location.clone(),
+                                    },
+                                ),
                                 location: token.location.clone(),
                             };
                         } else {
-                            expr = ast::Expression {
-                                kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                            expr = ptree::Expression {
+                                kind: ptree::ExpressionKind::Binary(ptree::BinaryExpression {
                                     op: token_type_to_binary_op_type(token.type_),
                                     left: Box::new(expr),
                                     right: Box::new(right),
                                     location: token.location.clone(),
                                 }),
-                                semantic_type: ast::Type::Unknown,
                                 location: token.location.clone(),
                             };
                         }
@@ -424,20 +406,16 @@ impl Parser {
 
     fn match_function_call(
         &mut self,
-        expr: &ast::Expression,
+        expr: &ptree::Expression,
         location: common::Location,
-    ) -> Result<ast::CallExpression, ()> {
-        if let ast::ExpressionKind::Symbol(ast::SymbolExpression { name, .. }) = &expr.kind {
+    ) -> Result<ptree::CallExpression, ()> {
+        if let ptree::ExpressionKind::Symbol(name) = &expr.kind {
             let arguments = self.match_expression_list()?;
             let token = self.lexer.token();
             self.expect_token(&token, TokenType::ParenClose, ")")?;
             self.lexer.next();
-            Ok(ast::CallExpression {
-                function: ast::SymbolExpression {
-                    name: name.clone(),
-                    entry: None,
-                    location: location.clone(),
-                },
+            Ok(ptree::CallExpression {
+                function: name.clone(),
                 arguments: arguments,
                 location: location,
             })
@@ -447,7 +425,7 @@ impl Parser {
         }
     }
 
-    fn match_expression_list(&mut self) -> Result<Vec<ast::Expression>, ()> {
+    fn match_expression_list(&mut self) -> Result<Vec<ptree::Expression>, ()> {
         let mut items = Vec::new();
         loop {
             let mut token = self.lexer.token();
@@ -471,15 +449,14 @@ impl Parser {
         Ok(items)
     }
 
-    fn match_literal(&mut self) -> Result<ast::Expression, ()> {
+    fn match_literal(&mut self) -> Result<ptree::Expression, ()> {
         let token = self.lexer.token();
         match token.type_ {
             TokenType::Integer => {
                 self.lexer.next();
                 if let Ok(x) = i64::from_str_radix(&token.value, 10) {
-                    Ok(ast::Expression {
-                        kind: ast::ExpressionKind::Integer(x),
-                        semantic_type: ast::Type::Unknown,
+                    Ok(ptree::Expression {
+                        kind: ptree::ExpressionKind::Integer(x),
                         location: token.location.clone(),
                     })
                 } else {
@@ -489,26 +466,23 @@ impl Parser {
             }
             TokenType::True => {
                 self.lexer.next();
-                Ok(ast::Expression {
-                    kind: ast::ExpressionKind::Boolean(true),
-                    semantic_type: ast::Type::Unknown,
+                Ok(ptree::Expression {
+                    kind: ptree::ExpressionKind::Boolean(true),
                     location: token.location.clone(),
                 })
             }
             TokenType::False => {
                 self.lexer.next();
-                Ok(ast::Expression {
-                    kind: ast::ExpressionKind::Boolean(false),
-                    semantic_type: ast::Type::Unknown,
+                Ok(ptree::Expression {
+                    kind: ptree::ExpressionKind::Boolean(false),
                     location: token.location.clone(),
                 })
             }
             TokenType::String => {
                 self.lexer.next();
                 if let Ok(s) = parse_string_literal(&token.value) {
-                    Ok(ast::Expression {
-                        kind: ast::ExpressionKind::String(s),
-                        semantic_type: ast::Type::Unknown,
+                    Ok(ptree::Expression {
+                        kind: ptree::ExpressionKind::String(s),
                         location: token.location.clone(),
                     })
                 } else {
@@ -518,13 +492,8 @@ impl Parser {
             }
             TokenType::Symbol => {
                 self.lexer.next();
-                Ok(ast::Expression {
-                    kind: ast::ExpressionKind::Symbol(ast::SymbolExpression {
-                        name: token.value,
-                        entry: None,
-                        location: token.location.clone(),
-                    }),
-                    semantic_type: ast::Type::Unknown,
+                Ok(ptree::Expression {
+                    kind: ptree::ExpressionKind::Symbol(token.value),
                     location: token.location.clone(),
                 })
             }
@@ -543,13 +512,13 @@ impl Parser {
         }
     }
 
-    fn match_type(&mut self) -> Result<ast::SyntacticType, ()> {
+    fn match_type(&mut self) -> Result<ptree::SyntacticType, ()> {
         let token = self.lexer.token();
         self.expect_token(&token, TokenType::Symbol, "type")?;
         self.lexer.next();
         // TODO: handle parameterized types
-        Ok(ast::SyntacticType {
-            kind: ast::SyntacticTypeKind::Literal(token.value),
+        Ok(ptree::SyntacticType {
+            kind: ptree::SyntacticTypeKind::Literal(token.value),
             location: token.location.clone(),
         })
     }
@@ -636,30 +605,30 @@ fn is_binary_comparison_op(type_: TokenType) -> bool {
     }
 }
 
-fn token_type_to_binary_op_type(type_: TokenType) -> ast::BinaryOpType {
+fn token_type_to_binary_op_type(type_: TokenType) -> common::BinaryOpType {
     match type_ {
-        TokenType::And => ast::BinaryOpType::And,
-        TokenType::Concat => ast::BinaryOpType::Concat,
-        TokenType::Minus => ast::BinaryOpType::Subtract,
-        TokenType::Or => ast::BinaryOpType::Or,
-        TokenType::Percent => ast::BinaryOpType::Modulo,
-        TokenType::Plus => ast::BinaryOpType::Add,
-        TokenType::Slash => ast::BinaryOpType::Divide,
-        TokenType::Star => ast::BinaryOpType::Multiply,
+        TokenType::And => common::BinaryOpType::And,
+        TokenType::Concat => common::BinaryOpType::Concat,
+        TokenType::Minus => common::BinaryOpType::Subtract,
+        TokenType::Or => common::BinaryOpType::Or,
+        TokenType::Percent => common::BinaryOpType::Modulo,
+        TokenType::Plus => common::BinaryOpType::Add,
+        TokenType::Slash => common::BinaryOpType::Divide,
+        TokenType::Star => common::BinaryOpType::Multiply,
         _ => {
             panic!("token type does not correspond to binary op type");
         }
     }
 }
 
-fn token_type_to_comparison_op_type(type_: TokenType) -> ast::ComparisonOpType {
+fn token_type_to_comparison_op_type(type_: TokenType) -> common::ComparisonOpType {
     match type_ {
-        TokenType::Equals => ast::ComparisonOpType::Equals,
-        TokenType::GreaterThan => ast::ComparisonOpType::GreaterThan,
-        TokenType::GreaterThanEquals => ast::ComparisonOpType::GreaterThanEquals,
-        TokenType::LessThan => ast::ComparisonOpType::LessThan,
-        TokenType::LessThanEquals => ast::ComparisonOpType::LessThanEquals,
-        TokenType::NotEquals => ast::ComparisonOpType::NotEquals,
+        TokenType::Equals => common::ComparisonOpType::Equals,
+        TokenType::GreaterThan => common::ComparisonOpType::GreaterThan,
+        TokenType::GreaterThanEquals => common::ComparisonOpType::GreaterThanEquals,
+        TokenType::LessThan => common::ComparisonOpType::LessThan,
+        TokenType::LessThanEquals => common::ComparisonOpType::LessThanEquals,
+        TokenType::NotEquals => common::ComparisonOpType::NotEquals,
         _ => {
             panic!("token type does not correspond to comparison op type");
         }
@@ -770,7 +739,7 @@ if x == 0 {
         );
     }
 
-    fn parse_function_declaration(program: &str) -> ast::FunctionDeclaration {
+    fn parse_function_declaration(program: &str) -> ptree::FunctionDeclaration {
         let mut parser = Parser::new(lexer::Lexer::new("<string>", &program));
         let r = parser.match_function_declaration();
 
@@ -787,7 +756,7 @@ if x == 0 {
         r.unwrap()
     }
 
-    fn parse_statement(program: &str) -> ast::Statement {
+    fn parse_statement(program: &str) -> ptree::Statement {
         let mut parser = Parser::new(lexer::Lexer::new("<string>", &program));
         let r = parser.match_statement();
 
@@ -804,7 +773,7 @@ if x == 0 {
         r.unwrap()
     }
 
-    fn parse_expression(program: &str) -> ast::Expression {
+    fn parse_expression(program: &str) -> ptree::Expression {
         let mut parser = Parser::new(lexer::Lexer::new("<string>", &program));
         let r = parser.match_expression();
 

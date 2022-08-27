@@ -16,6 +16,7 @@ mod common;
 mod errors;
 mod lexer;
 mod parser;
+mod ptree;
 mod vil;
 mod x86;
 
@@ -44,7 +45,22 @@ fn main() {
 
     // Lex and parse the program.
     let lexer = lexer::Lexer::new(&cli.path, &program);
-    let ast_result = parser::parse(lexer);
+    let ptree_result = parser::parse(lexer);
+    if let Err(errors) = ptree_result {
+        for error in errors {
+            println!("error: {} ({})", error.message, error.location);
+        }
+        std::process::exit(1);
+    }
+
+    let ptree = ptree_result.unwrap();
+    if cli.debug {
+        println!("Parse tree:\n");
+        println!("  {}", ptree);
+    }
+
+    // Type-check the program.
+    let ast_result = analyzer::analyze(&ptree);
     if let Err(errors) = ast_result {
         for error in errors {
             println!("error: {} ({})", error.message, error.location);
@@ -52,21 +68,7 @@ fn main() {
         std::process::exit(1);
     }
 
-    let mut ast = ast_result.unwrap();
-    if cli.debug {
-        println!("Parse tree:\n");
-        println!("  {}", ast);
-    }
-
-    // Type-check the program.
-    let typecheck_result = analyzer::analyze(&mut ast);
-    if let Err(errors) = typecheck_result {
-        for error in errors {
-            println!("error: {} ({})", error.message, error.location);
-        }
-        std::process::exit(1);
-    }
-
+    let ast = ast_result.unwrap();
     if cli.debug {
         println!("\nTyped AST:\n");
         println!("  {}", ast);

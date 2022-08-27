@@ -26,3 +26,31 @@ impl fmt::Display for Location {
         )
     }
 }
+
+#[derive(Clone, Copy, Debug)]
+pub enum BinaryOpType {
+    Add,
+    And,
+    Concat,
+    Divide,
+    Modulo,
+    Multiply,
+    Or,
+    Subtract,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum ComparisonOpType {
+    Equals,
+    GreaterThan,
+    GreaterThanEquals,
+    LessThan,
+    LessThanEquals,
+    NotEquals,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum UnaryOpType {
+    Negate,
+    Not,
+}

@@ -111,7 +111,7 @@ impl Generator {
     fn generate_declaration(&mut self, declaration: &vil::FunctionDeclaration) {
         self.offsets.clear();
         self.total_offset = 8;
-        let mut block = Block {
+        let block = Block {
             // TODO: replace this with more robust logic
             global: declaration.name == "main",
             label: declaration.name.clone(),

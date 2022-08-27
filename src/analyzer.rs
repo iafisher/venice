@@ -1,20 +1,20 @@
-// The analyzer traverses the program's abstract syntax tree and augments it with type
-// information.
+// The analyzer turns the parse tree into an abstract syntax tree by computing type information and
+// simplifying syntactic sugar.
 
 use super::ast;
 use super::common;
 use super::errors;
+use super::ptree;
 use std::collections::HashMap;
 
-/// Analyzes the abstract syntax tree. The nodes of the tree are mutated to add type
-/// and symbol information.
-pub fn analyze(ast: &mut ast::Program) -> Result<(), Vec<errors::VeniceError>> {
+/// Analyzes the parse tree into an abstract syntax tree.
+pub fn analyze(ptree: &ptree::Program) -> Result<ast::Program, Vec<errors::VeniceError>> {
     let mut analyzer = Analyzer::new();
-    analyzer.analyze_program(ast);
+    let program = analyzer.analyze_program(ptree);
     if analyzer.errors.len() > 0 {
         Err(analyzer.errors.clone())
     } else {
-        Ok(())
+        Ok(program)
     }
 }
 
@@ -137,220 +137,263 @@ impl Analyzer {
         }
     }
 
-    fn analyze_program(&mut self, ast: &mut ast::Program) {
-        for mut declaration in &mut ast.declarations {
-            self.analyze_declaration(&mut declaration)
+    fn analyze_program(&mut self, ptree: &ptree::Program) -> ast::Program {
+        let mut declarations = Vec::new();
+        for declaration in &ptree.declarations {
+            declarations.push(self.analyze_declaration(&declaration));
         }
+        ast::Program { declarations }
     }
 
-    fn analyze_declaration(&mut self, declaration: &mut ast::Declaration) {
+    fn analyze_declaration(&mut self, declaration: &ptree::Declaration) -> ast::Declaration {
         match declaration {
-            ast::Declaration::Function(d) => self.analyze_function_declaration(d),
-            ast::Declaration::Const(d) => self.analyze_const_declaration(d),
-            ast::Declaration::Record(d) => self.analyze_record_declaration(d),
+            ptree::Declaration::Function(d) => self.analyze_function_declaration(d),
+            ptree::Declaration::Const(d) => self.analyze_const_declaration(d),
+            ptree::Declaration::Record(d) => self.analyze_record_declaration(d),
         }
     }
 
-    fn analyze_function_declaration(&mut self, declaration: &mut ast::FunctionDeclaration) {
-        declaration.semantic_return_type = self.resolve_type(&declaration.return_type);
+    fn analyze_function_declaration(
+        &mut self,
+        declaration: &ptree::FunctionDeclaration,
+    ) -> ast::Declaration {
+        let return_type = self.resolve_type(&declaration.return_type);
+        let mut parameters = Vec::new();
         let mut parameter_types = Vec::new();
-        for parameter in &mut declaration.parameters {
+        for parameter in &declaration.parameters {
             let t = self.resolve_type(&parameter.type_);
-            parameter.semantic_type = t.clone();
-            let unique_name = self.claim_unique_name(&parameter.name.name);
+            let unique_name = self.claim_unique_name(&parameter.name);
             let entry = ast::SymbolEntry {
                 unique_name: unique_name,
                 type_: t.clone(),
                 constant: false,
                 external: false,
             };
-            self.symbols.insert(&parameter.name.name, entry.clone());
-            parameter_types.push(t);
-            parameter.name.entry = Some(entry);
+            self.symbols.insert(&parameter.name, entry.clone());
+            parameter_types.push(t.clone());
+            parameters.push(ast::FunctionParameter {
+                name: entry,
+                type_: t,
+            });
         }
 
-        let unique_name = if declaration.name.name == "main" {
+        let unique_name = if declaration.name == "main" {
             // Keep main's name the same so that the linker can find it.
             String::from("main")
         } else {
-            self.claim_unique_name(&declaration.name.name)
+            self.claim_unique_name(&declaration.name)
         };
 
         let entry = ast::SymbolEntry {
             unique_name: unique_name,
             type_: ast::Type::Function {
                 parameters: parameter_types,
-                return_type: Box::new(declaration.semantic_return_type.clone()),
+                return_type: Box::new(return_type.clone()),
             },
             constant: true,
             external: false,
         };
 
-        self.symbols.insert(&declaration.name.name, entry.clone());
-
-        declaration.name.entry = Some(entry);
+        self.symbols.insert(&declaration.name, entry.clone());
 
         self.current_function_info = Some(ast::FunctionInfo {
             // TODO: not all parameters are 8 bytes
             stack_frame_size: 8 * declaration.parameters.len(),
         });
-        self.current_function_return_type = Some(declaration.semantic_return_type.clone());
-        self.analyze_block(&mut declaration.body);
+        self.current_function_return_type = Some(return_type.clone());
+        let body = self.analyze_block(&declaration.body);
         self.current_function_return_type = None;
-        declaration.info = self.current_function_info.take();
 
         // TODO: A better approach would be to have a separate symbol table for the
         // function's scope. And actually this doesn't work at all because the symbols
         // defined in a function's body will persist after the function is finished.
-        for parameter in &mut declaration.parameters {
-            self.symbols.remove(&parameter.name.name);
+        for parameter in &declaration.parameters {
+            self.symbols.remove(&parameter.name);
         }
+
+        ast::Declaration::Function(ast::FunctionDeclaration {
+            name: entry,
+            parameters: parameters,
+            return_type: return_type,
+            body: body,
+            info: self.current_function_info.as_ref().unwrap().clone(),
+        })
     }
 
-    fn analyze_const_declaration(&mut self, declaration: &mut ast::ConstDeclaration) {
-        self.analyze_expression(&mut declaration.value);
-        declaration.semantic_type = self.resolve_type(&declaration.type_);
-        if !declaration
-            .semantic_type
-            .matches(&declaration.value.semantic_type)
-        {
-            self.error_type_mismatch(
-                &declaration.semantic_type,
-                &declaration.value.semantic_type,
-                declaration.location.clone(),
-            );
+    fn analyze_const_declaration(
+        &mut self,
+        declaration: &ptree::ConstDeclaration,
+    ) -> ast::Declaration {
+        let value = self.analyze_expression(&declaration.value);
+        let declared_type = self.resolve_type(&declaration.type_);
+        if !declared_type.matches(&value.type_) {
+            self.error_type_mismatch(&declared_type, &value.type_, declaration.location.clone());
         }
 
         let unique_name = self.claim_unique_name(&declaration.symbol);
-        self.symbols.insert(
-            &declaration.symbol,
-            ast::SymbolEntry {
-                unique_name: unique_name,
-                type_: declaration.semantic_type.clone(),
-                constant: true,
-                external: false,
-            },
-        );
+        let entry = ast::SymbolEntry {
+            unique_name: unique_name,
+            type_: declared_type.clone(),
+            constant: true,
+            external: false,
+        };
+        self.symbols.insert(&declaration.symbol, entry.clone());
+
+        ast::Declaration::Const(ast::ConstDeclaration {
+            symbol: entry,
+            type_: declared_type,
+            value: value,
+        })
     }
 
-    fn analyze_record_declaration(&mut self, declaration: &mut ast::RecordDeclaration) {
+    fn analyze_record_declaration(
+        &mut self,
+        declaration: &ptree::RecordDeclaration,
+    ) -> ast::Declaration {
         // TODO
+        self.error("not implemented", declaration.location.clone());
+        ast::Declaration::Error
     }
 
-    fn analyze_block(&mut self, block: &mut Vec<ast::Statement>) {
+    fn analyze_block(&mut self, block: &Vec<ptree::Statement>) -> Vec<ast::Statement> {
+        let mut ret = Vec::new();
         for stmt in block {
-            self.analyze_statement(stmt);
+            ret.push(self.analyze_statement(stmt));
         }
+        ret
     }
 
-    fn analyze_statement(&mut self, stmt: &mut ast::Statement) {
+    fn analyze_statement(&mut self, stmt: &ptree::Statement) -> ast::Statement {
         match stmt {
-            ast::Statement::Let(s) => self.analyze_let_statement(s),
-            ast::Statement::Assign(s) => self.analyze_assign_statement(s),
-            ast::Statement::If(s) => self.analyze_if_statement(s),
-            ast::Statement::While(s) => self.analyze_while_statement(s),
-            ast::Statement::For(s) => self.analyze_for_statement(s),
-            ast::Statement::Return(s) => self.analyze_return_statement(s),
-            ast::Statement::Assert(s) => self.analyze_assert_statement(s),
-            ast::Statement::Expression(expr) => {
-                let _ = self.analyze_expression(expr);
+            ptree::Statement::Let(s) => self.analyze_let_statement(s),
+            ptree::Statement::Assign(s) => self.analyze_assign_statement(s),
+            ptree::Statement::If(s) => self.analyze_if_statement(s),
+            ptree::Statement::While(s) => self.analyze_while_statement(s),
+            ptree::Statement::For(s) => self.analyze_for_statement(s),
+            ptree::Statement::Return(s) => self.analyze_return_statement(s),
+            ptree::Statement::Assert(s) => self.analyze_assert_statement(s),
+            ptree::Statement::Expression(expr) => {
+                ast::Statement::Expression(self.analyze_expression(expr))
             }
         }
     }
 
-    fn analyze_let_statement(&mut self, stmt: &mut ast::LetStatement) {
-        self.analyze_expression(&mut stmt.value);
-        stmt.semantic_type = self.resolve_type(&stmt.type_);
-        if !stmt.semantic_type.matches(&stmt.value.semantic_type) {
-            self.error_type_mismatch(
-                &stmt.semantic_type,
-                &stmt.value.semantic_type,
-                stmt.location.clone(),
-            );
+    fn analyze_let_statement(&mut self, stmt: &ptree::LetStatement) -> ast::Statement {
+        let value = self.analyze_expression(&stmt.value);
+        let declared_type = self.resolve_type(&stmt.type_);
+        if !declared_type.matches(&value.type_) {
+            self.error_type_mismatch(&declared_type, &value.type_, stmt.location.clone());
         }
 
-        let unique_name = self.claim_unique_name(&stmt.symbol.name);
+        let unique_name = self.claim_unique_name(&stmt.symbol);
         let entry = ast::SymbolEntry {
             unique_name: unique_name,
-            type_: stmt.semantic_type.clone(),
+            type_: declared_type.clone(),
             constant: false,
             external: false,
         };
 
-        stmt.symbol.entry = Some(entry.clone());
-        self.symbols.insert(&stmt.symbol.name, entry);
+        self.symbols.insert(&stmt.symbol, entry.clone());
         // TODO: not all symbols are 8 bytes
         self.current_function_info
             .as_mut()
             .unwrap()
             .stack_frame_size += 8;
+
+        ast::Statement::Let(ast::LetStatement {
+            symbol: entry,
+            type_: declared_type,
+            value: value,
+        })
     }
 
-    fn analyze_assign_statement(&mut self, stmt: &mut ast::AssignStatement) {
-        self.analyze_expression(&mut stmt.value);
-        if let Some(entry) = self.symbols.get(&stmt.symbol.name) {
-            stmt.symbol.entry = Some(entry.clone());
-            if !entry.type_.matches(&stmt.value.semantic_type) {
-                self.error_type_mismatch(
-                    &entry.type_,
-                    &stmt.value.semantic_type,
-                    stmt.location.clone(),
-                );
+    fn analyze_assign_statement(&mut self, stmt: &ptree::AssignStatement) -> ast::Statement {
+        let value = self.analyze_expression(&stmt.value);
+        if let Some(entry) = self.symbols.get(&stmt.symbol) {
+            if !entry.type_.matches(&value.type_) {
+                self.error_type_mismatch(&entry.type_, &value.type_, stmt.location.clone());
             }
+            ast::Statement::Assign(ast::AssignStatement {
+                symbol: entry.clone(),
+                value: value,
+            })
         } else {
             let msg = format!("assignment to unknown symbol {}", stmt.symbol);
             self.error(&msg, stmt.location.clone());
+            ast::Statement::Error
         }
     }
 
-    fn analyze_if_statement(&mut self, stmt: &mut ast::IfStatement) {
-        let if_clause_type = self.analyze_expression(&mut stmt.if_clause.condition);
-        if !if_clause_type.matches(&ast::Type::Boolean) {
+    fn analyze_if_statement(&mut self, stmt: &ptree::IfStatement) -> ast::Statement {
+        let condition = self.analyze_expression(&stmt.if_clause.condition);
+        if !condition.type_.matches(&ast::Type::Boolean) {
             self.error_type_mismatch(
                 &ast::Type::Boolean,
-                &if_clause_type,
+                &condition.type_,
                 stmt.if_clause.condition.location.clone(),
             );
         }
-        self.analyze_block(&mut stmt.if_clause.body);
+        let body = self.analyze_block(&stmt.if_clause.body);
+        let else_body = self.analyze_block(&stmt.else_body);
 
-        for elif_clause in &mut stmt.elif_clauses {
-            let elif_clause_type = self.analyze_expression(&mut elif_clause.condition);
-            if !elif_clause_type.matches(&ast::Type::Boolean) {
-                self.error_type_mismatch(
-                    &ast::Type::Boolean,
-                    &elif_clause_type,
-                    elif_clause.condition.location.clone(),
-                );
+        if stmt.elif_clauses.len() > 0 {
+            self.error(
+                "not implemented",
+                stmt.elif_clauses[0].condition.location.clone(),
+            );
+            ast::Statement::Error
+            /*
+            for elif_clause in &stmt.elif_clauses {
+                let elif_condition = self.analyze_expression(&elif_clause.condition)?;
+                if !elif_condition.type_.matches(&ast::Type::Boolean) {
+                    self.error_type_mismatch(
+                        &ast::Type::Boolean,
+                        &elif_condition.type_,
+                        elif_clause.condition.location.clone(),
+                    );
+                }
+                let elif_body = self.analyze_block(&mut elif_clause.body)?;
             }
-            self.analyze_block(&mut elif_clause.body);
+            */
+        } else {
+            ast::Statement::If(ast::IfStatement {
+                condition: condition,
+                body: body,
+                else_body: else_body,
+            })
         }
-
-        self.analyze_block(&mut stmt.else_clause);
     }
 
-    fn analyze_while_statement(&mut self, stmt: &mut ast::WhileStatement) {
-        let condition_type = self.analyze_expression(&mut stmt.condition);
-        if !condition_type.matches(&ast::Type::Boolean) {
+    fn analyze_while_statement(&mut self, stmt: &ptree::WhileStatement) -> ast::Statement {
+        let condition = self.analyze_expression(&stmt.condition);
+        if !condition.type_.matches(&ast::Type::Boolean) {
             self.error_type_mismatch(
                 &ast::Type::Boolean,
-                &condition_type,
+                &condition.type_,
                 stmt.condition.location.clone(),
             );
         }
-        self.analyze_block(&mut stmt.body);
+        let body = self.analyze_block(&stmt.body);
+        ast::Statement::While(ast::WhileStatement {
+            condition: condition,
+            body: body,
+        })
     }
 
-    fn analyze_for_statement(&mut self, stmt: &mut ast::ForStatement) {}
+    fn analyze_for_statement(&mut self, stmt: &ptree::ForStatement) -> ast::Statement {
+        // TODO
+        self.error("not implemented", stmt.location.clone());
+        ast::Statement::Error
+    }
 
-    fn analyze_return_statement(&mut self, stmt: &mut ast::ReturnStatement) {
-        let actual_return_type = self.analyze_expression(&mut stmt.value);
+    fn analyze_return_statement(&mut self, stmt: &ptree::ReturnStatement) -> ast::Statement {
+        let value = self.analyze_expression(&stmt.value);
         // TODO: Can the clone here be avoided?
         if let Some(expected_return_type) = self.current_function_return_type.clone() {
-            if !expected_return_type.matches(&actual_return_type) {
+            if !expected_return_type.matches(&value.type_) {
                 self.error_type_mismatch(
                     &expected_return_type,
-                    &actual_return_type,
+                    &value.type_,
                     stmt.location.clone(),
                 );
             }
@@ -360,147 +403,222 @@ impl Analyzer {
                 stmt.location.clone(),
             );
         }
+        ast::Statement::Return(ast::ReturnStatement { value: value })
     }
 
-    fn analyze_assert_statement(&mut self, stmt: &mut ast::AssertStatement) {
-        let type_ = self.analyze_expression(&mut stmt.condition);
-        if !type_.matches(&ast::Type::Boolean) {
-            self.error_type_mismatch(&ast::Type::Boolean, &type_, stmt.condition.location.clone());
+    fn analyze_assert_statement(&mut self, stmt: &ptree::AssertStatement) -> ast::Statement {
+        let condition = self.analyze_expression(&stmt.condition);
+        if !condition.type_.matches(&ast::Type::Boolean) {
+            self.error_type_mismatch(
+                &ast::Type::Boolean,
+                &condition.type_,
+                stmt.condition.location.clone(),
+            );
+        }
+        ast::Statement::Assert(ast::AssertStatement {
+            condition: condition,
+        })
+    }
+
+    fn analyze_expression(&mut self, expr: &ptree::Expression) -> ast::Expression {
+        match &expr.kind {
+            ptree::ExpressionKind::Boolean(x) => ast::Expression {
+                kind: ast::ExpressionKind::Boolean(*x),
+                type_: ast::Type::Boolean,
+            },
+            ptree::ExpressionKind::Integer(x) => ast::Expression {
+                kind: ast::ExpressionKind::Integer(*x),
+                type_: ast::Type::I64,
+            },
+            ptree::ExpressionKind::String(x) => ast::Expression {
+                kind: ast::ExpressionKind::String(x.clone()),
+                type_: ast::Type::String,
+            },
+            ptree::ExpressionKind::Symbol(ref e) => self.analyze_symbol(e, &expr.location),
+            ptree::ExpressionKind::Binary(ref e) => self.analyze_binary_expression(e),
+            ptree::ExpressionKind::Comparison(ref e) => self.analyze_comparison_expression(e),
+            ptree::ExpressionKind::Unary(ref e) => self.analyze_unary_expression(e),
+            ptree::ExpressionKind::Call(ref e) => self.analyze_call_expression(e),
+            ptree::ExpressionKind::Index(ref e) => self.analyze_index_expression(e),
+            ptree::ExpressionKind::TupleIndex(ref e) => self.analyze_tuple_index_expression(e),
+            ptree::ExpressionKind::Attribute(ref e) => self.analyze_attribute_expression(e),
+            ptree::ExpressionKind::List(ref e) => self.analyze_list_literal(e),
+            ptree::ExpressionKind::Tuple(ref e) => self.analyze_tuple_literal(e),
+            ptree::ExpressionKind::Map(ref e) => self.analyze_map_literal(e),
+            ptree::ExpressionKind::Record(ref e) => self.analyze_record_literal(e),
         }
     }
 
-    fn analyze_expression(&mut self, expr: &mut ast::Expression) -> ast::Type {
-        expr.semantic_type = match &mut expr.kind {
-            ast::ExpressionKind::Boolean(_) => ast::Type::Boolean,
-            ast::ExpressionKind::Integer(_) => ast::Type::I64,
-            ast::ExpressionKind::String(_) => ast::Type::String,
-            ast::ExpressionKind::Symbol(ref mut e) => self.analyze_symbol_expression(e),
-            ast::ExpressionKind::Binary(ref mut e) => self.analyze_binary_expression(e),
-            ast::ExpressionKind::Comparison(ref mut e) => self.analyze_comparison_expression(e),
-            ast::ExpressionKind::Unary(ref mut e) => self.analyze_unary_expression(e),
-            ast::ExpressionKind::Call(ref mut e) => self.analyze_call_expression(e),
-            ast::ExpressionKind::Index(ref mut e) => self.analyze_index_expression(e),
-            ast::ExpressionKind::TupleIndex(ref mut e) => self.analyze_tuple_index_expression(e),
-            ast::ExpressionKind::Attribute(ref mut e) => self.analyze_attribute_expression(e),
-            ast::ExpressionKind::List(ref mut e) => self.analyze_list_literal(e),
-            ast::ExpressionKind::Tuple(ref mut e) => self.analyze_tuple_literal(e),
-            ast::ExpressionKind::Map(ref mut e) => self.analyze_map_literal(e),
-            ast::ExpressionKind::Record(ref mut e) => self.analyze_record_literal(e),
-        };
-        expr.semantic_type.clone()
-    }
-
-    fn analyze_symbol_expression(&mut self, expr: &mut ast::SymbolExpression) -> ast::Type {
-        if let Some(entry) = self.symbols.get(&expr.name) {
-            expr.entry = Some(entry.clone());
-            entry.type_
+    fn analyze_symbol(&mut self, name: &str, location: &common::Location) -> ast::Expression {
+        if let Some(entry) = self.symbols.get(name) {
+            ast::Expression {
+                kind: ast::ExpressionKind::Symbol(entry.clone()),
+                type_: entry.type_.clone(),
+            }
         } else {
-            self.error("unknown symbol", expr.location.clone());
-            ast::Type::Error
+            self.error("unknown symbol", location.clone());
+            ast::EXPRESSION_ERROR.clone()
         }
     }
 
-    fn analyze_binary_expression(&mut self, expr: &mut ast::BinaryExpression) -> ast::Type {
-        let left_type = self.analyze_expression(&mut expr.left);
-        let right_type = self.analyze_expression(&mut expr.right);
+    fn analyze_binary_expression(&mut self, expr: &ptree::BinaryExpression) -> ast::Expression {
+        let left = self.analyze_expression(&expr.left);
+        let right = self.analyze_expression(&expr.right);
         match expr.op {
-            ast::BinaryOpType::Concat => match left_type {
+            common::BinaryOpType::Concat => match &left.type_ {
                 ast::Type::String => {
-                    if !right_type.matches(&ast::Type::String) {
+                    if !right.type_.matches(&ast::Type::String) {
                         self.error_type_mismatch(
                             &ast::Type::String,
-                            &right_type,
+                            &right.type_,
                             expr.right.location.clone(),
                         );
-                        ast::Type::Error
+                        ast::EXPRESSION_ERROR.clone()
                     } else {
-                        ast::Type::String
+                        ast::Expression {
+                            kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                                op: common::BinaryOpType::Concat,
+                                left: Box::new(left),
+                                right: Box::new(right),
+                            }),
+                            type_: ast::Type::String,
+                        }
                     }
                 }
-                ast::Type::List(ref t) => {
-                    if !left_type.matches(&right_type) {
+                ast::Type::List(_) => {
+                    if !left.type_.matches(&right.type_) {
                         self.error_type_mismatch(
-                            &left_type,
-                            &right_type,
+                            &left.type_,
+                            &right.type_,
                             expr.right.location.clone(),
                         );
-                        ast::Type::Error
+                        ast::EXPRESSION_ERROR.clone()
                     } else {
-                        left_type.clone()
+                        let type_ = left.type_.clone();
+                        ast::Expression {
+                            kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                                op: common::BinaryOpType::Concat,
+                                left: Box::new(left),
+                                right: Box::new(right),
+                            }),
+                            type_: type_,
+                        }
                     }
                 }
                 _ => {
-                    let msg = format!("cannot concatenate value of type {}", left_type);
+                    let msg = format!("cannot concatenate value of type {}", left.type_);
                     self.error(&msg, expr.left.location.clone());
-                    ast::Type::Error
+                    ast::EXPRESSION_ERROR.clone()
                 }
             },
-            ast::BinaryOpType::Or | ast::BinaryOpType::And => {
-                self.assert_type(&left_type, &ast::Type::Boolean, expr.left.location.clone());
+            common::BinaryOpType::Or | common::BinaryOpType::And => {
+                self.assert_type(&left.type_, &ast::Type::Boolean, expr.left.location.clone());
                 self.assert_type(
-                    &right_type,
+                    &right.type_,
                     &ast::Type::Boolean,
                     expr.right.location.clone(),
                 );
-                ast::Type::Boolean
+                ast::Expression {
+                    kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                        op: expr.op,
+                        left: Box::new(left),
+                        right: Box::new(right),
+                    }),
+                    type_: ast::Type::Boolean,
+                }
             }
             _ => {
-                self.assert_type(&left_type, &ast::Type::I64, expr.left.location.clone());
-                self.assert_type(&right_type, &ast::Type::I64, expr.right.location.clone());
-                ast::Type::I64
+                self.assert_type(&left.type_, &ast::Type::I64, expr.left.location.clone());
+                self.assert_type(&right.type_, &ast::Type::I64, expr.right.location.clone());
+                ast::Expression {
+                    kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                        op: expr.op,
+                        left: Box::new(left),
+                        right: Box::new(right),
+                    }),
+                    type_: ast::Type::I64,
+                }
             }
         }
     }
 
-    fn analyze_comparison_expression(&mut self, expr: &mut ast::ComparisonExpression) -> ast::Type {
-        let left_type = self.analyze_expression(&mut expr.left);
-        let right_type = self.analyze_expression(&mut expr.right);
+    fn analyze_comparison_expression(
+        &mut self,
+        expr: &ptree::ComparisonExpression,
+    ) -> ast::Expression {
+        let left = self.analyze_expression(&expr.left);
+        let right = self.analyze_expression(&expr.right);
         match expr.op {
-            ast::ComparisonOpType::Equals | ast::ComparisonOpType::NotEquals => {
-                self.assert_type(&left_type, &right_type, expr.left.location.clone());
-                ast::Type::Boolean
+            common::ComparisonOpType::Equals | common::ComparisonOpType::NotEquals => {
+                self.assert_type(&left.type_, &right.type_, expr.left.location.clone());
+                ast::Expression {
+                    kind: ast::ExpressionKind::Comparison(ast::ComparisonExpression {
+                        op: expr.op,
+                        left: Box::new(left),
+                        right: Box::new(right),
+                    }),
+                    type_: ast::Type::Boolean,
+                }
             }
-            ast::ComparisonOpType::LessThan
-            | ast::ComparisonOpType::LessThanEquals
-            | ast::ComparisonOpType::GreaterThan
-            | ast::ComparisonOpType::GreaterThanEquals => {
-                self.assert_type(&left_type, &ast::Type::I64, expr.left.location.clone());
-                self.assert_type(&right_type, &ast::Type::I64, expr.right.location.clone());
-                ast::Type::Boolean
+            common::ComparisonOpType::LessThan
+            | common::ComparisonOpType::LessThanEquals
+            | common::ComparisonOpType::GreaterThan
+            | common::ComparisonOpType::GreaterThanEquals => {
+                self.assert_type(&left.type_, &ast::Type::I64, expr.left.location.clone());
+                self.assert_type(&right.type_, &ast::Type::I64, expr.right.location.clone());
+                ast::Expression {
+                    kind: ast::ExpressionKind::Comparison(ast::ComparisonExpression {
+                        op: expr.op,
+                        left: Box::new(left),
+                        right: Box::new(right),
+                    }),
+                    type_: ast::Type::Boolean,
+                }
             }
         }
     }
 
-    fn analyze_unary_expression(&mut self, expr: &mut ast::UnaryExpression) -> ast::Type {
-        let operand_type = self.analyze_expression(&mut expr.operand);
+    fn analyze_unary_expression(&mut self, expr: &ptree::UnaryExpression) -> ast::Expression {
+        let operand = self.analyze_expression(&expr.operand);
         match expr.op {
-            ast::UnaryOpType::Negate => {
+            common::UnaryOpType::Negate => {
                 self.assert_type(
-                    &operand_type,
+                    &operand.type_,
                     &ast::Type::I64,
                     expr.operand.location.clone(),
                 );
-                ast::Type::I64
+                ast::Expression {
+                    kind: ast::ExpressionKind::Unary(ast::UnaryExpression {
+                        op: expr.op,
+                        operand: Box::new(operand),
+                    }),
+                    type_: ast::Type::I64,
+                }
             }
-            ast::UnaryOpType::Not => {
+            common::UnaryOpType::Not => {
                 self.assert_type(
-                    &operand_type,
+                    &operand.type_,
                     &ast::Type::Boolean,
                     expr.operand.location.clone(),
                 );
-                ast::Type::Boolean
+                ast::Expression {
+                    kind: ast::ExpressionKind::Unary(ast::UnaryExpression {
+                        op: expr.op,
+                        operand: Box::new(operand),
+                    }),
+                    type_: ast::Type::I64,
+                }
             }
         }
     }
 
-    fn analyze_call_expression(&mut self, expr: &mut ast::CallExpression) -> ast::Type {
-        if let Some(entry) = self.symbols.get(&expr.function.name) {
+    fn analyze_call_expression(&mut self, expr: &ptree::CallExpression) -> ast::Expression {
+        if let Some(entry) = self.symbols.get(&expr.function) {
             if let ast::Type::Function {
                 parameters,
                 return_type,
             } = &entry.type_
             {
-                expr.function.entry = Some(entry.clone());
                 if parameters.len() != expr.arguments.len() {
                     let msg = format!(
                         "expected {} parameter(s), got {}",
@@ -510,141 +628,194 @@ impl Analyzer {
                     self.error(&msg, expr.location.clone());
                 }
 
-                for argument in &mut expr.arguments {
-                    self.analyze_expression(argument);
-                }
-
+                let mut arguments = Vec::new();
                 for (parameter, argument) in parameters.iter().zip(expr.arguments.iter()) {
-                    self.assert_type(
-                        &parameter,
-                        &argument.semantic_type,
-                        argument.location.clone(),
-                    );
+                    let typed_argument = self.analyze_expression(argument);
+                    self.assert_type(&parameter, &typed_argument.type_, argument.location.clone());
+                    arguments.push(typed_argument);
                 }
 
-                *return_type.clone()
+                ast::Expression {
+                    kind: ast::ExpressionKind::Call(ast::CallExpression {
+                        function: entry.clone(),
+                        arguments: arguments,
+                    }),
+                    type_: *return_type.clone(),
+                }
             } else {
                 let msg = format!("cannot call non-function type {}", entry.type_);
                 self.error(&msg, expr.location.clone());
-                ast::Type::Error
+                ast::EXPRESSION_ERROR.clone()
             }
         } else {
             let msg = format!("unknown symbol {}", expr.function);
             self.error(&msg, expr.location.clone());
-            ast::Type::Error
+            ast::EXPRESSION_ERROR.clone()
         }
     }
 
-    fn analyze_index_expression(&mut self, expr: &mut ast::IndexExpression) -> ast::Type {
-        let value_type = self.analyze_expression(&mut expr.value);
-        let index_type = self.analyze_expression(&mut expr.index);
+    fn analyze_index_expression(&mut self, expr: &ptree::IndexExpression) -> ast::Expression {
+        let value = self.analyze_expression(&expr.value);
+        let index = self.analyze_expression(&expr.index);
 
-        match value_type {
-            ast::Type::List(t) => {
-                self.assert_type(&index_type, &ast::Type::I64, expr.index.location.clone());
-                *t.clone()
+        match &value.type_ {
+            ast::Type::List(ref t) => {
+                self.assert_type(&index.type_, &ast::Type::I64, expr.index.location.clone());
+                let type_ = *t.clone();
+                ast::Expression {
+                    kind: ast::ExpressionKind::Index(ast::IndexExpression {
+                        value: Box::new(value),
+                        index: Box::new(index),
+                    }),
+                    type_: type_,
+                }
             }
-            ast::Type::Map { key, value } => {
-                self.assert_type(&index_type, &key, expr.index.location.clone());
-                *value.clone()
+            ast::Type::Map {
+                key: key_type,
+                value: ref value_type,
+            } => {
+                self.assert_type(&index.type_, &key_type, expr.index.location.clone());
+                let type_ = *value_type.clone();
+                ast::Expression {
+                    kind: ast::ExpressionKind::Index(ast::IndexExpression {
+                        value: Box::new(value),
+                        index: Box::new(index),
+                    }),
+                    type_: type_,
+                }
             }
             _ => {
-                let msg = format!("cannot index non-list, non-map type {}", value_type);
+                let msg = format!("cannot index non-list, non-map type {}", value.type_);
                 self.error(&msg, expr.value.location.clone());
-                ast::Type::Error
+                ast::EXPRESSION_ERROR.clone()
             }
         }
     }
 
     fn analyze_tuple_index_expression(
         &mut self,
-        expr: &mut ast::TupleIndexExpression,
-    ) -> ast::Type {
-        let value_type = self.analyze_expression(&mut expr.value);
-        if let ast::Type::Tuple(ts) = value_type {
+        expr: &ptree::TupleIndexExpression,
+    ) -> ast::Expression {
+        let value = self.analyze_expression(&expr.value);
+        if let ast::Type::Tuple(ref ts) = &value.type_ {
             if expr.index >= ts.len() {
                 self.error("tuple index out of range", expr.location.clone());
-                ast::Type::Error
+                ast::EXPRESSION_ERROR.clone()
             } else {
-                ts[expr.index].clone()
+                let type_ = ts[expr.index].clone();
+                ast::Expression {
+                    kind: ast::ExpressionKind::TupleIndex(ast::TupleIndexExpression {
+                        value: Box::new(value),
+                        index: expr.index,
+                    }),
+                    type_: type_,
+                }
             }
         } else {
-            let msg = format!("cannot index non-tuple type {}", value_type);
+            let msg = format!("cannot index non-tuple type {}", value.type_);
             self.error(&msg, expr.location.clone());
-            ast::Type::Error
+            ast::EXPRESSION_ERROR.clone()
         }
     }
 
-    fn analyze_attribute_expression(&mut self, expr: &mut ast::AttributeExpression) -> ast::Type {
-        // TODO
-        ast::Type::Error
+    fn analyze_attribute_expression(
+        &mut self,
+        expr: &ptree::AttributeExpression,
+    ) -> ast::Expression {
+        self.error("not implemented", expr.location.clone());
+        ast::EXPRESSION_ERROR.clone()
     }
 
-    fn analyze_list_literal(&mut self, expr: &mut ast::ListLiteral) -> ast::Type {
+    fn analyze_list_literal(&mut self, expr: &ptree::ListLiteral) -> ast::Expression {
         if expr.items.len() == 0 {
             self.error(
                 "cannot type-check empty list literal",
                 expr.location.clone(),
             );
-            return ast::Type::Error;
+            return ast::EXPRESSION_ERROR.clone();
         }
 
-        let item_type = self.analyze_expression(&mut expr.items[0]);
+        let first_item = self.analyze_expression(&expr.items[0]);
+        let item_type = first_item.type_.clone();
+        let mut items = vec![first_item];
+
         for i in 1..expr.items.len() {
-            let another_item_type = self.analyze_expression(&mut expr.items[i]);
+            let typed_item = self.analyze_expression(&expr.items[i]);
             self.assert_type(
-                &another_item_type,
+                &typed_item.type_,
                 &item_type,
                 expr.items[i].location.clone(),
             );
+            items.push(typed_item);
         }
-        ast::Type::List(Box::new(item_type))
+        ast::Expression {
+            kind: ast::ExpressionKind::List(ast::ListLiteral { items: items }),
+            type_: ast::Type::List(Box::new(item_type)),
+        }
     }
 
-    fn analyze_tuple_literal(&mut self, expr: &mut ast::TupleLiteral) -> ast::Type {
+    fn analyze_tuple_literal(&mut self, expr: &ptree::TupleLiteral) -> ast::Expression {
+        let mut items = Vec::new();
         let mut types = Vec::new();
-        for item in &mut expr.items {
-            types.push(self.analyze_expression(item));
+        for item in &expr.items {
+            let typed_item = self.analyze_expression(item);
+            types.push(typed_item.type_.clone());
+            items.push(typed_item);
         }
-        ast::Type::Tuple(types)
+        ast::Expression {
+            kind: ast::ExpressionKind::Tuple(ast::TupleLiteral { items: items }),
+            type_: ast::Type::Tuple(types),
+        }
     }
 
-    fn analyze_map_literal(&mut self, expr: &mut ast::MapLiteral) -> ast::Type {
+    fn analyze_map_literal(&mut self, expr: &ptree::MapLiteral) -> ast::Expression {
         if expr.items.len() == 0 {
             self.error("cannot type-check empty map literal", expr.location.clone());
-            return ast::Type::Error;
+            return ast::EXPRESSION_ERROR.clone();
         }
 
-        let key_type = self.analyze_expression(&mut expr.items[0].0);
-        let value_type = self.analyze_expression(&mut expr.items[0].1);
+        let first_key = self.analyze_expression(&expr.items[0].0);
+        let key_type = first_key.type_.clone();
+        let first_value = self.analyze_expression(&expr.items[0].1);
+        let value_type = first_value.type_.clone();
+
+        let mut items = Vec::new();
         for i in 1..expr.items.len() {
-            let another_key_type = self.analyze_expression(&mut expr.items[i].0);
+            let typed_key = self.analyze_expression(&expr.items[i].0);
             self.assert_type(
-                &another_key_type,
+                &typed_key.type_,
                 &key_type,
                 expr.items[i].0.location.clone(),
             );
-            let another_value_type = self.analyze_expression(&mut expr.items[i].1);
+
+            let typed_value = self.analyze_expression(&expr.items[i].1);
             self.assert_type(
-                &another_value_type,
+                &typed_value.type_,
                 &value_type,
                 expr.items[i].1.location.clone(),
             );
+
+            items.push((typed_key, typed_value));
         }
-        ast::Type::Map {
-            key: Box::new(key_type),
-            value: Box::new(value_type),
+
+        ast::Expression {
+            kind: ast::ExpressionKind::Map(ast::MapLiteral { items: items }),
+            type_: ast::Type::Map {
+                key: Box::new(key_type),
+                value: Box::new(value_type),
+            },
         }
     }
 
-    fn analyze_record_literal(&mut self, expr: &mut ast::RecordLiteral) -> ast::Type {
+    fn analyze_record_literal(&mut self, expr: &ptree::RecordLiteral) -> ast::Expression {
         // TODO
-        ast::Type::Error
+        self.error("not implemented", expr.location.clone());
+        ast::EXPRESSION_ERROR.clone()
     }
 
-    fn resolve_type(&mut self, type_: &ast::SyntacticType) -> ast::Type {
+    fn resolve_type(&mut self, type_: &ptree::SyntacticType) -> ast::Type {
         match &type_.kind {
-            ast::SyntacticTypeKind::Literal(s) => {
+            ptree::SyntacticTypeKind::Literal(s) => {
                 if let Some(semantic_type_) = self.types.get(&s) {
                     semantic_type_.type_
                 } else {
