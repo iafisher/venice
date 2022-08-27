@@ -10,42 +10,42 @@ section .text
 
 global main
 main:
-  push rbx
-  push rcx
-  push rdx
+  push r11
+  push r12
+  push r13
   push rbp
   mov rbp, rsp
   sub rsp, 0
 
 main_0:
-  mov rax, 1
-  mov rbx, 1
-  cmp rax, rbx
+  mov r10, 1
+  mov r11, 1
+  cmp r10, r11
   je if_true_1
   jmp if_false_2
 
 if_true_1:
-  mov rdx, s_0
-  mov rdi, rdx
+  mov r13, s_0
+  mov rdi, r13
   call venice_println
-  mov rcx, rax
+  mov r12, rax
   jmp if_end_3
 
 if_false_2:
-  mov rbx, s_1
-  mov rdi, rbx
+  mov r11, s_1
+  mov rdi, r11
   call venice_println
-  mov rax, rax
+  mov r10, rax
   jmp if_end_3
 
 if_end_3:
-  mov rax, 0
-  mov rax, rax
+  mov r10, 0
+  mov rax, r10
   add rsp, 0
   pop rbp
-  pop rdx
-  pop rcx
-  pop rbx
+  pop r13
+  pop r12
+  pop r11
   ret
 
 section .data

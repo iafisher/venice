@@ -12,27 +12,28 @@ func main() -> i64 {
 
 main_0:
   %i__0 = alloca 8
-  %0 = set 10
-  %i__0 = store %0, 0
+  %rg0 = set 10
+  %i__0 = store %rg0, 0
   jump %while_cond_1
 
 while_cond_1:
-  %0 = load %i__0, 0
-  %1 = set 0
-  cmp %0, %1
+  %rg0 = load %i__0, 0
+  %rg1 = set 0
+  cmp %rg0, %rg1
   jump_gt %while_2 %while_end_3
 
 while_2:
-  %3 = load %i__0, 0
-  %2 = call %venice_printint, %3
-  %1 = load %i__0, 0
-  %2 = set 1
-  %0 = sub %1, %2
-  %i__0 = store %0, 0
+  %rg3 = load %i__0, 0
+  %rp0 = move %rg3
+  %rg2 = call %venice_printint
+  %rg1 = load %i__0, 0
+  %rg2 = set 1
+  %rg0 = sub %rg1, %rg2
+  %i__0 = store %rg0, 0
   jump %while_cond_1
 
 while_end_3:
-  %0 = set 0
-  ret %0
+  %rg0 = set 0
+  ret %rg0
 }
 

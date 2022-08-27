@@ -55,7 +55,7 @@ pub enum Value {
 
 impl Value {
     fn r(r: &vil::Register) -> Self {
-        Value::Register(Register(r.0.try_into().unwrap()))
+        Value::Register(Register(r.absolute_index()))
     }
 }
 
@@ -121,7 +121,7 @@ impl Generator {
             block
                 .instructions
                 .push(Instruction::Push(Value::Register(Register(
-                    register_number.try_into().unwrap(),
+                    (register_number as u8) + vil::PARAM_REGISTER_COUNT,
                 ))));
         }
 
@@ -229,16 +229,7 @@ impl Generator {
             vil::Instruction::Cmp(r1, r2) => {
                 instructions.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
-            vil::Instruction::Call(r, label, args) => {
-                // TODO: handle additional arguments on the stack.
-                if args.len() > 6 {
-                    panic!("too many arguments");
-                }
-
-                for (i, arg) in args.iter().enumerate() {
-                    let call_register = Value::Register(CALL_REGISTERS[i].clone());
-                    instructions.push(Instruction::Mov(call_register, Value::r(arg)));
-                }
+            vil::Instruction::Call(r, label) => {
                 instructions.push(Instruction::Call(label.0.clone()));
                 instructions.push(Instruction::Mov(Value::r(r), RAX));
             }
@@ -254,7 +245,7 @@ impl Generator {
                 // clobbered.
                 for register_number in (1..declaration.max_register_count).rev() {
                     instructions.push(Instruction::Pop(Value::Register(Register(
-                        register_number.try_into().unwrap(),
+                        (register_number as u8) + vil::PARAM_REGISTER_COUNT,
                     ))));
                 }
 
@@ -299,25 +290,25 @@ impl Generator {
     }
 }
 
-const RAX_REGISTER: Register = Register(0);
+const RDI_REGISTER: Register = Register(0);
+const RSI_REGISTER: Register = Register(1);
+const RDX_REGISTER: Register = Register(2);
+const RCX_REGISTER: Register = Register(3);
+const R8_REGISTER: Register = Register(4);
+const R9_REGISTER: Register = Register(5);
+const R10_REGISTER: Register = Register(6);
+const R11_REGISTER: Register = Register(7);
+const R12_REGISTER: Register = Register(8);
+const R13_REGISTER: Register = Register(9);
+const R14_REGISTER: Register = Register(10);
+const R15_REGISTER: Register = Register(11);
+const RBX_REGISTER: Register = Register(12);
+const RAX_REGISTER: Register = Register(13);
 const RAX: Value = Value::Register(RAX_REGISTER);
-const RBX_REGISTER: Register = Register(1);
-const RCX_REGISTER: Register = Register(2);
-const RDX_REGISTER: Register = Register(3);
-const RSI_REGISTER: Register = Register(4);
-const RDI_REGISTER: Register = Register(5);
-const R8_REGISTER: Register = Register(6);
-const R9_REGISTER: Register = Register(7);
-const R10_REGISTER: Register = Register(8);
-const R11_REGISTER: Register = Register(9);
-const R12_REGISTER: Register = Register(10);
-const R13_REGISTER: Register = Register(11);
-const R14_REGISTER: Register = Register(12);
-const R15_REGISTER: Register = Register(13);
-const RBP_REGISTER: Register = Register(14);
-const RBP: Value = Value::Register(RBP_REGISTER);
-const RSP_REGISTER: Register = Register(15);
+const RSP_REGISTER: Register = Register(14);
 const RSP: Value = Value::Register(RSP_REGISTER);
+const RBP_REGISTER: Register = Register(15);
+const RBP: Value = Value::Register(RBP_REGISTER);
 
 const CALL_REGISTERS: &[Register] = &[
     RDI_REGISTER,
@@ -447,23 +438,25 @@ impl fmt::Display for Value {
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
-            0 => write!(f, "rax"),
-            1 => write!(f, "rbx"),
-            2 => write!(f, "rcx"),
-            3 => write!(f, "rdx"),
-            4 => write!(f, "rsi"),
-            5 => write!(f, "rdi"),
-            6 => write!(f, "r8"),
-            7 => write!(f, "r9"),
-            8 => write!(f, "r10"),
-            9 => write!(f, "r11"),
-            10 => write!(f, "r12"),
-            11 => write!(f, "r13"),
-            12 => write!(f, "r14"),
-            13 => write!(f, "r15"),
-            14 => write!(f, "rbp"),
-            15 => write!(f, "rsp"),
-            x => write!(f, "r{}", x),
+            0 => write!(f, "rdi"),
+            1 => write!(f, "rsi"),
+            2 => write!(f, "rdx"),
+            3 => write!(f, "rcx"),
+            4 => write!(f, "r8"),
+            5 => write!(f, "r9"),
+            6 => write!(f, "r10"),
+            7 => write!(f, "r11"),
+            8 => write!(f, "r12"),
+            9 => write!(f, "r13"),
+            10 => write!(f, "r14"),
+            11 => write!(f, "r15"),
+            12 => write!(f, "rbx"),
+            13 => write!(f, "rax"),
+            14 => write!(f, "rsp"),
+            15 => write!(f, "rbp"),
+            x => {
+                panic!("register out of range");
+            }
         }
     }
 }

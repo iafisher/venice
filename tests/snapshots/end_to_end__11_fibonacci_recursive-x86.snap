@@ -8,85 +8,85 @@ extern venice_printint
 section .text
 
 fibonacci__1:
+  push r11
+  push r12
+  push r13
+  push r14
+  push r15
   push rbx
-  push rcx
-  push rdx
-  push rsi
-  push rdi
-  push r8
   push rbp
   mov rbp, rsp
   sub rsp, 8
   mov [rbp-8], rdi
 
 fibonacci__1_0:
-  mov rax, [rbp-8]
-  mov rbx, 0
-  cmp rax, rbx
+  mov r10, [rbp-8]
+  mov r11, 0
+  cmp r10, r11
   je if_true_1
   jmp if_false_2
 
 if_true_1:
-  mov rcx, 0
-  mov rax, rcx
+  mov r12, 0
+  mov rax, r12
   add rsp, 8
   pop rbp
-  pop r8
-  pop rdi
-  pop rsi
-  pop rdx
-  pop rcx
   pop rbx
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop r11
   ret
   jmp if_end_3
 
 if_false_2:
-  mov rax, [rbp-8]
-  mov rbx, 1
-  cmp rax, rbx
+  mov r10, [rbp-8]
+  mov r11, 1
+  cmp r10, r11
   je if_true_4
   jmp if_false_5
 
 if_true_4:
-  mov rcx, 1
-  mov rax, rcx
+  mov r12, 1
+  mov rax, r12
   add rsp, 8
   pop rbp
-  pop r8
-  pop rdi
-  pop rsi
-  pop rdx
-  pop rcx
   pop rbx
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop r11
   ret
   jmp if_end_6
 
 if_false_5:
-  mov rdx, [rbp-8]
-  mov rsi, 1
-  mov rcx, rdx
-  sub rcx, rsi
-  mov rdi, rcx
+  mov r13, [rbp-8]
+  mov r14, 1
+  mov r12, r13
+  sub r12, r14
+  mov rdi, r12
   call fibonacci__1
-  mov rbx, rax
-  mov rdi, [rbp-8]
-  mov r8, 2
-  mov rsi, rdi
-  sub rsi, r8
-  mov rdi, rsi
+  mov r11, rax
+  mov r15, [rbp-8]
+  mov rbx, 2
+  mov r14, r15
+  sub r14, rbx
+  mov rdi, r14
   call fibonacci__1
-  mov rdx, rax
-  mov rax, rdx
-  add rax, rbx
-  mov rax, rax
+  mov r13, rax
+  mov r10, r13
+  add r10, r11
+  mov rax, r10
   add rsp, 8
   pop rbp
-  pop r8
-  pop rdi
-  pop rsi
-  pop rdx
-  pop rcx
   pop rbx
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop r11
   ret
   jmp if_end_6
 
@@ -97,26 +97,26 @@ if_end_3:
 
 global main
 main:
-  push rbx
+  push r11
   push rbp
   mov rbp, rsp
   sub rsp, 8
 
 main_7:
-  mov rbx, 12
-  mov rdi, rbx
+  mov r11, 12
+  mov rdi, r11
   call fibonacci__1
-  mov rax, rax
-  mov [rbp-8], rax
-  mov rbx, [rbp-8]
-  mov rdi, rbx
+  mov r10, rax
+  mov [rbp-8], r10
+  mov r11, [rbp-8]
+  mov rdi, r11
   call venice_printint
-  mov rax, rax
-  mov rax, 0
-  mov rax, rax
+  mov r10, rax
+  mov r10, 0
+  mov rax, r10
   add rsp, 8
   pop rbp
-  pop rbx
+  pop r11
   ret
 
 section .data

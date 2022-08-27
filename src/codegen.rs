@@ -34,7 +34,7 @@ struct Generator {
     string_counter: u32,
 
     // The counter of current registers in use.
-    register_counter: u32,
+    register_counter: u8,
 }
 
 impl Generator {
@@ -158,7 +158,7 @@ impl Generator {
     }
 
     fn generate_binary_expression(&mut self, expr: &ast::BinaryExpression, r: vil::Register) {
-        let old_register_counter = r.0 + 1;
+        let old_register_counter = r.index() + 1;
 
         let left = self.generate_expression(&expr.left);
         let right = self.generate_expression(&expr.right);
@@ -209,10 +209,16 @@ impl Generator {
     }
 
     fn generate_call_expression(&mut self, expr: &ast::CallExpression, r: vil::Register) {
-        let mut argument_registers = Vec::new();
-        for argument in &expr.arguments {
+        if expr.arguments.len() > 6 {
+            panic!("too many arguments");
+        }
+
+        for (i, argument) in expr.arguments.iter().enumerate() {
             let argument_register = self.generate_expression(argument);
-            argument_registers.push(argument_register);
+            self.push(vil::Instruction::Move(
+                vil::Register::param(i.try_into().unwrap()),
+                argument_register,
+            ));
         }
 
         let entry = expr.function.entry.as_ref().unwrap();
@@ -223,7 +229,6 @@ impl Generator {
         self.push(vil::Instruction::Call(
             r,
             vil::FunctionLabel(entry.unique_name.clone()),
-            argument_registers,
         ));
     }
 
@@ -383,7 +388,7 @@ impl Generator {
     }
 
     fn claim_register(&mut self) -> vil::Register {
-        let register = vil::Register(self.register_counter);
+        let register = vil::Register::gp(self.register_counter);
         self.register_counter += 1;
         register
     }
@@ -398,7 +403,7 @@ impl Generator {
         self.current_block().instructions.push(instruction)
     }
 
-    fn reset_register_counter(&mut self, count: u32) {
+    fn reset_register_counter(&mut self, count: u8) {
         self.current_function().max_register_count = cmp::max(
             self.current_function().max_register_count,
             self.register_counter,

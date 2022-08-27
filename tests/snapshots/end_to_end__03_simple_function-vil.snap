@@ -11,10 +11,10 @@ extern venice_printint;
 func two_plus_two__0() -> i64 {
 
 two_plus_two__0_0:
-  %1 = set 2
-  %2 = set 2
-  %0 = add %1, %2
-  ret %0
+  %rg1 = set 2
+  %rg2 = set 2
+  %rg0 = add %rg1, %rg2
+  ret %rg0
 }
 
 // stack_frame_size = 8
@@ -23,11 +23,12 @@ func main() -> i64 {
 
 main_1:
   %x__1 = alloca 8
-  %0 = call %two_plus_two__0
-  %x__1 = store %0, 0
-  %1 = load %x__1, 0
-  %0 = call %venice_printint, %1
-  %0 = set 0
-  ret %0
+  %rg0 = call %two_plus_two__0
+  %x__1 = store %rg0, 0
+  %rg1 = load %x__1, 0
+  %rp0 = move %rg1
+  %rg0 = call %venice_printint
+  %rg0 = set 0
+  ret %rg0
 }
 

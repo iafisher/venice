@@ -11,10 +11,11 @@ extern venice_println;
 func main() -> i64 {
 
 main_0:
-  %1 = set s_0
-  %0 = call %venice_println, %1
-  %0 = set 0
-  ret %0
+  %rg1 = set s_0
+  %rp0 = move %rg1
+  %rg0 = call %venice_println
+  %rg0 = set 0
+  ret %rg0
 }
 
 

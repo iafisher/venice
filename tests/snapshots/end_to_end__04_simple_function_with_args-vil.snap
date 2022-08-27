@@ -11,10 +11,10 @@ extern venice_printint;
 func sub__2(x: i64, y: i64) -> i64 {
 
 sub__2_0:
-  %1 = load %x__0, 0
-  %2 = load %y__1, 0
-  %0 = sub %1, %2
-  ret %0
+  %rg1 = load %x__0, 0
+  %rg2 = load %y__1, 0
+  %rg0 = sub %rg1, %rg2
+  ret %rg0
 }
 
 // stack_frame_size = 8
@@ -23,13 +23,16 @@ func main() -> i64 {
 
 main_1:
   %x__3 = alloca 8
-  %1 = set 47
-  %2 = set 5
-  %0 = call %sub__2, %1, %2
-  %x__3 = store %0, 0
-  %1 = load %x__3, 0
-  %0 = call %venice_printint, %1
-  %0 = set 0
-  ret %0
+  %rg1 = set 47
+  %rp0 = move %rg1
+  %rg2 = set 5
+  %rp1 = move %rg2
+  %rg0 = call %sub__2
+  %x__3 = store %rg0, 0
+  %rg1 = load %x__3, 0
+  %rp0 = move %rg1
+  %rg0 = call %venice_printint
+  %rg0 = set 0
+  ret %rg0
 }
 

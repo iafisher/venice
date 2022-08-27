@@ -9,45 +9,45 @@ section .text
 
 global main
 main:
-  push rbx
-  push rcx
-  push rdx
+  push r11
+  push r12
+  push r13
   push rbp
   mov rbp, rsp
   sub rsp, 8
 
 main_0:
-  mov rax, 10
-  mov [rbp-8], rax
+  mov r10, 10
+  mov [rbp-8], r10
   jmp while_cond_1
 
 while_cond_1:
-  mov rax, [rbp-8]
-  mov rbx, 0
-  cmp rax, rbx
+  mov r10, [rbp-8]
+  mov r11, 0
+  cmp r10, r11
   jg while_2
   jmp while_end_3
 
 while_2:
-  mov rdx, [rbp-8]
-  mov rdi, rdx
+  mov r13, [rbp-8]
+  mov rdi, r13
   call venice_printint
-  mov rcx, rax
-  mov rbx, [rbp-8]
-  mov rcx, 1
-  mov rax, rbx
-  sub rax, rcx
-  mov [rbp-8], rax
+  mov r12, rax
+  mov r11, [rbp-8]
+  mov r12, 1
+  mov r10, r11
+  sub r10, r12
+  mov [rbp-8], r10
   jmp while_cond_1
 
 while_end_3:
-  mov rax, 0
-  mov rax, rax
+  mov r10, 0
+  mov rax, r10
   add rsp, 8
   pop rbp
-  pop rdx
-  pop rcx
-  pop rbx
+  pop r13
+  pop r12
+  pop r11
   ret
 
 section .data

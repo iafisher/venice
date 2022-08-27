@@ -17,7 +17,7 @@ pub struct FunctionDeclaration {
     pub return_type: Type,
     pub blocks: Vec<Block>,
     pub stack_frame_size: u32,
-    pub max_register_count: u32,
+    pub max_register_count: u8,
 }
 
 pub struct FunctionParameter {
@@ -41,7 +41,7 @@ pub struct Block {
 pub enum Instruction {
     Add(Register, Register, Register),
     Alloca(Memory, u64),
-    Call(Register, FunctionLabel, Vec<Register>),
+    Call(Register, FunctionLabel),
     Cmp(Register, Register),
     Div(Register, Register, Register),
     Jump(Label),
@@ -61,8 +61,48 @@ pub enum Instruction {
     ToDo(String),
 }
 
-#[derive(Clone, Debug)]
-pub struct Register(pub u32);
+#[derive(Copy, Clone, Debug)]
+pub enum Register {
+    Param(u8),
+    General(u8),
+    Return,
+    Stack,
+    Base,
+}
+
+pub const PARAM_REGISTER_COUNT: u8 = 6;
+const RETURN_REGISTER_INDEX: u8 = 13;
+const STACK_REGISTER_INDEX: u8 = 14;
+const BASE_REGISTER_INDEX: u8 = 15;
+
+impl Register {
+    pub fn index(self) -> u8 {
+        match self {
+            Register::Param(i) => i,
+            Register::General(i) => i,
+            Register::Return => RETURN_REGISTER_INDEX,
+            Register::Stack => STACK_REGISTER_INDEX,
+            Register::Base => BASE_REGISTER_INDEX,
+        }
+    }
+
+    pub fn absolute_index(self) -> u8 {
+        if let Register::General(i) = self {
+            i + PARAM_REGISTER_COUNT
+        } else {
+            self.index()
+        }
+    }
+
+    pub fn param(i: u8) -> Self {
+        Register::Param(i)
+    }
+
+    pub fn gp(i: u8) -> Self {
+        Register::General(i)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum Immediate {
     Integer(i64),
@@ -139,13 +179,7 @@ impl fmt::Display for Instruction {
         match self {
             Instruction::Add(r1, r2, r3) => write!(f, "  {} = add {}, {}", r1, r2, r3),
             Instruction::Alloca(mem, size) => write!(f, "  {} = alloca {}", mem, size),
-            Instruction::Call(r, func, rs) => {
-                write!(f, "  {} = call {}", r, func)?;
-                for r in rs {
-                    write!(f, ", {}", r)?;
-                }
-                fmt::Result::Ok(())
-            }
+            Instruction::Call(r, func) => write!(f, "  {} = call {}", r, func),
             Instruction::Cmp(r1, r2) => write!(f, "  cmp {}, {}", r1, r2),
             Instruction::Div(r1, r2, r3) => write!(f, "  {} = div {}, {}", r1, r2, r3),
             Instruction::Load(r, mem, offset) => write!(f, "  {} = load {}, {}", r, mem, offset),
@@ -169,7 +203,13 @@ impl fmt::Display for Instruction {
 
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "%{}", self.0)
+        match self {
+            Register::Param(i) => write!(f, "%rp{}", i),
+            Register::General(i) => write!(f, "%rg{}", i),
+            Register::Return => write!(f, "%rt"),
+            Register::Stack => write!(f, "%rsp"),
+            Register::Base => write!(f, "%rbp"),
+        }
     }
 }
 

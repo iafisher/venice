@@ -12,41 +12,41 @@ func fibonacci__1(n: i64) -> i64 {
 
 fibonacci__1_0:
   %fib_i__2 = alloca 8
-  %0 = set 1
-  %fib_i__2 = store %0, 0
+  %rg0 = set 1
+  %fib_i__2 = store %rg0, 0
   %fib_i_minus_1__3 = alloca 8
-  %0 = set 0
-  %fib_i_minus_1__3 = store %0, 0
+  %rg0 = set 0
+  %fib_i_minus_1__3 = store %rg0, 0
   %i__4 = alloca 8
-  %0 = set 1
-  %i__4 = store %0, 0
+  %rg0 = set 1
+  %i__4 = store %rg0, 0
   jump %while_cond_1
 
 while_cond_1:
-  %0 = load %i__4, 0
-  %1 = load %n__0, 0
-  cmp %0, %1
+  %rg0 = load %i__4, 0
+  %rg1 = load %n__0, 0
+  cmp %rg0, %rg1
   jump_lt %while_2 %while_end_3
 
 while_2:
   %tmp__5 = alloca 8
-  %2 = load %fib_i__2, 0
-  %tmp__5 = store %2, 0
-  %1 = load %fib_i__2, 0
-  %2 = load %fib_i_minus_1__3, 0
-  %0 = add %1, %2
-  %fib_i__2 = store %0, 0
-  %0 = load %tmp__5, 0
-  %fib_i_minus_1__3 = store %0, 0
-  %1 = load %i__4, 0
-  %2 = set 1
-  %0 = add %1, %2
-  %i__4 = store %0, 0
+  %rg2 = load %fib_i__2, 0
+  %tmp__5 = store %rg2, 0
+  %rg1 = load %fib_i__2, 0
+  %rg2 = load %fib_i_minus_1__3, 0
+  %rg0 = add %rg1, %rg2
+  %fib_i__2 = store %rg0, 0
+  %rg0 = load %tmp__5, 0
+  %fib_i_minus_1__3 = store %rg0, 0
+  %rg1 = load %i__4, 0
+  %rg2 = set 1
+  %rg0 = add %rg1, %rg2
+  %i__4 = store %rg0, 0
   jump %while_cond_1
 
 while_end_3:
-  %0 = load %fib_i__2, 0
-  ret %0
+  %rg0 = load %fib_i__2, 0
+  ret %rg0
 }
 
 // stack_frame_size = 8
@@ -55,12 +55,14 @@ func main() -> i64 {
 
 main_4:
   %x__6 = alloca 8
-  %1 = set 12
-  %0 = call %fibonacci__1, %1
-  %x__6 = store %0, 0
-  %1 = load %x__6, 0
-  %0 = call %venice_printint, %1
-  %0 = set 0
-  ret %0
+  %rg1 = set 12
+  %rp0 = move %rg1
+  %rg0 = call %fibonacci__1
+  %x__6 = store %rg0, 0
+  %rg1 = load %x__6, 0
+  %rp0 = move %rg1
+  %rg0 = call %venice_printint
+  %rg0 = set 0
+  ret %rg0
 }
 

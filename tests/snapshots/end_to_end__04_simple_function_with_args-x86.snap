@@ -8,8 +8,8 @@ extern venice_printint
 section .text
 
 sub__2:
-  push rbx
-  push rcx
+  push r11
+  push r12
   push rbp
   mov rbp, rsp
   sub rsp, 16
@@ -17,43 +17,43 @@ sub__2:
   mov [rbp-16], rsi
 
 sub__2_0:
-  mov rbx, [rbp-8]
-  mov rcx, [rbp-16]
-  mov rax, rbx
-  sub rax, rcx
-  mov rax, rax
+  mov r11, [rbp-8]
+  mov r12, [rbp-16]
+  mov r10, r11
+  sub r10, r12
+  mov rax, r10
   add rsp, 16
   pop rbp
-  pop rcx
-  pop rbx
+  pop r12
+  pop r11
   ret
 
 global main
 main:
-  push rbx
-  push rcx
+  push r11
+  push r12
   push rbp
   mov rbp, rsp
   sub rsp, 8
 
 main_1:
-  mov rbx, 47
-  mov rcx, 5
-  mov rdi, rbx
-  mov rsi, rcx
+  mov r11, 47
+  mov rdi, r11
+  mov r12, 5
+  mov rsi, r12
   call sub__2
-  mov rax, rax
-  mov [rbp-8], rax
-  mov rbx, [rbp-8]
-  mov rdi, rbx
+  mov r10, rax
+  mov [rbp-8], r10
+  mov r11, [rbp-8]
+  mov rdi, r11
   call venice_printint
-  mov rax, rax
-  mov rax, 0
-  mov rax, rax
+  mov r10, rax
+  mov r10, 0
+  mov rax, r10
   add rsp, 8
   pop rbp
-  pop rcx
-  pop rbx
+  pop r12
+  pop r11
   ret
 
 section .data

@@ -12,24 +12,26 @@ extern venice_println;
 func main() -> i64 {
 
 main_0:
-  %0 = set 1
-  %1 = set 1
-  cmp %0, %1
+  %rg0 = set 1
+  %rg1 = set 1
+  cmp %rg0, %rg1
   jump_eq %if_true_1 %if_false_2
 
 if_true_1:
-  %3 = set s_0
-  %2 = call %venice_println, %3
+  %rg3 = set s_0
+  %rp0 = move %rg3
+  %rg2 = call %venice_println
   jump %if_end_3
 
 if_false_2:
-  %1 = set s_1
-  %0 = call %venice_println, %1
+  %rg1 = set s_1
+  %rp0 = move %rg1
+  %rg0 = call %venice_println
   jump %if_end_3
 
 if_end_3:
-  %0 = set 0
-  ret %0
+  %rg0 = set 0
+  ret %rg0
 }
 
 
