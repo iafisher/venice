@@ -8,7 +8,16 @@ main() {
   output_path=${input_path%.s}
 
   nasm -g -F dwarf -f elf64 -o "$object_path" "$input_path"
-  ld -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o "$output_path" -lc "$object_path"
+  ld \
+    -dynamic-linker \
+    /lib64/ld-linux-x86-64.so.2 \
+    /usr/lib/x86_64-linux-gnu/crt1.o \
+    /usr/lib/x86_64-linux-gnu/crti.o \
+    runtime/libvenice.so \
+    /usr/lib/x86_64-linux-gnu/crtn.o \
+    -o "$output_path" \
+    -lc \
+    "$object_path"
   gdb -tui ./"$output_path" || true
 
   rm -f "$object_path"
