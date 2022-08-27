@@ -261,6 +261,14 @@ impl Type {
             _ => false,
         }
     }
+
+    pub fn stack_size(&self) -> usize {
+        match self {
+            Type::Void | Type::Unknown | Type::Error => 0,
+            // Everything else is either a primitive value or a pointer.
+            _ => 8,
+        }
+    }
 }
 
 impl fmt::Display for Program {

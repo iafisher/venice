@@ -182,6 +182,7 @@ impl Analyzer {
         let return_type = self.resolve_type(&declaration.return_type);
         let mut parameters = Vec::new();
         let mut parameter_types = Vec::new();
+        let mut stack_frame_size = 0;
         for parameter in &declaration.parameters {
             let t = self.resolve_type(&parameter.type_);
             let unique_name = self.claim_unique_name(&parameter.name);
@@ -191,6 +192,8 @@ impl Analyzer {
                 constant: false,
                 external: false,
             };
+
+            stack_frame_size += t.stack_size();
             parameter_types.push(t.clone());
             parameters.push(ast::FunctionParameter {
                 name: entry,
@@ -226,10 +229,7 @@ impl Analyzer {
                 .insert(&ptree_parameter.name, ast_parameter.name.clone());
         }
 
-        self.current_function_info = Some(ast::FunctionInfo {
-            // TODO: not all parameters are 8 bytes
-            stack_frame_size: 8 * declaration.parameters.len(),
-        });
+        self.current_function_info = Some(ast::FunctionInfo { stack_frame_size });
         self.current_function_return_type = Some(return_type.clone());
         let body = self.analyze_block(&declaration.body);
         self.current_function_return_type = None;
@@ -320,11 +320,10 @@ impl Analyzer {
         };
 
         self.symbols.insert(&stmt.symbol, entry.clone());
-        // TODO: not all symbols are 8 bytes
         self.current_function_info
             .as_mut()
             .unwrap()
-            .stack_frame_size += 8;
+            .stack_frame_size += entry.type_.stack_size();
 
         ast::Statement::Let(ast::LetStatement {
             symbol: entry,
