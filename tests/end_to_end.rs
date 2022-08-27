@@ -69,19 +69,25 @@ fn test_e2e(folder: &str) {
         .unwrap();
     assert!(status.success());
 
-    // Run the binary itself.
-    let output = Command::new(&bin_path).output().unwrap();
-    assert!(output.status.success());
-
-    // Check the output and intermediate files.
-    let stdout = str::from_utf8(&output.stdout).unwrap();
-    insta::assert_display_snapshot!(format!("{}-stdout", folder), stdout);
-    let stderr = str::from_utf8(&output.stderr).unwrap();
-    insta::assert_display_snapshot!(format!("{}-stderr", folder), stderr);
+    // Check the intermediate files.
     let vil_output = read_file(&vil_path);
     insta::assert_display_snapshot!(format!("{}-vil", folder), vil_output);
     let x86_output = read_file(&x86_path);
     insta::assert_display_snapshot!(format!("{}-x86", folder), x86_output);
+
+    // Run the binary itself, under the `timeout` utility so it doesn't run forever.
+    let output = Command::new("timeout")
+        .arg("5s")
+        .arg(&bin_path)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    // Check the output.
+    let stdout = str::from_utf8(&output.stdout).unwrap();
+    insta::assert_display_snapshot!(format!("{}-stdout", folder), stdout);
+    let stderr = str::from_utf8(&output.stderr).unwrap();
+    insta::assert_display_snapshot!(format!("{}-stderr", folder), stderr);
 }
 
 struct CleanupFile(Vec<String>);
