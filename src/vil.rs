@@ -1,13 +1,14 @@
 // The Venice Intermediate Language (VIL) is the intermediate representation used inside
 // the Venice compiler. It is a high-level, machine-independent assembly language.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt;
 
 pub struct Program {
     pub externs: Vec<String>,
     pub declarations: Vec<FunctionDeclaration>,
-    pub strings: HashMap<String, String>,
+    // BTreeMap so that the output is sorted.
+    pub strings: BTreeMap<String, String>,
 }
 
 pub struct FunctionDeclaration {

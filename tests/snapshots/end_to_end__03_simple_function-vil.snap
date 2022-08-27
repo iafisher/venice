@@ -1,0 +1,27 @@
+---
+source: tests/end_to_end.rs
+expression: vil_output
+---
+extern venice_printint;
+
+
+func two_plus_two__0() -> i64 {
+
+two_plus_two__0_0:
+  %1 = set 2
+  %2 = set 2
+  %0 = add %1, %2
+  ret %0
+}
+func main() -> i64 {
+
+main_1:
+  %x__1 = alloca 8
+  %1 = call %two_plus_two__0
+  %x__1 = store %1, 0
+  %3 = load %x__1, 0
+  %2 = call %venice_printint, %3
+  %4 = set 0
+  ret %4
+}
+

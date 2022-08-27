@@ -1,0 +1,35 @@
+---
+source: tests/end_to_end.rs
+expression: vil_output
+---
+extern venice_println;
+extern venice_println;
+
+
+func main() -> i64 {
+
+main_0:
+  %0 = set 1
+  %1 = set 0
+  cmp %0, %1
+  jump_eq %if_false_2 %if_true_1
+
+if_true_1:
+  %3 = set s_0
+  %2 = call %venice_println, %3
+  jump %if_end_3
+
+if_false_2:
+  %5 = set s_1
+  %4 = call %venice_println, %5
+  jump %if_end_3
+
+if_end_3:
+  %6 = set 0
+  ret %6
+}
+
+
+data s_0 = "pass";
+data s_1 = "fail";
+

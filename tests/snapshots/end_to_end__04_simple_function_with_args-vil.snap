@@ -1,0 +1,29 @@
+---
+source: tests/end_to_end.rs
+expression: vil_output
+---
+extern venice_printint;
+
+
+func sub__2(x: i64, y: i64) -> i64 {
+
+sub__2_0:
+  %1 = load %x__0, 0
+  %2 = load %y__1, 0
+  %0 = sub %1, %2
+  ret %0
+}
+func main() -> i64 {
+
+main_1:
+  %x__3 = alloca 8
+  %2 = set 47
+  %3 = set 5
+  %1 = call %sub__2, %2, %3
+  %x__3 = store %1, 0
+  %5 = load %x__3, 0
+  %4 = call %venice_printint, %5
+  %6 = set 0
+  ret %6
+}
+

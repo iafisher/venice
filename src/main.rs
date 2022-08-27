@@ -77,6 +77,16 @@ fn main() {
     if cli.debug {
         println!("\nVIL:\n");
         println!("{}", vil_program);
+
+        let mut vil_output_path = PathBuf::from(&cli.path);
+        vil_output_path.set_extension("vil");
+        {
+            let f = File::create(&vil_output_path).expect("could not create file");
+            let mut writer = BufWriter::new(f);
+            writer
+                .write_all(&format!("{}", vil_program).into_bytes())
+                .expect("could not write to file");
+        }
     }
 
     // Generate an x86 program.
@@ -87,10 +97,10 @@ fn main() {
     }
 
     // Write the assembly program to disk.
-    let mut asm_output_path = PathBuf::from(&cli.path);
-    asm_output_path.set_extension("s");
+    let mut x86_output_path = PathBuf::from(&cli.path);
+    x86_output_path.set_extension("x86.s");
     {
-        let f = File::create(&asm_output_path).expect("could not create file");
+        let f = File::create(&x86_output_path).expect("could not create file");
         let mut writer = BufWriter::new(f);
         writer
             .write_all(&format!("{}", x86_program).into_bytes())
@@ -112,7 +122,7 @@ fn main() {
         .arg("elf64")
         .arg("-o")
         .arg(&object_output_path)
-        .arg(&asm_output_path)
+        .arg(&x86_output_path)
         .spawn()
         .expect("failed to execute nasm");
     let mut error_code = child.wait().expect("failed to wait on child");
@@ -145,7 +155,7 @@ fn main() {
 
     // Clean up the intermediate files.
     if !cli.debug {
-        let _ = fs::remove_file(&asm_output_path);
+        let _ = fs::remove_file(&x86_output_path);
         let _ = fs::remove_file(&object_output_path);
     }
 }

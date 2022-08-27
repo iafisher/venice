@@ -1,0 +1,91 @@
+---
+source: tests/end_to_end.rs
+expression: x86_output
+---
+extern venice_printint
+
+
+section .text
+
+global main
+main:
+  push rbp
+  push rbx
+  push r12
+  push r13
+  push r14
+  push r15
+  mov rbp, rsp
+  sub rsp, 8
+
+main_0:
+  mov rax, 10
+  mov [rbp-8], rax
+  jmp while_cond_1
+
+while_cond_1:
+  mov rcx, [rbp-8]
+  mov rdx, 0
+  cmp rcx, rdx
+  jg eq_4
+  jmp eq_5
+
+eq_4:
+  mov rbx, 1
+  jmp eq_end_6
+
+eq_5:
+  mov rbx, 0
+  jmp eq_end_6
+
+eq_end_6:
+  mov rcx, 1
+  cmp rbx, rcx
+  je while_2
+  jmp while_end_3
+
+while_2:
+  mov rsi, [rbp-8]
+  push rax
+  push rcx
+  push rdx
+  push rdi
+  push rsi
+  push r8
+  push r9
+  push r10
+  push r11
+  mov rdi, rsi
+  call venice_printint
+  mov rdx, rax
+  pop r11
+  pop r10
+  pop r9
+  pop r8
+  pop rsi
+  pop rdi
+  pop rdx
+  pop rcx
+  pop rax
+  mov r8, [rbp-8]
+  mov r9, 1
+  mov rdi, r8
+  sub rdi, r9
+  mov [rbp-8], rdi
+  jmp while_cond_1
+
+while_end_3:
+  mov r8, 0
+  mov rax, r8
+  add rsp, 8
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
+  pop rbp
+  ret
+
+section .data
+
+

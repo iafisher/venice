@@ -9,6 +9,8 @@
 *.a
 *.s
 *.S
+*.vil
+*.snap.new
 
 # Python
 __pycache__

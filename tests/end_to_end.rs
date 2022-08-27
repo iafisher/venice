@@ -4,8 +4,10 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::str;
+
+extern crate insta;
 
 #[test]
 fn test_hello() {
@@ -44,24 +46,24 @@ fn test_fibonacci_recursive() {
 
 fn test_e2e(folder: &str) {
     let bin_path = build_path(folder, "program");
+    let obj_path = build_path(folder, "program.o");
+    let vil_path = build_path(folder, "program.vil");
+    let x86_path = build_path(folder, "program.x86.s");
     let input_path = build_path(folder, "program.vn");
-    let stdout_path = build_path(folder, "stdout.txt");
-    let stderr_path = build_path(folder, "stderr.txt");
 
-    // Ensure that the binary file is removed at the end of the test.
-    let _cleanup = CleanupFile::new(&bin_path);
-
-    // Read the expected output from the test file.
-    let expected_stdout = read_file(&stdout_path);
-    let expected_stderr = if Path::new(&stderr_path).exists() {
-        read_file(&stderr_path)
-    } else {
-        String::new()
-    };
+    // Ensure that intermediate files are removed at the end of the test.
+    let _cleanup = CleanupFile(vec![
+        bin_path.clone(),
+        obj_path.clone(),
+        vil_path.clone(),
+        x86_path.clone(),
+    ]);
 
     // Run the compiler.
     let status = Command::new("target/debug/venice")
         .arg(&input_path)
+        .arg("--debug")
+        .stdout(Stdio::null())
         .spawn()
         .unwrap()
         .wait()
@@ -72,24 +74,24 @@ fn test_e2e(folder: &str) {
     let output = Command::new(&bin_path).output().unwrap();
     assert!(output.status.success());
 
-    // Check the output.
+    // Check the output and intermediate files.
     let stdout = str::from_utf8(&output.stdout).unwrap();
-    assert_eq!(stdout, &expected_stdout);
+    insta::assert_display_snapshot!(format!("{}-stdout", folder), stdout);
     let stderr = str::from_utf8(&output.stderr).unwrap();
-    assert_eq!(stderr, &expected_stderr);
+    insta::assert_display_snapshot!(format!("{}-stderr", folder), stderr);
+    let vil_output = read_file(&vil_path);
+    insta::assert_display_snapshot!(format!("{}-vil", folder), vil_output);
+    let x86_output = read_file(&x86_path);
+    insta::assert_display_snapshot!(format!("{}-x86", folder), x86_output);
 }
 
-struct CleanupFile(String);
-
-impl CleanupFile {
-    fn new(path: &str) -> Self {
-        CleanupFile(String::from(path))
-    }
-}
+struct CleanupFile(Vec<String>);
 
 impl Drop for CleanupFile {
     fn drop(&mut self) {
-        let _ = fs::remove_file(&self.0);
+        for path in &self.0 {
+            let _ = fs::remove_file(path);
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 // Code generation from an abstract syntax tree to a VIL program.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use super::ast;
 use super::errors;
@@ -12,7 +12,7 @@ pub fn generate(ast: &ast::Program) -> Result<vil::Program, errors::VeniceError>
         program: vil::Program {
             externs: Vec::new(),
             declarations: Vec::new(),
-            strings: HashMap::new(),
+            strings: BTreeMap::new(),
         },
         label_counter: 0,
         register_counter: 0,

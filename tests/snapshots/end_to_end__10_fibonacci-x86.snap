@@ -1,0 +1,150 @@
+---
+source: tests/end_to_end.rs
+expression: x86_output
+---
+extern venice_printint
+
+
+section .text
+
+fibonacci__1:
+  push rbp
+  push rbx
+  push r12
+  push r13
+  push r14
+  push r15
+  mov rbp, rsp
+  sub rsp, 40
+  mov [rbp-8], rdi
+
+fibonacci__1_0:
+  mov rax, 1
+  mov [rbp-16], rax
+  mov rbx, 0
+  mov [rbp-24], rbx
+  mov rcx, 1
+  mov [rbp-32], rcx
+  jmp while_cond_1
+
+while_cond_1:
+  mov rsi, [rbp-32]
+  mov rdi, [rbp-8]
+  cmp rsi, rdi
+  jl eq_4
+  jmp eq_5
+
+eq_4:
+  mov rdx, 1
+  jmp eq_end_6
+
+eq_5:
+  mov rdx, 0
+  jmp eq_end_6
+
+eq_end_6:
+  mov rsi, 1
+  cmp rdx, rsi
+  je while_2
+  jmp while_end_3
+
+while_2:
+  mov rdi, [rbp-16]
+  mov [rbp-40], rdi
+  mov r9, [rbp-16]
+  mov r10, [rbp-24]
+  mov r8, r10
+  add r8, r9
+  mov [rbp-16], r8
+  mov r9, [rbp-40]
+  mov [rbp-24], r9
+  mov r11, [rbp-32]
+  mov r12, 1
+  mov r10, r12
+  add r10, r11
+  mov [rbp-32], r10
+  jmp while_cond_1
+
+while_end_3:
+  mov r11, [rbp-16]
+  mov rax, r11
+  add rsp, 40
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
+  pop rbp
+  ret
+
+global main
+main:
+  push rbp
+  push rbx
+  push r12
+  push r13
+  push r14
+  push r15
+  mov rbp, rsp
+  sub rsp, 8
+
+main_7:
+  mov r13, 12
+  push rax
+  push rcx
+  push rdx
+  push rdi
+  push rsi
+  push r8
+  push r9
+  push r10
+  push r11
+  mov rdi, r13
+  call fibonacci__1
+  mov r12, rax
+  pop r11
+  pop r10
+  pop r9
+  pop r8
+  pop rsi
+  pop rdi
+  pop rdx
+  pop rcx
+  pop rax
+  mov [rbp-8], r12
+  mov r15, [rbp-8]
+  push rax
+  push rcx
+  push rdx
+  push rdi
+  push rsi
+  push r8
+  push r9
+  push r10
+  push r11
+  mov rdi, r15
+  call venice_printint
+  mov r14, rax
+  pop r11
+  pop r10
+  pop r9
+  pop r8
+  pop rsi
+  pop rdi
+  pop rdx
+  pop rcx
+  pop rax
+  mov rbp, 0
+  mov rax, rbp
+  add rsp, 8
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop rbx
+  pop rbp
+  ret
+
+section .data
+
+
