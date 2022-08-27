@@ -12,11 +12,11 @@ main:
   push r11
   push r12
   push r13
+
+main_0:
   push rbp
   mov rbp, rsp
   sub rsp, 8
-
-main_0:
   mov r10, 10
   mov [rbp-8], r10
   jmp while_cond_1

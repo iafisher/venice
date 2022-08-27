@@ -10,11 +10,11 @@ section .text
 two_plus_two__0:
   push r11
   push r12
+
+two_plus_two__0_0:
   push rbp
   mov rbp, rsp
   sub rsp, 0
-
-two_plus_two__0_0:
   mov r11, 2
   mov r12, 2
   mov r10, r12
@@ -29,11 +29,11 @@ two_plus_two__0_0:
 global main
 main:
   push r11
+
+main_1:
   push rbp
   mov rbp, rsp
   sub rsp, 8
-
-main_1:
   call two_plus_two__0
   mov r10, rax
   mov [rbp-8], r10

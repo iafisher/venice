@@ -15,7 +15,6 @@ pub struct FunctionDeclaration {
     pub name: String,
     pub return_type: Type,
     pub blocks: Vec<Block>,
-    pub stack_frame_size: u32,
     pub max_register_count: u8,
 }
 
@@ -37,6 +36,8 @@ pub enum Instruction {
     Call(FunctionLabel),
     Cmp(Register, Register),
     Div(Register, Register, Register),
+    FrameSetUp(u32),
+    FrameTearDown(u32),
     Jump(Label),
     JumpEq(Label, Label),
     JumpGt(Label, Label),
@@ -140,7 +141,6 @@ impl fmt::Display for Program {
 impl fmt::Display for FunctionDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "\n")?;
-        write!(f, "// stack_frame_size = {}\n", self.stack_frame_size)?;
         write!(f, "// max_register_count = {}\n", self.max_register_count)?;
         write!(f, "func {} -> {} {{\n", self.name, self.return_type)?;
         for block in &self.blocks {
@@ -168,6 +168,8 @@ impl fmt::Display for Instruction {
             Instruction::Call(func) => write!(f, "  call {}", func),
             Instruction::Cmp(r1, r2) => write!(f, "  cmp {}, {}", r1, r2),
             Instruction::Div(r1, r2, r3) => write!(f, "  {} = div {}, {}", r1, r2, r3),
+            Instruction::FrameSetUp(size) => write!(f, "  frame_set_up {}", size),
+            Instruction::FrameTearDown(size) => write!(f, "  frame_tear_down {}", size),
             Instruction::Load(r, mem, offset) => write!(f, "  {} = load {}, {}", r, mem, offset),
             Instruction::Jump(label) => write!(f, "  jump {}", label),
             Instruction::JumpEq(l1, l2) => write!(f, "  jump_eq {} {}", l1, l2),

@@ -15,6 +15,7 @@ pub fn generate(ast: &ast::Program) -> Result<vil::Program, errors::VeniceError>
             declarations: Vec::new(),
             strings: BTreeMap::new(),
         },
+        info: None,
         label_counter: 0,
         register_counter: 0,
         symbol_counter: 0,
@@ -27,6 +28,7 @@ pub fn generate(ast: &ast::Program) -> Result<vil::Program, errors::VeniceError>
 struct Generator {
     // The program which is incrementally built up.
     program: vil::Program,
+    info: Option<ast::FunctionInfo>,
 
     // Counters for generating unique symbols.
     label_counter: u32,
@@ -61,14 +63,15 @@ impl Generator {
             // TODO
             return_type: vil::Type::I64,
             blocks: Vec::new(),
-            // TODO: parameters are not necessarily all 8 bytes
-            stack_frame_size: (declaration.parameters.len() as u32) * 8,
             max_register_count: 0,
         };
-
+        self.info = declaration.info.clone();
         self.program.declarations.push(vil_declaration);
         let label = self.claim_label(&name);
         self.start_block(label, None);
+        self.push(vil::Instruction::FrameSetUp(
+            self.info.as_ref().unwrap().stack_frame_size,
+        ));
 
         // Move parameters from registers onto the stack.
         for (i, parameter) in declaration.parameters.iter().enumerate() {
@@ -316,7 +319,6 @@ impl Generator {
         let entry = stmt.symbol.entry.as_ref().unwrap();
         let symbol = vil::Memory(entry.unique_name.clone());
         self.push(vil::Instruction::Alloca(symbol.clone(), 8));
-        self.current_function().stack_frame_size += 8;
 
         let register = self.generate_expression(&stmt.value);
         self.push(vil::Instruction::Store(symbol, register, 0));
@@ -325,6 +327,9 @@ impl Generator {
     fn generate_return_statement(&mut self, stmt: &ast::ReturnStatement) {
         let register = self.generate_expression(&stmt.value);
         self.push(vil::Instruction::Move(vil::Register::Return, register));
+        self.push(vil::Instruction::FrameTearDown(
+            self.info.as_ref().unwrap().stack_frame_size,
+        ));
         self.push(vil::Instruction::Ret);
     }
 

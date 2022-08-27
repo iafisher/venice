@@ -10,11 +10,11 @@ section .text
 global main
 main:
   push r11
+
+main_0:
   push rbp
   mov rbp, rsp
   sub rsp, 0
-
-main_0:
   mov r11, s_0
   mov rdi, r11
   call venice_println

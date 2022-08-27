@@ -125,13 +125,6 @@ impl Generator {
                 ))));
         }
 
-        block.instructions.push(Instruction::Push(RBP));
-        block.instructions.push(Instruction::Mov(RBP, RSP));
-        block.instructions.push(Instruction::Sub(
-            RSP,
-            Value::Immediate(declaration.stack_frame_size.into()),
-        ));
-
         self.program.blocks.push(block);
         for block in &declaration.blocks {
             self.generate_block(&declaration, &block);
@@ -211,13 +204,16 @@ impl Generator {
             vil::Instruction::Call(label) => {
                 instructions.push(Instruction::Call(label.0.clone()));
             }
-            vil::Instruction::Ret => {
-                instructions.push(Instruction::Add(
-                    RSP,
-                    Value::Immediate(declaration.stack_frame_size.into()),
-                ));
+            vil::Instruction::FrameSetUp(size) => {
+                instructions.push(Instruction::Push(RBP));
+                instructions.push(Instruction::Mov(RBP, RSP));
+                instructions.push(Instruction::Sub(RSP, Value::Immediate(*size as i64)));
+            }
+            vil::Instruction::FrameTearDown(size) => {
+                instructions.push(Instruction::Add(RSP, Value::Immediate(*size as i64)));
                 instructions.push(Instruction::Pop(RBP));
-
+            }
+            vil::Instruction::Ret => {
                 // Starting at 1 because 0 is RAX, which is the function's return value and is always
                 // clobbered.
                 for register_number in (1..declaration.max_register_count).rev() {

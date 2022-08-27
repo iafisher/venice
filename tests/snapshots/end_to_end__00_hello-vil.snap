@@ -6,17 +6,18 @@ extern venice_println;
 
 
 
-// stack_frame_size = 0
 // max_register_count = 2
 func main -> i64 {
 
 main_0:
+  frame_set_up 0
   %rg1 = set s_0
   %rp0 = move %rg1
   call %venice_println
   %rg0 = move %rt
   %rg0 = set 0
   %rt = move %rg0
+  frame_tear_down 0
   ret
 }
 

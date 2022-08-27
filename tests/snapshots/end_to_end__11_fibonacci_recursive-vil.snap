@@ -6,11 +6,11 @@ extern venice_printint;
 
 
 
-// stack_frame_size = 8
 // max_register_count = 7
 func fibonacci__1 -> i64 {
 
 fibonacci__1_0:
+  frame_set_up 8
   %n__0 = alloca 8
   %n__0 = store %rp0, 0
   %rg0 = load %n__0, 0
@@ -21,6 +21,7 @@ fibonacci__1_0:
 if_true_1:
   %rg2 = set 0
   %rt = move %rg2
+  frame_tear_down 8
   ret
   jump %if_end_3
 
@@ -33,6 +34,7 @@ if_false_2:
 if_true_4:
   %rg2 = set 1
   %rt = move %rg2
+  frame_tear_down 8
   ret
   jump %if_end_6
 
@@ -51,6 +53,7 @@ if_false_5:
   %rg3 = move %rt
   %rg0 = add %rg1, %rg3
   %rt = move %rg0
+  frame_tear_down 8
   ret
   jump %if_end_6
 
@@ -60,11 +63,11 @@ if_end_6:
 if_end_3:
 }
 
-// stack_frame_size = 8
 // max_register_count = 2
 func main -> i64 {
 
 main_7:
+  frame_set_up 8
   %x__2 = alloca 8
   %rg1 = set 12
   %rp0 = move %rg1
@@ -77,6 +80,7 @@ main_7:
   %rg0 = move %rt
   %rg0 = set 0
   %rt = move %rg0
+  frame_tear_down 8
   ret
 }
 

@@ -10,11 +10,11 @@ section .text
 fibonacci__1:
   push r11
   push r12
+
+fibonacci__1_0:
   push rbp
   mov rbp, rsp
   sub rsp, 40
-
-fibonacci__1_0:
   mov [rbp-8], rdi
   mov r10, 1
   mov [rbp-16], r10
@@ -60,11 +60,11 @@ while_end_3:
 global main
 main:
   push r11
+
+main_4:
   push rbp
   mov rbp, rsp
   sub rsp, 8
-
-main_4:
   mov r11, 12
   mov rdi, r11
   call fibonacci__1

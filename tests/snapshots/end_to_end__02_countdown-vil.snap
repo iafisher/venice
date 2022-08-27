@@ -6,11 +6,11 @@ extern venice_printint;
 
 
 
-// stack_frame_size = 8
 // max_register_count = 4
 func main -> i64 {
 
 main_0:
+  frame_set_up 8
   %i__0 = alloca 8
   %rg0 = set 10
   %i__0 = store %rg0, 0
@@ -36,6 +36,7 @@ while_2:
 while_end_3:
   %rg0 = set 0
   %rt = move %rg0
+  frame_tear_down 8
   ret
 }
 
