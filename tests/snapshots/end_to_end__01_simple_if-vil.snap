@@ -7,7 +7,7 @@ extern venice_println;
 
 
 
-func main -> i64 {
+func main {
 
 main_0:
   callee_save %rg2

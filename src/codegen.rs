@@ -1,6 +1,5 @@
 // Code generation from an abstract syntax tree to a VIL program.
 
-use std::cmp;
 use std::collections::BTreeMap;
 
 use super::ast;
@@ -60,8 +59,6 @@ impl Generator {
         let name = &declaration.name.entry.as_ref().unwrap().unique_name;
         let vil_declaration = vil::FunctionDeclaration {
             name: name.clone(),
-            // TODO
-            return_type: vil::Type::I64,
             blocks: Vec::new(),
         };
         self.info = declaration.info.clone();

@@ -13,14 +13,7 @@ pub struct Program {
 
 pub struct FunctionDeclaration {
     pub name: String,
-    pub return_type: Type,
     pub blocks: Vec<Block>,
-}
-
-pub struct ConstDeclaration {
-    pub symbol: String,
-    pub type_: Type,
-    pub value: Immediate,
 }
 
 pub struct Block {
@@ -120,11 +113,6 @@ pub struct Label(pub String);
 #[derive(Clone, Debug)]
 pub struct FunctionLabel(pub String);
 
-pub enum Type {
-    I64,
-    Pointer(Box<Type>),
-}
-
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.externs.len() > 0 {
@@ -152,7 +140,7 @@ impl fmt::Display for Program {
 impl fmt::Display for FunctionDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "\n")?;
-        write!(f, "func {} -> {} {{\n", self.name, self.return_type)?;
+        write!(f, "func {} {{\n", self.name)?;
         for block in &self.blocks {
             write!(f, "{}", block)?;
         }
@@ -239,14 +227,5 @@ impl fmt::Display for Label {
 impl fmt::Display for FunctionLabel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "%{}", self.0)
-    }
-}
-
-impl fmt::Display for Type {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Type::I64 => write!(f, "i64"),
-            Type::Pointer(t) => write!(f, "ptr<{}>", t),
-        }
     }
 }

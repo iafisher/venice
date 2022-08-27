@@ -6,7 +6,7 @@ extern venice_printint;
 
 
 
-func two_plus_two__0 -> i64 {
+func two_plus_two__0 {
 
 two_plus_two__0_0:
   callee_save %rg2
@@ -28,7 +28,7 @@ two_plus_two__0_0:
   ret
 }
 
-func main -> i64 {
+func main {
 
 main_1:
   callee_save %rg2

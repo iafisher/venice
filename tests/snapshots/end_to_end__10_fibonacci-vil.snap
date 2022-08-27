@@ -6,7 +6,7 @@ extern venice_printint;
 
 
 
-func fibonacci__1 -> i64 {
+func fibonacci__1 {
 
 fibonacci__1_0:
   callee_save %rg2
@@ -62,7 +62,7 @@ while_end_3:
   ret
 }
 
-func main -> i64 {
+func main {
 
 main_4:
   callee_save %rg2

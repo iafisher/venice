@@ -6,7 +6,7 @@ extern venice_printint;
 
 
 
-func sub__2 -> i64 {
+func sub__2 {
 
 sub__2_0:
   callee_save %rg2
@@ -32,7 +32,7 @@ sub__2_0:
   ret
 }
 
-func main -> i64 {
+func main {
 
 main_1:
   callee_save %rg2
