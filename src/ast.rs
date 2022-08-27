@@ -239,6 +239,32 @@ pub struct SymbolEntry {
     pub type_: Type,
     pub constant: bool,
     pub external: bool,
+    // The offset of the symbol's location on the stack, relative to the base pointer. Should be a
+    // negative number starting at -8. Will be 0 if inapplicable, e.g. for function and type
+    // symbols.
+    pub stack_offset: i32,
+}
+
+impl SymbolEntry {
+    pub fn type_(type_: Type) -> Self {
+        SymbolEntry {
+            unique_name: String::new(),
+            type_,
+            constant: true,
+            external: false,
+            stack_offset: 0,
+        }
+    }
+
+    pub fn external(unique_name: &str, type_: Type) -> Self {
+        SymbolEntry {
+            unique_name: String::from(unique_name),
+            type_,
+            constant: true,
+            external: true,
+            stack_offset: 0,
+        }
+    }
 }
 
 impl Type {

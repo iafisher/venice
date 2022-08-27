@@ -18,126 +18,6 @@ pub fn analyze(ptree: &ptree::Program) -> Result<ast::Program, Vec<errors::Venic
     }
 }
 
-struct SymbolTable {
-    environments: Vec<HashMap<String, ast::SymbolEntry>>,
-}
-
-impl SymbolTable {
-    pub fn new() -> Self {
-        SymbolTable {
-            environments: vec![HashMap::new()],
-        }
-    }
-
-    pub fn builtin_types() -> Self {
-        let mut symbols = HashMap::new();
-        symbols.insert(
-            String::from("i64"),
-            ast::SymbolEntry {
-                unique_name: String::new(),
-                type_: ast::Type::I64,
-                constant: true,
-                external: false,
-            },
-        );
-        symbols.insert(
-            String::from("bool"),
-            ast::SymbolEntry {
-                unique_name: String::new(),
-                type_: ast::Type::Boolean,
-                constant: true,
-                external: false,
-            },
-        );
-        symbols.insert(
-            String::from("string"),
-            ast::SymbolEntry {
-                unique_name: String::new(),
-                type_: ast::Type::String,
-                constant: true,
-                external: false,
-            },
-        );
-        symbols.insert(
-            String::from("void"),
-            ast::SymbolEntry {
-                unique_name: String::new(),
-                type_: ast::Type::Void,
-                constant: true,
-                external: false,
-            },
-        );
-
-        SymbolTable {
-            environments: vec![symbols],
-        }
-    }
-
-    pub fn builtin_globals() -> Self {
-        let mut symbols = HashMap::new();
-        // TODO: unique names here could conflict with actual user symbols.
-        symbols.insert(
-            String::from("println"),
-            ast::SymbolEntry {
-                unique_name: String::from("venice_println"),
-                type_: ast::Type::Function {
-                    parameters: vec![ast::Type::String],
-                    return_type: Box::new(ast::Type::Void),
-                },
-                constant: true,
-                external: true,
-            },
-        );
-        // TODO: remove printint once there's a better way to print integers.
-        symbols.insert(
-            String::from("printint"),
-            ast::SymbolEntry {
-                unique_name: String::from("venice_printint"),
-                type_: ast::Type::Function {
-                    parameters: vec![ast::Type::I64],
-                    return_type: Box::new(ast::Type::Void),
-                },
-                constant: true,
-                external: true,
-            },
-        );
-
-        SymbolTable {
-            environments: vec![symbols],
-        }
-    }
-
-    pub fn get(&self, key: &str) -> Option<ast::SymbolEntry> {
-        for table in self.environments.iter().rev() {
-            if let Some(entry) = table.get(key) {
-                return Some(entry.clone());
-            }
-        }
-        None
-    }
-
-    pub fn insert(&mut self, key: &str, entry: ast::SymbolEntry) {
-        self.current().insert(String::from(key), entry);
-    }
-
-    pub fn remove(&mut self, key: &str) {
-        self.current().remove(key);
-    }
-
-    pub fn push_scope(&mut self) {
-        self.environments.push(HashMap::new());
-    }
-
-    pub fn pop_scope(&mut self) {
-        self.environments.pop();
-    }
-
-    fn current(&mut self) -> &mut HashMap<String, ast::SymbolEntry> {
-        let index = self.environments.len() - 1;
-        &mut self.environments[index]
-    }
-}
-
 struct Analyzer {
     symbols: SymbolTable,
     types: SymbolTable,
@@ -145,6 +25,7 @@ struct Analyzer {
     current_function_info: Option<ast::FunctionInfo>,
     errors: Vec<errors::VeniceError>,
     unique_name_counter: u64,
+    current_stack_offset: i32,
 }
 
 impl Analyzer {
@@ -156,6 +37,7 @@ impl Analyzer {
             current_function_info: None,
             errors: Vec::new(),
             unique_name_counter: 0,
+            current_stack_offset: 0,
         }
     }
 
@@ -183,6 +65,7 @@ impl Analyzer {
         let mut parameters = Vec::new();
         let mut parameter_types = Vec::new();
         let mut stack_frame_size = 0;
+        let mut stack_offset = -8;
         for parameter in &declaration.parameters {
             let t = self.resolve_type(&parameter.type_);
             let unique_name = self.claim_unique_name(&parameter.name);
@@ -191,9 +74,11 @@ impl Analyzer {
                 type_: t.clone(),
                 constant: false,
                 external: false,
+                stack_offset,
             };
 
             stack_frame_size += t.stack_size();
+            stack_offset -= t.stack_size() as i32;
             parameter_types.push(t.clone());
             parameters.push(ast::FunctionParameter {
                 name: entry,
@@ -219,6 +104,7 @@ impl Analyzer {
             },
             constant: true,
             external: false,
+            stack_offset: 0,
         };
         self.symbols.insert(&declaration.name, entry.clone());
 
@@ -231,8 +117,10 @@ impl Analyzer {
 
         self.current_function_info = Some(ast::FunctionInfo { stack_frame_size });
         self.current_function_return_type = Some(return_type.clone());
+        self.current_stack_offset = stack_offset;
         let body = self.analyze_block(&declaration.body);
         self.current_function_return_type = None;
+        self.current_stack_offset = -8;
 
         // Pop off the function body's scope.
         self.symbols.pop_scope();
@@ -262,6 +150,7 @@ impl Analyzer {
             type_: declared_type.clone(),
             constant: true,
             external: false,
+            stack_offset: 0,
         };
         self.symbols.insert(&declaration.symbol, entry.clone());
 
@@ -317,6 +206,7 @@ impl Analyzer {
             type_: declared_type.clone(),
             constant: false,
             external: false,
+            stack_offset: self.current_stack_offset,
         };
 
         self.symbols.insert(&stmt.symbol, entry.clone());
@@ -324,6 +214,7 @@ impl Analyzer {
             .as_mut()
             .unwrap()
             .stack_frame_size += entry.type_.stack_size();
+        self.current_stack_offset -= declared_type.stack_size() as i32;
 
         ast::Statement::Let(ast::LetStatement {
             symbol: entry,
@@ -881,5 +772,98 @@ impl Analyzer {
     ) {
         let msg = format!("expected {}, got {}", expected, actual);
         self.error(&msg, location);
+    }
+}
+
+struct SymbolTable {
+    environments: Vec<HashMap<String, ast::SymbolEntry>>,
+}
+
+impl SymbolTable {
+    pub fn new() -> Self {
+        SymbolTable {
+            environments: vec![HashMap::new()],
+        }
+    }
+
+    pub fn builtin_types() -> Self {
+        let mut symbols = HashMap::new();
+        symbols.insert(String::from("i64"), ast::SymbolEntry::type_(ast::Type::I64));
+        symbols.insert(
+            String::from("bool"),
+            ast::SymbolEntry::type_(ast::Type::Boolean),
+        );
+        symbols.insert(
+            String::from("string"),
+            ast::SymbolEntry::type_(ast::Type::String),
+        );
+        symbols.insert(
+            String::from("void"),
+            ast::SymbolEntry::type_(ast::Type::Void),
+        );
+
+        SymbolTable {
+            environments: vec![symbols],
+        }
+    }
+
+    pub fn builtin_globals() -> Self {
+        let mut symbols = HashMap::new();
+        // TODO: unique names here could conflict with actual user symbols.
+        symbols.insert(
+            String::from("println"),
+            ast::SymbolEntry::external(
+                "venice_println",
+                ast::Type::Function {
+                    parameters: vec![ast::Type::String],
+                    return_type: Box::new(ast::Type::Void),
+                },
+            ),
+        );
+        // TODO: remove printint once there's a better way to print integers.
+        symbols.insert(
+            String::from("printint"),
+            ast::SymbolEntry::external(
+                "venice_printint",
+                ast::Type::Function {
+                    parameters: vec![ast::Type::I64],
+                    return_type: Box::new(ast::Type::Void),
+                },
+            ),
+        );
+
+        SymbolTable {
+            environments: vec![symbols],
+        }
+    }
+
+    pub fn get(&self, key: &str) -> Option<ast::SymbolEntry> {
+        for table in self.environments.iter().rev() {
+            if let Some(entry) = table.get(key) {
+                return Some(entry.clone());
+            }
+        }
+        None
+    }
+
+    pub fn insert(&mut self, key: &str, entry: ast::SymbolEntry) {
+        self.current().insert(String::from(key), entry);
+    }
+
+    pub fn remove(&mut self, key: &str) {
+        self.current().remove(key);
+    }
+
+    pub fn push_scope(&mut self) {
+        self.environments.push(HashMap::new());
+    }
+
+    pub fn pop_scope(&mut self) {
+        self.environments.pop();
+    }
+
+    fn current(&mut self) -> &mut HashMap<String, ast::SymbolEntry> {
+        let index = self.environments.len() - 1;
+        &mut self.environments[index]
     }
 }

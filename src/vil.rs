@@ -24,7 +24,6 @@ pub struct Block {
 #[derive(Debug)]
 pub enum Instruction {
     Add(Register, Register, Register),
-    Alloca(Memory, u64),
     Call(FunctionLabel),
     CalleeRestore(Register),
     CalleeSave(Register),
@@ -41,12 +40,12 @@ pub enum Instruction {
     JumpLt(Label, Label),
     JumpLte(Label, Label),
     JumpNeq(Label, Label),
-    Load(Register, Memory, u64),
+    Load(Register, Memory, i32),
     Move(Register, Register),
     Mul(Register, Register, Register),
     Ret,
     Set(Register, Immediate),
-    Store(Memory, Register, u64),
+    Store(Memory, Register, i32),
     Sub(Register, Register, Register),
     ToDo(String),
 }
@@ -162,7 +161,6 @@ impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Instruction::Add(r1, r2, r3) => write!(f, "  {} = add {}, {}", r1, r2, r3),
-            Instruction::Alloca(mem, size) => write!(f, "  {} = alloca {}", mem, size),
             Instruction::Call(func) => write!(f, "  call {}", func),
             Instruction::CalleeSave(r) => write!(f, "  callee_save {}", r),
             Instruction::CalleeRestore(r) => write!(f, "  {} = callee_restore", r),

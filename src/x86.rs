@@ -1,7 +1,6 @@
 // Compiles a VIL program into concrete x86 machine code.
 
 use super::vil;
-use std::collections::HashMap;
 use std::fmt;
 
 pub fn generate(vil: &vil::Program) -> Result<Program, String> {
@@ -76,8 +75,6 @@ pub enum DataValue {
 
 struct Generator {
     program: Program,
-    offsets: HashMap<String, u32>,
-    total_offset: u32,
 }
 
 impl Generator {
@@ -88,8 +85,6 @@ impl Generator {
                 blocks: Vec::new(),
                 data: Vec::new(),
             },
-            offsets: HashMap::new(),
-            total_offset: 0,
         }
     }
 
@@ -109,8 +104,6 @@ impl Generator {
     }
 
     fn generate_declaration(&mut self, declaration: &vil::FunctionDeclaration) {
-        self.offsets.clear();
-        self.total_offset = 8;
         let block = Block {
             // TODO: replace this with more robust logic
             global: declaration.name == "main",
@@ -144,10 +137,6 @@ impl Generator {
         instruction: &vil::Instruction,
     ) {
         match instruction {
-            vil::Instruction::Alloca(mem, size) => {
-                self.offsets.insert(mem.0.clone(), self.total_offset);
-                self.total_offset += *size as u32;
-            }
             vil::Instruction::Set(r, imm) => match imm {
                 vil::Immediate::Integer(x) => {
                     instructions.push(Instruction::Mov(Value::r(r), Value::Immediate(*x)));
@@ -191,23 +180,21 @@ impl Generator {
                 instructions.push(Instruction::Mov(Value::r(r1), RAX));
             }
             vil::Instruction::Load(r, mem, offset) => {
-                let real_offset = *self.offsets.get(&mem.0).unwrap() + *offset as u32;
                 instructions.push(Instruction::Mov(
                     Value::r(r),
                     Value::Memory {
                         scale: 1,
-                        displacement: -(real_offset as i32),
+                        displacement: *offset,
                         base: RBP_REGISTER,
                         index: None,
                     },
                 ));
             }
             vil::Instruction::Store(mem, r, offset) => {
-                let real_offset = *self.offsets.get(&mem.0).unwrap() + *offset as u32;
                 instructions.push(Instruction::Mov(
                     Value::Memory {
                         scale: 1,
-                        displacement: -(real_offset as i32),
+                        displacement: *offset,
                         base: RBP_REGISTER,
                         index: None,
                     },

@@ -16,12 +16,11 @@ main_0:
   callee_save %rg5
   callee_save %rg6
   frame_set_up 16
-  %x__0 = alloca 8
   %rg1 = set 21
   %rg2 = set 2
   %rg0 = mul %rg1, %rg2
-  %x__0 = store %rg0, 0
-  %rg1 = load %x__0, 0
+  %x__0 = store %rg0, -8
+  %rg1 = load %x__0, -8
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1
@@ -29,12 +28,11 @@ main_0:
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg0 = move %rt
-  %y__1 = alloca 8
   %rg1 = set 84
   %rg2 = set 2
   %rg0 = div %rg1, %rg2
-  %y__1 = store %rg0, 0
-  %rg1 = load %y__1, 0
+  %y__1 = store %rg0, -16
+  %rg1 = load %y__1, -16
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1

@@ -78,14 +78,10 @@ impl Generator {
         // Move parameters from registers onto the stack.
         for (i, parameter) in declaration.parameters.iter().enumerate() {
             let symbol = vil::Memory(parameter.name.unique_name.clone());
-            self.push(vil::Instruction::Alloca(
-                symbol.clone(),
-                parameter.name.type_.stack_size() as u64,
-            ));
             self.push(vil::Instruction::Store(
                 symbol,
                 vil::Register::param(i as u8),
-                0,
+                parameter.name.stack_offset,
             ));
         }
 
@@ -113,7 +109,7 @@ impl Generator {
                 self.push(vil::Instruction::Load(
                     r,
                     vil::Memory(symbol.unique_name.clone()),
-                    0,
+                    symbol.stack_offset,
                 ));
             }
             x => {
@@ -263,7 +259,7 @@ impl Generator {
         self.push(vil::Instruction::Store(
             vil::Memory(stmt.symbol.unique_name.clone()),
             register,
-            0,
+            stmt.symbol.stack_offset,
         ));
     }
 
@@ -310,13 +306,12 @@ impl Generator {
 
     fn generate_let_statement(&mut self, stmt: &ast::LetStatement) {
         let symbol = vil::Memory(stmt.symbol.unique_name.clone());
-        self.push(vil::Instruction::Alloca(
-            symbol.clone(),
-            stmt.symbol.type_.stack_size() as u64,
-        ));
-
         let register = self.generate_expression(&stmt.value);
-        self.push(vil::Instruction::Store(symbol, register, 0));
+        self.push(vil::Instruction::Store(
+            symbol,
+            register,
+            stmt.symbol.stack_offset,
+        ));
     }
 
     fn generate_return_statement(&mut self, stmt: &ast::ReturnStatement) {
