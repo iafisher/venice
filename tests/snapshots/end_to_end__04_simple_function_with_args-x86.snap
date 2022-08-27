@@ -9,11 +9,6 @@ section .text
 
 sub__2:
   push rbp
-  push rbx
-  push r12
-  push r13
-  push r14
-  push r15
   mov rbp, rsp
   sub rsp, 16
   mov [rbp-8], rdi
@@ -26,81 +21,30 @@ sub__2_0:
   sub rax, rcx
   mov rax, rax
   add rsp, 16
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  pop rbx
   pop rbp
   ret
 
 global main
 main:
   push rbp
-  push rbx
-  push r12
-  push r13
-  push r14
-  push r15
   mov rbp, rsp
   sub rsp, 8
 
 main_1:
   mov rcx, 47
   mov rdx, 5
-  push rax
-  push rcx
-  push rdx
-  push rdi
-  push rsi
-  push r8
-  push r9
-  push r10
-  push r11
   mov rdi, rcx
   mov rsi, rdx
   call sub__2
   mov rbx, rax
-  pop r11
-  pop r10
-  pop r9
-  pop r8
-  pop rsi
-  pop rdi
-  pop rdx
-  pop rcx
-  pop rax
   mov [rbp-8], rbx
   mov rdi, [rbp-8]
-  push rax
-  push rcx
-  push rdx
-  push rdi
-  push rsi
-  push r8
-  push r9
-  push r10
-  push r11
   mov rdi, rdi
   call venice_printint
   mov rsi, rax
-  pop r11
-  pop r10
-  pop r9
-  pop r8
-  pop rsi
-  pop rdi
-  pop rdx
-  pop rcx
-  pop rax
   mov r8, 0
   mov rax, r8
   add rsp, 8
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  pop rbx
   pop rbp
   ret
 

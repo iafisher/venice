@@ -9,11 +9,6 @@ section .text
 
 fibonacci__1:
   push rbp
-  push rbx
-  push r12
-  push r13
-  push r14
-  push r15
   mov rbp, rsp
   sub rsp, 40
   mov [rbp-8], rdi
@@ -69,79 +64,28 @@ while_end_3:
   mov r11, [rbp-16]
   mov rax, r11
   add rsp, 40
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  pop rbx
   pop rbp
   ret
 
 global main
 main:
   push rbp
-  push rbx
-  push r12
-  push r13
-  push r14
-  push r15
   mov rbp, rsp
   sub rsp, 8
 
 main_7:
   mov r13, 12
-  push rax
-  push rcx
-  push rdx
-  push rdi
-  push rsi
-  push r8
-  push r9
-  push r10
-  push r11
   mov rdi, r13
   call fibonacci__1
   mov r12, rax
-  pop r11
-  pop r10
-  pop r9
-  pop r8
-  pop rsi
-  pop rdi
-  pop rdx
-  pop rcx
-  pop rax
   mov [rbp-8], r12
   mov r15, [rbp-8]
-  push rax
-  push rcx
-  push rdx
-  push rdi
-  push rsi
-  push r8
-  push r9
-  push r10
-  push r11
   mov rdi, r15
   call venice_printint
   mov r14, rax
-  pop r11
-  pop r10
-  pop r9
-  pop r8
-  pop rsi
-  pop rdi
-  pop rdx
-  pop rcx
-  pop rax
   mov rbp, 0
   mov rax, rbp
   add rsp, 8
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  pop rbx
   pop rbp
   ret
 

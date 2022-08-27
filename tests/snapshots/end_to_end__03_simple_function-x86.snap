@@ -9,11 +9,6 @@ section .text
 
 two_plus_two__0:
   push rbp
-  push rbx
-  push r12
-  push r13
-  push r14
-  push r15
   mov rbp, rsp
   sub rsp, 0
 
@@ -24,77 +19,26 @@ two_plus_two__0_0:
   add rax, rbx
   mov rax, rax
   add rsp, 0
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  pop rbx
   pop rbp
   ret
 
 global main
 main:
   push rbp
-  push rbx
-  push r12
-  push r13
-  push r14
-  push r15
   mov rbp, rsp
   sub rsp, 8
 
 main_1:
-  push rax
-  push rcx
-  push rdx
-  push rdi
-  push rsi
-  push r8
-  push r9
-  push r10
-  push r11
   call two_plus_two__0
   mov rbx, rax
-  pop r11
-  pop r10
-  pop r9
-  pop r8
-  pop rsi
-  pop rdi
-  pop rdx
-  pop rcx
-  pop rax
   mov [rbp-8], rbx
   mov rdx, [rbp-8]
-  push rax
-  push rcx
-  push rdx
-  push rdi
-  push rsi
-  push r8
-  push r9
-  push r10
-  push r11
   mov rdi, rdx
   call venice_printint
   mov rcx, rax
-  pop r11
-  pop r10
-  pop r9
-  pop r8
-  pop rsi
-  pop rdi
-  pop rdx
-  pop rcx
-  pop rax
   mov rsi, 0
   mov rax, rsi
   add rsp, 8
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  pop rbx
   pop rbp
   ret
 

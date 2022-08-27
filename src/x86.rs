@@ -115,12 +115,7 @@ impl Generator {
             instructions: Vec::new(),
         };
 
-        for r in CALLEE_SAVE_REGISTERS {
-            block
-                .instructions
-                .push(Instruction::Push(Value::Register(r)));
-        }
-
+        block.instructions.push(Instruction::Push(RBP));
         block.instructions.push(Instruction::Mov(RBP, RSP));
         block.instructions.push(Instruction::Sub(
             RSP,
@@ -229,20 +224,12 @@ impl Generator {
                     panic!("too many arguments");
                 }
 
-                for r in CALLER_SAVE_REGISTERS {
-                    instructions.push(Instruction::Push(Value::Register(r)));
-                }
-
                 for (i, arg) in args.iter().enumerate() {
                     let call_register = Value::Register(CALL_REGISTERS[i].clone());
                     instructions.push(Instruction::Mov(call_register, Value::r(arg)));
                 }
                 instructions.push(Instruction::Call(label.0.clone()));
                 instructions.push(Instruction::Mov(Value::r(r), RAX));
-
-                for r in CALLER_SAVE_REGISTERS.iter().rev() {
-                    instructions.push(Instruction::Pop(Value::Register(*r)));
-                }
             }
             vil::Instruction::ToDo(s) => {
                 // TODO
@@ -268,9 +255,7 @@ impl Generator {
                     RSP,
                     Value::Immediate(declaration.stack_frame_size.into()),
                 ));
-                for r in CALLEE_SAVE_REGISTERS.iter().rev() {
-                    instructions.push(Instruction::Pop(Value::Register(*r)));
-                }
+                instructions.push(Instruction::Pop(RBP));
                 instructions.push(Instruction::Ret);
             }
             vil::ExitInstruction::Jump(l) => {
