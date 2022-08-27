@@ -8,9 +8,13 @@ extern venice_printint;
 
 // stack_frame_size = 16
 // max_register_count = 3
-func sub__2(x: i64, y: i64) -> i64 {
+func sub__2 -> i64 {
 
 sub__2_0:
+  %x__0 = alloca 8
+  %x__0 = store %rp0, 0
+  %y__1 = alloca 8
+  %y__1 = store %rp1, 0
   %rg1 = load %x__0, 0
   %rg2 = load %y__1, 0
   %rg0 = sub %rg1, %rg2
@@ -20,7 +24,7 @@ sub__2_0:
 
 // stack_frame_size = 8
 // max_register_count = 3
-func main() -> i64 {
+func main -> i64 {
 
 main_1:
   %x__3 = alloca 8

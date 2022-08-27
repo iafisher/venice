@@ -17,9 +17,9 @@ fibonacci__1:
   push rbp
   mov rbp, rsp
   sub rsp, 8
-  mov [rbp-8], rdi
 
 fibonacci__1_0:
+  mov [rbp-8], rdi
   mov r10, [rbp-8]
   mov r11, 0
   cmp r10, r11

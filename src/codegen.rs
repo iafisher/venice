@@ -56,31 +56,32 @@ impl Generator {
 
     fn generate_function_declaration(&mut self, declaration: &ast::FunctionDeclaration) {
         let name = &declaration.name.entry.as_ref().unwrap().unique_name;
-        let mut parameters = Vec::new();
-        for parameter in &declaration.parameters {
-            let entry = parameter.name.entry.as_ref().unwrap();
-            parameters.push(vil::FunctionParameter {
-                name: parameter.name.name.clone(),
-                unique_name: entry.unique_name.clone(),
-                // TODO
-                type_: vil::Type::I64,
-            });
-        }
-
-        let stack_frame_size = 8 * (parameters.len() as u32);
         let vil_declaration = vil::FunctionDeclaration {
             name: name.clone(),
-            parameters: parameters,
             // TODO
             return_type: vil::Type::I64,
             blocks: Vec::new(),
             // TODO: parameters are not necessarily all 8 bytes
-            stack_frame_size: stack_frame_size,
+            stack_frame_size: (declaration.parameters.len() as u32) * 8,
             max_register_count: 0,
         };
+
         self.program.declarations.push(vil_declaration);
         let label = self.claim_label(&name);
         self.start_block(label, None);
+
+        // Move parameters from registers onto the stack.
+        for (i, parameter) in declaration.parameters.iter().enumerate() {
+            let entry = parameter.name.entry.as_ref().unwrap();
+            let symbol = vil::Memory(entry.unique_name.clone());
+            // TODO: parameters are not necessarily all 8 bytes
+            self.push(vil::Instruction::Alloca(symbol.clone(), 8));
+            self.push(vil::Instruction::Store(
+                symbol,
+                vil::Register::param(i as u8),
+                0,
+            ));
+        }
 
         self.generate_block(&declaration.body);
     }

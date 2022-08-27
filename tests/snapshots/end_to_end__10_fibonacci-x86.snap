@@ -13,9 +13,9 @@ fibonacci__1:
   push rbp
   mov rbp, rsp
   sub rsp, 40
-  mov [rbp-8], rdi
 
 fibonacci__1_0:
+  mov [rbp-8], rdi
   mov r10, 1
   mov [rbp-16], r10
   mov r10, 0

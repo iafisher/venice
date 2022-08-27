@@ -132,27 +132,6 @@ impl Generator {
             Value::Immediate(declaration.stack_frame_size.into()),
         ));
 
-        if declaration.parameters.len() > 6 {
-            panic!("too many parameter");
-        }
-
-        // Move the function's parameters from registers onto the stack, where the rest
-        // of the function's body expects them to be.
-        for (i, parameter) in declaration.parameters.iter().enumerate() {
-            block.instructions.push(Instruction::Mov(
-                Value::Memory {
-                    scale: 1,
-                    displacement: -(self.total_offset as i32),
-                    base: RBP_REGISTER,
-                    index: None,
-                },
-                Value::Register(CALL_REGISTERS[i].clone()),
-            ));
-            self.offsets
-                .insert(parameter.unique_name.clone(), self.total_offset);
-            self.total_offset += 8;
-        }
-
         self.program.blocks.push(block);
         for block in &declaration.blocks {
             self.generate_block(&declaration, &block);

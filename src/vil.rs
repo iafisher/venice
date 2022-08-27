@@ -13,17 +13,10 @@ pub struct Program {
 
 pub struct FunctionDeclaration {
     pub name: String,
-    pub parameters: Vec<FunctionParameter>,
     pub return_type: Type,
     pub blocks: Vec<Block>,
     pub stack_frame_size: u32,
     pub max_register_count: u8,
-}
-
-pub struct FunctionParameter {
-    pub name: String,
-    pub unique_name: String,
-    pub type_: Type,
 }
 
 pub struct ConstDeclaration {
@@ -149,14 +142,7 @@ impl fmt::Display for FunctionDeclaration {
         write!(f, "\n")?;
         write!(f, "// stack_frame_size = {}\n", self.stack_frame_size)?;
         write!(f, "// max_register_count = {}\n", self.max_register_count)?;
-        write!(f, "func {}(", self.name)?;
-        for (i, param) in self.parameters.iter().enumerate() {
-            write!(f, "{}: {}", param.name, param.type_)?;
-            if i != self.parameters.len() - 1 {
-                write!(f, ", ")?;
-            }
-        }
-        write!(f, ") -> {} {{\n", self.return_type)?;
+        write!(f, "func {} -> {} {{\n", self.name, self.return_type)?;
         for block in &self.blocks {
             write!(f, "{}", block)?;
         }

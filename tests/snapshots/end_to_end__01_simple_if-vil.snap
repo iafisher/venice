@@ -9,7 +9,7 @@ extern venice_println;
 
 // stack_frame_size = 0
 // max_register_count = 4
-func main() -> i64 {
+func main -> i64 {
 
 main_0:
   %rg0 = set 1

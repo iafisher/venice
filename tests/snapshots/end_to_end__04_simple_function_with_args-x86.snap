@@ -13,10 +13,10 @@ sub__2:
   push rbp
   mov rbp, rsp
   sub rsp, 16
-  mov [rbp-8], rdi
-  mov [rbp-16], rsi
 
 sub__2_0:
+  mov [rbp-8], rdi
+  mov [rbp-16], rsi
   mov r11, [rbp-8]
   mov r12, [rbp-16]
   mov r10, r11

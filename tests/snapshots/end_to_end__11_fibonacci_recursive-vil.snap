@@ -8,9 +8,11 @@ extern venice_printint;
 
 // stack_frame_size = 8
 // max_register_count = 7
-func fibonacci__1(n: i64) -> i64 {
+func fibonacci__1 -> i64 {
 
 fibonacci__1_0:
+  %n__0 = alloca 8
+  %n__0 = store %rp0, 0
   %rg0 = load %n__0, 0
   %rg1 = set 0
   cmp %rg0, %rg1
@@ -60,7 +62,7 @@ if_end_3:
 
 // stack_frame_size = 8
 // max_register_count = 2
-func main() -> i64 {
+func main -> i64 {
 
 main_7:
   %x__2 = alloca 8
