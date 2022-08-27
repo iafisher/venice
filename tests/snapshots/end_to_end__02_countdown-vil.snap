@@ -14,23 +14,10 @@ main_0:
   jump %while_cond_1
 
 while_cond_1:
-  %1 = load %i__0, 0
-  %2 = set 0
-  cmp %1, %2
-  jump_gt %eq_4 %eq_5
-
-eq_4:
-  %0 = set 1
-  jump %eq_end_6
-
-eq_5:
-  %0 = set 0
-  jump %eq_end_6
-
-eq_end_6:
-  %1 = set 1
+  %0 = load %i__0, 0
+  %1 = set 0
   cmp %0, %1
-  jump_eq %while_2 %while_end_3
+  jump_gt %while_2 %while_end_3
 
 while_2:
   %3 = load %i__0, 0

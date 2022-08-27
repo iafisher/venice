@@ -144,6 +144,7 @@ pub enum ExpressionKind {
     String(String),
     Symbol(SymbolExpression),
     Binary(BinaryExpression),
+    Comparison(ComparisonExpression),
     Unary(UnaryExpression),
     Call(CallExpression),
     Index(IndexExpression),
@@ -168,14 +169,8 @@ pub enum BinaryOpType {
     And,
     Concat,
     Divide,
-    Equals,
-    GreaterThan,
-    GreaterThanEquals,
-    LessThan,
-    LessThanEquals,
     Modulo,
     Multiply,
-    NotEquals,
     Or,
     Subtract,
 }
@@ -183,6 +178,24 @@ pub enum BinaryOpType {
 #[derive(Debug)]
 pub struct BinaryExpression {
     pub op: BinaryOpType,
+    pub left: Box<Expression>,
+    pub right: Box<Expression>,
+    pub location: common::Location,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum ComparisonOpType {
+    Equals,
+    GreaterThan,
+    GreaterThanEquals,
+    LessThan,
+    LessThanEquals,
+    NotEquals,
+}
+
+#[derive(Debug)]
+pub struct ComparisonExpression {
+    pub op: ComparisonOpType,
     pub left: Box<Expression>,
     pub right: Box<Expression>,
     pub location: common::Location,
@@ -531,6 +544,7 @@ impl fmt::Display for ExpressionKind {
             ExpressionKind::String(e) => write!(f, "{:?}", e),
             ExpressionKind::Symbol(e) => write!(f, "{}", e),
             ExpressionKind::Binary(e) => write!(f, "{}", e),
+            ExpressionKind::Comparison(e) => write!(f, "{}", e),
             ExpressionKind::Unary(e) => write!(f, "{}", e),
             ExpressionKind::Call(e) => write!(f, "{}", e),
             ExpressionKind::Index(e) => write!(f, "{}", e),
@@ -553,6 +567,12 @@ impl fmt::Display for SymbolExpression {
 impl fmt::Display for BinaryExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "(binary {:?} {} {})", self.op, self.left, self.right)
+    }
+}
+
+impl fmt::Display for ComparisonExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(cmp {:?} {} {})", self.op, self.left, self.right)
     }
 }
 

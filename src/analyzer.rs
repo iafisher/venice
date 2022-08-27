@@ -364,6 +364,7 @@ impl Analyzer {
             ast::ExpressionKind::String(_) => ast::Type::String,
             ast::ExpressionKind::Symbol(ref mut e) => self.analyze_symbol_expression(e),
             ast::ExpressionKind::Binary(ref mut e) => self.analyze_binary_expression(e),
+            ast::ExpressionKind::Comparison(ref mut e) => self.analyze_comparison_expression(e),
             ast::ExpressionKind::Unary(ref mut e) => self.analyze_unary_expression(e),
             ast::ExpressionKind::Call(ref mut e) => self.analyze_call_expression(e),
             ast::ExpressionKind::Index(ref mut e) => self.analyze_index_expression(e),
@@ -431,22 +432,29 @@ impl Analyzer {
                 );
                 ast::Type::Boolean
             }
-            ast::BinaryOpType::Equals | ast::BinaryOpType::NotEquals => {
-                self.assert_type(&left_type, &right_type, expr.left.location.clone());
-                ast::Type::Boolean
-            }
-            ast::BinaryOpType::LessThan
-            | ast::BinaryOpType::LessThanEquals
-            | ast::BinaryOpType::GreaterThan
-            | ast::BinaryOpType::GreaterThanEquals => {
-                self.assert_type(&left_type, &ast::Type::I64, expr.left.location.clone());
-                self.assert_type(&right_type, &ast::Type::I64, expr.right.location.clone());
-                ast::Type::Boolean
-            }
             _ => {
                 self.assert_type(&left_type, &ast::Type::I64, expr.left.location.clone());
                 self.assert_type(&right_type, &ast::Type::I64, expr.right.location.clone());
                 ast::Type::I64
+            }
+        }
+    }
+
+    fn analyze_comparison_expression(&mut self, expr: &mut ast::ComparisonExpression) -> ast::Type {
+        let left_type = self.analyze_expression(&mut expr.left);
+        let right_type = self.analyze_expression(&mut expr.right);
+        match expr.op {
+            ast::ComparisonOpType::Equals | ast::ComparisonOpType::NotEquals => {
+                self.assert_type(&left_type, &right_type, expr.left.location.clone());
+                ast::Type::Boolean
+            }
+            ast::ComparisonOpType::LessThan
+            | ast::ComparisonOpType::LessThanEquals
+            | ast::ComparisonOpType::GreaterThan
+            | ast::ComparisonOpType::GreaterThanEquals => {
+                self.assert_type(&left_type, &ast::Type::I64, expr.left.location.clone());
+                self.assert_type(&right_type, &ast::Type::I64, expr.right.location.clone());
+                ast::Type::Boolean
             }
         }
     }

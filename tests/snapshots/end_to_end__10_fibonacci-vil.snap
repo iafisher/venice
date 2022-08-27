@@ -20,23 +20,10 @@ fibonacci__1_0:
   jump %while_cond_1
 
 while_cond_1:
-  %1 = load %i__4, 0
-  %2 = load %n__0, 0
-  cmp %1, %2
-  jump_lt %eq_4 %eq_5
-
-eq_4:
-  %0 = set 1
-  jump %eq_end_6
-
-eq_5:
-  %0 = set 0
-  jump %eq_end_6
-
-eq_end_6:
-  %1 = set 1
+  %0 = load %i__4, 0
+  %1 = load %n__0, 0
   cmp %0, %1
-  jump_eq %while_2 %while_end_3
+  jump_lt %while_2 %while_end_3
 
 while_2:
   %tmp__5 = alloca 8
@@ -60,7 +47,7 @@ while_end_3:
 }
 func main() -> i64 {
 
-main_7:
+main_4:
   %x__6 = alloca 8
   %1 = set 12
   %0 = call %fibonacci__1, %1

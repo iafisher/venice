@@ -388,16 +388,29 @@ impl Parser {
                     } else {
                         self.lexer.next();
                         let right = self.match_expression_with_precedence(*other_precedence)?;
-                        expr = ast::Expression {
-                            kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
-                                op: token_type_to_binary_op_type(token.type_),
-                                left: Box::new(expr),
-                                right: Box::new(right),
+                        if is_binary_comparison_op(token.type_) {
+                            expr = ast::Expression {
+                                kind: ast::ExpressionKind::Comparison(ast::ComparisonExpression {
+                                    op: token_type_to_comparison_op_type(token.type_),
+                                    left: Box::new(expr),
+                                    right: Box::new(right),
+                                    location: token.location.clone(),
+                                }),
+                                semantic_type: ast::Type::Unknown,
                                 location: token.location.clone(),
-                            }),
-                            semantic_type: ast::Type::Unknown,
-                            location: token.location.clone(),
-                        };
+                            };
+                        } else {
+                            expr = ast::Expression {
+                                kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                                    op: token_type_to_binary_op_type(token.type_),
+                                    left: Box::new(expr),
+                                    right: Box::new(right),
+                                    location: token.location.clone(),
+                                }),
+                                semantic_type: ast::Type::Unknown,
+                                location: token.location.clone(),
+                            };
+                        }
                     }
                     token = self.lexer.token();
                     continue;
@@ -610,17 +623,23 @@ lazy_static! {
     };
 }
 
+fn is_binary_comparison_op(type_: TokenType) -> bool {
+    match type_ {
+        TokenType::Equals
+        | TokenType::GreaterThan
+        | TokenType::GreaterThanEquals
+        | TokenType::LessThan
+        | TokenType::LessThanEquals
+        | TokenType::NotEquals => true,
+        _ => false,
+    }
+}
+
 fn token_type_to_binary_op_type(type_: TokenType) -> ast::BinaryOpType {
     match type_ {
         TokenType::And => ast::BinaryOpType::And,
         TokenType::Concat => ast::BinaryOpType::Concat,
-        TokenType::Equals => ast::BinaryOpType::Equals,
-        TokenType::GreaterThan => ast::BinaryOpType::GreaterThan,
-        TokenType::GreaterThanEquals => ast::BinaryOpType::GreaterThanEquals,
-        TokenType::LessThan => ast::BinaryOpType::LessThan,
-        TokenType::LessThanEquals => ast::BinaryOpType::LessThanEquals,
         TokenType::Minus => ast::BinaryOpType::Subtract,
-        TokenType::NotEquals => ast::BinaryOpType::NotEquals,
         TokenType::Or => ast::BinaryOpType::Or,
         TokenType::Percent => ast::BinaryOpType::Modulo,
         TokenType::Plus => ast::BinaryOpType::Add,
@@ -628,6 +647,20 @@ fn token_type_to_binary_op_type(type_: TokenType) -> ast::BinaryOpType {
         TokenType::Star => ast::BinaryOpType::Multiply,
         _ => {
             panic!("token type does not correspond to binary op type");
+        }
+    }
+}
+
+fn token_type_to_comparison_op_type(type_: TokenType) -> ast::ComparisonOpType {
+    match type_ {
+        TokenType::Equals => ast::ComparisonOpType::Equals,
+        TokenType::GreaterThan => ast::ComparisonOpType::GreaterThan,
+        TokenType::GreaterThanEquals => ast::ComparisonOpType::GreaterThanEquals,
+        TokenType::LessThan => ast::ComparisonOpType::LessThan,
+        TokenType::LessThanEquals => ast::ComparisonOpType::LessThanEquals,
+        TokenType::NotEquals => ast::ComparisonOpType::NotEquals,
+        _ => {
+            panic!("token type does not correspond to comparison op type");
         }
     }
 }
@@ -693,7 +726,7 @@ if x == 0 {
 }
 "#,
         );
-        assert_eq!(format!("{}", stmt), "(if (binary Equals x 0) (block (return 0)) (elif (binary Equals x 1) (block (return 1))) (else (block (return (call recursive ((binary Subtract x 1))))))");
+        assert_eq!(format!("{}", stmt), "(if (cmp Equals x 0) (block (return 0)) (elif (cmp Equals x 1) (block (return 1))) (else (block (return (call recursive ((binary Subtract x 1))))))");
     }
 
     #[test]
@@ -714,7 +747,7 @@ if x == 0 {
     #[test]
     fn equals() {
         let expr = parse_expression("n == 0");
-        assert_eq!(format!("{}", expr), "(binary Equals n 0)");
+        assert_eq!(format!("{}", expr), "(cmp Equals n 0)");
     }
 
     #[test]

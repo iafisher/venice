@@ -107,6 +107,9 @@ impl Generator {
                 ));
             }
             ast::ExpressionKind::Binary(b) => self.generate_binary_expression(&b, r.clone()),
+            ast::ExpressionKind::Comparison(b) => {
+                self.generate_comparison_expression(&b, r.clone())
+            }
             ast::ExpressionKind::Call(e) => self.generate_call_expression(e, r.clone()),
             ast::ExpressionKind::Symbol(symbol) => {
                 let entry = symbol.entry.as_ref().unwrap();
@@ -124,20 +127,32 @@ impl Generator {
         r
     }
 
+    // A variant of `generate_expression` that generates more efficient code when an expression is
+    // being used as a control-flow condition, e.g. in an `if` statement or a `while` loop.
     fn generate_expression_as_condition(
         &mut self,
         expr: &ast::Expression,
-        label_true: vil::Label,
-        label_false: vil::Label,
+        true_label: vil::Label,
+        false_label: vil::Label,
     ) {
-        let register = self.generate_expression(&expr);
-        let tmp = self.claim_register();
-        self.push(vil::Instruction::Set(
-            tmp.clone(),
-            vil::Immediate::Integer(1),
-        ));
-        self.push(vil::Instruction::Cmp(register, tmp));
-        self.push(vil::Instruction::JumpEq(label_true, label_false));
+        if let ast::ExpressionKind::Comparison(cmp_expr) = &expr.kind {
+            let left = self.generate_expression(&cmp_expr.left);
+            let right = self.generate_expression(&cmp_expr.right);
+
+            self.push(vil::Instruction::Cmp(left, right));
+            let exit =
+                get_comparison_instruction(cmp_expr.op, true_label.clone(), false_label.clone());
+            self.push(exit);
+        } else {
+            let register = self.generate_expression(&expr);
+            let tmp = self.claim_register();
+            self.push(vil::Instruction::Set(
+                tmp.clone(),
+                vil::Immediate::Integer(1),
+            ));
+            self.push(vil::Instruction::Cmp(register, tmp));
+            self.push(vil::Instruction::JumpEq(true_label, false_label));
+        }
     }
 
     fn generate_binary_expression(&mut self, expr: &ast::BinaryExpression, r: vil::Register) {
@@ -153,26 +168,8 @@ impl Generator {
             ast::BinaryOpType::Divide => {
                 self.push(vil::Instruction::Div(r, left, right));
             }
-            ast::BinaryOpType::Equals => {
-                self.generate_binary_comparison(expr.op, left, right, r);
-            }
-            ast::BinaryOpType::GreaterThan => {
-                self.generate_binary_comparison(expr.op, left, right, r);
-            }
-            ast::BinaryOpType::GreaterThanEquals => {
-                self.generate_binary_comparison(expr.op, left, right, r);
-            }
-            ast::BinaryOpType::LessThan => {
-                self.generate_binary_comparison(expr.op, left, right, r);
-            }
-            ast::BinaryOpType::LessThanEquals => {
-                self.generate_binary_comparison(expr.op, left, right, r);
-            }
             ast::BinaryOpType::Multiply => {
                 self.push(vil::Instruction::Mul(r, left, right));
-            }
-            ast::BinaryOpType::NotEquals => {
-                self.generate_binary_comparison(expr.op, left, right, r);
             }
             ast::BinaryOpType::Subtract => {
                 self.push(vil::Instruction::Sub(r, left, right));
@@ -185,41 +182,21 @@ impl Generator {
         self.register_counter = old_register_counter;
     }
 
-    fn generate_binary_comparison(
+    fn generate_comparison_expression(
         &mut self,
-        op: ast::BinaryOpType,
-        left: vil::Register,
-        right: vil::Register,
+        expr: &ast::ComparisonExpression,
         r: vil::Register,
     ) {
+        let left = self.generate_expression(&expr.left);
+        let right = self.generate_expression(&expr.right);
+
         let true_label = self.claim_label("eq");
         let false_label = self.claim_label("eq");
         let end_label = self.claim_label("eq_end");
 
         self.push(vil::Instruction::Cmp(left, right));
 
-        let exit = match op {
-            ast::BinaryOpType::Equals => {
-                vil::Instruction::JumpEq(true_label.clone(), false_label.clone())
-            }
-            ast::BinaryOpType::GreaterThan => {
-                vil::Instruction::JumpGt(true_label.clone(), false_label.clone())
-            }
-            ast::BinaryOpType::GreaterThanEquals => {
-                vil::Instruction::JumpGte(true_label.clone(), false_label.clone())
-            }
-            ast::BinaryOpType::LessThan => {
-                vil::Instruction::JumpLt(true_label.clone(), false_label.clone())
-            }
-            ast::BinaryOpType::LessThanEquals => {
-                vil::Instruction::JumpLte(true_label.clone(), false_label.clone())
-            }
-            ast::BinaryOpType::NotEquals => {
-                vil::Instruction::JumpNeq(true_label.clone(), false_label.clone())
-            }
-            _ => panic!("not a binary comparison"),
-        };
-
+        let exit = get_comparison_instruction(expr.op, true_label.clone(), false_label.clone());
         self.start_block(true_label, Some(exit));
         self.push(vil::Instruction::Set(r.clone(), vil::Immediate::Integer(1)));
 
@@ -428,5 +405,22 @@ impl Generator {
         let function = self.current_function();
         let index = function.blocks.len() - 1;
         &mut function.blocks[index]
+    }
+}
+
+fn get_comparison_instruction(
+    op: ast::ComparisonOpType,
+    true_label: vil::Label,
+    false_label: vil::Label,
+) -> vil::Instruction {
+    match op {
+        ast::ComparisonOpType::Equals => vil::Instruction::JumpEq(true_label, false_label),
+        ast::ComparisonOpType::GreaterThan => vil::Instruction::JumpGt(true_label, false_label),
+        ast::ComparisonOpType::GreaterThanEquals => {
+            vil::Instruction::JumpGte(true_label, false_label)
+        }
+        ast::ComparisonOpType::LessThan => vil::Instruction::JumpLt(true_label, false_label),
+        ast::ComparisonOpType::LessThanEquals => vil::Instruction::JumpLte(true_label, false_label),
+        ast::ComparisonOpType::NotEquals => vil::Instruction::JumpNeq(true_label, false_label),
     }
 }
