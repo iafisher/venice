@@ -8,14 +8,13 @@ extern venice_printint
 section .text
 
 fibonacci__1:
-  push r11
+
+fibonacci__1_0:
   push r12
   push r13
   push r14
   push r15
   push rbx
-
-fibonacci__1_0:
   push rbp
   mov rbp, rsp
   sub rsp, 8
@@ -36,7 +35,6 @@ if_true_1:
   pop r14
   pop r13
   pop r12
-  pop r11
   ret
   jmp if_end_3
 
@@ -57,7 +55,6 @@ if_true_4:
   pop r14
   pop r13
   pop r12
-  pop r11
   ret
   jmp if_end_6
 
@@ -67,14 +64,22 @@ if_false_5:
   mov r12, r13
   sub r12, r14
   mov rdi, r12
+  push r10
+  push r11
   call fibonacci__1
+  pop r11
+  pop r10
   mov r11, rax
   mov r15, [rbp-8]
   mov rbx, 2
   mov r14, r15
   sub r14, rbx
   mov rdi, r14
+  push r10
+  push r11
   call fibonacci__1
+  pop r11
+  pop r10
   mov r13, rax
   mov r10, r13
   add r10, r11
@@ -86,7 +91,6 @@ if_false_5:
   pop r14
   pop r13
   pop r12
-  pop r11
   ret
   jmp if_end_6
 
@@ -97,26 +101,42 @@ if_end_3:
 
 global main
 main:
-  push r11
 
 main_7:
+  push r12
+  push r13
+  push r14
+  push r15
+  push rbx
   push rbp
   mov rbp, rsp
   sub rsp, 8
   mov r11, 12
   mov rdi, r11
+  push r10
+  push r11
   call fibonacci__1
+  pop r11
+  pop r10
   mov r10, rax
   mov [rbp-8], r10
   mov r11, [rbp-8]
   mov rdi, r11
+  push r10
+  push r11
   call venice_printint
+  pop r11
+  pop r10
   mov r10, rax
   mov r10, 0
   mov rax, r10
   add rsp, 8
   pop rbp
-  pop r11
+  pop rbx
+  pop r15
+  pop r14
+  pop r13
+  pop r12
   ret
 
 section .data

@@ -69,9 +69,14 @@ impl Generator {
         self.program.declarations.push(vil_declaration);
         let label = self.claim_label(&name);
         self.start_block(label, None);
-        self.push(vil::Instruction::FrameSetUp(
-            self.info.as_ref().unwrap().stack_frame_size,
-        ));
+
+        // Save callee-save registers.
+        for i in 2..vil::GP_REGISTER_COUNT {
+            self.push(vil::Instruction::CalleeSave(vil::Register::gp(i)));
+        }
+
+        let info = self.info.as_ref().unwrap();
+        self.push(vil::Instruction::FrameSetUp(info.stack_frame_size));
 
         // Move parameters from registers onto the stack.
         for (i, parameter) in declaration.parameters.iter().enumerate() {
@@ -230,9 +235,18 @@ impl Generator {
             self.program.externs.push(entry.unique_name.clone());
         }
 
+        // Save caller-save registers.
+        self.push(vil::Instruction::CallerSave(vil::Register::gp(0)));
+        self.push(vil::Instruction::CallerSave(vil::Register::gp(1)));
+
         self.push(vil::Instruction::Call(vil::FunctionLabel(
             entry.unique_name.clone(),
         )));
+
+        // Restore caller-save registers.
+        self.push(vil::Instruction::CallerRestore(vil::Register::gp(1)));
+        self.push(vil::Instruction::CallerRestore(vil::Register::gp(0)));
+
         self.push(vil::Instruction::Move(r, vil::Register::Return));
     }
 
@@ -330,6 +344,12 @@ impl Generator {
         self.push(vil::Instruction::FrameTearDown(
             self.info.as_ref().unwrap().stack_frame_size,
         ));
+
+        // Restore callee-save registers.
+        for i in (2..vil::GP_REGISTER_COUNT).rev() {
+            self.push(vil::Instruction::CalleeRestore(vil::Register::gp(i)));
+        }
+
         self.push(vil::Instruction::Ret);
     }
 

@@ -115,16 +115,6 @@ impl Generator {
             instructions: Vec::new(),
         };
 
-        // Starting at 1 because 0 is RAX, which is the function's return value and is always
-        // clobbered.
-        for register_number in 1..declaration.max_register_count {
-            block
-                .instructions
-                .push(Instruction::Push(Value::Register(Register(
-                    (register_number as u8) + vil::PARAM_REGISTER_COUNT,
-                ))));
-        }
-
         self.program.blocks.push(block);
         for block in &declaration.blocks {
             self.generate_block(&declaration, &block);
@@ -214,14 +204,6 @@ impl Generator {
                 instructions.push(Instruction::Pop(RBP));
             }
             vil::Instruction::Ret => {
-                // Starting at 1 because 0 is RAX, which is the function's return value and is always
-                // clobbered.
-                for register_number in (1..declaration.max_register_count).rev() {
-                    instructions.push(Instruction::Pop(Value::Register(Register(
-                        (register_number as u8) + vil::PARAM_REGISTER_COUNT,
-                    ))));
-                }
-
                 instructions.push(Instruction::Ret);
             }
             vil::Instruction::Jump(l) => {
@@ -250,6 +232,18 @@ impl Generator {
             vil::Instruction::JumpNeq(true_label, false_label) => {
                 instructions.push(Instruction::Jne(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
+            }
+            vil::Instruction::CalleeRestore(r) => {
+                instructions.push(Instruction::Pop(Value::r(r)));
+            }
+            vil::Instruction::CalleeSave(r) => {
+                instructions.push(Instruction::Push(Value::r(r)));
+            }
+            vil::Instruction::CallerRestore(r) => {
+                instructions.push(Instruction::Pop(Value::r(r)));
+            }
+            vil::Instruction::CallerSave(r) => {
+                instructions.push(Instruction::Push(Value::r(r)));
             }
             vil::Instruction::ToDo(s) => {
                 // TODO

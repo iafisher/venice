@@ -9,21 +9,33 @@ section .text
 
 global main
 main:
-  push r11
 
 main_0:
+  push r12
+  push r13
+  push r14
+  push r15
+  push rbx
   push rbp
   mov rbp, rsp
   sub rsp, 0
   mov r11, s_0
   mov rdi, r11
+  push r10
+  push r11
   call venice_println
+  pop r11
+  pop r10
   mov r10, rax
   mov r10, 0
   mov rax, r10
   add rsp, 0
   pop rbp
-  pop r11
+  pop rbx
+  pop r15
+  pop r14
+  pop r13
+  pop r12
   ret
 
 section .data

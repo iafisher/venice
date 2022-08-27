@@ -10,14 +10,28 @@ extern venice_println;
 func main -> i64 {
 
 main_0:
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
   frame_set_up 0
   %rg1 = set s_0
   %rp0 = move %rg1
+  caller_save %rg0
+  caller_save %rg1
   call %venice_println
+  %rg1 = caller_restore
+  %rg0 = caller_restore
   %rg0 = move %rt
   %rg0 = set 0
   %rt = move %rg0
   frame_tear_down 0
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
   ret
 }
 

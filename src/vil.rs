@@ -34,6 +34,10 @@ pub enum Instruction {
     Add(Register, Register, Register),
     Alloca(Memory, u64),
     Call(FunctionLabel),
+    CalleeRestore(Register),
+    CalleeSave(Register),
+    CallerRestore(Register),
+    CallerSave(Register),
     Cmp(Register, Register),
     Div(Register, Register, Register),
     FrameSetUp(usize),
@@ -64,9 +68,9 @@ pub enum Register {
     Base,
 }
 
-// TODO: make this private
+// TODO: make these private
 pub const PARAM_REGISTER_COUNT: u8 = 6;
-const GP_REGISTER_COUNT: u8 = 7;
+pub const GP_REGISTER_COUNT: u8 = 7;
 const RETURN_REGISTER_INDEX: u8 = 13;
 const STACK_REGISTER_INDEX: u8 = 14;
 const BASE_REGISTER_INDEX: u8 = 15;
@@ -174,6 +178,10 @@ impl fmt::Display for Instruction {
             Instruction::Add(r1, r2, r3) => write!(f, "  {} = add {}, {}", r1, r2, r3),
             Instruction::Alloca(mem, size) => write!(f, "  {} = alloca {}", mem, size),
             Instruction::Call(func) => write!(f, "  call {}", func),
+            Instruction::CalleeSave(r) => write!(f, "  callee_save {}", r),
+            Instruction::CalleeRestore(r) => write!(f, "  {} = callee_restore", r),
+            Instruction::CallerSave(r) => write!(f, "  caller_save {}", r),
+            Instruction::CallerRestore(r) => write!(f, "  {} = caller_restore", r),
             Instruction::Cmp(r1, r2) => write!(f, "  cmp {}, {}", r1, r2),
             Instruction::Div(r1, r2, r3) => write!(f, "  {} = div {}, {}", r1, r2, r3),
             Instruction::FrameSetUp(size) => write!(f, "  frame_set_up {}", size),

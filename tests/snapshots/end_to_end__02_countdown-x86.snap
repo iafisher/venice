@@ -9,11 +9,13 @@ section .text
 
 global main
 main:
-  push r11
-  push r12
-  push r13
 
 main_0:
+  push r12
+  push r13
+  push r14
+  push r15
+  push rbx
   push rbp
   mov rbp, rsp
   sub rsp, 8
@@ -31,7 +33,11 @@ while_cond_1:
 while_2:
   mov r13, [rbp-8]
   mov rdi, r13
+  push r10
+  push r11
   call venice_printint
+  pop r11
+  pop r10
   mov r12, rax
   mov r11, [rbp-8]
   mov r12, 1
@@ -45,9 +51,11 @@ while_end_3:
   mov rax, r10
   add rsp, 8
   pop rbp
+  pop rbx
+  pop r15
+  pop r14
   pop r13
   pop r12
-  pop r11
   ret
 
 section .data

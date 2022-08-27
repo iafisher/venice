@@ -10,6 +10,11 @@ extern venice_printint;
 func fibonacci__1 -> i64 {
 
 fibonacci__1_0:
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
   frame_set_up 40
   %n__0 = alloca 8
   %n__0 = store %rp0, 0
@@ -50,6 +55,11 @@ while_end_3:
   %rg0 = load %fib_i__2, 0
   %rt = move %rg0
   frame_tear_down 40
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
   ret
 }
 
@@ -57,20 +67,38 @@ while_end_3:
 func main -> i64 {
 
 main_4:
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
   frame_set_up 8
   %x__6 = alloca 8
   %rg1 = set 12
   %rp0 = move %rg1
+  caller_save %rg0
+  caller_save %rg1
   call %fibonacci__1
+  %rg1 = caller_restore
+  %rg0 = caller_restore
   %rg0 = move %rt
   %x__6 = store %rg0, 0
   %rg1 = load %x__6, 0
   %rp0 = move %rg1
+  caller_save %rg0
+  caller_save %rg1
   call %venice_printint
+  %rg1 = caller_restore
+  %rg0 = caller_restore
   %rg0 = move %rt
   %rg0 = set 0
   %rt = move %rg0
   frame_tear_down 8
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
   ret
 }
 

@@ -10,12 +10,22 @@ extern venice_printint;
 func two_plus_two__0 -> i64 {
 
 two_plus_two__0_0:
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
   frame_set_up 0
   %rg1 = set 2
   %rg2 = set 2
   %rg0 = add %rg1, %rg2
   %rt = move %rg0
   frame_tear_down 0
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
   ret
 }
 
@@ -23,18 +33,36 @@ two_plus_two__0_0:
 func main -> i64 {
 
 main_1:
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
   frame_set_up 8
   %x__1 = alloca 8
+  caller_save %rg0
+  caller_save %rg1
   call %two_plus_two__0
+  %rg1 = caller_restore
+  %rg0 = caller_restore
   %rg0 = move %rt
   %x__1 = store %rg0, 0
   %rg1 = load %x__1, 0
   %rp0 = move %rg1
+  caller_save %rg0
+  caller_save %rg1
   call %venice_printint
+  %rg1 = caller_restore
+  %rg0 = caller_restore
   %rg0 = move %rt
   %rg0 = set 0
   %rt = move %rg0
   frame_tear_down 8
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
   ret
 }
 
