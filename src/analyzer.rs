@@ -192,7 +192,7 @@ impl Analyzer {
 
         self.current_function_info = Some(ast::FunctionInfo {
             // TODO: not all parameters are 8 bytes
-            stack_frame_size: 8 * (declaration.parameters.len() as u32),
+            stack_frame_size: 8 * declaration.parameters.len(),
         });
         self.current_function_return_type = Some(declaration.semantic_return_type.clone());
         self.analyze_block(&mut declaration.body);

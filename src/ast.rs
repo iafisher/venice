@@ -33,7 +33,7 @@ pub struct FunctionDeclaration {
 
 #[derive(Clone, Debug)]
 pub struct FunctionInfo {
-    pub stack_frame_size: u32,
+    pub stack_frame_size: usize,
 }
 
 #[derive(Debug)]
