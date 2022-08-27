@@ -1,0 +1,7 @@
+func main() -> i64 {
+  let x: i64 = 21 * 2;
+  printint(x);
+  let y: i64 = 84 / 2;
+  printint(y);
+  return 0;
+}

@@ -26,6 +26,8 @@ pub enum Instruction {
     Add(Value, Value),
     Call(String),
     Cmp(Value, Value),
+    IDiv(Value),
+    IMul(Value, Value),
     Je(String),
     Jg(String),
     Jge(String),
@@ -38,6 +40,7 @@ pub enum Instruction {
     Push(Value),
     Ret,
     Sub(Value, Value),
+    Xor(Value, Value),
     ToDo(String),
 }
 
@@ -164,6 +167,29 @@ impl Generator {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
                 instructions.push(Instruction::Sub(Value::r(r1), Value::r(r3)));
             }
+            vil::Instruction::Mul(r1, r2, r3) => {
+                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
+                instructions.push(Instruction::IMul(Value::r(r1), Value::r(r3)));
+            }
+            vil::Instruction::Div(r1, r2, r3) => {
+                // In x86, `div RXX` computes RDX:RAX / RXX and stores the quotient in RAX and the
+                // remainder in RDX.
+                //
+                // The compiler will never use RAX or RDX for regular expressions, so we don't have
+                // to worry about the case where r1, r2, or r3 is RAX or RDX.
+
+                // First, we zero out RDX since we are only doing 64-bit division, not 128-bit.
+                instructions.push(Instruction::Xor(RDX, RDX));
+
+                // Move the dividend into RAX.
+                instructions.push(Instruction::Mov(RAX, Value::r(r2)));
+
+                // Divide by the divisor.
+                instructions.push(Instruction::IDiv(Value::r(r3)));
+
+                // Move RAX into the destination register.
+                instructions.push(Instruction::Mov(Value::r(r1), RAX));
+            }
             vil::Instruction::Load(r, mem, offset) => {
                 let real_offset = *self.offsets.get(&mem.0).unwrap() + *offset as u32;
                 instructions.push(Instruction::Mov(
@@ -257,6 +283,10 @@ impl Generator {
     }
 }
 
+const RDX_REGISTER: Register = Register(2);
+const RDX: Value = Value::Register(RDX_REGISTER);
+const RAX_REGISTER: Register = Register(13);
+const RAX: Value = Value::Register(RAX_REGISTER);
 const RSP_REGISTER: Register = Register(14);
 const RSP: Value = Value::Register(RSP_REGISTER);
 const RBP_REGISTER: Register = Register(15);
@@ -307,6 +337,8 @@ impl fmt::Display for Instruction {
             Instruction::Add(x, y) => write!(f, "add {}, {}", x, y),
             Instruction::Call(l) => write!(f, "call {}", l),
             Instruction::Cmp(x, y) => write!(f, "cmp {}, {}", x, y),
+            Instruction::IDiv(x) => write!(f, "div {}", x),
+            Instruction::IMul(x, y) => write!(f, "imul {}, {}", x, y),
             Instruction::Je(l) => write!(f, "je {}", l),
             Instruction::Jg(l) => write!(f, "jg {}", l),
             Instruction::Jge(l) => write!(f, "jge {}", l),
@@ -319,6 +351,7 @@ impl fmt::Display for Instruction {
             Instruction::Push(x) => write!(f, "push {}", x),
             Instruction::Ret => write!(f, "ret"),
             Instruction::Sub(x, y) => write!(f, "sub {}, {}", x, y),
+            Instruction::Xor(x, y) => write!(f, "xor {}, {}", x, y),
             Instruction::ToDo(s) => write!(f, "<todo: {}>", s),
         }
     }

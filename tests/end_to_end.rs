@@ -9,37 +9,42 @@ use std::str;
 extern crate insta;
 
 #[test]
-fn test_hello() {
+fn test_00_hello() {
     test_e2e("00_hello");
 }
 
 #[test]
-fn test_simple_if() {
+fn test_01_simple_if() {
     test_e2e("01_simple_if");
 }
 
 #[test]
-fn test_countdown() {
+fn test_02_countdown() {
     test_e2e("02_countdown");
 }
 
 #[test]
-fn test_simple_function() {
+fn test_03_simple_function() {
     test_e2e("03_simple_function");
 }
 
 #[test]
-fn test_simple_function_with_args() {
+fn test_04_simple_function_with_args() {
     test_e2e("04_simple_function_with_args");
 }
 
 #[test]
-fn test_fibonacci() {
+fn test_05_multiply_divide() {
+    test_e2e("05_multiply_divide");
+}
+
+#[test]
+fn test_10_fibonacci() {
     test_e2e("10_fibonacci");
 }
 
 #[test]
-fn test_fibonacci_recursive() {
+fn test_11_fibonacci_recursive() {
     test_e2e("11_fibonacci_recursive");
 }
 
