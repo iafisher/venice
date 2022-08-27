@@ -32,6 +32,16 @@ fn test_simple_function_with_args() {
     test_e2e("04_simple_function_with_args");
 }
 
+#[test]
+fn test_fibonacci() {
+    test_e2e("10_fibonacci");
+}
+
+// TODO: does not work yet
+fn test_fibonacci_recursive() {
+    test_e2e("11_fibonacci_recursive");
+}
+
 fn test_e2e(folder: &str) {
     let bin_path = build_path(folder, "program");
     let input_path = build_path(folder, "program.vn");

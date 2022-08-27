@@ -1,0 +1,17 @@
+func fibonacci(n: i64) -> i64 {
+  if n == 0 {
+    return 0;
+  } else {
+    if n == 1 {
+      return 1;
+    } else {
+      return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+  }
+}
+
+func main() -> i64 {
+  let x: i64 = fibonacci(12);
+  printint(x);
+  return 0;
+}

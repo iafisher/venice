@@ -245,7 +245,7 @@ impl Parser {
     }
 
     fn match_if_statement(&mut self) -> Result<ast::IfStatement, ()> {
-        let token = self.lexer.token();
+        let mut token = self.lexer.token();
         let location = token.location.clone();
         self.expect_token(&token, TokenType::If, "if")?;
 
@@ -253,29 +253,42 @@ impl Parser {
         let condition = self.match_expression()?;
         let body = self.match_block()?;
 
-        if self.lexer.token().type_ == TokenType::Else {
-            self.lexer.next();
-            // TODO: handle else-ifs
-            let else_body = self.match_block()?;
-            Ok(ast::IfStatement {
-                if_clause: ast::IfClause {
-                    condition: condition,
-                    body: body,
-                },
-                elif_clauses: Vec::new(),
-                else_clause: else_body,
-                location: location,
-            })
-        } else {
-            Ok(ast::IfStatement {
-                if_clause: ast::IfClause {
-                    condition: condition,
-                    body: body,
-                },
-                elif_clauses: Vec::new(),
-                else_clause: Vec::new(),
-                location: location,
-            })
+        let mut elif_clauses = Vec::new();
+        loop {
+            token = self.lexer.token();
+            if token.type_ == TokenType::Else {
+                token = self.lexer.next();
+                if token.type_ == TokenType::If {
+                    self.lexer.next();
+                    let elif_condition = self.match_expression()?;
+                    let elif_body = self.match_block()?;
+                    elif_clauses.push(ast::IfClause {
+                        condition: elif_condition,
+                        body: elif_body,
+                    });
+                } else {
+                    let else_body = self.match_block()?;
+                    return Ok(ast::IfStatement {
+                        if_clause: ast::IfClause {
+                            condition: condition,
+                            body: body,
+                        },
+                        elif_clauses: elif_clauses,
+                        else_clause: else_body,
+                        location: location,
+                    });
+                }
+            } else {
+                return Ok(ast::IfStatement {
+                    if_clause: ast::IfClause {
+                        condition: condition,
+                        body: body,
+                    },
+                    elif_clauses: elif_clauses,
+                    else_clause: Vec::new(),
+                    location: location,
+                });
+            }
         }
     }
 
@@ -585,6 +598,8 @@ lazy_static! {
         m.insert(TokenType::GreaterThanEquals, PRECEDENCE_COMPARISON);
         m.insert(TokenType::LessThan, PRECEDENCE_COMPARISON);
         m.insert(TokenType::LessThanEquals, PRECEDENCE_COMPARISON);
+        m.insert(TokenType::Equals, PRECEDENCE_COMPARISON);
+        m.insert(TokenType::NotEquals, PRECEDENCE_COMPARISON);
         m.insert(TokenType::Minus, PRECEDENCE_ADDITION);
         m.insert(TokenType::Plus, PRECEDENCE_ADDITION);
         m.insert(TokenType::Slash, PRECEDENCE_MULTIPLICATION);
@@ -666,6 +681,22 @@ mod tests {
     }
 
     #[test]
+    fn if_elif_statement() {
+        let stmt = parse_statement(
+            r#"
+if x == 0 {
+    return 0;
+} else if x == 1 {
+    return 1;
+} else {
+    return recursive(x - 1);
+}
+"#,
+        );
+        assert_eq!(format!("{}", stmt), "(if (binary Equals x 0) (block (return 0)) (elif (binary Equals x 1) (block (return 1))) (else (block (return (call recursive ((binary Subtract x 1))))))");
+    }
+
+    #[test]
     fn precedence() {
         let expr = parse_expression("1 * 2 + 3");
         assert_eq!(format!("{}", expr), "(binary Add (binary Multiply 1 2) 3)");
@@ -678,6 +709,12 @@ mod tests {
             format!("{}", expr),
             "(binary Multiply 2 (call f (1 (binary Add 2 x) 3)))"
         );
+    }
+
+    #[test]
+    fn equals() {
+        let expr = parse_expression("n == 0");
+        assert_eq!(format!("{}", expr), "(binary Equals n 0)");
     }
 
     #[test]

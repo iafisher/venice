@@ -307,15 +307,32 @@ impl Generator {
 
         self.start_block(true_label);
         self.generate_block(&stmt.if_clause.body);
-        self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
+
+        // TODO: must be a more elegant way to do this
+        let mut needs_end_label = false;
+        match self.current_block().exit {
+            vil::ExitInstruction::Placeholder => {
+                needs_end_label = true;
+                self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
+            }
+            _ => {}
+        }
 
         // TODO: handle elif_clauses
 
         self.start_block(false_label);
         self.generate_block(&stmt.else_clause);
-        self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
+        match self.current_block().exit {
+            vil::ExitInstruction::Placeholder => {
+                needs_end_label = true;
+                self.set_exit(vil::ExitInstruction::Jump(end_label.clone()));
+            }
+            _ => {}
+        }
 
-        self.start_block(end_label);
+        if needs_end_label {
+            self.start_block(end_label);
+        }
     }
 
     fn generate_let_statement(&mut self, stmt: &ast::LetStatement) {

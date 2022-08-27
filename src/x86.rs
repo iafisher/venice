@@ -59,7 +59,7 @@ impl Value {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Register(u8);
 
 pub struct Data {
@@ -115,7 +115,12 @@ impl Generator {
             instructions: Vec::new(),
         };
 
-        block.instructions.push(Instruction::Push(RBP));
+        for r in CALLEE_SAVE_REGISTERS {
+            block
+                .instructions
+                .push(Instruction::Push(Value::Register(r)));
+        }
+
         block.instructions.push(Instruction::Mov(RBP, RSP));
         block.instructions.push(Instruction::Sub(
             RSP,
@@ -224,12 +229,20 @@ impl Generator {
                     panic!("too many arguments");
                 }
 
+                for r in CALLER_SAVE_REGISTERS {
+                    instructions.push(Instruction::Push(Value::Register(r)));
+                }
+
                 for (i, arg) in args.iter().enumerate() {
                     let call_register = Value::Register(CALL_REGISTERS[i].clone());
                     instructions.push(Instruction::Mov(call_register, Value::r(arg)));
                 }
                 instructions.push(Instruction::Call(label.0.clone()));
                 instructions.push(Instruction::Mov(Value::r(r), RAX));
+
+                for r in CALLER_SAVE_REGISTERS.iter().rev() {
+                    instructions.push(Instruction::Pop(Value::Register(*r)));
+                }
             }
             vil::Instruction::ToDo(s) => {
                 // TODO
@@ -255,7 +268,9 @@ impl Generator {
                     RSP,
                     Value::Immediate(declaration.stack_frame_size.into()),
                 ));
-                instructions.push(Instruction::Pop(RBP));
+                for r in CALLEE_SAVE_REGISTERS.iter().rev() {
+                    instructions.push(Instruction::Pop(Value::Register(*r)));
+                }
                 instructions.push(Instruction::Ret);
             }
             vil::ExitInstruction::Jump(l) => {
@@ -295,17 +310,24 @@ impl Generator {
 
 const RAX_REGISTER: Register = Register(0);
 const RAX: Value = Value::Register(RAX_REGISTER);
+const RBX_REGISTER: Register = Register(1);
+const RCX_REGISTER: Register = Register(2);
+const RDX_REGISTER: Register = Register(3);
+const RSI_REGISTER: Register = Register(4);
+const RDI_REGISTER: Register = Register(5);
+const R8_REGISTER: Register = Register(6);
+const R9_REGISTER: Register = Register(7);
+const R10_REGISTER: Register = Register(8);
+const R11_REGISTER: Register = Register(9);
+const R12_REGISTER: Register = Register(10);
+const R13_REGISTER: Register = Register(11);
+const R14_REGISTER: Register = Register(12);
+const R15_REGISTER: Register = Register(13);
 const RBP_REGISTER: Register = Register(14);
 const RBP: Value = Value::Register(RBP_REGISTER);
 const RSP_REGISTER: Register = Register(15);
 const RSP: Value = Value::Register(RSP_REGISTER);
 
-const RDI_REGISTER: Register = Register(5);
-const RSI_REGISTER: Register = Register(4);
-const RDX_REGISTER: Register = Register(3);
-const RCX_REGISTER: Register = Register(2);
-const R8_REGISTER: Register = Register(6);
-const R9_REGISTER: Register = Register(7);
 const CALL_REGISTERS: [Register; 6] = [
     RDI_REGISTER,
     RSI_REGISTER,
@@ -313,6 +335,27 @@ const CALL_REGISTERS: [Register; 6] = [
     RCX_REGISTER,
     R8_REGISTER,
     R9_REGISTER,
+];
+
+const CALLEE_SAVE_REGISTERS: [Register; 6] = [
+    RBP_REGISTER,
+    RBX_REGISTER,
+    R12_REGISTER,
+    R13_REGISTER,
+    R14_REGISTER,
+    R15_REGISTER,
+];
+
+const CALLER_SAVE_REGISTERS: [Register; 9] = [
+    RAX_REGISTER,
+    RCX_REGISTER,
+    RDX_REGISTER,
+    RDI_REGISTER,
+    RSI_REGISTER,
+    R8_REGISTER,
+    R9_REGISTER,
+    R10_REGISTER,
+    R11_REGISTER,
 ];
 
 impl fmt::Display for Program {
