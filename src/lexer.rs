@@ -54,7 +54,7 @@ pub enum TokenType {
     Return,
     While,
     // Miscellaneous
-    EOF,
+    End,
     Unknown,
 }
 
@@ -68,9 +68,9 @@ pub struct Token {
 impl Token {
     pub fn new(type_: TokenType, value: &str, location: common::Location) -> Self {
         Token {
-            type_: type_,
+            type_,
             value: String::from(value),
-            location: location,
+            location,
         }
     }
 }
@@ -166,7 +166,7 @@ impl Lexer {
             token: Token {
                 type_: TokenType::Unknown,
                 value: String::new(),
-                location: location,
+                location,
             },
         };
         // "Prime the pump" so that we can immediately call token() to retrieve the
@@ -187,7 +187,7 @@ impl Lexer {
         self.skip_whitespace();
 
         if self.done() {
-            return self.make_token(TokenType::EOF);
+            return self.make_token(TokenType::End);
         }
 
         self.start = self.index;
@@ -326,11 +326,11 @@ mod tests {
         assert_eq!(lexer.token(), token(TokenType::Integer, "1"));
         assert_eq!(lexer.next(), token(TokenType::Plus, "+"),);
         assert_eq!(lexer.next(), token(TokenType::Integer, "1"));
-        assert_eq!(lexer.next(), token(TokenType::EOF, ""));
+        assert_eq!(lexer.next(), token(TokenType::End, ""));
 
         // Make sure that multiple calls to lexer.next() at the end of the token stream
         // continue to return the EOF token.
-        assert_eq!(lexer.next(), token(TokenType::EOF, ""));
+        assert_eq!(lexer.next(), token(TokenType::End, ""));
     }
 
     #[test]
@@ -349,7 +349,7 @@ mod tests {
         assert_eq!(lexer.next(), token(TokenType::LessThanEquals, "<="));
         assert_eq!(lexer.next(), token(TokenType::GreaterThanEquals, ">="));
         assert_eq!(lexer.next(), token(TokenType::Assign, "="));
-        assert_eq!(lexer.next(), token(TokenType::EOF, ""));
+        assert_eq!(lexer.next(), token(TokenType::End, ""));
     }
 
     #[test]

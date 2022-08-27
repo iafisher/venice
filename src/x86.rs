@@ -6,7 +6,7 @@ use std::fmt;
 
 pub fn generate(vil: &vil::Program) -> Result<Program, String> {
     let mut generator = Generator::new();
-    generator.generate_program(&vil);
+    generator.generate_program(vil);
     Ok(generator.program)
 }
 
@@ -97,7 +97,7 @@ impl Generator {
         self.program.externs = vil.externs.clone();
 
         for declaration in &vil.declarations {
-            self.generate_declaration(&declaration);
+            self.generate_declaration(declaration);
         }
 
         for (string_name, string_value) in &vil.strings {
@@ -120,26 +120,26 @@ impl Generator {
 
         self.program.blocks.push(block);
         for block in &declaration.blocks {
-            self.generate_block(&declaration, &block);
+            self.generate_block(declaration, block);
         }
     }
 
     fn generate_block(&mut self, declaration: &vil::FunctionDeclaration, block: &vil::Block) {
         let mut instructions = Vec::new();
         for instruction in &block.instructions {
-            self.generate_instruction(&declaration, &mut instructions, &instruction);
+            self.generate_instruction(declaration, &mut instructions, instruction);
         }
         self.program.blocks.push(Block {
             global: false,
             label: block.name.clone(),
-            instructions: instructions,
+            instructions,
         });
     }
 
     fn generate_instruction(
         &mut self,
         // TODO: better way of exposing this information
-        declaration: &vil::FunctionDeclaration,
+        _declaration: &vil::FunctionDeclaration,
         instructions: &mut Vec<Instruction>,
         instruction: &vil::Instruction,
     ) {
@@ -275,10 +275,6 @@ impl Generator {
                 // TODO
                 instructions.push(Instruction::ToDo(s.clone()));
             }
-            x => {
-                // TODO
-                instructions.push(Instruction::ToDo(format!("{:?}", x)));
-            }
         }
     }
 }
@@ -294,9 +290,9 @@ const RBP: Value = Value::Register(RBP_REGISTER);
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.externs.len() > 0 {
+        if !self.externs.is_empty() {
             for extern_ in &self.externs {
-                write!(f, "extern {}\n", extern_)?;
+                writeln!(f, "extern {}", extern_)?;
             }
             write!(f, "\n\n")?;
         }
@@ -305,12 +301,12 @@ impl fmt::Display for Program {
 
         write!(f, "section .text\n\n")?;
         for block in &self.blocks {
-            write!(f, "{}\n", block)?;
+            writeln!(f, "{}", block)?;
         }
 
         write!(f, "section .data\n\n")?;
         for datum in &self.data {
-            write!(f, "  {}\n", datum)?;
+            writeln!(f, "  {}", datum)?;
         }
 
         Ok(())
@@ -320,12 +316,12 @@ impl fmt::Display for Program {
 impl fmt::Display for Block {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.global {
-            write!(f, "global {}\n", self.label)?;
+            writeln!(f, "global {}", self.label)?;
         }
 
-        write!(f, "{}:\n", self.label)?;
+        writeln!(f, "{}:", self.label)?;
         for instruction in &self.instructions {
-            write!(f, "  {}\n", instruction)?;
+            writeln!(f, "  {}", instruction)?;
         }
         Ok(())
     }
@@ -409,7 +405,7 @@ impl fmt::Display for Register {
             13 => write!(f, "rax"),
             14 => write!(f, "rsp"),
             15 => write!(f, "rbp"),
-            x => {
+            _x => {
                 panic!("register out of range");
             }
         }

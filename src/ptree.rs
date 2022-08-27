@@ -386,7 +386,7 @@ impl fmt::Display for IfStatement {
             write!(f, ")")?;
         }
 
-        if self.else_body.len() > 0 {
+        if !self.else_body.is_empty() {
             write!(f, " (else ")?;
             format_block(f, &self.else_body)?;
             write!(f, ")")?;
@@ -601,7 +601,7 @@ impl fmt::Display for Type {
     }
 }
 
-fn format_block(f: &mut fmt::Formatter<'_>, block: &Vec<Statement>) -> fmt::Result {
+fn format_block(f: &mut fmt::Formatter<'_>, block: &[Statement]) -> fmt::Result {
     write!(f, "(block")?;
     for stmt in block {
         write!(f, " {}", stmt)?;

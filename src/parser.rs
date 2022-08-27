@@ -11,7 +11,7 @@ use std::collections::HashMap;
 pub fn parse(lexer: lexer::Lexer) -> Result<ptree::Program, Vec<errors::VeniceError>> {
     let mut parser = Parser::new(lexer);
     let ptree = parser.parse();
-    if parser.errors.len() > 0 {
+    if !parser.errors.is_empty() {
         Err(parser.errors.clone())
     } else {
         Ok(ptree)
@@ -26,7 +26,7 @@ struct Parser {
 impl Parser {
     fn new(lexer: lexer::Lexer) -> Self {
         Parser {
-            lexer: lexer,
+            lexer,
             errors: Vec::new(),
         }
     }
@@ -38,9 +38,7 @@ impl Parser {
                 declarations.push(declaration);
             }
         }
-        ptree::Program {
-            declarations: declarations,
-        }
+        ptree::Program { declarations }
     }
 
     fn match_declaration(&mut self) -> Result<ptree::Declaration, ()> {
@@ -48,7 +46,7 @@ impl Parser {
         match token.type_ {
             TokenType::Func => self
                 .match_function_declaration()
-                .map(|d| ptree::Declaration::Function(d)),
+                .map(ptree::Declaration::Function),
             // TODO: handle const and record declarations
             _ => {
                 let msg = format!(
@@ -65,7 +63,7 @@ impl Parser {
     }
 
     fn match_function_declaration(&mut self) -> Result<ptree::FunctionDeclaration, ()> {
-        let location = self.lexer.token().location.clone();
+        let location = self.lexer.token().location;
         self.expect_token(&self.lexer.token(), TokenType::Func, "func keyword")?;
 
         let mut token = self.lexer.next();
@@ -85,7 +83,7 @@ impl Parser {
 
             self.expect_token(&token, TokenType::Symbol, "parameter name")?;
             let parameter_name = token.value;
-            let parameter_location = token.location.clone();
+            let _parameter_location = token.location.clone();
 
             token = self.lexer.next();
             self.expect_token(&token, TokenType::Colon, ":")?;
@@ -94,7 +92,7 @@ impl Parser {
             let type_ = self.match_type()?;
             parameters.push(ptree::FunctionParameter {
                 name: parameter_name,
-                type_: type_,
+                type_,
             });
 
             token = self.lexer.token();
@@ -116,11 +114,11 @@ impl Parser {
 
         let body = self.match_block()?;
         Ok(ptree::FunctionDeclaration {
-            name: name.clone(),
-            parameters: parameters,
-            return_type: return_type,
-            body: body,
-            location: location,
+            name,
+            parameters,
+            return_type,
+            body,
+            location,
         })
     }
 
@@ -135,7 +133,7 @@ impl Parser {
             if token.type_ == TokenType::CurlyClose {
                 self.lexer.next();
                 break;
-            } else if token.type_ == TokenType::EOF {
+            } else if token.type_ == TokenType::End {
                 self.unexpected(&token, "statement or end of block");
                 return Err(());
             }
@@ -150,27 +148,17 @@ impl Parser {
     fn match_statement(&mut self) -> Result<ptree::Statement, ()> {
         let mut token = self.lexer.token();
         match token.type_ {
-            TokenType::Assert => self
-                .match_assert_statement()
-                .map(|stmt| ptree::Statement::Assert(stmt)),
-            TokenType::If => self
-                .match_if_statement()
-                .map(|stmt| ptree::Statement::If(stmt)),
-            TokenType::Let => self
-                .match_let_statement()
-                .map(|stmt| ptree::Statement::Let(stmt)),
-            TokenType::Return => self
-                .match_return_statement()
-                .map(|stmt| ptree::Statement::Return(stmt)),
-            TokenType::While => self
-                .match_while_statement()
-                .map(|stmt| ptree::Statement::While(stmt)),
+            TokenType::Assert => self.match_assert_statement().map(ptree::Statement::Assert),
+            TokenType::If => self.match_if_statement().map(ptree::Statement::If),
+            TokenType::Let => self.match_let_statement().map(ptree::Statement::Let),
+            TokenType::Return => self.match_return_statement().map(ptree::Statement::Return),
+            TokenType::While => self.match_while_statement().map(ptree::Statement::While),
             _ => {
                 let expr = self.match_expression()?;
                 token = self.lexer.token();
                 if token.type_ == TokenType::Assign {
                     self.match_assign_statement(expr)
-                        .map(|stmt| ptree::Statement::Assign(stmt))
+                        .map(ptree::Statement::Assign)
                 } else if token.type_ == TokenType::Semicolon {
                     self.lexer.next();
                     Ok(ptree::Statement::Expression(expr))
@@ -196,8 +184,8 @@ impl Parser {
         self.lexer.next();
 
         Ok(ptree::AssertStatement {
-            condition: condition,
-            location: location,
+            condition,
+            location,
         })
     }
 
@@ -224,9 +212,9 @@ impl Parser {
         self.lexer.next();
 
         Ok(ptree::AssignStatement {
-            symbol: symbol,
-            value: value,
-            location: location,
+            symbol,
+            value,
+            location,
         })
     }
 
@@ -255,24 +243,18 @@ impl Parser {
                 } else {
                     let else_body = self.match_block()?;
                     return Ok(ptree::IfStatement {
-                        if_clause: ptree::IfClause {
-                            condition: condition,
-                            body: body,
-                        },
-                        elif_clauses: elif_clauses,
-                        else_body: else_body,
-                        location: location,
+                        if_clause: ptree::IfClause { condition, body },
+                        elif_clauses,
+                        else_body,
+                        location,
                     });
                 }
             } else {
                 return Ok(ptree::IfStatement {
-                    if_clause: ptree::IfClause {
-                        condition: condition,
-                        body: body,
-                    },
-                    elif_clauses: elif_clauses,
+                    if_clause: ptree::IfClause { condition, body },
+                    elif_clauses,
                     else_body: Vec::new(),
-                    location: location,
+                    location,
                 });
             }
         }
@@ -304,10 +286,10 @@ impl Parser {
         self.lexer.next();
 
         Ok(ptree::LetStatement {
-            symbol: symbol,
-            type_: type_,
-            value: value,
-            location: location,
+            symbol,
+            type_,
+            value,
+            location,
         })
     }
 
@@ -326,10 +308,7 @@ impl Parser {
         self.expect_token(&token, TokenType::Semicolon, ";")?;
         self.lexer.next();
 
-        Ok(ptree::ReturnStatement {
-            value: value,
-            location: location,
-        })
+        Ok(ptree::ReturnStatement { value, location })
     }
 
     fn match_while_statement(&mut self) -> Result<ptree::WhileStatement, ()> {
@@ -341,9 +320,9 @@ impl Parser {
         let condition = self.match_expression()?;
         let body = self.match_block()?;
         Ok(ptree::WhileStatement {
-            condition: condition,
-            body: body,
-            location: location,
+            condition,
+            body,
+            location,
         })
     }
 
@@ -416,8 +395,8 @@ impl Parser {
             self.lexer.next();
             Ok(ptree::CallExpression {
                 function: name.clone(),
-                arguments: arguments,
-                location: location,
+                arguments,
+                location,
             })
         } else {
             self.error("function must be a symbol", expr.location.clone());
@@ -454,7 +433,7 @@ impl Parser {
         match token.type_ {
             TokenType::Integer => {
                 self.lexer.next();
-                if let Ok(x) = i64::from_str_radix(&token.value, 10) {
+                if let Ok(x) = token.value.parse::<i64>() {
                     Ok(ptree::Expression {
                         kind: ptree::ExpressionKind::Integer(x),
                         location: token.location.clone(),
@@ -538,7 +517,7 @@ impl Parser {
     }
 
     fn unexpected(&mut self, token: &lexer::Token, message: &str) {
-        let msg = if token.type_ == TokenType::EOF {
+        let msg = if token.type_ == TokenType::End {
             format!("expected {}, got end of file", message)
         } else {
             format!("expected {}, got {}", message, token.value)
@@ -549,14 +528,14 @@ impl Parser {
 
     fn error(&mut self, message: &str, location: common::Location) {
         self.errors
-            .push(errors::VeniceError::new(&message, location));
+            .push(errors::VeniceError::new(message, location));
     }
 
     fn skip_past(&mut self, token_type: lexer::TokenType) {
         self.lexer.next();
         loop {
             let token = self.lexer.token();
-            if token.type_ == TokenType::EOF {
+            if token.type_ == TokenType::End {
                 break;
             }
             if token.type_ == token_type {
@@ -594,15 +573,15 @@ lazy_static! {
 }
 
 fn is_binary_comparison_op(type_: TokenType) -> bool {
-    match type_ {
+    matches!(
+        type_,
         TokenType::Equals
-        | TokenType::GreaterThan
-        | TokenType::GreaterThanEquals
-        | TokenType::LessThan
-        | TokenType::LessThanEquals
-        | TokenType::NotEquals => true,
-        _ => false,
-    }
+            | TokenType::GreaterThan
+            | TokenType::GreaterThanEquals
+            | TokenType::LessThan
+            | TokenType::LessThanEquals
+            | TokenType::NotEquals
+    )
 }
 
 fn token_type_to_binary_op_type(type_: TokenType) -> common::BinaryOpType {
@@ -740,12 +719,12 @@ if x == 0 {
     }
 
     fn parse_function_declaration(program: &str) -> ptree::FunctionDeclaration {
-        let mut parser = Parser::new(lexer::Lexer::new("<string>", &program));
+        let mut parser = Parser::new(lexer::Lexer::new("<string>", program));
         let r = parser.match_function_declaration();
 
         let mut message = String::new();
         for (i, error) in parser.errors.iter().enumerate() {
-            message.push_str(&format!("{}", error.message));
+            message.push_str(&error.message.to_string());
             if i != parser.errors.len() - 1 {
                 message.push('\n');
             }
@@ -757,12 +736,12 @@ if x == 0 {
     }
 
     fn parse_statement(program: &str) -> ptree::Statement {
-        let mut parser = Parser::new(lexer::Lexer::new("<string>", &program));
+        let mut parser = Parser::new(lexer::Lexer::new("<string>", program));
         let r = parser.match_statement();
 
         let mut message = String::new();
         for (i, error) in parser.errors.iter().enumerate() {
-            message.push_str(&format!("{}", error.message));
+            message.push_str(&error.message.to_string());
             if i != parser.errors.len() - 1 {
                 message.push('\n');
             }
@@ -774,12 +753,12 @@ if x == 0 {
     }
 
     fn parse_expression(program: &str) -> ptree::Expression {
-        let mut parser = Parser::new(lexer::Lexer::new("<string>", &program));
+        let mut parser = Parser::new(lexer::Lexer::new("<string>", program));
         let r = parser.match_expression();
 
         let mut message = String::new();
         for (i, error) in parser.errors.iter().enumerate() {
-            message.push_str(&format!("{}", error.message));
+            message.push_str(&error.message.to_string());
             if i != parser.errors.len() - 1 {
                 message.push('\n');
             }

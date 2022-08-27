@@ -353,7 +353,7 @@ impl fmt::Display for IfStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "(if {} ", self.condition)?;
         format_block(f, &self.body)?;
-        if self.else_body.len() > 0 {
+        if !self.else_body.is_empty() {
             write!(f, " (else ")?;
             format_block(f, &self.else_body)?;
             write!(f, ")")?;
@@ -560,7 +560,7 @@ impl fmt::Display for SymbolEntry {
     }
 }
 
-fn format_block(f: &mut fmt::Formatter<'_>, block: &Vec<Statement>) -> fmt::Result {
+fn format_block(f: &mut fmt::Formatter<'_>, block: &[Statement]) -> fmt::Result {
     write!(f, "(block")?;
     for stmt in block {
         write!(f, " {}", stmt)?;

@@ -11,7 +11,7 @@ use std::collections::HashMap;
 pub fn analyze(ptree: &ptree::Program) -> Result<ast::Program, Vec<errors::VeniceError>> {
     let mut analyzer = Analyzer::new();
     let program = analyzer.analyze_program(ptree);
-    if analyzer.errors.len() > 0 {
+    if !analyzer.errors.is_empty() {
         Err(analyzer.errors.clone())
     } else {
         Ok(program)
@@ -68,7 +68,7 @@ impl SymbolTable {
             },
         );
 
-        SymbolTable { symbols: symbols }
+        SymbolTable { symbols }
     }
 
     pub fn builtin_globals() -> Self {
@@ -108,7 +108,7 @@ impl SymbolTable {
     }
 
     pub fn insert(&mut self, key: &str, entry: ast::SymbolEntry) {
-        self.symbols.insert(String::from(key), entry.clone());
+        self.symbols.insert(String::from(key), entry);
     }
 
     pub fn remove(&mut self, key: &str) {
@@ -140,7 +140,7 @@ impl Analyzer {
     fn analyze_program(&mut self, ptree: &ptree::Program) -> ast::Program {
         let mut declarations = Vec::new();
         for declaration in &ptree.declarations {
-            declarations.push(self.analyze_declaration(&declaration));
+            declarations.push(self.analyze_declaration(declaration));
         }
         ast::Program { declarations }
     }
@@ -164,7 +164,7 @@ impl Analyzer {
             let t = self.resolve_type(&parameter.type_);
             let unique_name = self.claim_unique_name(&parameter.name);
             let entry = ast::SymbolEntry {
-                unique_name: unique_name,
+                unique_name,
                 type_: t.clone(),
                 constant: false,
                 external: false,
@@ -185,7 +185,7 @@ impl Analyzer {
         };
 
         let entry = ast::SymbolEntry {
-            unique_name: unique_name,
+            unique_name,
             type_: ast::Type::Function {
                 parameters: parameter_types,
                 return_type: Box::new(return_type.clone()),
@@ -213,9 +213,9 @@ impl Analyzer {
 
         ast::Declaration::Function(ast::FunctionDeclaration {
             name: entry,
-            parameters: parameters,
-            return_type: return_type,
-            body: body,
+            parameters,
+            return_type,
+            body,
             info: self.current_function_info.as_ref().unwrap().clone(),
         })
     }
@@ -232,7 +232,7 @@ impl Analyzer {
 
         let unique_name = self.claim_unique_name(&declaration.symbol);
         let entry = ast::SymbolEntry {
-            unique_name: unique_name,
+            unique_name,
             type_: declared_type.clone(),
             constant: true,
             external: false,
@@ -242,7 +242,7 @@ impl Analyzer {
         ast::Declaration::Const(ast::ConstDeclaration {
             symbol: entry,
             type_: declared_type,
-            value: value,
+            value,
         })
     }
 
@@ -255,7 +255,7 @@ impl Analyzer {
         ast::Declaration::Error
     }
 
-    fn analyze_block(&mut self, block: &Vec<ptree::Statement>) -> Vec<ast::Statement> {
+    fn analyze_block(&mut self, block: &[ptree::Statement]) -> Vec<ast::Statement> {
         let mut ret = Vec::new();
         for stmt in block {
             ret.push(self.analyze_statement(stmt));
@@ -287,7 +287,7 @@ impl Analyzer {
 
         let unique_name = self.claim_unique_name(&stmt.symbol);
         let entry = ast::SymbolEntry {
-            unique_name: unique_name,
+            unique_name,
             type_: declared_type.clone(),
             constant: false,
             external: false,
@@ -303,7 +303,7 @@ impl Analyzer {
         ast::Statement::Let(ast::LetStatement {
             symbol: entry,
             type_: declared_type,
-            value: value,
+            value,
         })
     }
 
@@ -315,7 +315,7 @@ impl Analyzer {
             }
             ast::Statement::Assign(ast::AssignStatement {
                 symbol: entry.clone(),
-                value: value,
+                value,
             })
         } else {
             let msg = format!("assignment to unknown symbol {}", stmt.symbol);
@@ -336,7 +336,7 @@ impl Analyzer {
         let body = self.analyze_block(&stmt.if_clause.body);
         let else_body = self.analyze_block(&stmt.else_body);
 
-        if stmt.elif_clauses.len() > 0 {
+        if !stmt.elif_clauses.is_empty() {
             self.error(
                 "not implemented",
                 stmt.elif_clauses[0].condition.location.clone(),
@@ -357,9 +357,9 @@ impl Analyzer {
             */
         } else {
             ast::Statement::If(ast::IfStatement {
-                condition: condition,
-                body: body,
-                else_body: else_body,
+                condition,
+                body,
+                else_body,
             })
         }
     }
@@ -374,10 +374,7 @@ impl Analyzer {
             );
         }
         let body = self.analyze_block(&stmt.body);
-        ast::Statement::While(ast::WhileStatement {
-            condition: condition,
-            body: body,
-        })
+        ast::Statement::While(ast::WhileStatement { condition, body })
     }
 
     fn analyze_for_statement(&mut self, stmt: &ptree::ForStatement) -> ast::Statement {
@@ -403,7 +400,7 @@ impl Analyzer {
                 stmt.location.clone(),
             );
         }
-        ast::Statement::Return(ast::ReturnStatement { value: value })
+        ast::Statement::Return(ast::ReturnStatement { value })
     }
 
     fn analyze_assert_statement(&mut self, stmt: &ptree::AssertStatement) -> ast::Statement {
@@ -415,9 +412,7 @@ impl Analyzer {
                 stmt.condition.location.clone(),
             );
         }
-        ast::Statement::Assert(ast::AssertStatement {
-            condition: condition,
-        })
+        ast::Statement::Assert(ast::AssertStatement { condition })
     }
 
     fn analyze_expression(&mut self, expr: &ptree::Expression) -> ast::Expression {
@@ -453,7 +448,7 @@ impl Analyzer {
         if let Some(entry) = self.symbols.get(name) {
             ast::Expression {
                 kind: ast::ExpressionKind::Symbol(entry.clone()),
-                type_: entry.type_.clone(),
+                type_: entry.type_,
             }
         } else {
             self.error("unknown symbol", location.clone());
@@ -501,7 +496,7 @@ impl Analyzer {
                                 left: Box::new(left),
                                 right: Box::new(right),
                             }),
-                            type_: type_,
+                            type_,
                         }
                     }
                 }
@@ -631,14 +626,14 @@ impl Analyzer {
                 let mut arguments = Vec::new();
                 for (parameter, argument) in parameters.iter().zip(expr.arguments.iter()) {
                     let typed_argument = self.analyze_expression(argument);
-                    self.assert_type(&parameter, &typed_argument.type_, argument.location.clone());
+                    self.assert_type(parameter, &typed_argument.type_, argument.location.clone());
                     arguments.push(typed_argument);
                 }
 
                 ast::Expression {
                     kind: ast::ExpressionKind::Call(ast::CallExpression {
                         function: entry.clone(),
-                        arguments: arguments,
+                        arguments,
                     }),
                     type_: *return_type.clone(),
                 }
@@ -667,21 +662,21 @@ impl Analyzer {
                         value: Box::new(value),
                         index: Box::new(index),
                     }),
-                    type_: type_,
+                    type_,
                 }
             }
             ast::Type::Map {
                 key: key_type,
                 value: ref value_type,
             } => {
-                self.assert_type(&index.type_, &key_type, expr.index.location.clone());
+                self.assert_type(&index.type_, key_type, expr.index.location.clone());
                 let type_ = *value_type.clone();
                 ast::Expression {
                     kind: ast::ExpressionKind::Index(ast::IndexExpression {
                         value: Box::new(value),
                         index: Box::new(index),
                     }),
-                    type_: type_,
+                    type_,
                 }
             }
             _ => {
@@ -708,7 +703,7 @@ impl Analyzer {
                         value: Box::new(value),
                         index: expr.index,
                     }),
-                    type_: type_,
+                    type_,
                 }
             }
         } else {
@@ -727,7 +722,7 @@ impl Analyzer {
     }
 
     fn analyze_list_literal(&mut self, expr: &ptree::ListLiteral) -> ast::Expression {
-        if expr.items.len() == 0 {
+        if expr.items.is_empty() {
             self.error(
                 "cannot type-check empty list literal",
                 expr.location.clone(),
@@ -749,7 +744,7 @@ impl Analyzer {
             items.push(typed_item);
         }
         ast::Expression {
-            kind: ast::ExpressionKind::List(ast::ListLiteral { items: items }),
+            kind: ast::ExpressionKind::List(ast::ListLiteral { items }),
             type_: ast::Type::List(Box::new(item_type)),
         }
     }
@@ -763,21 +758,21 @@ impl Analyzer {
             items.push(typed_item);
         }
         ast::Expression {
-            kind: ast::ExpressionKind::Tuple(ast::TupleLiteral { items: items }),
+            kind: ast::ExpressionKind::Tuple(ast::TupleLiteral { items }),
             type_: ast::Type::Tuple(types),
         }
     }
 
     fn analyze_map_literal(&mut self, expr: &ptree::MapLiteral) -> ast::Expression {
-        if expr.items.len() == 0 {
+        if expr.items.is_empty() {
             self.error("cannot type-check empty map literal", expr.location.clone());
             return ast::EXPRESSION_ERROR.clone();
         }
 
         let first_key = self.analyze_expression(&expr.items[0].0);
-        let key_type = first_key.type_.clone();
+        let key_type = first_key.type_;
         let first_value = self.analyze_expression(&expr.items[0].1);
-        let value_type = first_value.type_.clone();
+        let value_type = first_value.type_;
 
         let mut items = Vec::new();
         for i in 1..expr.items.len() {
@@ -799,7 +794,7 @@ impl Analyzer {
         }
 
         ast::Expression {
-            kind: ast::ExpressionKind::Map(ast::MapLiteral { items: items }),
+            kind: ast::ExpressionKind::Map(ast::MapLiteral { items }),
             type_: ast::Type::Map {
                 key: Box::new(key_type),
                 value: Box::new(value_type),
@@ -816,7 +811,7 @@ impl Analyzer {
     fn resolve_type(&mut self, type_: &ptree::SyntacticType) -> ast::Type {
         match &type_.kind {
             ptree::SyntacticTypeKind::Literal(s) => {
-                if let Some(semantic_type_) = self.types.get(&s) {
+                if let Some(semantic_type_) = self.types.get(s) {
                     semantic_type_.type_
                 } else {
                     let msg = format!("unknown type {}", s);

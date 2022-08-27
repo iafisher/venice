@@ -64,7 +64,7 @@ impl Generator {
         };
         self.info = Some(declaration.info.clone());
         self.program.declarations.push(vil_declaration);
-        let label = self.claim_label(&name);
+        let label = self.claim_label(name);
         self.start_block(label, None);
 
         // Save callee-save registers.
@@ -94,33 +94,22 @@ impl Generator {
         let r = self.claim_register();
         match &expr.kind {
             ast::ExpressionKind::Boolean(x) => {
-                self.push(vil::Instruction::Set(
-                    r.clone(),
-                    vil::Immediate::Integer(*x as i64),
-                ));
+                self.push(vil::Instruction::Set(r, vil::Immediate::Integer(*x as i64)));
             }
             ast::ExpressionKind::Integer(x) => {
-                self.push(vil::Instruction::Set(
-                    r.clone(),
-                    vil::Immediate::Integer(*x),
-                ));
+                self.push(vil::Instruction::Set(r, vil::Immediate::Integer(*x)));
             }
             ast::ExpressionKind::String(s) => {
                 let label = self.claim_string_label();
                 self.program.strings.insert(label.clone(), s.clone());
-                self.push(vil::Instruction::Set(
-                    r.clone(),
-                    vil::Immediate::Label(label),
-                ));
+                self.push(vil::Instruction::Set(r, vil::Immediate::Label(label)));
             }
-            ast::ExpressionKind::Binary(b) => self.generate_binary_expression(&b, r.clone()),
-            ast::ExpressionKind::Comparison(b) => {
-                self.generate_comparison_expression(&b, r.clone())
-            }
-            ast::ExpressionKind::Call(e) => self.generate_call_expression(e, r.clone()),
+            ast::ExpressionKind::Binary(b) => self.generate_binary_expression(b, r),
+            ast::ExpressionKind::Comparison(b) => self.generate_comparison_expression(b, r),
+            ast::ExpressionKind::Call(e) => self.generate_call_expression(e, r),
             ast::ExpressionKind::Symbol(symbol) => {
                 self.push(vil::Instruction::Load(
-                    r.clone(),
+                    r,
                     vil::Memory(symbol.unique_name.clone()),
                     0,
                 ));
@@ -146,16 +135,12 @@ impl Generator {
             let right = self.generate_expression(&cmp_expr.right);
 
             self.push(vil::Instruction::Cmp(left, right));
-            let exit =
-                get_comparison_instruction(cmp_expr.op, true_label.clone(), false_label.clone());
+            let exit = get_comparison_instruction(cmp_expr.op, true_label, false_label);
             self.push(exit);
         } else {
-            let register = self.generate_expression(&expr);
+            let register = self.generate_expression(expr);
             let tmp = self.claim_register();
-            self.push(vil::Instruction::Set(
-                tmp.clone(),
-                vil::Immediate::Integer(1),
-            ));
+            self.push(vil::Instruction::Set(tmp, vil::Immediate::Integer(1)));
             self.push(vil::Instruction::Cmp(register, tmp));
             self.push(vil::Instruction::JumpEq(true_label, false_label));
         }
@@ -204,7 +189,7 @@ impl Generator {
 
         let exit = get_comparison_instruction(expr.op, true_label.clone(), false_label.clone());
         self.start_block(true_label, Some(exit));
-        self.push(vil::Instruction::Set(r.clone(), vil::Immediate::Integer(1)));
+        self.push(vil::Instruction::Set(r, vil::Immediate::Integer(1)));
 
         self.start_block(false_label, Some(vil::Instruction::Jump(end_label.clone())));
         self.push(vil::Instruction::Set(r, vil::Immediate::Integer(0)));
@@ -245,7 +230,7 @@ impl Generator {
         self.push(vil::Instruction::Move(r, vil::Register::Return));
     }
 
-    fn generate_block(&mut self, block: &Vec<ast::Statement>) {
+    fn generate_block(&mut self, block: &[ast::Statement]) {
         for stmt in block {
             self.generate_statement(stmt);
             // Reset register counter in between statements. Any value that a statement
@@ -382,7 +367,7 @@ impl Generator {
 
     fn start_block(&mut self, label: vil::Label, exit_previous: Option<vil::Instruction>) {
         let block = vil::Block {
-            name: label.0.clone(),
+            name: label.0,
             instructions: Vec::new(),
         };
 

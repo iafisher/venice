@@ -10,7 +10,7 @@ impl VeniceError {
     pub fn new(message: &str, location: common::Location) -> Self {
         VeniceError {
             message: String::from(message),
-            location: location,
+            location,
         }
     }
 }

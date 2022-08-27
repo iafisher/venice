@@ -115,9 +115,9 @@ pub struct FunctionLabel(pub String);
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.externs.len() > 0 {
+        if !self.externs.is_empty() {
             for extern_ in &self.externs {
-                write!(f, "extern {};\n", extern_)?;
+                writeln!(f, "extern {};", extern_)?;
             }
             write!(f, "\n\n")?;
         }
@@ -126,10 +126,10 @@ impl fmt::Display for Program {
             write!(f, "{}", declaration)?;
         }
 
-        if self.strings.len() > 0 {
+        if !self.strings.is_empty() {
             write!(f, "\n\n")?;
             for (string_name, string_value) in &self.strings {
-                write!(f, "data {} = {:?};\n", string_name, string_value)?;
+                writeln!(f, "data {} = {:?};", string_name, string_value)?;
             }
         }
 
@@ -139,12 +139,12 @@ impl fmt::Display for Program {
 
 impl fmt::Display for FunctionDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "\n")?;
-        write!(f, "func {} {{\n", self.name)?;
+        writeln!(f)?;
+        writeln!(f, "func {} {{", self.name)?;
         for block in &self.blocks {
             write!(f, "{}", block)?;
         }
-        write!(f, "}}\n")
+        writeln!(f, "}}")
     }
 }
 
@@ -152,7 +152,7 @@ impl fmt::Display for Block {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "\n{}:\n", self.name)?;
         for instruction in &self.instructions {
-            write!(f, "{}\n", instruction)?;
+            writeln!(f, "{}", instruction)?;
         }
         fmt::Result::Ok(())
     }

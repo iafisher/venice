@@ -31,5 +31,13 @@ def init(precommit):
 
     # Check Rust format with rustfmt.
     precommit.check(checks.RustFormat())
+    precommit.check(
+        checks.Command(
+            "RustClippy",
+            ["cargo", "clippy"],
+            fix=["cargo", "clippy", "--fix"],
+            include=["*.rs"],
+        )
+    )
 
     precommit.check(checks.Command("UnitTests", ["cargo", "test"], include=["*.rs"]))

@@ -58,7 +58,7 @@ fn test_e2e(folder: &str) {
     // Ensure that intermediate files are removed at the end of the test.
     let _cleanup = CleanupFile(vec![
         bin_path.clone(),
-        obj_path.clone(),
+        obj_path,
         vil_path.clone(),
         x86_path.clone(),
     ]);
