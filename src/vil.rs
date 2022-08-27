@@ -64,7 +64,9 @@ pub enum Register {
     Base,
 }
 
+// TODO: make this private
 pub const PARAM_REGISTER_COUNT: u8 = 6;
+const GP_REGISTER_COUNT: u8 = 7;
 const RETURN_REGISTER_INDEX: u8 = 13;
 const STACK_REGISTER_INDEX: u8 = 14;
 const BASE_REGISTER_INDEX: u8 = 15;
@@ -89,10 +91,16 @@ impl Register {
     }
 
     pub fn param(i: u8) -> Self {
+        if i >= PARAM_REGISTER_COUNT {
+            panic!("not enough registers");
+        }
         Register::Param(i)
     }
 
     pub fn gp(i: u8) -> Self {
+        if i >= GP_REGISTER_COUNT {
+            panic!("not enough registers");
+        }
         Register::General(i)
     }
 }
