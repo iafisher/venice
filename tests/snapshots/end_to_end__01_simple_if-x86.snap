@@ -29,15 +29,15 @@ if_true_1:
   jmp if_end_3
 
 if_false_2:
-  mov rdi, s_1
-  mov rdi, rdi
+  mov rbx, s_1
+  mov rdi, rbx
   call venice_println
-  mov rsi, rax
+  mov rax, rax
   jmp if_end_3
 
 if_end_3:
-  mov r8, 0
-  mov rax, r8
+  mov rax, 0
+  mov rax, rax
   add rsp, 0
   pop rbp
   ret

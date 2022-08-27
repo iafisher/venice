@@ -30,14 +30,14 @@ main:
 
 main_1:
   call two_plus_two__0
-  mov rbx, rax
-  mov [rbp-8], rbx
-  mov rdx, [rbp-8]
-  mov rdi, rdx
+  mov rax, rax
+  mov [rbp-8], rax
+  mov rbx, [rbp-8]
+  mov rdi, rbx
   call venice_printint
-  mov rcx, rax
-  mov rsi, 0
-  mov rax, rsi
+  mov rax, rax
+  mov rax, 0
+  mov rax, rax
   add rsp, 8
   pop rbp
   ret

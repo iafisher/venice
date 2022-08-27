@@ -17,13 +17,13 @@ func main() -> i64 {
 
 main_1:
   %x__3 = alloca 8
-  %2 = set 47
-  %3 = set 5
-  %1 = call %sub__2, %2, %3
-  %x__3 = store %1, 0
-  %5 = load %x__3, 0
-  %4 = call %venice_printint, %5
-  %6 = set 0
-  ret %6
+  %1 = set 47
+  %2 = set 5
+  %0 = call %sub__2, %1, %2
+  %x__3 = store %0, 0
+  %1 = load %x__3, 0
+  %0 = call %venice_printint, %1
+  %0 = set 0
+  ret %0
 }
 

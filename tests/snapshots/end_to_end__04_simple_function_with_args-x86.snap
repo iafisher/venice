@@ -31,19 +31,19 @@ main:
   sub rsp, 8
 
 main_1:
-  mov rcx, 47
-  mov rdx, 5
-  mov rdi, rcx
-  mov rsi, rdx
+  mov rbx, 47
+  mov rcx, 5
+  mov rdi, rbx
+  mov rsi, rcx
   call sub__2
-  mov rbx, rax
-  mov [rbp-8], rbx
-  mov rdi, [rbp-8]
-  mov rdi, rdi
+  mov rax, rax
+  mov [rbp-8], rax
+  mov rbx, [rbp-8]
+  mov rdi, rbx
   call venice_printint
-  mov rsi, rax
-  mov r8, 0
-  mov rax, r8
+  mov rax, rax
+  mov rax, 0
+  mov rax, rax
   add rsp, 8
   pop rbp
   ret

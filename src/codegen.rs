@@ -238,6 +238,10 @@ impl Generator {
     fn generate_block(&mut self, block: &Vec<ast::Statement>) {
         for stmt in block {
             self.generate_statement(stmt);
+            // Reset register counter in between statements. Any value that a statement
+            // produces that must persist (e.g., `let` bindings) must be stored in
+            // memory.
+            self.register_counter = 0;
         }
     }
 

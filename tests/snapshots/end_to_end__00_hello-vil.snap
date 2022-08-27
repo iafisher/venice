@@ -10,8 +10,8 @@ func main() -> i64 {
 main_0:
   %1 = set s_0
   %0 = call %venice_println, %1
-  %2 = set 0
-  ret %2
+  %0 = set 0
+  ret %0
 }
 
 

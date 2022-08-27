@@ -20,13 +20,13 @@ if_true_1:
   jump %if_end_3
 
 if_false_2:
-  %5 = set s_1
-  %4 = call %venice_println, %5
+  %1 = set s_1
+  %0 = call %venice_println, %1
   jump %if_end_3
 
 if_end_3:
-  %6 = set 0
-  ret %6
+  %0 = set 0
+  ret %0
 }
 
 
