@@ -19,13 +19,13 @@ pub fn analyze(ptree: &ptree::Program) -> Result<ast::Program, Vec<errors::Venic
 }
 
 struct SymbolTable {
-    symbols: HashMap<String, ast::SymbolEntry>,
+    environments: Vec<HashMap<String, ast::SymbolEntry>>,
 }
 
 impl SymbolTable {
     pub fn new() -> Self {
         SymbolTable {
-            symbols: HashMap::new(),
+            environments: vec![HashMap::new()],
         }
     }
 
@@ -68,7 +68,9 @@ impl SymbolTable {
             },
         );
 
-        SymbolTable { symbols }
+        SymbolTable {
+            environments: vec![symbols],
+        }
     }
 
     pub fn builtin_globals() -> Self {
@@ -100,19 +102,39 @@ impl SymbolTable {
             },
         );
 
-        SymbolTable { symbols }
+        SymbolTable {
+            environments: vec![symbols],
+        }
     }
 
     pub fn get(&self, key: &str) -> Option<ast::SymbolEntry> {
-        self.symbols.get(key).cloned()
+        for table in self.environments.iter().rev() {
+            if let Some(entry) = table.get(key) {
+                return Some(entry.clone());
+            }
+        }
+        None
     }
 
     pub fn insert(&mut self, key: &str, entry: ast::SymbolEntry) {
-        self.symbols.insert(String::from(key), entry);
+        self.current().insert(String::from(key), entry);
     }
 
     pub fn remove(&mut self, key: &str) {
-        self.symbols.remove(key);
+        self.current().remove(key);
+    }
+
+    pub fn push_scope(&mut self) {
+        self.environments.push(HashMap::new());
+    }
+
+    pub fn pop_scope(&mut self) {
+        self.environments.pop();
+    }
+
+    fn current(&mut self) -> &mut HashMap<String, ast::SymbolEntry> {
+        let index = self.environments.len() - 1;
+        &mut self.environments[index]
     }
 }
 
@@ -169,7 +191,6 @@ impl Analyzer {
                 constant: false,
                 external: false,
             };
-            self.symbols.insert(&parameter.name, entry.clone());
             parameter_types.push(t.clone());
             parameters.push(ast::FunctionParameter {
                 name: entry,
@@ -184,6 +205,9 @@ impl Analyzer {
             self.claim_unique_name(&declaration.name)
         };
 
+        // Add the function's entry to the symbol table. It must happen before we push a new scope
+        // so that the function's definition persists after it executes. It also must happen before
+        // we type-check the body of the function so that recursive functions work.
         let entry = ast::SymbolEntry {
             unique_name,
             type_: ast::Type::Function {
@@ -193,8 +217,14 @@ impl Analyzer {
             constant: true,
             external: false,
         };
-
         self.symbols.insert(&declaration.name, entry.clone());
+
+        // Push a new scope for the function's body and add the parameters.
+        self.symbols.push_scope();
+        for (ptree_parameter, ast_parameter) in declaration.parameters.iter().zip(&parameters) {
+            self.symbols
+                .insert(&ptree_parameter.name, ast_parameter.name.clone());
+        }
 
         self.current_function_info = Some(ast::FunctionInfo {
             // TODO: not all parameters are 8 bytes
@@ -204,12 +234,8 @@ impl Analyzer {
         let body = self.analyze_block(&declaration.body);
         self.current_function_return_type = None;
 
-        // TODO: A better approach would be to have a separate symbol table for the
-        // function's scope. And actually this doesn't work at all because the symbols
-        // defined in a function's body will persist after the function is finished.
-        for parameter in &declaration.parameters {
-            self.symbols.remove(&parameter.name);
-        }
+        // Pop off the function body's scope.
+        self.symbols.pop_scope();
 
         ast::Declaration::Function(ast::FunctionDeclaration {
             name: entry,
