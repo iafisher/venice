@@ -300,7 +300,7 @@ const RBP: Value = Value::Register(RBP_REGISTER);
 const RSP_REGISTER: Register = Register(15);
 const RSP: Value = Value::Register(RSP_REGISTER);
 
-const CALL_REGISTERS: [Register; 6] = [
+const CALL_REGISTERS: &[Register] = &[
     RDI_REGISTER,
     RSI_REGISTER,
     RDX_REGISTER,
@@ -309,7 +309,7 @@ const CALL_REGISTERS: [Register; 6] = [
     R9_REGISTER,
 ];
 
-const CALLEE_SAVE_REGISTERS: [Register; 6] = [
+const CALLEE_SAVE_REGISTERS: &[Register] = &[
     RBP_REGISTER,
     RBX_REGISTER,
     R12_REGISTER,
@@ -318,7 +318,7 @@ const CALLEE_SAVE_REGISTERS: [Register; 6] = [
     R15_REGISTER,
 ];
 
-const CALLER_SAVE_REGISTERS: [Register; 9] = [
+const CALLER_SAVE_REGISTERS: &[Register] = &[
     RAX_REGISTER,
     RCX_REGISTER,
     RDX_REGISTER,
