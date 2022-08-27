@@ -39,7 +39,7 @@ fn test_fibonacci() {
     test_e2e("10_fibonacci");
 }
 
-// TODO: does not work yet
+#[test]
 fn test_fibonacci_recursive() {
     test_e2e("11_fibonacci_recursive");
 }

@@ -5,6 +5,9 @@ expression: vil_output
 extern venice_printint;
 
 
+
+// stack_frame_size = 40
+// max_register_count = 3
 func fibonacci__1(n: i64) -> i64 {
 
 fibonacci__1_0:
@@ -45,6 +48,9 @@ while_end_3:
   %0 = load %fib_i__2, 0
   ret %0
 }
+
+// stack_frame_size = 8
+// max_register_count = 2
 func main() -> i64 {
 
 main_4:

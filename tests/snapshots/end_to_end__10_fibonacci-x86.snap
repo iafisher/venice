@@ -8,6 +8,8 @@ extern venice_printint
 section .text
 
 fibonacci__1:
+  push rbx
+  push rcx
   push rbp
   mov rbp, rsp
   sub rsp, 40
@@ -51,10 +53,13 @@ while_end_3:
   mov rax, rax
   add rsp, 40
   pop rbp
+  pop rcx
+  pop rbx
   ret
 
 global main
 main:
+  push rbx
   push rbp
   mov rbp, rsp
   sub rsp, 8
@@ -73,6 +78,7 @@ main_4:
   mov rax, rax
   add rsp, 8
   pop rbp
+  pop rbx
   ret
 
 section .data

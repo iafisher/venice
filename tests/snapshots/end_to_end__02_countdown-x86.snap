@@ -9,6 +9,9 @@ section .text
 
 global main
 main:
+  push rbx
+  push rcx
+  push rdx
   push rbp
   mov rbp, rsp
   sub rsp, 8
@@ -42,6 +45,9 @@ while_end_3:
   mov rax, rax
   add rsp, 8
   pop rbp
+  pop rdx
+  pop rcx
+  pop rbx
   ret
 
 section .data

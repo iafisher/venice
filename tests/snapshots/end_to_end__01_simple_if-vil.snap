@@ -6,6 +6,9 @@ extern venice_println;
 extern venice_println;
 
 
+
+// stack_frame_size = 0
+// max_register_count = 4
 func main() -> i64 {
 
 main_0:

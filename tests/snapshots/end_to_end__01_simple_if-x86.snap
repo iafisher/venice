@@ -10,6 +10,9 @@ section .text
 
 global main
 main:
+  push rbx
+  push rcx
+  push rdx
   push rbp
   mov rbp, rsp
   sub rsp, 0
@@ -40,6 +43,9 @@ if_end_3:
   mov rax, rax
   add rsp, 0
   pop rbp
+  pop rdx
+  pop rcx
+  pop rbx
   ret
 
 section .data

@@ -5,6 +5,9 @@ expression: vil_output
 extern venice_printint;
 
 
+
+// stack_frame_size = 8
+// max_register_count = 4
 func main() -> i64 {
 
 main_0:

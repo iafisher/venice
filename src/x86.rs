@@ -115,6 +115,16 @@ impl Generator {
             instructions: Vec::new(),
         };
 
+        // Starting at 1 because 0 is RAX, which is the function's return value and is always
+        // clobbered.
+        for register_number in 1..declaration.max_register_count {
+            block
+                .instructions
+                .push(Instruction::Push(Value::Register(Register(
+                    register_number.try_into().unwrap(),
+                ))));
+        }
+
         block.instructions.push(Instruction::Push(RBP));
         block.instructions.push(Instruction::Mov(RBP, RSP));
         block.instructions.push(Instruction::Sub(
@@ -239,6 +249,15 @@ impl Generator {
                     Value::Immediate(declaration.stack_frame_size.into()),
                 ));
                 instructions.push(Instruction::Pop(RBP));
+
+                // Starting at 1 because 0 is RAX, which is the function's return value and is always
+                // clobbered.
+                for register_number in (1..declaration.max_register_count).rev() {
+                    instructions.push(Instruction::Pop(Value::Register(Register(
+                        register_number.try_into().unwrap(),
+                    ))));
+                }
+
                 instructions.push(Instruction::Ret);
             }
             vil::Instruction::Jump(l) => {

@@ -5,6 +5,9 @@ expression: vil_output
 extern venice_printint;
 
 
+
+// stack_frame_size = 16
+// max_register_count = 3
 func sub__2(x: i64, y: i64) -> i64 {
 
 sub__2_0:
@@ -13,6 +16,9 @@ sub__2_0:
   %0 = sub %1, %2
   ret %0
 }
+
+// stack_frame_size = 8
+// max_register_count = 3
 func main() -> i64 {
 
 main_1:

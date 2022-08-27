@@ -8,6 +8,8 @@ extern venice_printint
 section .text
 
 two_plus_two__0:
+  push rbx
+  push rcx
   push rbp
   mov rbp, rsp
   sub rsp, 0
@@ -20,10 +22,13 @@ two_plus_two__0_0:
   mov rax, rax
   add rsp, 0
   pop rbp
+  pop rcx
+  pop rbx
   ret
 
 global main
 main:
+  push rbx
   push rbp
   mov rbp, rsp
   sub rsp, 8
@@ -40,6 +45,7 @@ main_1:
   mov rax, rax
   add rsp, 8
   pop rbp
+  pop rbx
   ret
 
 section .data

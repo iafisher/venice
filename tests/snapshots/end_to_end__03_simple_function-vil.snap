@@ -5,6 +5,9 @@ expression: vil_output
 extern venice_printint;
 
 
+
+// stack_frame_size = 0
+// max_register_count = 3
 func two_plus_two__0() -> i64 {
 
 two_plus_two__0_0:
@@ -13,6 +16,9 @@ two_plus_two__0_0:
   %0 = add %1, %2
   ret %0
 }
+
+// stack_frame_size = 8
+// max_register_count = 2
 func main() -> i64 {
 
 main_1:

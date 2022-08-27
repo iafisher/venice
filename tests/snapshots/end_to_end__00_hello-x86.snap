@@ -9,6 +9,7 @@ section .text
 
 global main
 main:
+  push rbx
   push rbp
   mov rbp, rsp
   sub rsp, 0
@@ -22,6 +23,7 @@ main_0:
   mov rax, rax
   add rsp, 0
   pop rbp
+  pop rbx
   ret
 
 section .data

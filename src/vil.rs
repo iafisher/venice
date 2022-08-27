@@ -17,6 +17,7 @@ pub struct FunctionDeclaration {
     pub return_type: Type,
     pub blocks: Vec<Block>,
     pub stack_frame_size: u32,
+    pub max_register_count: u32,
 }
 
 pub struct FunctionParameter {
@@ -105,6 +106,9 @@ impl fmt::Display for Program {
 
 impl fmt::Display for FunctionDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "\n")?;
+        write!(f, "// stack_frame_size = {}\n", self.stack_frame_size)?;
+        write!(f, "// max_register_count = {}\n", self.max_register_count)?;
         write!(f, "func {}(", self.name)?;
         for (i, param) in self.parameters.iter().enumerate() {
             write!(f, "{}: {}", param.name, param.type_)?;

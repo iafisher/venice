@@ -1,5 +1,6 @@
 // Code generation from an abstract syntax tree to a VIL program.
 
+use std::cmp;
 use std::collections::BTreeMap;
 
 use super::ast;
@@ -75,6 +76,7 @@ impl Generator {
             blocks: Vec::new(),
             // TODO: parameters are not necessarily all 8 bytes
             stack_frame_size: stack_frame_size,
+            max_register_count: 0,
         };
         self.program.declarations.push(vil_declaration);
         let label = self.claim_label(&name);
@@ -179,7 +181,7 @@ impl Generator {
             }
         }
 
-        self.register_counter = old_register_counter;
+        self.reset_register_counter(old_register_counter);
     }
 
     fn generate_comparison_expression(
@@ -231,7 +233,7 @@ impl Generator {
             // Reset register counter in between statements. Any value that a statement
             // produces that must persist (e.g., `let` bindings) must be stored in
             // memory.
-            self.register_counter = 0;
+            self.reset_register_counter(0);
         }
     }
 
@@ -394,6 +396,14 @@ impl Generator {
 
     fn push(&mut self, instruction: vil::Instruction) {
         self.current_block().instructions.push(instruction)
+    }
+
+    fn reset_register_counter(&mut self, count: u32) {
+        self.current_function().max_register_count = cmp::max(
+            self.current_function().max_register_count,
+            self.register_counter,
+        );
+        self.register_counter = count;
     }
 
     fn current_function(&mut self) -> &mut vil::FunctionDeclaration {
