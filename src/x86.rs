@@ -179,7 +179,7 @@ impl Generator {
                 // Move RAX into the destination register.
                 instructions.push(Instruction::Mov(Value::r(r1), RAX));
             }
-            vil::Instruction::Load(r, mem, offset) => {
+            vil::Instruction::Load(r, _, offset) => {
                 instructions.push(Instruction::Mov(
                     Value::r(r),
                     Value::Memory {
@@ -190,7 +190,7 @@ impl Generator {
                     },
                 ));
             }
-            vil::Instruction::Store(mem, r, offset) => {
+            vil::Instruction::Store(_, r, offset) => {
                 instructions.push(Instruction::Mov(
                     Value::Memory {
                         scale: 1,

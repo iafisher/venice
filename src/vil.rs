@@ -55,16 +55,12 @@ pub enum Register {
     Param(u8),
     General(u8),
     Return,
-    Stack,
-    Base,
 }
 
 // TODO: make these private
 pub const PARAM_REGISTER_COUNT: u8 = 6;
 pub const GP_REGISTER_COUNT: u8 = 7;
 const RETURN_REGISTER_INDEX: u8 = 13;
-const STACK_REGISTER_INDEX: u8 = 14;
-const BASE_REGISTER_INDEX: u8 = 15;
 
 impl Register {
     pub fn index(self) -> u8 {
@@ -72,8 +68,6 @@ impl Register {
             Register::Param(i) => i,
             Register::General(i) => i,
             Register::Return => RETURN_REGISTER_INDEX,
-            Register::Stack => STACK_REGISTER_INDEX,
-            Register::Base => BASE_REGISTER_INDEX,
         }
     }
 
@@ -195,8 +189,6 @@ impl fmt::Display for Register {
             Register::Param(i) => write!(f, "%rp{}", i),
             Register::General(i) => write!(f, "%rg{}", i),
             Register::Return => write!(f, "%rt"),
-            Register::Stack => write!(f, "%rsp"),
-            Register::Base => write!(f, "%rbp"),
         }
     }
 }

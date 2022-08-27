@@ -259,36 +259,12 @@ pub enum Type {
         return_type: Box<Type>,
     },
     Record(String),
-    Unknown,
-    Error,
 }
 
 #[derive(Clone, Debug)]
 pub struct ParameterizedType {
     symbol: String,
     parameters: Vec<Type>,
-}
-
-impl Type {
-    pub fn matches(&self, other: &Type) -> bool {
-        match (self, other) {
-            (Type::Boolean, Type::Boolean) => true,
-            (Type::I64, Type::I64) => true,
-            (Type::String, Type::String) => true,
-            (Type::Tuple(ts1), Type::Tuple(ts2)) => {
-                if ts1.len() != ts2.len() {
-                    return false;
-                }
-                for (t1, t2) in ts1.iter().zip(ts2.iter()) {
-                    if !t1.matches(t2) {
-                        return false;
-                    }
-                }
-                true
-            }
-            _ => false,
-        }
-    }
 }
 
 impl fmt::Display for Program {
@@ -595,8 +571,6 @@ impl fmt::Display for Type {
                 write!(f, "{}>", return_type)
             }
             Type::Record(name) => write!(f, "{}", name),
-            Type::Unknown => write!(f, "unknown"),
-            Type::Error => write!(f, "unknown"),
         }
     }
 }
