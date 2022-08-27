@@ -20,18 +20,21 @@ main_0:
 if_true_1:
   %rg3 = set s_0
   %rp0 = move %rg3
-  %rg2 = call %venice_println
+  call %venice_println
+  %rg2 = move %rt
   jump %if_end_3
 
 if_false_2:
   %rg1 = set s_1
   %rp0 = move %rg1
-  %rg0 = call %venice_println
+  call %venice_println
+  %rg0 = move %rt
   jump %if_end_3
 
 if_end_3:
   %rg0 = set 0
-  ret %rg0
+  %rt = move %rg0
+  ret
 }
 
 

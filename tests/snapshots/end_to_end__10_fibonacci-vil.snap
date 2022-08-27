@@ -46,7 +46,8 @@ while_2:
 
 while_end_3:
   %rg0 = load %fib_i__2, 0
-  ret %rg0
+  %rt = move %rg0
+  ret
 }
 
 // stack_frame_size = 8
@@ -57,12 +58,15 @@ main_4:
   %x__6 = alloca 8
   %rg1 = set 12
   %rp0 = move %rg1
-  %rg0 = call %fibonacci__1
+  call %fibonacci__1
+  %rg0 = move %rt
   %x__6 = store %rg0, 0
   %rg1 = load %x__6, 0
   %rp0 = move %rg1
-  %rg0 = call %venice_printint
+  call %venice_printint
+  %rg0 = move %rt
   %rg0 = set 0
-  ret %rg0
+  %rt = move %rg0
+  ret
 }
 

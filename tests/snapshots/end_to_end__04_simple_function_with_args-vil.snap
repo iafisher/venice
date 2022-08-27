@@ -14,7 +14,8 @@ sub__2_0:
   %rg1 = load %x__0, 0
   %rg2 = load %y__1, 0
   %rg0 = sub %rg1, %rg2
-  ret %rg0
+  %rt = move %rg0
+  ret
 }
 
 // stack_frame_size = 8
@@ -27,12 +28,15 @@ main_1:
   %rp0 = move %rg1
   %rg2 = set 5
   %rp1 = move %rg2
-  %rg0 = call %sub__2
+  call %sub__2
+  %rg0 = move %rt
   %x__3 = store %rg0, 0
   %rg1 = load %x__3, 0
   %rp0 = move %rg1
-  %rg0 = call %venice_printint
+  call %venice_printint
+  %rg0 = move %rt
   %rg0 = set 0
-  ret %rg0
+  %rt = move %rg0
+  ret
 }
 

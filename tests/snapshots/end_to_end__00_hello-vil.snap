@@ -13,9 +13,11 @@ func main() -> i64 {
 main_0:
   %rg1 = set s_0
   %rp0 = move %rg1
-  %rg0 = call %venice_println
+  call %venice_println
+  %rg0 = move %rt
   %rg0 = set 0
-  ret %rg0
+  %rt = move %rg0
+  ret
 }
 
 

@@ -229,12 +229,10 @@ impl Generator {
             vil::Instruction::Cmp(r1, r2) => {
                 instructions.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
-            vil::Instruction::Call(r, label) => {
+            vil::Instruction::Call(label) => {
                 instructions.push(Instruction::Call(label.0.clone()));
-                instructions.push(Instruction::Mov(Value::r(r), RAX));
             }
-            vil::Instruction::Ret(r) => {
-                instructions.push(Instruction::Mov(RAX, Value::r(r)));
+            vil::Instruction::Ret => {
                 instructions.push(Instruction::Add(
                     RSP,
                     Value::Immediate(declaration.stack_frame_size.into()),

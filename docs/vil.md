@@ -79,7 +79,8 @@ The `call` instruction is used to call a function. It jumps to the function's bo
 ```
 %rp0 = move %rg0
 %rp1 = move %rg1
-%rg2 = call add
+call add
+%rg2 = move %rt
 ```
 
 All parameter registers are implicitly caller-save (meaning the function is free to use them and the caller must save them and restore them after the call if it wishes to preserve their value), as are `%rt`, `%rsp`, `%rg0`, and `%rg1`. The other general-purpose registers and `%rbp` are callee-save.

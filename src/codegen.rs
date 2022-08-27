@@ -226,10 +226,10 @@ impl Generator {
             self.program.externs.push(entry.unique_name.clone());
         }
 
-        self.push(vil::Instruction::Call(
-            r,
-            vil::FunctionLabel(entry.unique_name.clone()),
-        ));
+        self.push(vil::Instruction::Call(vil::FunctionLabel(
+            entry.unique_name.clone(),
+        )));
+        self.push(vil::Instruction::Move(r, vil::Register::Return));
     }
 
     fn generate_block(&mut self, block: &Vec<ast::Statement>) {
@@ -323,7 +323,8 @@ impl Generator {
 
     fn generate_return_statement(&mut self, stmt: &ast::ReturnStatement) {
         let register = self.generate_expression(&stmt.value);
-        self.push(vil::Instruction::Ret(register));
+        self.push(vil::Instruction::Move(vil::Register::Return, register));
+        self.push(vil::Instruction::Ret);
     }
 
     fn generate_while_statement(&mut self, stmt: &ast::WhileStatement) {

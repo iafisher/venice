@@ -14,7 +14,8 @@ two_plus_two__0_0:
   %rg1 = set 2
   %rg2 = set 2
   %rg0 = add %rg1, %rg2
-  ret %rg0
+  %rt = move %rg0
+  ret
 }
 
 // stack_frame_size = 8
@@ -23,12 +24,15 @@ func main() -> i64 {
 
 main_1:
   %x__1 = alloca 8
-  %rg0 = call %two_plus_two__0
+  call %two_plus_two__0
+  %rg0 = move %rt
   %x__1 = store %rg0, 0
   %rg1 = load %x__1, 0
   %rp0 = move %rg1
-  %rg0 = call %venice_printint
+  call %venice_printint
+  %rg0 = move %rt
   %rg0 = set 0
-  ret %rg0
+  %rt = move %rg0
+  ret
 }
 
