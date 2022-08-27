@@ -16,10 +16,10 @@ main:
 
 main_0:
   mov rax, 1
-  mov rbx, 0
+  mov rbx, 1
   cmp rax, rbx
-  je if_false_2
-  jmp if_true_1
+  je if_true_1
+  jmp if_false_2
 
 if_true_1:
   mov rdx, s_0

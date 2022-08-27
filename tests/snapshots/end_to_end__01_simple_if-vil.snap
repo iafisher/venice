@@ -10,9 +10,9 @@ func main() -> i64 {
 
 main_0:
   %0 = set 1
-  %1 = set 0
+  %1 = set 1
   cmp %0, %1
-  jump_eq %if_false_2 %if_true_1
+  jump_eq %if_true_1 %if_false_2
 
 if_true_1:
   %3 = set s_0

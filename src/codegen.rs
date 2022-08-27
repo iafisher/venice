@@ -124,6 +124,22 @@ impl Generator {
         r
     }
 
+    fn generate_expression_as_condition(
+        &mut self,
+        expr: &ast::Expression,
+        label_true: vil::Label,
+        label_false: vil::Label,
+    ) {
+        let register = self.generate_expression(&expr);
+        let tmp = self.claim_register();
+        self.push(vil::Instruction::Set(
+            tmp.clone(),
+            vil::Immediate::Integer(1),
+        ));
+        self.push(vil::Instruction::Cmp(register, tmp));
+        self.push(vil::Instruction::JumpEq(label_true, label_false));
+    }
+
     fn generate_binary_expression(&mut self, expr: &ast::BinaryExpression, r: vil::Register) {
         let old_register_counter = r.0 + 1;
 
@@ -294,18 +310,13 @@ impl Generator {
         let false_label = self.claim_label("if_false");
         let end_label = self.claim_label("if_end");
 
-        let register = self.generate_expression(&stmt.if_clause.condition);
-        let tmp = self.claim_register();
-        self.push(vil::Instruction::Set(
-            tmp.clone(),
-            vil::Immediate::Integer(0),
-        ));
-        self.push(vil::Instruction::Cmp(register, tmp));
-
-        self.start_block(
+        self.generate_expression_as_condition(
+            &stmt.if_clause.condition,
             true_label.clone(),
-            Some(vil::Instruction::JumpEq(false_label.clone(), true_label)),
+            false_label.clone(),
         );
+
+        self.start_block(true_label, None);
         self.generate_block(&stmt.if_clause.body);
 
         // TODO: handle elif_clauses
@@ -355,18 +366,13 @@ impl Generator {
             cond_label.clone(),
             Some(vil::Instruction::Jump(cond_label.clone())),
         );
-        let register = self.generate_expression(&stmt.condition);
-        let tmp = self.claim_register();
-        self.push(vil::Instruction::Set(
-            tmp.clone(),
-            vil::Immediate::Integer(1),
-        ));
-        self.push(vil::Instruction::Cmp(register, tmp));
-
-        self.start_block(
+        self.generate_expression_as_condition(
+            &stmt.condition,
             loop_label.clone(),
-            Some(vil::Instruction::JumpEq(loop_label, end_label.clone())),
+            end_label.clone(),
         );
+
+        self.start_block(loop_label, None);
         self.generate_block(&stmt.body);
 
         self.start_block(end_label, Some(vil::Instruction::Jump(cond_label)));
