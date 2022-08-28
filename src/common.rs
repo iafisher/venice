@@ -31,6 +31,8 @@ impl fmt::Display for Location {
     }
 }
 
+// The parse tree and abstract syntax tree use the same op types, so they are defined here.
+
 #[derive(Clone, Copy, Debug)]
 pub enum BinaryOpType {
     Add,

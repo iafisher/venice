@@ -31,6 +31,12 @@ For instance,
 
 Most instructions operate solely on registers (which are represented in VIL code as a number preceded by a percent sign). A small set of instructions are used to interact with main memory.
 
+In general, VIL instruction fall into one of several classes:
+
+- Instructions that map more or less directly to x86, such as `add` and `sub`.
+- Instructions that map to several x86 instructions that form a conceptual unit, such as `frame_set_up` and `frame_tear_down`.
+- Instructions that express the intent of the corresponding x86 instruction, such as `callee_save` and `callee_restore`.
+
 ### Register manipulation
 The `set` instruction places a constant value in a register:
 
@@ -61,9 +67,9 @@ store %rg0, -8
 TODO
 
 ### Comparison and branching
-- `cmpeq/cmpneq/cmplt/cmpgt/cmplte/cmpgte <r1> <r2>`: Sets the comparison flag to 1 if the instruction's condition holds between the two operands, to 0 otherwise.
-- `jump <label>`: Jump unconditionally to the label.
-- `jumpif <label1>, <label2>`: Jumps to the first label if the comparison flag is set to 1, to the second label otherwise.
+- `cmp <r1> <r2>`: Compares `r1` and `r2`, setting flags but discarding the result.
+- `jump_XYZ <label1> <label2>`: Jumps to `label1` if the condition indicated by `XYZ` holds, or to `label2` otherwise.
+- `jump <label>`: Jumps unconditionally to the label.
 
 ### Functions
 The `call` instruction is used to call a function. It jumps to the function's body and arranges the stack so that a subsequent `ret` instruction will return to the place the function was called from. It expects that its parameters have been placed into the parameter registers.

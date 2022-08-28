@@ -1,6 +1,10 @@
 // Copyright 2022 The Venice Authors. All rights reserved.
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
+//
+// This file implements the Venice runtime library, a set of C functions that Venice
+// programs use for low-level functionality that would be impossible to write in pure
+// Venice.
 
 #include <stdarg.h>
 #include <stdint.h>

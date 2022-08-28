@@ -1,6 +1,18 @@
 // Copyright 2022 The Venice Authors. All rights reserved.
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
+//
+// The abstract syntax tree (AST) is a tree representation of a Venice program. It is similar to the
+// parse tree, with a few important differences:
+//
+//   - Syntactic sugar is simplified, e.g. if-elif-else statements are converted into nested
+//     if-else statements.
+//   - Concrete type information is attached to each node with a type.
+//   - Certain operations are converted into calls to the Venice runtime, e.g. `my_list[index]`
+//     is turned into `venice_list_index(my_list, index)`.
+//
+// The AST is produced from the parse tree by the analyzer module and converted into VIL code by
+// the codegen module.
 
 use super::common;
 use std::fmt;

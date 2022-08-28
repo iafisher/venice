@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 //
 // The analyzer turns the parse tree into an abstract syntax tree by computing type information and
-// simplifying syntactic sugar.
+// simplifying syntactic sugar. It is responsible for detecting and reporting type errors.
 
 use super::ast;
 use super::common;

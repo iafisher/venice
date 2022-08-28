@@ -1,6 +1,11 @@
 // Copyright 2022 The Venice Authors. All rights reserved.
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
+//
+// The parse tree is a direct representation of a Venice program's source code in a tree format. It
+// is the first of several data structures the compiler produces to represent a Venice program. It
+// is constructed by the parser module, and transformed into an abstract syntax tree by the
+// analyzer module.
 
 use super::common;
 use std::fmt;

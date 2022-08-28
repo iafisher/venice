@@ -53,6 +53,8 @@ pub enum Instruction {
 pub enum Value {
     Immediate(i64),
     Register(Register),
+    /// Directly holds a register's assembly-language name for special cases, e.g. for byte
+    /// registers like AL.
     SpecialRegister(String),
     Label(String),
     Memory {
@@ -64,6 +66,7 @@ pub enum Value {
 }
 
 impl Value {
+    /// Constructs an x86 register from a VIL register.
     fn r(r: &vil::Register) -> Self {
         Value::Register(Register(r.absolute_index()))
     }
@@ -192,6 +195,9 @@ impl Generator {
                 instructions.push(Instruction::Neg(Value::r(r1)));
             }
             vil::InstructionKind::LogicalNot(r1, r2) => {
+                // XOR RAX with itself to produce 0, then test it against the source register and
+                // set AL to the ZF flag. Since we already zeroed out RAX, all the high bits will
+                // also be 0.
                 instructions.push(Instruction::Xor(RAX, RAX));
                 instructions.push(Instruction::Test(RAX, Value::r(r2)));
                 instructions.push(Instruction::SetE(Value::SpecialRegister(String::from(
@@ -228,6 +234,8 @@ impl Generator {
                 instructions.push(Instruction::Call(label.0.clone()));
             }
             vil::InstructionKind::CallVariadic(label) => {
+                // The System V ABI requires setting AL to the number of vector registers when
+                // calling a variadic function.
                 instructions.push(Instruction::Mov(
                     Value::SpecialRegister(String::from("al")),
                     Value::Immediate(0),
