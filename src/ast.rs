@@ -223,6 +223,7 @@ pub enum Type {
     I64,
     String,
     Void,
+    Any,
     Tuple(Vec<Type>),
     List(Box<Type>),
     Map {
@@ -275,6 +276,8 @@ impl Type {
     pub fn matches(&self, other: &Type) -> bool {
         use Type::*;
         match (self, other) {
+            (Any, _) => true,
+            (_, Any) => true,
             (Boolean, Boolean) => true,
             (I64, I64) => true,
             (String, String) => true,
@@ -565,6 +568,7 @@ impl fmt::Display for Type {
             Boolean => write!(f, "bool"),
             String => write!(f, "string"),
             Void => write!(f, "void"),
+            Any => write!(f, "any"),
             Tuple(ts) => {
                 write!(f, "(")?;
                 for (i, t) in ts.iter().enumerate() {

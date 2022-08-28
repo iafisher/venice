@@ -57,7 +57,16 @@ fn test_12_list_literal() {
     test_e2e("12_list_literal");
 }
 
+#[test]
+fn test_13_argv() {
+    test_e2e_with_args("13_argv", &["a", "b", "c"]);
+}
+
 fn test_e2e(folder: &str) {
+    test_e2e_with_args(folder, &[]);
+}
+
+fn test_e2e_with_args(folder: &str, args: &[&str]) {
     let bin_path = build_path(folder, "program");
     let obj_path = build_path(folder, "program.o");
     let vil_path = build_path(folder, "program.vil");
@@ -94,6 +103,7 @@ fn test_e2e(folder: &str) {
     let output = Command::new("timeout")
         .arg("5s")
         .arg(&bin_path)
+        .args(args)
         .output()
         .unwrap();
     assert!(output.status.success());

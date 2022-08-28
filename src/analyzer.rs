@@ -957,6 +957,16 @@ impl SymbolTable {
                 },
             ),
         );
+        symbols.insert(
+            String::from("length"),
+            ast::SymbolEntry::external(
+                "venice_list_length",
+                ast::Type::Function {
+                    parameters: vec![ast::Type::List(Box::new(ast::Type::Any))],
+                    return_type: Box::new(ast::Type::I64),
+                },
+            ),
+        );
 
         SymbolTable {
             environments: vec![symbols],

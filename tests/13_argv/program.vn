@@ -1,6 +1,9 @@
-fn main(args: list<string>) -> i64 {
+func main(args: list<string>) -> i64 {
+  print("# of args: ");
+  printint(length(args));
   let i: i64 = 0;
   while i < length(args) {
+    print("Arg: ");
     println(args[i]);
     i = i + 1;
   }
