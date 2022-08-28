@@ -60,7 +60,6 @@ pub enum InstructionKind {
     Set(Register, Immediate),
     Store(Register, i32),
     Sub(Register, Register, Register),
-    ToDo(String),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -210,7 +209,6 @@ impl fmt::Display for InstructionKind {
             Set(r, x) => write!(f, "{} = set {}", r, x),
             Store(r, offset) => write!(f, "store {}, {}", r, offset),
             Sub(r1, r2, r3) => write!(f, "{} = sub {}, {}", r1, r2, r3),
-            ToDo(s) => write!(f, "<todo: {}>", s),
         }
     }
 }

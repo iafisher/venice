@@ -53,8 +53,7 @@ impl Generator {
         match declaration {
             Function(decl) => self.generate_function_declaration(decl),
             _ => {
-                // TODO
-                self.push(vil::InstructionKind::ToDo(String::from("declaration")));
+                panic!("internal error: record and const declarations are not yet supported");
             }
         }
     }
@@ -122,8 +121,10 @@ impl Generator {
                 );
             }
             x => {
-                // TODO
-                self.push(vil::InstructionKind::ToDo(format!("{:?}", x)));
+                panic!(
+                    "internal error: expression type not implemented: {:?}",
+                    expr
+                );
             }
         }
         r
@@ -174,7 +175,7 @@ impl Generator {
                 self.push(vil::InstructionKind::Sub(r, left, right));
             }
             _ => {
-                // TODO
+                panic!("internal error: operator not implemented: {:?}", expr.op);
             }
         }
 
@@ -286,7 +287,7 @@ impl Generator {
             Return(stmt) => self.generate_return_statement(stmt),
             While(stmt) => self.generate_while_statement(stmt),
             _ => {
-                // TODO
+                panic!("internal error: statement type not implemented: {:?}", stmt);
             }
         }
     }

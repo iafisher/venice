@@ -47,7 +47,6 @@ pub enum Instruction {
     Sub(Value, Value),
     Test(Value, Value),
     Xor(Value, Value),
-    ToDo(String),
 }
 
 pub enum Value {
@@ -294,10 +293,6 @@ impl Generator {
             CallerSave(r) => {
                 instructions.push(Instruction::Push(Value::r(r)));
             }
-            ToDo(s) => {
-                // TODO
-                instructions.push(Instruction::ToDo(s.clone()));
-            }
         }
     }
 }
@@ -375,7 +370,6 @@ impl fmt::Display for Instruction {
             Sub(x, y) => write!(f, "sub {}, {}", x, y),
             Test(x, y) => write!(f, "test {}, {}", x, y),
             Xor(x, y) => write!(f, "xor {}, {}", x, y),
-            ToDo(s) => write!(f, "<todo: {}>", s),
         }
     }
 }
