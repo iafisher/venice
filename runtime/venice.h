@@ -44,32 +44,12 @@ typedef struct {
 
 
 /***
- * Internal utility functions
- */
-
-// Prints an error message and terminates the program.
-void runtime_error(const char* message);
-
-// Wrappers that exit the program if memory allocation fails.
-void* venice_malloc(size_t size);
-void* venice_realloc(void* ptr, size_t new_size);
-
-
-/***
  * String functions
  */
 
 // Constructs a Venice string object from a raw string literal. A new buffer is
 // allocated and the data is copied into it.
 venice_string_t* venice_string_new(char* data);
-
-// Constructs a Venice string object without allocating a new buffer. The string
-// takes ownership of `data`, which should not be used after calling this
-// function. `data` should be null-terminated and `length` should be the length
-// of the string not including the null terminator.
-//
-// This is an internal function which should not be called from Venice code.
-venice_string_t* venice_string_new_no_alloc(uint64_t length, char* data);
 
 // Returns the string's length in bytes. Does not include the null terminator.
 uint64_t venice_string_length(venice_string_t* string);
@@ -121,12 +101,6 @@ FILE* venice_file_open(venice_string_t* path);
 
 // Reads the entire contents of the file into a string and returns it.
 venice_string_t* venice_file_read_all(FILE* f);
-
-// Same as `venice_file_read_all` except that the buffer size is specified
-// explicitly. This exists for convenience and testing and should not be used
-// otherwise.
-venice_string_t* venice_file_read_all_with_buffer_size(FILE* f,
-                                                       size_t buffer_size);
 
 // Closes the file.
 void venice_file_close(FILE* f);

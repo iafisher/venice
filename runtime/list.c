@@ -4,6 +4,7 @@
 
 #include <stdarg.h>
 
+#include "internal.h"
 #include "venice.h"
 
 #define VENICE_LIST_INITIAL_CAPACITY 8

@@ -15,6 +15,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "internal.h"
 #include "venice.h"
 
 uint32_t global_tests_passed = 0;

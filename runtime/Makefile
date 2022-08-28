@@ -9,13 +9,14 @@ MAKEFLAGS += --no-builtin-rules
 FLAGS = -Wall -Werror -Wextra
 LIB_FLAGS = -fPIC -shared
 SRCS = internal.c io.c list.c misc.c string.c
+HEADERS = internal.h venice.h
 
 all: libvenice.so libvenice-debug.so main.o main-debug.o
 
-libvenice.so: $(SRCS) venice.h
+libvenice.so: $(SRCS) $(HEADERS)
 	gcc $(FLAGS) $(LIB_FLAGS) -o $@ $^
 
-libvenice-debug.so: $(SRCS) venice.h
+libvenice-debug.so: $(SRCS) $(HEADERS)
 	gcc $(FLAGS) $(LIB_FLAGS) -g -o $@ $^
 
 main.o: main.c venice.h

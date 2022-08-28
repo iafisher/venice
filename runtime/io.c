@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "internal.h"
 #include "venice.h"
 
 void venice_println(venice_string_t* s) {

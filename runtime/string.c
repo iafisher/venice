@@ -4,6 +4,7 @@
 
 #include <string.h>
 
+#include "internal.h"
 #include "venice.h"
 
 venice_string_t* venice_string_new(char* data) {
