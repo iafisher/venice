@@ -24,10 +24,4 @@ __pycache__
 *.rs.bk
 
 /*.vn
-/ideas.md
-/old/src/venice
-/brainstorm.md
-
-# `program` is the name of the binary executable generated for the tests.
-/tests/**/program
 /runtime/test
