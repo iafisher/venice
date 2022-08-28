@@ -1,0 +1,6 @@
+func main() -> i64 {
+  let name: string = input("What's your name? ");
+  print("Hello, ");
+  println(name);
+  return 0;
+}

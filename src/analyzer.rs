@@ -896,6 +896,26 @@ impl SymbolTable {
                 },
             ),
         );
+        symbols.insert(
+            String::from("print"),
+            ast::SymbolEntry::external(
+                "venice_print",
+                ast::Type::Function {
+                    parameters: vec![ast::Type::String],
+                    return_type: Box::new(ast::Type::Void),
+                },
+            ),
+        );
+        symbols.insert(
+            String::from("input"),
+            ast::SymbolEntry::external(
+                "venice_input",
+                ast::Type::Function {
+                    parameters: vec![ast::Type::String],
+                    return_type: Box::new(ast::Type::String),
+                },
+            ),
+        );
 
         SymbolTable {
             environments: vec![symbols],

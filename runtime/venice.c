@@ -58,21 +58,6 @@ static void* venice_malloc(size_t size) {
 }
 
 /***
- * Input and output
- */
-
-// Prints a string followed by a newline to standard output.
-extern void venice_println(venice_string_t* s) {
-  printf("%s\n", s->data);
-}
-
-// Prints an integer followed by a newline to standard output.
-// TODO: remove printint once there's a better way to print integers.
-extern void venice_printint(venice_i64 x) {
-  printf("%ld\n", x);
-}
-
-/***
  * String functions
  */
 
@@ -113,4 +98,47 @@ extern uint64_t venice_list_index(venice_list_t* list, uint64_t n) {
     runtime_error("index out of bounds");
   }
   return list->items[n];
+}
+
+/***
+ * Input and output
+ */
+
+// Prints a string followed by a newline to standard output.
+extern void venice_println(venice_string_t* s) {
+  printf("%s\n", s->data);
+}
+
+// Prints a string to standard output. No trailing newline is printed.
+extern void venice_print(venice_string_t* s) {
+  printf("%s", s->data);
+}
+
+// TODO: support lines of arbitrary length
+#define MAX_LINE_LENGTH 128
+
+// Prints a prompt to standard output and reads a line from standard input.
+extern venice_string_t* venice_input(venice_string_t* s) {
+  printf("%s", s->data);
+  fflush(stdout);
+
+  char line[MAX_LINE_LENGTH];
+  char* r = fgets(line, MAX_LINE_LENGTH, stdin);
+  if (r == NULL) {
+    runtime_error("fgets failed");
+  }
+
+  // Strip the trailing newline.
+  size_t n = strlen(line);
+  if (n > 0 && line[n - 1] == '\n') {
+    line[n - 1] = '\0';
+  }
+
+  return venice_string_new(line);
+}
+
+// Prints an integer followed by a newline to standard output.
+// TODO: remove printint once there's a better way to print integers.
+extern void venice_printint(venice_i64 x) {
+  printf("%ld\n", x);
 }
