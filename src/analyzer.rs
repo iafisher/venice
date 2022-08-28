@@ -346,7 +346,24 @@ impl Analyzer {
                 type_: ast::Type::I64,
             },
             ptree::ExpressionKind::String(x) => ast::Expression {
-                kind: ast::ExpressionKind::String(x.clone()),
+                kind: ast::ExpressionKind::Call(ast::CallExpression {
+                    function: ast::SymbolEntry {
+                        unique_name: String::from("venice_string_new"),
+                        type_: ast::Type::Error,
+                        constant: true,
+                        external: true,
+                        stack_offset: 0,
+                    },
+                    arguments: vec![ast::Expression {
+                        kind: ast::ExpressionKind::String(x.clone()),
+                        // Technically this should have a different type from the overall type of
+                        // the expression, because it is a raw string literal rather than a
+                        // `venice_string_t` runtime object, but since nothing accesses its type it
+                        // doesn't really matter.
+                        type_: ast::Type::String,
+                    }],
+                    variadic: false,
+                }),
                 type_: ast::Type::String,
             },
             ptree::ExpressionKind::Symbol(ref e) => self.analyze_symbol(e, &expr.location),

@@ -2,6 +2,7 @@
 source: tests/end_to_end.rs
 expression: x86_output
 ---
+extern venice_string_new
 extern venice_println
 
 
@@ -19,7 +20,14 @@ main_0:
   push rbp
   mov rbp, rsp
   sub rsp, 0
-  mov r11, s_0
+  mov r12, s_0
+  mov rdi, r12
+  push r10
+  push r11
+  call venice_string_new
+  pop r11
+  pop r10
+  mov r11, rax
   mov rdi, r11
   push r10
   push r11

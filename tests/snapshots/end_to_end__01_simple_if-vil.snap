@@ -2,7 +2,9 @@
 source: tests/end_to_end.rs
 expression: vil_output
 ---
+extern venice_string_new;
 extern venice_println;
+extern venice_string_new;
 extern venice_println;
 
 
@@ -22,7 +24,14 @@ main_0:
   jump_eq %if_true_1 %if_false_2
 
 if_true_1:
-  %rg3 = set s_0
+  %rg4 = set s_0
+  %rp0 = move %rg4
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_string_new
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg3 = move %rt
   %rp0 = move %rg3
   caller_save %rg0
   caller_save %rg1
@@ -33,7 +42,14 @@ if_true_1:
   jump %if_end_3
 
 if_false_2:
-  %rg1 = set s_1
+  %rg2 = set s_1
+  %rp0 = move %rg2
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_string_new
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg1 = move %rt
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1

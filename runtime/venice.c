@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef int64_t venice_i64;
 
@@ -17,6 +18,13 @@ typedef struct {
   size_t length;
   uint64_t* items;
 } venice_list_t;
+
+typedef struct {
+  // `data` must be null-terminated for compatibility with C string functions. `length`
+  // holds the number of bytes in the string, not including the null terminator.
+  size_t length;
+  char* data;
+} venice_string_t;
 
 static void* venice_malloc(size_t size) {
   void* ptr = malloc(size);
@@ -27,13 +35,21 @@ static void* venice_malloc(size_t size) {
   return ptr;
 }
 
-extern void venice_println(const char* s) {
-  printf("%s\n", s);
+extern void venice_println(venice_string_t* s) {
+  printf("%s\n", s->data);
 }
 
 // TODO: remove printint once there's a better way to print integers.
 extern void venice_printint(venice_i64 x) {
   printf("%ld\n", x);
+}
+
+extern venice_string_t* venice_string_new(char* data) {
+  venice_string_t* s = venice_malloc(sizeof *s);
+  s->length = strlen(data);
+  s->data = venice_malloc((sizeof *s->data) * s->length);
+  memcpy(s->data, data, s->length + 1);
+  return s;
 }
 
 extern venice_list_t* venice_list_new(size_t length, ...) {

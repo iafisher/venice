@@ -2,6 +2,7 @@
 source: tests/end_to_end.rs
 expression: vil_output
 ---
+extern venice_string_new;
 extern venice_println;
 
 
@@ -15,7 +16,14 @@ main_0:
   callee_save %rg5
   callee_save %rg6
   frame_set_up 0
-  %rg1 = set s_0
+  %rg2 = set s_0
+  %rp0 = move %rg2
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_string_new
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg1 = move %rt
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1
