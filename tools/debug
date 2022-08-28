@@ -1,0 +1,17 @@
+#!/bin/bash
+# Copyright 2022 The Venice Authors. All rights reserved.
+# Use of this source code is governed by an MIT-style license that can be
+# found in the LICENSE file.
+#
+# Compile a Venice program and run it under GDB.
+
+set -eu
+
+main() {
+  input_path=$1
+  output_path=${input_path%.vn}
+  cargo run -- "$input_path" --debug --keep-intermediate
+  gdb "$output_path"
+}
+
+main "$@"
