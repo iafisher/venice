@@ -78,6 +78,10 @@ uint64_t venice_list_index(venice_list_t* list, uint64_t n);
 // Appends an object to the end of the list.
 void venice_list_append(venice_list_t* list, uint64_t x);
 
+// Retrieves length and capacity.
+uint64_t venice_list_length(venice_list_t* list);
+uint64_t venice_list_capacity(venice_list_t* list);
+
 
 /***
  * Input and output

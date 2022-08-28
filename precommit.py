@@ -29,6 +29,8 @@ def init(precommit):
     # Check Python static type annotations with mypy.
     # precommit.check(checks.PythonTypes())
 
+    precommit.check(checks.ClangFormat())
+
     # Check Rust format with rustfmt.
     precommit.check(checks.RustFormat())
     precommit.check(

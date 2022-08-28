@@ -30,3 +30,4 @@ __pycache__
 
 # `program` is the name of the binary executable generated for the tests.
 /tests/**/program
+/runtime/test
