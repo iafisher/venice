@@ -9,3 +9,13 @@ This document is for brainstorming future changes to the Venice language. All id
   - Also, exceptions print stack traces.
   - Checked exceptions?
   - <https://tour.dlang.org/tour/en/gems/uniform-function-call-syntax-ufcs>
+- Use `final` instead of `let` for immutable bindings
+- `if x matches y` instead of `if let x = y`
+- Numeric units (e.g. `10s`)
+- Tooling
+  - Package manager
+  - Linter
+  - Code formatter
+- Call `bytes` objects `blob` instead
+- `\(...)` instead of `${...}` for string interpolation
+- `if not let` statements
