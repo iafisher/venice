@@ -43,3 +43,10 @@ def init(precommit):
     )
 
     precommit.check(checks.Command("UnitTests", ["cargo", "test"], include=["*.rs"]))
+    precommit.check(
+        checks.Command(
+            "RuntimeTests",
+            ["./tools/test_runtime"],
+            include=["runtime/*.h", "runtime/*.c"],
+        )
+    )

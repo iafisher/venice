@@ -1,0 +1,20 @@
+#!/bin/bash
+# Copyright 2022 The Venice Authors. All rights reserved.
+# Use of this source code is governed by an MIT-style license that can be
+# found in the LICENSE file.
+
+set -eu
+
+main() {
+  if [[ $# -gt 0 ]]; then
+    echo "$0 takes no command-line arguments."
+    exit 1
+  fi
+
+  cd "$(dirname "$0")"
+  cd ../runtime
+  make test
+  ./test
+}
+
+main "$@"
