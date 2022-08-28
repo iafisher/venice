@@ -1,2 +1,4 @@
 AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+MaxEmptyLinesToKeep: 2
 PointerAlignment: Left
