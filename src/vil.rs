@@ -1,3 +1,7 @@
+// Copyright 2022 The Venice Authors. All rights reserved.
+// Use of this source code is governed by an MIT-style license that can be
+// found in the LICENSE file.
+//
 // The Venice Intermediate Language (VIL) is the intermediate representation used inside
 // the Venice compiler. It is a high-level, machine-independent assembly language.
 

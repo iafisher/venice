@@ -1,3 +1,7 @@
+// Copyright 2022 The Venice Authors. All rights reserved.
+// Use of this source code is governed by an MIT-style license that can be
+// found in the LICENSE file.
+//
 // The lexer breaks the input program into a stream of tokens that the parser consumes.
 
 use super::common;

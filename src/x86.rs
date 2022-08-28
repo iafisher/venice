@@ -1,3 +1,7 @@
+// Copyright 2022 The Venice Authors. All rights reserved.
+// Use of this source code is governed by an MIT-style license that can be
+// found in the LICENSE file.
+//
 // Compiles a VIL program into concrete x86 machine code.
 
 use super::vil;

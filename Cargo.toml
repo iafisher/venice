@@ -2,6 +2,8 @@
 name = "venice"
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/iafisher/venice"
+license = "MIT"
 
 [dependencies]
 clap = { version = "3.2.17", features = ["derive"] }
