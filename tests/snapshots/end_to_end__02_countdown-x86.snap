@@ -2,62 +2,55 @@
 source: tests/end_to_end.rs
 expression: x86_output
 ---
-extern venice_printint
-
-
-section .text
-
-global venice_main
+.globl venice_main
 venice_main:
 
 venice_main_0:
-  push r12
-  push r13
-  push r14
-  push r15
-  push rbx
-  push rbp
-  mov rbp, rsp
-  sub rsp, 8
-  mov r10, 10
-  mov [rbp-8], r10
+  pushq %r12
+  pushq %r13
+  pushq %r14
+  pushq %r15
+  pushq %rbx
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $8, %rsp
+  movq $10, %r10
+  movq %r10, -8(%rbp)
   jmp while_cond_1
 
 while_cond_1:
-  mov r10, [rbp-8]
-  mov r11, 0
-  cmp r10, r11
+  movq -8(%rbp), %r10
+  movq $0, %r11
+  cmpq %r11, %r10
   jg while_2
   jmp while_end_3
 
 while_2:
-  mov r13, [rbp-8]
-  mov rdi, r13
-  push r10
-  push r11
+  movq -8(%rbp), %r13
+  movq %r13, %rdi
+  pushq %r10
+  pushq %r11
   call venice_printint
-  pop r11
-  pop r10
-  mov r12, rax
-  mov r11, [rbp-8]
-  mov r12, 1
-  mov r10, r11
-  sub r10, r12
-  mov [rbp-8], r10
+  popq %r11
+  popq %r10
+  movq %rax, %r12
+  movq -8(%rbp), %r11
+  movq $1, %r12
+  movq %r11, %r10
+  subq %r12, %r10
+  movq %r10, -8(%rbp)
   jmp while_cond_1
 
 while_end_3:
-  mov r10, 0
-  mov rax, r10
-  add rsp, 8
-  pop rbp
-  pop rbx
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  ret
-
-section .data
+  movq $0, %r10
+  movq %r10, %rax
+  addq $8, %rsp
+  popq %rbp
+  popq %rbx
+  popq %r15
+  popq %r14
+  popq %r13
+  popq %r12
+  retq
 
 

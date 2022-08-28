@@ -2,63 +2,55 @@
 source: tests/end_to_end.rs
 expression: x86_output
 ---
-extern venice_printint
-extern venice_printint
-
-
-section .text
-
-global venice_main
+.globl venice_main
 venice_main:
 
 venice_main_0:
-  push r12
-  push r13
-  push r14
-  push r15
-  push rbx
-  push rbp
-  mov rbp, rsp
-  sub rsp, 16
-  mov r11, 21
-  mov r12, 2
-  mov r10, r11
-  imul r10, r12
-  mov [rbp-8], r10
-  mov r11, [rbp-8]
-  mov rdi, r11
-  push r10
-  push r11
+  pushq %r12
+  pushq %r13
+  pushq %r14
+  pushq %r15
+  pushq %rbx
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $16, %rsp
+  movq $21, %r11
+  movq $2, %r12
+  movq %r11, %r10
+  imulq %r12, %r10
+  movq %r10, -8(%rbp)
+  movq -8(%rbp), %r11
+  movq %r11, %rdi
+  pushq %r10
+  pushq %r11
   call venice_printint
-  pop r11
-  pop r10
-  mov r10, rax
-  mov r11, 84
-  mov r12, 2
-  xor rdx, rdx
-  mov rax, r11
-  div r12
-  mov r10, rax
-  mov [rbp-16], r10
-  mov r11, [rbp-16]
-  mov rdi, r11
-  push r10
-  push r11
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq $84, %r11
+  movq $2, %r12
+  xorq %rdx, %rdx
+  movq %r11, %rax
+  divq %r12
+  movq %rax, %r10
+  movq %r10, -16(%rbp)
+  movq -16(%rbp), %r11
+  movq %r11, %rdi
+  pushq %r10
+  pushq %r11
   call venice_printint
-  pop r11
-  pop r10
-  mov r10, rax
-  mov r10, 0
-  mov rax, r10
-  add rsp, 16
-  pop rbp
-  pop rbx
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  ret
-
-section .data
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq $0, %r10
+  movq %r10, %rax
+  addq $16, %rsp
+  popq %rbp
+  popq %rbx
+  popq %r15
+  popq %r14
+  popq %r13
+  popq %r12
+  retq
 
 

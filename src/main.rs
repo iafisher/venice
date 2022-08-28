@@ -105,34 +105,12 @@ fn main() {
     let mut output_path = PathBuf::from(&cli.path);
     output_path.set_extension("");
 
-    // Invoke nasm to turn the textual assembly program into a binary object file.
-    let mut cmd = Command::new("nasm");
+    // Invoke gcc to turn the textual assembly program into a binary executable.
+    let mut cmd = Command::new("gcc");
     if cli.debug {
         cmd.arg("-g");
     }
-    let mut child = cmd
-        .arg("-F")
-        .arg("dwarf")
-        .arg("-f")
-        .arg("elf64")
-        .arg("-o")
-        .arg(&object_output_path)
-        .arg(&x86_output_path)
-        .spawn()
-        .expect("failed to execute nasm");
-    let mut error_code = child.wait().expect("failed to wait on child");
-    if !error_code.success() {
-        if let Some(error_code) = error_code.code() {
-            panic!("nasm returned non-zero exit code: {}", error_code);
-        } else {
-            panic!("nasm returned non-zero exit code");
-        }
-    }
 
-    // Invoke ld to link the binary object file into an ELF executable. It is necessary
-    // to supply the various glibc libraries and initialization code because the Venice
-    // runtime relies on libc. See https://stackoverflow.com/questions/3577922/ for more
-    // information.
     let runtime_library = if cli.debug {
         "runtime/libvenice-debug.so"
     } else {
@@ -143,27 +121,21 @@ fn main() {
     } else {
         "runtime/main.o"
     };
-    child = Command::new("ld")
-        .arg("-dynamic-linker")
-        // TODO: don't hard-code these values
-        .arg("/lib64/ld-linux-x86-64.so.2")
-        .arg("/usr/lib/x86_64-linux-gnu/crt1.o")
-        .arg("/usr/lib/x86_64-linux-gnu/crti.o")
-        .arg(runtime_library)
-        .arg("-lc")
-        .arg(&object_output_path)
-        .arg("/usr/lib/x86_64-linux-gnu/crtn.o")
+    let mut child = cmd
+        .arg("-no-pie")
         .arg("-o")
         .arg(&output_path)
-        .arg(main_wrapper)
+        .arg(&main_wrapper)
+        .arg(&x86_output_path)
+        .arg(&runtime_library)
         .spawn()
-        .expect("failed to execute ld");
-    error_code = child.wait().expect("failed to wait on child");
+        .expect("failed to execute gcc");
+    let error_code = child.wait().expect("failed to wait on child");
     if !error_code.success() {
         if let Some(error_code) = error_code.code() {
-            panic!("ld returned non-zero exit code: {}", error_code);
+            panic!("gcc returned non-zero exit code: {}", error_code);
         } else {
-            panic!("ld returned non-zero exit code");
+            panic!("gcc returned non-zero exit code");
         }
     }
 

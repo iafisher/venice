@@ -308,23 +308,12 @@ const RBP: Value = Value::Register(RBP_REGISTER);
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if !self.externs.is_empty() {
-            for extern_ in &self.externs {
-                writeln!(f, "extern {}", extern_)?;
-            }
-            write!(f, "\n\n")?;
-        }
-
-        // TODO: globals
-
-        write!(f, "section .text\n\n")?;
         for block in &self.blocks {
             writeln!(f, "{}", block)?;
         }
 
-        write!(f, "section .data\n\n")?;
         for datum in &self.data {
-            writeln!(f, "  {}", datum)?;
+            writeln!(f, "{}", datum)?;
         }
 
         Ok(())
@@ -334,7 +323,7 @@ impl fmt::Display for Program {
 impl fmt::Display for Block {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.global {
-            writeln!(f, "global {}", self.label)?;
+            writeln!(f, ".globl {}", self.label)?;
         }
 
         writeln!(f, "{}:", self.label)?;
@@ -349,11 +338,11 @@ impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Instruction::*;
         match self {
-            Add(x, y) => write!(f, "add {}, {}", x, y),
+            Add(x, y) => write!(f, "addq {}, {}", y, x),
             Call(l) => write!(f, "call {}", l),
-            Cmp(x, y) => write!(f, "cmp {}, {}", x, y),
-            IDiv(x) => write!(f, "div {}", x),
-            IMul(x, y) => write!(f, "imul {}, {}", x, y),
+            Cmp(x, y) => write!(f, "cmpq {}, {}", y, x),
+            IDiv(x) => write!(f, "divq {}", x),
+            IMul(x, y) => write!(f, "imulq {}, {}", y, x),
             Je(l) => write!(f, "je {}", l),
             Jg(l) => write!(f, "jg {}", l),
             Jge(l) => write!(f, "jge {}", l),
@@ -361,15 +350,24 @@ impl fmt::Display for Instruction {
             Jle(l) => write!(f, "jle {}", l),
             Jmp(l) => write!(f, "jmp {}", l),
             Jne(l) => write!(f, "jne {}", l),
-            Mov(x, y) => write!(f, "mov {}, {}", x, y),
-            Neg(x) => write!(f, "neg {}", x),
-            Pop(x) => write!(f, "pop {}", x),
-            Push(x) => write!(f, "push {}", x),
-            Ret => write!(f, "ret"),
+            Mov(x, y) => {
+                // TODO: this logic is brittle, and also needs to be applied to all the other
+                // instructions.
+                if matches!(x, Value::SpecialRegister(_)) || matches!(y, Value::SpecialRegister(_))
+                {
+                    write!(f, "movb {}, {}", y, x)
+                } else {
+                    write!(f, "movq {}, {}", y, x)
+                }
+            }
+            Neg(x) => write!(f, "negq {}", x),
+            Pop(x) => write!(f, "popq {}", x),
+            Push(x) => write!(f, "pushq {}", x),
+            Ret => write!(f, "retq"),
             SetE(x) => write!(f, "sete {}", x),
-            Sub(x, y) => write!(f, "sub {}, {}", x, y),
-            Test(x, y) => write!(f, "test {}, {}", x, y),
-            Xor(x, y) => write!(f, "xor {}, {}", x, y),
+            Sub(x, y) => write!(f, "subq {}, {}", y, x),
+            Test(x, y) => write!(f, "testq {}, {}", y, x),
+            Xor(x, y) => write!(f, "xorq {}, {}", y, x),
         }
     }
 }
@@ -378,32 +376,26 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Value::*;
         match self {
-            Immediate(x) => write!(f, "{}", x),
-            Register(r) => write!(f, "{}", r),
-            SpecialRegister(s) => write!(f, "{}", s),
-            Label(s) => write!(f, "{}", s),
+            Immediate(x) => write!(f, "${}", x),
+            Register(r) => write!(f, "%{}", r),
+            SpecialRegister(s) => write!(f, "%{}", s),
+            Label(s) => write!(f, "$.{}", s),
             Memory {
                 scale,
                 displacement,
                 base,
                 index,
             } => {
-                write!(f, "[")?;
-                if *scale != 1 {
-                    write!(f, "{}*", scale)?;
+                if *scale != 1 || index.is_some() {
+                    // TODO
+                    panic!("internal error: memory operand not supported");
                 }
-                write!(f, "{}", base)?;
-                if let Some(index) = index {
-                    write!(f, "+{}", index)?;
-                }
+
                 if *displacement != 0 {
-                    if *displacement < 0 {
-                        write!(f, "-{}", -displacement)?;
-                    } else {
-                        write!(f, "+{}", displacement)?;
-                    }
+                    write!(f, "{}(%{})", displacement, base)
+                } else {
+                    write!(f, "(%{})", base)
                 }
-                write!(f, "]")
             }
         }
     }
@@ -439,7 +431,9 @@ impl fmt::Display for Data {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.value {
             DataValue::Str(s) => {
-                write!(f, "{} db {:?}, 0", self.name, s)
+                // TODO: does this handle backslash escapes correctly? i.e., is the debug format
+                // that Rust generates compatible with the assembler?
+                write!(f, ".{}:\n  .string {:?}", self.name, s)
             }
         }
     }

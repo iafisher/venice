@@ -2,51 +2,44 @@
 source: tests/end_to_end.rs
 expression: x86_output
 ---
-extern venice_string_new
-extern venice_println
-
-
-section .text
-
-global venice_main
+.globl venice_main
 venice_main:
 
 venice_main_0:
-  push r12
-  push r13
-  push r14
-  push r15
-  push rbx
-  push rbp
-  mov rbp, rsp
-  sub rsp, 0
-  mov r12, s_0
-  mov rdi, r12
-  push r10
-  push r11
+  pushq %r12
+  pushq %r13
+  pushq %r14
+  pushq %r15
+  pushq %rbx
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $0, %rsp
+  movq $.s_0, %r12
+  movq %r12, %rdi
+  pushq %r10
+  pushq %r11
   call venice_string_new
-  pop r11
-  pop r10
-  mov r11, rax
-  mov rdi, r11
-  push r10
-  push r11
+  popq %r11
+  popq %r10
+  movq %rax, %r11
+  movq %r11, %rdi
+  pushq %r10
+  pushq %r11
   call venice_println
-  pop r11
-  pop r10
-  mov r10, rax
-  mov r10, 0
-  mov rax, r10
-  add rsp, 0
-  pop rbp
-  pop rbx
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  ret
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq $0, %r10
+  movq %r10, %rax
+  addq $0, %rsp
+  popq %rbp
+  popq %rbx
+  popq %r15
+  popq %r14
+  popq %r13
+  popq %r12
+  retq
 
-section .data
-
-  s_0 db "Hello, world!", 0
+.s_0:
+  .string "Hello, world!"
 
