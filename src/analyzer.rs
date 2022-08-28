@@ -67,10 +67,10 @@ impl Analyzer {
         use ptree::Declaration::*;
         match declaration {
             Function(d) => self.add_function_declaration_to_symbol_table(d),
-            Const(d) => {
+            Const(_d) => {
                 panic!("internal error: const declarations are not yet supported");
             }
-            Record(d) => {
+            Record(_d) => {
                 panic!("internal error: record declarations are not yet supported");
             }
         }
@@ -97,7 +97,7 @@ impl Analyzer {
             unique_name,
             type_: ast::Type::Function {
                 parameters: parameter_types,
-                return_type: Box::new(return_type.clone()),
+                return_type: Box::new(return_type),
             },
             constant: true,
             external: false,
@@ -177,7 +177,7 @@ impl Analyzer {
     fn analyze_const_declaration(
         &mut self,
         declaration: &ptree::ConstDeclaration,
-        const_entry: ast::SymbolEntry,
+        _const_entry: ast::SymbolEntry,
     ) -> ast::Declaration {
         let value = self.analyze_expression(&declaration.value);
         let declared_type = self.resolve_type(&declaration.type_);
@@ -204,8 +204,8 @@ impl Analyzer {
 
     fn analyze_record_declaration(
         &mut self,
-        declaration: &ptree::RecordDeclaration,
-        const_entry: ast::SymbolEntry,
+        _declaration: &ptree::RecordDeclaration,
+        _const_entry: ast::SymbolEntry,
     ) -> ast::Declaration {
         // TODO
         panic!("internal error: record declarations are not yet supported");
@@ -871,7 +871,7 @@ impl Analyzer {
         actual: &ast::Type,
         location: common::Location,
     ) {
-        if let ast::Type::Error = actual {
+        if matches!(actual, ast::Type::Error) || matches!(expected, ast::Type::Error) {
             // Don't bother recording an error if one of the types is already an error type, because
             // another error message has already been recorded.
         } else {
@@ -902,6 +902,11 @@ impl SymbolTable {
         symbols.insert(
             String::from("string"),
             ast::SymbolEntry::type_(ast::Type::String),
+        );
+        // TODO: this shouldn't be a primitive type
+        symbols.insert(
+            String::from("file"),
+            ast::SymbolEntry::type_(ast::Type::File),
         );
         symbols.insert(
             String::from("void"),
@@ -964,6 +969,46 @@ impl SymbolTable {
                 ast::Type::Function {
                     parameters: vec![ast::Type::List(Box::new(ast::Type::Any))],
                     return_type: Box::new(ast::Type::I64),
+                },
+            ),
+        );
+        symbols.insert(
+            String::from("string_length"),
+            ast::SymbolEntry::external(
+                "venice_string_length",
+                ast::Type::Function {
+                    parameters: vec![ast::Type::String],
+                    return_type: Box::new(ast::Type::I64),
+                },
+            ),
+        );
+        symbols.insert(
+            String::from("file_open"),
+            ast::SymbolEntry::external(
+                "venice_file_open",
+                ast::Type::Function {
+                    parameters: vec![ast::Type::String],
+                    return_type: Box::new(ast::Type::File),
+                },
+            ),
+        );
+        symbols.insert(
+            String::from("file_read_all"),
+            ast::SymbolEntry::external(
+                "venice_file_read_all",
+                ast::Type::Function {
+                    parameters: vec![ast::Type::File],
+                    return_type: Box::new(ast::Type::String),
+                },
+            ),
+        );
+        symbols.insert(
+            String::from("file_close"),
+            ast::SymbolEntry::external(
+                "venice_file_close",
+                ast::Type::Function {
+                    parameters: vec![ast::Type::File],
+                    return_type: Box::new(ast::Type::Void),
                 },
             ),
         );

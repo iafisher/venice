@@ -222,6 +222,8 @@ pub enum Type {
     Boolean,
     I64,
     String,
+    // TODO: this shouldn't be a primitive type
+    File,
     Void,
     Any,
     Tuple(Vec<Type>),
@@ -281,6 +283,7 @@ impl Type {
             (Boolean, Boolean) => true,
             (I64, I64) => true,
             (String, String) => true,
+            (File, File) => true,
             (Tuple(ts1), Tuple(ts2)) => {
                 if ts1.len() != ts2.len() {
                     return false;
@@ -567,6 +570,7 @@ impl fmt::Display for Type {
             I64 => write!(f, "i64"),
             Boolean => write!(f, "bool"),
             String => write!(f, "string"),
+            File => write!(f, "file"),
             Void => write!(f, "void"),
             Any => write!(f, "any"),
             Tuple(ts) => {

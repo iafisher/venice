@@ -1,0 +1,102 @@
+---
+source: tests/end_to_end.rs
+expression: vil_output
+---
+extern venice_string_new;
+extern venice_file_open;
+extern venice_file_read_all;
+extern venice_file_close;
+extern venice_string_new;
+extern venice_print;
+extern venice_string_length;
+extern venice_printint;
+
+
+
+func venice_main {
+
+venice_main_0:
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
+  frame_set_up 16
+  %rg2 = set s_0
+  %rp0 = move %rg2
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_string_new
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg1 = move %rt
+  %rp0 = move %rg1
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_file_open
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  store %rg0, -8  // f__0
+  %rg1 = load -8  // f__0
+  %rp0 = move %rg1
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_file_read_all
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  store %rg0, -16  // content__1
+  %rg1 = load -8  // f__0
+  %rp0 = move %rg1
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_file_close
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rg2 = set s_1
+  %rp0 = move %rg2
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_string_new
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg1 = move %rt
+  %rp0 = move %rg1
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_print
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rg2 = load -16  // content__1
+  %rp0 = move %rg2
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_string_length
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg1 = move %rt
+  %rp0 = move %rg1
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_printint
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rg0 = set 0
+  %rt = move %rg0
+  frame_tear_down 16
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
+  ret
+}
+
+
+data s_0 = "tests/resources/lorem.txt";
+data s_1 = "File size: ";
+

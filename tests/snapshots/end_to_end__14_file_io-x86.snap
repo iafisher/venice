@@ -1,0 +1,107 @@
+---
+source: tests/end_to_end.rs
+expression: x86_output
+---
+extern venice_string_new
+extern venice_file_open
+extern venice_file_read_all
+extern venice_file_close
+extern venice_string_new
+extern venice_print
+extern venice_string_length
+extern venice_printint
+
+
+section .text
+
+global venice_main
+venice_main:
+
+venice_main_0:
+  push r12
+  push r13
+  push r14
+  push r15
+  push rbx
+  push rbp
+  mov rbp, rsp
+  sub rsp, 16
+  mov r12, s_0
+  mov rdi, r12
+  push r10
+  push r11
+  call venice_string_new
+  pop r11
+  pop r10
+  mov r11, rax
+  mov rdi, r11
+  push r10
+  push r11
+  call venice_file_open
+  pop r11
+  pop r10
+  mov r10, rax
+  mov [rbp-8], r10
+  mov r11, [rbp-8]
+  mov rdi, r11
+  push r10
+  push r11
+  call venice_file_read_all
+  pop r11
+  pop r10
+  mov r10, rax
+  mov [rbp-16], r10
+  mov r11, [rbp-8]
+  mov rdi, r11
+  push r10
+  push r11
+  call venice_file_close
+  pop r11
+  pop r10
+  mov r10, rax
+  mov r12, s_1
+  mov rdi, r12
+  push r10
+  push r11
+  call venice_string_new
+  pop r11
+  pop r10
+  mov r11, rax
+  mov rdi, r11
+  push r10
+  push r11
+  call venice_print
+  pop r11
+  pop r10
+  mov r10, rax
+  mov r12, [rbp-16]
+  mov rdi, r12
+  push r10
+  push r11
+  call venice_string_length
+  pop r11
+  pop r10
+  mov r11, rax
+  mov rdi, r11
+  push r10
+  push r11
+  call venice_printint
+  pop r11
+  pop r10
+  mov r10, rax
+  mov r10, 0
+  mov rax, r10
+  add rsp, 16
+  pop rbp
+  pop rbx
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  ret
+
+section .data
+
+  s_0 db "tests/resources/lorem.txt", 0
+  s_1 db "File size: ", 0
+

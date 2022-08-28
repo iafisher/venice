@@ -576,7 +576,7 @@ impl Parser {
         } else {
             Ok(ptree::Type {
                 kind: ptree::TypeKind::Literal(symbol),
-                location: location,
+                location,
             })
         }
     }

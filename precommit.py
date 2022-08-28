@@ -37,7 +37,7 @@ def init(precommit):
         checks.Command(
             "RustClippy",
             ["cargo", "clippy"],
-            fix=["cargo", "clippy", "--fix"],
+            fix=["cargo", "clippy", "--fix", "--allow-staged", "--allow-dirty"],
             include=["*.rs"],
         )
     )

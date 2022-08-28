@@ -120,7 +120,7 @@ impl Generator {
                     &symbol.unique_name,
                 );
             }
-            x => {
+            _x => {
                 panic!(
                     "internal error: expression type not implemented: {:?}",
                     expr

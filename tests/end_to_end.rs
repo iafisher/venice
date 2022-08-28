@@ -68,6 +68,11 @@ fn test_13_argv() {
     test_e2e_with_args("13_argv", &["a", "b", "c"]);
 }
 
+#[test]
+fn test_14_file_io() {
+    test_e2e("14_file_io");
+}
+
 fn test_e2e(base_name: &str) {
     test_e2e_with_args(base_name, &[]);
 }

@@ -1,0 +1,8 @@
+func main() -> i64 {
+  let f: file = file_open("tests/resources/lorem.txt");
+  let content: string = file_read_all(f);
+  file_close(f);
+  print("File size: ");
+  printint(string_length(content));
+  return 0;
+}

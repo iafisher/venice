@@ -12,6 +12,7 @@
 //   2. Call the function in `main`.
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "venice.h"
@@ -33,6 +34,9 @@ uint32_t global_tests_failed = 0;
 
 // Assert a condition is true.
 #define ASSERT(e) ASSERT_MSG(e, "%s", "")
+
+#define ASSERT_STRING_EQ(actual, expected)                                     \
+  ASSERT_MSG(strcmp((actual), (expected)) == 0, " (got = \"%s\")", actual)
 
 // Assert a condition is true in a loop (the error message will show the loop
 // index).
@@ -70,6 +74,17 @@ void test_list_append() {
   global_tests_passed++;
 }
 
+void test_file_read_all() {
+  venice_string_t* path = venice_string_new("test_resources/alphabet.txt");
+  FILE* f = venice_file_open(path);
+  // Choose a small buffer size to force the buffer to be re-allocated multiple
+  // times.
+  venice_string_t* string = venice_file_read_all_with_buffer_size(f, 4);
+  ASSERT_STRING_EQ(string->data, "abcdefghijklmnopqrstuvwxyz\n");
+  venice_file_close(f);
+  global_tests_passed++;
+}
+
 
 /**
  * Test runner
@@ -83,6 +98,7 @@ int main(int argc, char* argv[]) {
 
   test_list_from_varargs();
   test_list_append();
+  test_file_read_all();
 
   if (global_tests_failed > 0) {
     printf("\n");
