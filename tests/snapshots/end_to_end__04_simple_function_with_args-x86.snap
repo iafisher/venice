@@ -7,9 +7,9 @@ extern venice_printint
 
 section .text
 
-sub__2:
+sub__0:
 
-sub__2_0:
+sub__0_0:
   push r12
   push r13
   push r14
@@ -52,7 +52,7 @@ main_1:
   mov rsi, r12
   push r10
   push r11
-  call sub__2
+  call sub__0
   pop r11
   pop r10
   mov r10, rax

@@ -6,60 +6,9 @@ extern venice_printint;
 
 
 
-func fibonacci__1 {
-
-fibonacci__1_0:
-  callee_save %rg2
-  callee_save %rg3
-  callee_save %rg4
-  callee_save %rg5
-  callee_save %rg6
-  frame_set_up 40
-  store %rp0, -8  // n__0
-  %rg0 = set 1
-  store %rg0, -16  // fib_i__2
-  %rg0 = set 0
-  store %rg0, -24  // fib_i_minus_1__3
-  %rg0 = set 1
-  store %rg0, -32  // i__4
-  jump %while_cond_1
-
-while_cond_1:
-  %rg0 = load -32  // i__4
-  %rg1 = load -8  // n__0
-  cmp %rg0, %rg1
-  jump_lt %while_2 %while_end_3
-
-while_2:
-  %rg2 = load -16  // fib_i__2
-  store %rg2, -40  // tmp__5
-  %rg1 = load -16  // fib_i__2
-  %rg2 = load -24  // fib_i_minus_1__3
-  %rg0 = add %rg1, %rg2
-  store %rg0, -16  // fib_i__2
-  %rg0 = load -40  // tmp__5
-  store %rg0, -24  // fib_i_minus_1__3
-  %rg1 = load -32  // i__4
-  %rg2 = set 1
-  %rg0 = add %rg1, %rg2
-  store %rg0, -32  // i__4
-  jump %while_cond_1
-
-while_end_3:
-  %rg0 = load -16  // fib_i__2
-  %rt = move %rg0
-  frame_tear_down 40
-  %rg6 = callee_restore
-  %rg5 = callee_restore
-  %rg4 = callee_restore
-  %rg3 = callee_restore
-  %rg2 = callee_restore
-  ret
-}
-
 func main {
 
-main_4:
+main_0:
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4
@@ -70,12 +19,12 @@ main_4:
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1
-  call %fibonacci__1
+  call %fibonacci__0
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg0 = move %rt
-  store %rg0, -8  // x__6
-  %rg1 = load -8  // x__6
+  store %rg0, -8  // x__1
+  %rg1 = load -8  // x__1
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1
@@ -86,6 +35,57 @@ main_4:
   %rg0 = set 0
   %rt = move %rg0
   frame_tear_down 8
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
+  ret
+}
+
+func fibonacci__0 {
+
+fibonacci__0_1:
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
+  frame_set_up 40
+  store %rp0, -8  // n__2
+  %rg0 = set 1
+  store %rg0, -16  // fib_i__3
+  %rg0 = set 0
+  store %rg0, -24  // fib_i_minus_1__4
+  %rg0 = set 1
+  store %rg0, -32  // i__5
+  jump %while_cond_2
+
+while_cond_2:
+  %rg0 = load -32  // i__5
+  %rg1 = load -8  // n__2
+  cmp %rg0, %rg1
+  jump_lt %while_3 %while_end_4
+
+while_3:
+  %rg2 = load -16  // fib_i__3
+  store %rg2, -40  // tmp__6
+  %rg1 = load -16  // fib_i__3
+  %rg2 = load -24  // fib_i_minus_1__4
+  %rg0 = add %rg1, %rg2
+  store %rg0, -16  // fib_i__3
+  %rg0 = load -40  // tmp__6
+  store %rg0, -24  // fib_i_minus_1__4
+  %rg1 = load -32  // i__5
+  %rg2 = set 1
+  %rg0 = add %rg1, %rg2
+  store %rg0, -32  // i__5
+  jump %while_cond_2
+
+while_end_4:
+  %rg0 = load -16  // fib_i__3
+  %rt = move %rg0
+  frame_tear_down 40
   %rg6 = callee_restore
   %rg5 = callee_restore
   %rg4 = callee_restore

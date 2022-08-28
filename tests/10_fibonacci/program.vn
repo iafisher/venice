@@ -1,3 +1,9 @@
+func main() -> i64 {
+  let x: i64 = fibonacci(12);
+  printint(x);
+  return 0;
+}
+
 func fibonacci(n: i64) -> i64 {
   let fib_i: i64 = 1;
   let fib_i_minus_1: i64 = 0;
@@ -9,10 +15,4 @@ func fibonacci(n: i64) -> i64 {
     i = i + 1;
   }
   return fib_i;
-}
-
-func main() -> i64 {
-  let x: i64 = fibonacci(12);
-  printint(x);
-  return 0;
 }

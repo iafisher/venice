@@ -6,17 +6,17 @@ extern venice_printint;
 
 
 
-func fibonacci__1 {
+func fibonacci__0 {
 
-fibonacci__1_0:
+fibonacci__0_0:
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4
   callee_save %rg5
   callee_save %rg6
   frame_set_up 8
-  store %rp0, -8  // n__0
-  %rg0 = load -8  // n__0
+  store %rp0, -8  // n__1
+  %rg0 = load -8  // n__1
   %rg1 = set 0
   cmp %rg0, %rg1
   jump_eq %if_true_1 %if_false_2
@@ -34,7 +34,7 @@ if_true_1:
   jump %if_end_3
 
 if_false_2:
-  %rg0 = load -8  // n__0
+  %rg0 = load -8  // n__1
   %rg1 = set 1
   cmp %rg0, %rg1
   jump_eq %if_true_4 %if_false_5
@@ -52,23 +52,23 @@ if_true_4:
   jump %if_end_6
 
 if_false_5:
-  %rg3 = load -8  // n__0
+  %rg3 = load -8  // n__1
   %rg4 = set 1
   %rg2 = sub %rg3, %rg4
   %rp0 = move %rg2
   caller_save %rg0
   caller_save %rg1
-  call %fibonacci__1
+  call %fibonacci__0
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg1 = move %rt
-  %rg5 = load -8  // n__0
+  %rg5 = load -8  // n__1
   %rg6 = set 2
   %rg4 = sub %rg5, %rg6
   %rp0 = move %rg4
   caller_save %rg0
   caller_save %rg1
-  call %fibonacci__1
+  call %fibonacci__0
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg3 = move %rt
@@ -102,7 +102,7 @@ main_7:
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1
-  call %fibonacci__1
+  call %fibonacci__0
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg0 = move %rt

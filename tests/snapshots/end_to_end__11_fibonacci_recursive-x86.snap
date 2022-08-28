@@ -7,9 +7,9 @@ extern venice_printint
 
 section .text
 
-fibonacci__1:
+fibonacci__0:
 
-fibonacci__1_0:
+fibonacci__0_0:
   push r12
   push r13
   push r14
@@ -66,7 +66,7 @@ if_false_5:
   mov rdi, r12
   push r10
   push r11
-  call fibonacci__1
+  call fibonacci__0
   pop r11
   pop r10
   mov r11, rax
@@ -77,7 +77,7 @@ if_false_5:
   mov rdi, r14
   push r10
   push r11
-  call fibonacci__1
+  call fibonacci__0
   pop r11
   pop r10
   mov r13, rax
@@ -115,7 +115,7 @@ main_7:
   mov rdi, r11
   push r10
   push r11
-  call fibonacci__1
+  call fibonacci__0
   pop r11
   pop r10
   mov r10, rax

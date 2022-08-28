@@ -46,29 +46,87 @@ impl Analyzer {
     }
 
     fn analyze_program(&mut self, ptree: &ptree::Program) -> ast::Program {
-        let mut declarations = Vec::new();
+        // Do a first pass over the top-level declarations so that function declarations are
+        // "hoisted", i.e. you can reference a function before it is defined in a file.
+        let mut entries = Vec::new();
         for declaration in &ptree.declarations {
-            declarations.push(self.analyze_declaration(declaration));
+            entries.push(self.add_declaration_to_symbol_table(declaration));
+        }
+
+        let mut declarations = Vec::new();
+        for (declaration, entry) in ptree.declarations.iter().zip(entries) {
+            declarations.push(self.analyze_declaration(declaration, entry));
         }
         ast::Program { declarations }
     }
 
-    fn analyze_declaration(&mut self, declaration: &ptree::Declaration) -> ast::Declaration {
+    fn add_declaration_to_symbol_table(
+        &mut self,
+        declaration: &ptree::Declaration,
+    ) -> ast::SymbolEntry {
         use ptree::Declaration::*;
         match declaration {
-            Function(d) => self.analyze_function_declaration(d),
-            Const(d) => self.analyze_const_declaration(d),
-            Record(d) => self.analyze_record_declaration(d),
+            Function(d) => self.add_function_declaration_to_symbol_table(d),
+            Const(d) => {
+                panic!("internal error: const declarations are not yet supported");
+            }
+            Record(d) => {
+                panic!("internal error: record declarations are not yet supported");
+            }
+        }
+    }
+
+    fn add_function_declaration_to_symbol_table(
+        &mut self,
+        declaration: &ptree::FunctionDeclaration,
+    ) -> ast::SymbolEntry {
+        let return_type = self.resolve_type(&declaration.return_type);
+        let mut parameter_types = Vec::new();
+        for parameter in &declaration.parameters {
+            parameter_types.push(self.resolve_type(&parameter.type_));
+        }
+
+        let unique_name = if declaration.name == "main" {
+            // Keep main's name the same so that the linker can find it.
+            String::from("main")
+        } else {
+            self.claim_unique_name(&declaration.name)
+        };
+
+        let entry = ast::SymbolEntry {
+            unique_name,
+            type_: ast::Type::Function {
+                parameters: parameter_types,
+                return_type: Box::new(return_type.clone()),
+            },
+            constant: true,
+            external: false,
+            stack_offset: 0,
+        };
+        self.symbols.insert(&declaration.name, entry.clone());
+        entry
+    }
+
+    fn analyze_declaration(
+        &mut self,
+        declaration: &ptree::Declaration,
+        entry: ast::SymbolEntry,
+    ) -> ast::Declaration {
+        use ptree::Declaration::*;
+        match declaration {
+            Function(d) => self.analyze_function_declaration(d, entry),
+            Const(d) => self.analyze_const_declaration(d, entry),
+            Record(d) => self.analyze_record_declaration(d, entry),
         }
     }
 
     fn analyze_function_declaration(
         &mut self,
         declaration: &ptree::FunctionDeclaration,
+        function_entry: ast::SymbolEntry,
     ) -> ast::Declaration {
         let return_type = self.resolve_type(&declaration.return_type);
         let mut parameters = Vec::new();
-        let mut parameter_types = Vec::new();
         let mut stack_frame_size = 0;
         let mut stack_offset = -8;
         for parameter in &declaration.parameters {
@@ -84,34 +142,11 @@ impl Analyzer {
 
             stack_frame_size += t.stack_size();
             stack_offset -= t.stack_size() as i32;
-            parameter_types.push(t.clone());
             parameters.push(ast::FunctionParameter {
                 name: entry,
                 type_: t,
             });
         }
-
-        let unique_name = if declaration.name == "main" {
-            // Keep main's name the same so that the linker can find it.
-            String::from("main")
-        } else {
-            self.claim_unique_name(&declaration.name)
-        };
-
-        // Add the function's entry to the symbol table. It must happen before we push a new scope
-        // so that the function's definition persists after it executes. It also must happen before
-        // we type-check the body of the function so that recursive functions work.
-        let entry = ast::SymbolEntry {
-            unique_name,
-            type_: ast::Type::Function {
-                parameters: parameter_types,
-                return_type: Box::new(return_type.clone()),
-            },
-            constant: true,
-            external: false,
-            stack_offset: 0,
-        };
-        self.symbols.insert(&declaration.name, entry.clone());
 
         // Push a new scope for the function's body and add the parameters.
         self.symbols.push_scope();
@@ -131,7 +166,7 @@ impl Analyzer {
         self.symbols.pop_scope();
 
         ast::Declaration::Function(ast::FunctionDeclaration {
-            name: entry,
+            name: function_entry,
             parameters,
             return_type,
             body,
@@ -142,6 +177,7 @@ impl Analyzer {
     fn analyze_const_declaration(
         &mut self,
         declaration: &ptree::ConstDeclaration,
+        const_entry: ast::SymbolEntry,
     ) -> ast::Declaration {
         let value = self.analyze_expression(&declaration.value);
         let declared_type = self.resolve_type(&declaration.type_);
@@ -169,10 +205,10 @@ impl Analyzer {
     fn analyze_record_declaration(
         &mut self,
         declaration: &ptree::RecordDeclaration,
+        const_entry: ast::SymbolEntry,
     ) -> ast::Declaration {
         // TODO
-        self.error("not implemented", declaration.location.clone());
-        ast::Declaration::Error
+        panic!("internal error: record declarations are not yet supported");
     }
 
     fn analyze_block(&mut self, block: &[ptree::Statement]) -> Vec<ast::Statement> {
@@ -835,8 +871,13 @@ impl Analyzer {
         actual: &ast::Type,
         location: common::Location,
     ) {
-        let msg = format!("expected {}, got {}", expected, actual);
-        self.error(&msg, location);
+        if let ast::Type::Error = actual {
+            // Don't bother recording an error if one of the types is already an error type, because
+            // another error message has already been recorded.
+        } else {
+            let msg = format!("expected {}, got {}", expected, actual);
+            self.error(&msg, location);
+        }
     }
 }
 
