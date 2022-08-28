@@ -138,6 +138,11 @@ fn main() {
     } else {
         "runtime/libvenice.so"
     };
+    let main_wrapper = if cli.debug {
+        "runtime/main-debug.o"
+    } else {
+        "runtime/main.o"
+    };
     child = Command::new("ld")
         .arg("-dynamic-linker")
         // TODO: don't hard-code these values
@@ -150,6 +155,7 @@ fn main() {
         .arg("/usr/lib/x86_64-linux-gnu/crtn.o")
         .arg("-o")
         .arg(&output_path)
+        .arg(main_wrapper)
         .spawn()
         .expect("failed to execute ld");
     error_code = child.wait().expect("failed to wait on child");

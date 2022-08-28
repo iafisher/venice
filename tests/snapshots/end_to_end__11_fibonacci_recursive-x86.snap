@@ -99,10 +99,10 @@ if_end_6:
 
 if_end_3:
 
-global main
-main:
+global venice_main
+venice_main:
 
-main_7:
+venice_main_7:
   push r12
   push r13
   push r14

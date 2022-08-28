@@ -34,10 +34,10 @@ sub__0_0:
   pop r12
   ret
 
-global main
-main:
+global venice_main
+venice_main:
 
-main_1:
+venice_main_1:
   push r12
   push r13
   push r14

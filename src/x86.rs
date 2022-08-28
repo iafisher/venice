@@ -116,7 +116,7 @@ impl Generator {
     fn generate_declaration(&mut self, declaration: &vil::FunctionDeclaration) {
         let block = Block {
             // TODO: replace this with more robust logic
-            global: declaration.name == "main",
+            global: declaration.name == "venice_main",
             label: declaration.name.clone(),
             instructions: Vec::new(),
         };

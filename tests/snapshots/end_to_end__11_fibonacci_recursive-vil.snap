@@ -89,9 +89,9 @@ if_end_6:
 if_end_3:
 }
 
-func main {
+func venice_main {
 
-main_7:
+venice_main_7:
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4

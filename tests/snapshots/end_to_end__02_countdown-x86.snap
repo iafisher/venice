@@ -7,10 +7,10 @@ extern venice_printint
 
 section .text
 
-global main
-main:
+global venice_main
+venice_main:
 
-main_0:
+venice_main_0:
   push r12
   push r13
   push r14

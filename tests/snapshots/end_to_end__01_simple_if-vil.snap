@@ -9,9 +9,9 @@ extern venice_println;
 
 
 
-func main {
+func venice_main {
 
-main_0:
+venice_main_0:
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4

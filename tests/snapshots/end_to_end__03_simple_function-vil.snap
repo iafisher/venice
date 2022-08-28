@@ -28,9 +28,9 @@ two_plus_two__0_0:
   ret
 }
 
-func main {
+func venice_main {
 
-main_1:
+venice_main_1:
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4

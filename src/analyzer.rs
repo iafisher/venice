@@ -87,8 +87,8 @@ impl Analyzer {
         }
 
         let unique_name = if declaration.name == "main" {
-            // Keep main's name the same so that the linker can find it.
-            String::from("main")
+            // Rename `main` to the name that the runtime library expects.
+            String::from("venice_main")
         } else {
             self.claim_unique_name(&declaration.name)
         };
@@ -738,7 +738,7 @@ impl Analyzer {
         ast::Expression {
             kind: ast::ExpressionKind::Call(ast::CallExpression {
                 function: ast::SymbolEntry {
-                    unique_name: String::from("venice_list_new"),
+                    unique_name: String::from("venice_list_from_varargs"),
                     type_: ast::Type::Error,
                     constant: true,
                     external: true,

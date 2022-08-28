@@ -2,17 +2,17 @@
 source: tests/end_to_end.rs
 expression: x86_output
 ---
-extern venice_list_new
+extern venice_list_from_varargs
 extern venice_list_index
 extern venice_printint
 
 
 section .text
 
-global main
-main:
+global venice_main
+venice_main:
 
-main_0:
+venice_main_0:
   push r12
   push r13
   push r14
@@ -36,7 +36,7 @@ main_0:
   push r10
   push r11
   mov al, 0
-  call venice_list_new
+  call venice_list_from_varargs
   pop r11
   pop r10
   mov r10, rax
