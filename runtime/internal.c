@@ -26,5 +26,5 @@ void* venice_realloc(void* ptr, size_t new_size) {
     free(ptr);
     runtime_error("out of memory");
   }
-  return ptr;
+  return ret;
 }
