@@ -122,7 +122,11 @@ fn main() {
         .expect("failed to execute nasm");
     let mut error_code = child.wait().expect("failed to wait on child");
     if !error_code.success() {
-        panic!("nasm returned non-zero exit code");
+        if let Some(error_code) = error_code.code() {
+            panic!("nasm returned non-zero exit code: {}", error_code);
+        } else {
+            panic!("nasm returned non-zero exit code");
+        }
     }
 
     // Invoke ld to link the binary object file into an ELF executable. It is necessary
@@ -150,7 +154,11 @@ fn main() {
         .expect("failed to execute ld");
     error_code = child.wait().expect("failed to wait on child");
     if !error_code.success() {
-        panic!("ld returned non-zero exit code");
+        if let Some(error_code) = error_code.code() {
+            panic!("ld returned non-zero exit code: {}", error_code);
+        } else {
+            panic!("ld returned non-zero exit code");
+        }
     }
 
     // Clean up the intermediate files.

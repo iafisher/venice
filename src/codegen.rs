@@ -227,7 +227,7 @@ impl Generator {
 
     fn generate_call_expression(&mut self, expr: &ast::CallExpression, r: vil::Register) {
         if expr.arguments.len() > 6 {
-            panic!("too many arguments");
+            panic!("internal error: compiler cannot handle more than 6 arguments")
         }
 
         for (i, argument) in expr.arguments.iter().enumerate() {

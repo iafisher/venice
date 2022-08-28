@@ -435,7 +435,7 @@ impl fmt::Display for Register {
             14 => write!(f, "rsp"),
             15 => write!(f, "rbp"),
             _x => {
-                panic!("register out of range");
+                panic!("internal error: register out of range: {}", self.0);
             }
         }
     }

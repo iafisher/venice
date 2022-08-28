@@ -673,7 +673,10 @@ fn token_type_to_binary_op_type(type_: TokenType) -> common::BinaryOpType {
         TokenType::Slash => Divide,
         TokenType::Star => Multiply,
         _ => {
-            panic!("token type does not correspond to binary op type");
+            panic!(
+                "internal error: token type {:?} does not correspond to binary op type",
+                type_
+            );
         }
     }
 }
@@ -688,7 +691,10 @@ fn token_type_to_comparison_op_type(type_: TokenType) -> common::ComparisonOpTyp
         TokenType::LessThanEquals => LessThanEquals,
         TokenType::NotEquals => NotEquals,
         _ => {
-            panic!("token type does not correspond to comparison op type");
+            panic!(
+                "internal error: token type {:?} does not correspond to comparison op type",
+                type_
+            );
         }
     }
 }

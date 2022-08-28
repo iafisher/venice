@@ -95,14 +95,20 @@ impl Register {
 
     pub fn param(i: u8) -> Self {
         if i >= PARAM_REGISTER_COUNT {
-            panic!("not enough registers");
+            panic!(
+                "internal error: tried to use a parameter register but all {} are taken",
+                PARAM_REGISTER_COUNT
+            );
         }
         Register::Param(i)
     }
 
     pub fn gp(i: u8) -> Self {
         if i >= GP_REGISTER_COUNT {
-            panic!("not enough registers");
+            panic!(
+                "internal error: tried to use a general-purpose register but all {} are taken",
+                GP_REGISTER_COUNT
+            );
         }
         Register::General(i)
     }
