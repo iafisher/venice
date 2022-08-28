@@ -31,7 +31,11 @@ struct Cli {
     #[clap(value_parser)]
     path: String,
 
-    /// Prints intermediate data structures and preserves intermediate files.
+    /// Preserves intermediate files.
+    #[clap(long)]
+    keep_intermediate: bool,
+
+    /// Includes debugging symbols in the executable.
     #[clap(long)]
     debug: bool,
 }
@@ -57,13 +61,8 @@ fn main() {
         std::process::exit(1);
     }
 
-    let ptree = ptree_result.unwrap();
-    if cli.debug {
-        println!("Parse tree:\n");
-        println!("  {}", ptree);
-    }
-
     // Type-check the program.
+    let ptree = ptree_result.unwrap();
     let ast_result = analyzer::analyze(&ptree);
     if let Err(errors) = ast_result {
         for error in errors {
@@ -72,18 +71,10 @@ fn main() {
         std::process::exit(1);
     }
 
-    let ast = ast_result.unwrap();
-    if cli.debug {
-        println!("\nTyped AST:\n");
-        println!("  {}", ast);
-    }
-
     // Generate a VIL program.
+    let ast = ast_result.unwrap();
     let vil_program = codegen::generate(&ast).unwrap();
-    if cli.debug {
-        println!("\nVIL:\n");
-        println!("{}", vil_program);
-
+    if cli.keep_intermediate {
         let mut vil_output_path = PathBuf::from(&cli.path);
         vil_output_path.set_extension("vil");
         {
@@ -97,10 +88,6 @@ fn main() {
 
     // Generate an x86 program.
     let x86_program = x86::generate(&vil_program).unwrap();
-    if cli.debug {
-        println!("\nx86:\n");
-        println!("{}", x86_program);
-    }
 
     // Write the assembly program to disk.
     let mut x86_output_path = PathBuf::from(&cli.path);
@@ -119,9 +106,11 @@ fn main() {
     output_path.set_extension("");
 
     // Invoke nasm to turn the textual assembly program into a binary object file.
-    let mut child = Command::new("nasm")
-        // TODO: only use debugging flags when explicitly requested
-        .arg("-g")
+    let mut cmd = Command::new("nasm");
+    if cli.debug {
+        cmd.arg("-g");
+    }
+    let mut child = cmd
         .arg("-F")
         .arg("dwarf")
         .arg("-f")
@@ -140,13 +129,18 @@ fn main() {
     // to supply the various glibc libraries and initialization code because the Venice
     // runtime relies on libc. See https://stackoverflow.com/questions/3577922/ for more
     // information.
+    let runtime_library = if cli.debug {
+        "runtime/libvenice-debug.so"
+    } else {
+        "runtime/libvenice.so"
+    };
     child = Command::new("ld")
         .arg("-dynamic-linker")
         // TODO: don't hard-code these values
         .arg("/lib64/ld-linux-x86-64.so.2")
         .arg("/usr/lib/x86_64-linux-gnu/crt1.o")
         .arg("/usr/lib/x86_64-linux-gnu/crti.o")
-        .arg("runtime/libvenice.so")
+        .arg(runtime_library)
         .arg("-lc")
         .arg(&object_output_path)
         .arg("/usr/lib/x86_64-linux-gnu/crtn.o")
@@ -160,8 +154,11 @@ fn main() {
     }
 
     // Clean up the intermediate files.
-    if !cli.debug {
-        let _ = fs::remove_file(&x86_output_path);
+    if !cli.keep_intermediate {
+        // Assembly file is needed for debugging.
+        if !cli.debug {
+            let _ = fs::remove_file(&x86_output_path);
+        }
         let _ = fs::remove_file(&object_output_path);
     }
 }

@@ -6,6 +6,17 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 
-# TODO: Remove -g debugging flag.
+FLAGS = -Wall -Werror -Wextra -fPIC -shared
+
+all: libvenice.so libvenice-debug.so
+
 libvenice.so: venice.c
-	gcc -Wall -Werror -Wextra -fPIC -shared -g -o $@ $^
+	gcc $(FLAGS) -o $@ $^
+
+libvenice-debug.so: venice.c
+	gcc $(FLAGS) -g -o $@ $^
+
+clean:
+	rm -f *.so
+
+.PHONY: clean

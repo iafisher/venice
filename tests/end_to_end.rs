@@ -76,6 +76,7 @@ fn test_e2e(folder: &str) {
     let status = Command::new("target/debug/venice")
         .arg(&input_path)
         .arg("--debug")
+        .arg("--keep-intermediate")
         .stdout(Stdio::null())
         .spawn()
         .unwrap()
