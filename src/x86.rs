@@ -147,8 +147,9 @@ impl Generator {
         instructions: &mut Vec<Instruction>,
         instruction: &vil::Instruction,
     ) {
+        use vil::InstructionKind::*;
         match &instruction.kind {
-            vil::InstructionKind::Set(r, imm) => match imm {
+            Set(r, imm) => match imm {
                 vil::Immediate::Integer(x) => {
                     instructions.push(Instruction::Mov(Value::r(r), Value::Immediate(*x)));
                 }
@@ -156,22 +157,22 @@ impl Generator {
                     instructions.push(Instruction::Mov(Value::r(r), Value::Label(s.clone())));
                 }
             },
-            vil::InstructionKind::Move(r1, r2) => {
+            Move(r1, r2) => {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
-            vil::InstructionKind::Add(r1, r2, r3) => {
+            Add(r1, r2, r3) => {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r3)));
                 instructions.push(Instruction::Add(Value::r(r1), Value::r(r2)));
             }
-            vil::InstructionKind::Sub(r1, r2, r3) => {
+            Sub(r1, r2, r3) => {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
                 instructions.push(Instruction::Sub(Value::r(r1), Value::r(r3)));
             }
-            vil::InstructionKind::Mul(r1, r2, r3) => {
+            Mul(r1, r2, r3) => {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
                 instructions.push(Instruction::IMul(Value::r(r1), Value::r(r3)));
             }
-            vil::InstructionKind::Div(r1, r2, r3) => {
+            Div(r1, r2, r3) => {
                 // In x86, `div RXX` computes RDX:RAX / RXX and stores the quotient in RAX and the
                 // remainder in RDX.
                 //
@@ -190,11 +191,11 @@ impl Generator {
                 // Move RAX into the destination register.
                 instructions.push(Instruction::Mov(Value::r(r1), RAX));
             }
-            vil::InstructionKind::Negate(r1, r2) => {
+            Negate(r1, r2) => {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
                 instructions.push(Instruction::Neg(Value::r(r1)));
             }
-            vil::InstructionKind::LogicalNot(r1, r2) => {
+            LogicalNot(r1, r2) => {
                 // XOR RAX with itself to produce 0, then test it against the source register and
                 // set AL to the ZF flag. Since we already zeroed out RAX, all the high bits will
                 // also be 0.
@@ -205,7 +206,7 @@ impl Generator {
                 ))));
                 instructions.push(Instruction::Mov(Value::r(r1), RAX));
             }
-            vil::InstructionKind::Load(r, offset) => {
+            Load(r, offset) => {
                 instructions.push(Instruction::Mov(
                     Value::r(r),
                     Value::Memory {
@@ -216,7 +217,7 @@ impl Generator {
                     },
                 ));
             }
-            vil::InstructionKind::Store(r, offset) => {
+            Store(r, offset) => {
                 instructions.push(Instruction::Mov(
                     Value::Memory {
                         scale: 1,
@@ -227,13 +228,13 @@ impl Generator {
                     Value::r(r),
                 ));
             }
-            vil::InstructionKind::Cmp(r1, r2) => {
+            Cmp(r1, r2) => {
                 instructions.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
-            vil::InstructionKind::Call(label) => {
+            Call(label) => {
                 instructions.push(Instruction::Call(label.0.clone()));
             }
-            vil::InstructionKind::CallVariadic(label) => {
+            CallVariadic(label) => {
                 // The System V ABI requires setting AL to the number of vector registers when
                 // calling a variadic function.
                 instructions.push(Instruction::Mov(
@@ -242,58 +243,58 @@ impl Generator {
                 ));
                 instructions.push(Instruction::Call(label.0.clone()));
             }
-            vil::InstructionKind::FrameSetUp(size) => {
+            FrameSetUp(size) => {
                 instructions.push(Instruction::Push(RBP));
                 instructions.push(Instruction::Mov(RBP, RSP));
                 instructions.push(Instruction::Sub(RSP, Value::Immediate(*size as i64)));
             }
-            vil::InstructionKind::FrameTearDown(size) => {
+            FrameTearDown(size) => {
                 instructions.push(Instruction::Add(RSP, Value::Immediate(*size as i64)));
                 instructions.push(Instruction::Pop(RBP));
             }
-            vil::InstructionKind::Ret => {
+            Ret => {
                 instructions.push(Instruction::Ret);
             }
-            vil::InstructionKind::Jump(l) => {
+            Jump(l) => {
                 instructions.push(Instruction::Jmp(l.0.clone()));
             }
-            vil::InstructionKind::JumpEq(true_label, false_label) => {
+            JumpEq(true_label, false_label) => {
                 instructions.push(Instruction::Je(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::InstructionKind::JumpGt(true_label, false_label) => {
+            JumpGt(true_label, false_label) => {
                 instructions.push(Instruction::Jg(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::InstructionKind::JumpGte(true_label, false_label) => {
+            JumpGte(true_label, false_label) => {
                 instructions.push(Instruction::Jge(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::InstructionKind::JumpLt(true_label, false_label) => {
+            JumpLt(true_label, false_label) => {
                 instructions.push(Instruction::Jl(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::InstructionKind::JumpLte(true_label, false_label) => {
+            JumpLte(true_label, false_label) => {
                 instructions.push(Instruction::Jle(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::InstructionKind::JumpNeq(true_label, false_label) => {
+            JumpNeq(true_label, false_label) => {
                 instructions.push(Instruction::Jne(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::InstructionKind::CalleeRestore(r) => {
+            CalleeRestore(r) => {
                 instructions.push(Instruction::Pop(Value::r(r)));
             }
-            vil::InstructionKind::CalleeSave(r) => {
+            CalleeSave(r) => {
                 instructions.push(Instruction::Push(Value::r(r)));
             }
-            vil::InstructionKind::CallerRestore(r) => {
+            CallerRestore(r) => {
                 instructions.push(Instruction::Pop(Value::r(r)));
             }
-            vil::InstructionKind::CallerSave(r) => {
+            CallerSave(r) => {
                 instructions.push(Instruction::Push(Value::r(r)));
             }
-            vil::InstructionKind::ToDo(s) => {
+            ToDo(s) => {
                 // TODO
                 instructions.push(Instruction::ToDo(s.clone()));
             }
@@ -351,41 +352,43 @@ impl fmt::Display for Block {
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Instruction::*;
         match self {
-            Instruction::Add(x, y) => write!(f, "add {}, {}", x, y),
-            Instruction::Call(l) => write!(f, "call {}", l),
-            Instruction::Cmp(x, y) => write!(f, "cmp {}, {}", x, y),
-            Instruction::IDiv(x) => write!(f, "div {}", x),
-            Instruction::IMul(x, y) => write!(f, "imul {}, {}", x, y),
-            Instruction::Je(l) => write!(f, "je {}", l),
-            Instruction::Jg(l) => write!(f, "jg {}", l),
-            Instruction::Jge(l) => write!(f, "jge {}", l),
-            Instruction::Jl(l) => write!(f, "jl {}", l),
-            Instruction::Jle(l) => write!(f, "jle {}", l),
-            Instruction::Jmp(l) => write!(f, "jmp {}", l),
-            Instruction::Jne(l) => write!(f, "jne {}", l),
-            Instruction::Mov(x, y) => write!(f, "mov {}, {}", x, y),
-            Instruction::Neg(x) => write!(f, "neg {}", x),
-            Instruction::Pop(x) => write!(f, "pop {}", x),
-            Instruction::Push(x) => write!(f, "push {}", x),
-            Instruction::Ret => write!(f, "ret"),
-            Instruction::SetE(x) => write!(f, "sete {}", x),
-            Instruction::Sub(x, y) => write!(f, "sub {}, {}", x, y),
-            Instruction::Test(x, y) => write!(f, "test {}, {}", x, y),
-            Instruction::Xor(x, y) => write!(f, "xor {}, {}", x, y),
-            Instruction::ToDo(s) => write!(f, "<todo: {}>", s),
+            Add(x, y) => write!(f, "add {}, {}", x, y),
+            Call(l) => write!(f, "call {}", l),
+            Cmp(x, y) => write!(f, "cmp {}, {}", x, y),
+            IDiv(x) => write!(f, "div {}", x),
+            IMul(x, y) => write!(f, "imul {}, {}", x, y),
+            Je(l) => write!(f, "je {}", l),
+            Jg(l) => write!(f, "jg {}", l),
+            Jge(l) => write!(f, "jge {}", l),
+            Jl(l) => write!(f, "jl {}", l),
+            Jle(l) => write!(f, "jle {}", l),
+            Jmp(l) => write!(f, "jmp {}", l),
+            Jne(l) => write!(f, "jne {}", l),
+            Mov(x, y) => write!(f, "mov {}, {}", x, y),
+            Neg(x) => write!(f, "neg {}", x),
+            Pop(x) => write!(f, "pop {}", x),
+            Push(x) => write!(f, "push {}", x),
+            Ret => write!(f, "ret"),
+            SetE(x) => write!(f, "sete {}", x),
+            Sub(x, y) => write!(f, "sub {}, {}", x, y),
+            Test(x, y) => write!(f, "test {}, {}", x, y),
+            Xor(x, y) => write!(f, "xor {}, {}", x, y),
+            ToDo(s) => write!(f, "<todo: {}>", s),
         }
     }
 }
 
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Value::*;
         match self {
-            Value::Immediate(x) => write!(f, "{}", x),
-            Value::Register(r) => write!(f, "{}", r),
-            Value::SpecialRegister(s) => write!(f, "{}", s),
-            Value::Label(s) => write!(f, "{}", s),
-            Value::Memory {
+            Immediate(x) => write!(f, "{}", x),
+            Register(r) => write!(f, "{}", r),
+            SpecialRegister(s) => write!(f, "{}", s),
+            Label(s) => write!(f, "{}", s),
+            Memory {
                 scale,
                 displacement,
                 base,

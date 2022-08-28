@@ -49,8 +49,9 @@ impl Generator {
     }
 
     fn generate_declaration(&mut self, declaration: &ast::Declaration) {
+        use ast::Declaration::*;
         match declaration {
-            ast::Declaration::Function(decl) => self.generate_function_declaration(decl),
+            Function(decl) => self.generate_function_declaration(decl),
             _ => {
                 // TODO
                 self.push(vil::InstructionKind::ToDo(String::from("declaration")));
@@ -93,26 +94,28 @@ impl Generator {
 
     fn generate_expression(&mut self, expr: &ast::Expression) -> vil::Register {
         let r = self.claim_register();
+
+        use ast::ExpressionKind::*;
         match &expr.kind {
-            ast::ExpressionKind::Boolean(x) => {
+            Boolean(x) => {
                 self.push(vil::InstructionKind::Set(
                     r,
                     vil::Immediate::Integer(*x as i64),
                 ));
             }
-            ast::ExpressionKind::Integer(x) => {
+            Integer(x) => {
                 self.push(vil::InstructionKind::Set(r, vil::Immediate::Integer(*x)));
             }
-            ast::ExpressionKind::String(s) => {
+            String(s) => {
                 let label = self.claim_string_label();
                 self.program.strings.insert(label.clone(), s.clone());
                 self.push(vil::InstructionKind::Set(r, vil::Immediate::Label(label)));
             }
-            ast::ExpressionKind::Binary(b) => self.generate_binary_expression(b, r),
-            ast::ExpressionKind::Unary(e) => self.generate_unary_expression(e, r),
-            ast::ExpressionKind::Comparison(b) => self.generate_comparison_expression(b, r),
-            ast::ExpressionKind::Call(e) => self.generate_call_expression(e, r),
-            ast::ExpressionKind::Symbol(symbol) => {
+            Binary(b) => self.generate_binary_expression(b, r),
+            Unary(e) => self.generate_unary_expression(e, r),
+            Comparison(b) => self.generate_comparison_expression(b, r),
+            Call(e) => self.generate_call_expression(e, r),
+            Symbol(symbol) => {
                 self.push_with_comment(
                     vil::InstructionKind::Load(r, symbol.stack_offset),
                     &symbol.unique_name,
@@ -156,17 +159,18 @@ impl Generator {
         let left = self.generate_expression(&expr.left);
         let right = self.generate_expression(&expr.right);
 
+        use common::BinaryOpType::*;
         match expr.op {
-            common::BinaryOpType::Add => {
+            Add => {
                 self.push(vil::InstructionKind::Add(r, left, right));
             }
-            common::BinaryOpType::Divide => {
+            Divide => {
                 self.push(vil::InstructionKind::Div(r, left, right));
             }
-            common::BinaryOpType::Multiply => {
+            Multiply => {
                 self.push(vil::InstructionKind::Mul(r, left, right));
             }
-            common::BinaryOpType::Subtract => {
+            Subtract => {
                 self.push(vil::InstructionKind::Sub(r, left, right));
             }
             _ => {
@@ -180,11 +184,12 @@ impl Generator {
     fn generate_unary_expression(&mut self, expr: &ast::UnaryExpression, r: vil::Register) {
         let operand = self.generate_expression(&expr.operand);
 
+        use common::UnaryOpType::*;
         match expr.op {
-            common::UnaryOpType::Negate => {
+            Negate => {
                 self.push(vil::InstructionKind::Negate(r, operand));
             }
-            common::UnaryOpType::Not => {
+            Not => {
                 self.push(vil::InstructionKind::LogicalNot(r, operand));
             }
         }
@@ -270,15 +275,16 @@ impl Generator {
     }
 
     fn generate_statement(&mut self, stmt: &ast::Statement) {
+        use ast::Statement::*;
         match stmt {
-            ast::Statement::Assign(stmt) => self.generate_assign_statement(stmt),
-            ast::Statement::Expression(expr) => {
+            Assign(stmt) => self.generate_assign_statement(stmt),
+            Expression(expr) => {
                 let _ = self.generate_expression(expr);
             }
-            ast::Statement::If(stmt) => self.generate_if_statement(stmt),
-            ast::Statement::Let(stmt) => self.generate_let_statement(stmt),
-            ast::Statement::Return(stmt) => self.generate_return_statement(stmt),
-            ast::Statement::While(stmt) => self.generate_while_statement(stmt),
+            If(stmt) => self.generate_if_statement(stmt),
+            Let(stmt) => self.generate_let_statement(stmt),
+            Return(stmt) => self.generate_return_statement(stmt),
+            While(stmt) => self.generate_while_statement(stmt),
             _ => {
                 // TODO
             }
@@ -465,20 +471,13 @@ fn get_comparison_instruction(
     true_label: vil::Label,
     false_label: vil::Label,
 ) -> vil::InstructionKind {
+    use common::ComparisonOpType::*;
     match op {
-        common::ComparisonOpType::Equals => vil::InstructionKind::JumpEq(true_label, false_label),
-        common::ComparisonOpType::GreaterThan => {
-            vil::InstructionKind::JumpGt(true_label, false_label)
-        }
-        common::ComparisonOpType::GreaterThanEquals => {
-            vil::InstructionKind::JumpGte(true_label, false_label)
-        }
-        common::ComparisonOpType::LessThan => vil::InstructionKind::JumpLt(true_label, false_label),
-        common::ComparisonOpType::LessThanEquals => {
-            vil::InstructionKind::JumpLte(true_label, false_label)
-        }
-        common::ComparisonOpType::NotEquals => {
-            vil::InstructionKind::JumpNeq(true_label, false_label)
-        }
+        Equals => vil::InstructionKind::JumpEq(true_label, false_label),
+        GreaterThan => vil::InstructionKind::JumpGt(true_label, false_label),
+        GreaterThanEquals => vil::InstructionKind::JumpGte(true_label, false_label),
+        LessThan => vil::InstructionKind::JumpLt(true_label, false_label),
+        LessThanEquals => vil::InstructionKind::JumpLte(true_label, false_label),
+        NotEquals => vil::InstructionKind::JumpNeq(true_label, false_label),
     }
 }

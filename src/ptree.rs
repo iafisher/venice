@@ -263,10 +263,11 @@ impl fmt::Display for Program {
 
 impl fmt::Display for Declaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Declaration::*;
         match self {
-            Declaration::Function(declaration) => write!(f, "{}", declaration),
-            Declaration::Const(declaration) => write!(f, "{}", declaration),
-            Declaration::Record(declaration) => write!(f, "{}", declaration),
+            Function(declaration) => write!(f, "{}", declaration),
+            Const(declaration) => write!(f, "{}", declaration),
+            Record(declaration) => write!(f, "{}", declaration),
         }
     }
 }
@@ -310,15 +311,16 @@ impl fmt::Display for RecordDeclaration {
 
 impl fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Statement::*;
         match self {
-            Statement::Let(stmt) => write!(f, "{}", stmt),
-            Statement::Assign(stmt) => write!(f, "{}", stmt),
-            Statement::If(stmt) => write!(f, "{}", stmt),
-            Statement::While(stmt) => write!(f, "{}", stmt),
-            Statement::For(stmt) => write!(f, "{}", stmt),
-            Statement::Return(stmt) => write!(f, "{}", stmt),
-            Statement::Assert(stmt) => write!(f, "{}", stmt),
-            Statement::Expression(stmt) => write!(f, "{}", stmt),
+            Let(stmt) => write!(f, "{}", stmt),
+            Assign(stmt) => write!(f, "{}", stmt),
+            If(stmt) => write!(f, "{}", stmt),
+            While(stmt) => write!(f, "{}", stmt),
+            For(stmt) => write!(f, "{}", stmt),
+            Return(stmt) => write!(f, "{}", stmt),
+            Assert(stmt) => write!(f, "{}", stmt),
+            Expression(stmt) => write!(f, "{}", stmt),
         }
     }
 }
@@ -397,22 +399,23 @@ impl fmt::Display for Expression {
 
 impl fmt::Display for ExpressionKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use ExpressionKind::*;
         match self {
-            ExpressionKind::Boolean(e) => write!(f, "{}", e),
-            ExpressionKind::Integer(e) => write!(f, "{}", e),
-            ExpressionKind::String(e) => write!(f, "{:?}", e),
-            ExpressionKind::Symbol(e) => write!(f, "{}", e),
-            ExpressionKind::Binary(e) => write!(f, "{}", e),
-            ExpressionKind::Comparison(e) => write!(f, "{}", e),
-            ExpressionKind::Unary(e) => write!(f, "{}", e),
-            ExpressionKind::Call(e) => write!(f, "{}", e),
-            ExpressionKind::Index(e) => write!(f, "{}", e),
-            ExpressionKind::TupleIndex(e) => write!(f, "{}", e),
-            ExpressionKind::Attribute(e) => write!(f, "{}", e),
-            ExpressionKind::List(e) => write!(f, "{}", e),
-            ExpressionKind::Tuple(e) => write!(f, "{}", e),
-            ExpressionKind::Map(e) => write!(f, "{}", e),
-            ExpressionKind::Record(e) => write!(f, "{}", e),
+            Boolean(e) => write!(f, "{}", e),
+            Integer(e) => write!(f, "{}", e),
+            String(e) => write!(f, "{:?}", e),
+            Symbol(e) => write!(f, "{}", e),
+            Binary(e) => write!(f, "{}", e),
+            Comparison(e) => write!(f, "{}", e),
+            Unary(e) => write!(f, "{}", e),
+            Call(e) => write!(f, "{}", e),
+            Index(e) => write!(f, "{}", e),
+            TupleIndex(e) => write!(f, "{}", e),
+            Attribute(e) => write!(f, "{}", e),
+            List(e) => write!(f, "{}", e),
+            Tuple(e) => write!(f, "{}", e),
+            Map(e) => write!(f, "{}", e),
+            Record(e) => write!(f, "{}", e),
         }
     }
 }
@@ -508,9 +511,10 @@ impl fmt::Display for RecordLiteral {
 
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use TypeKind::*;
         match &self.kind {
-            TypeKind::Literal(s) => write!(f, "(type {})", s),
-            TypeKind::Parameterized(ptype) => {
+            Literal(s) => write!(f, "(type {})", s),
+            Parameterized(ptype) => {
                 write!(f, "(type {}", ptype.symbol)?;
                 for parameter in &ptype.parameters {
                     write!(f, " {}", parameter)?;

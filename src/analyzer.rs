@@ -54,10 +54,11 @@ impl Analyzer {
     }
 
     fn analyze_declaration(&mut self, declaration: &ptree::Declaration) -> ast::Declaration {
+        use ptree::Declaration::*;
         match declaration {
-            ptree::Declaration::Function(d) => self.analyze_function_declaration(d),
-            ptree::Declaration::Const(d) => self.analyze_const_declaration(d),
-            ptree::Declaration::Record(d) => self.analyze_record_declaration(d),
+            Function(d) => self.analyze_function_declaration(d),
+            Const(d) => self.analyze_const_declaration(d),
+            Record(d) => self.analyze_record_declaration(d),
         }
     }
 
@@ -183,17 +184,16 @@ impl Analyzer {
     }
 
     fn analyze_statement(&mut self, stmt: &ptree::Statement) -> ast::Statement {
+        use ptree::Statement::*;
         match stmt {
-            ptree::Statement::Let(s) => self.analyze_let_statement(s),
-            ptree::Statement::Assign(s) => self.analyze_assign_statement(s),
-            ptree::Statement::If(s) => self.analyze_if_statement(s),
-            ptree::Statement::While(s) => self.analyze_while_statement(s),
-            ptree::Statement::For(s) => self.analyze_for_statement(s),
-            ptree::Statement::Return(s) => self.analyze_return_statement(s),
-            ptree::Statement::Assert(s) => self.analyze_assert_statement(s),
-            ptree::Statement::Expression(expr) => {
-                ast::Statement::Expression(self.analyze_expression(expr))
-            }
+            Let(s) => self.analyze_let_statement(s),
+            Assign(s) => self.analyze_assign_statement(s),
+            If(s) => self.analyze_if_statement(s),
+            While(s) => self.analyze_while_statement(s),
+            For(s) => self.analyze_for_statement(s),
+            Return(s) => self.analyze_return_statement(s),
+            Assert(s) => self.analyze_assert_statement(s),
+            Expression(expr) => ast::Statement::Expression(self.analyze_expression(expr)),
         }
     }
 
@@ -336,19 +336,20 @@ impl Analyzer {
     }
 
     fn analyze_expression(&mut self, expr: &ptree::Expression) -> ast::Expression {
+        use ptree::ExpressionKind::*;
         match &expr.kind {
-            ptree::ExpressionKind::Boolean(x) => ast::Expression {
+            Boolean(x) => ast::Expression {
                 kind: ast::ExpressionKind::Boolean(*x),
                 type_: ast::Type::Boolean,
             },
-            ptree::ExpressionKind::Integer(x) => ast::Expression {
+            Integer(x) => ast::Expression {
                 kind: ast::ExpressionKind::Integer(*x),
                 type_: ast::Type::I64,
             },
-            ptree::ExpressionKind::String(x) => ast::Expression {
+            String(x) => ast::Expression {
                 kind: ast::ExpressionKind::Call(ast::CallExpression {
                     function: ast::SymbolEntry {
-                        unique_name: String::from("venice_string_new"),
+                        unique_name: std::string::String::from("venice_string_new"),
                         type_: ast::Type::Error,
                         constant: true,
                         external: true,
@@ -366,18 +367,18 @@ impl Analyzer {
                 }),
                 type_: ast::Type::String,
             },
-            ptree::ExpressionKind::Symbol(ref e) => self.analyze_symbol(e, &expr.location),
-            ptree::ExpressionKind::Binary(ref e) => self.analyze_binary_expression(e),
-            ptree::ExpressionKind::Comparison(ref e) => self.analyze_comparison_expression(e),
-            ptree::ExpressionKind::Unary(ref e) => self.analyze_unary_expression(e),
-            ptree::ExpressionKind::Call(ref e) => self.analyze_call_expression(e),
-            ptree::ExpressionKind::Index(ref e) => self.analyze_index_expression(e),
-            ptree::ExpressionKind::TupleIndex(ref e) => self.analyze_tuple_index_expression(e),
-            ptree::ExpressionKind::Attribute(ref e) => self.analyze_attribute_expression(e),
-            ptree::ExpressionKind::List(ref e) => self.analyze_list_literal(e),
-            ptree::ExpressionKind::Tuple(ref e) => self.analyze_tuple_literal(e),
-            ptree::ExpressionKind::Map(ref e) => self.analyze_map_literal(e),
-            ptree::ExpressionKind::Record(ref e) => self.analyze_record_literal(e),
+            Symbol(ref e) => self.analyze_symbol(e, &expr.location),
+            Binary(ref e) => self.analyze_binary_expression(e),
+            Comparison(ref e) => self.analyze_comparison_expression(e),
+            Unary(ref e) => self.analyze_unary_expression(e),
+            Call(ref e) => self.analyze_call_expression(e),
+            Index(ref e) => self.analyze_index_expression(e),
+            TupleIndex(ref e) => self.analyze_tuple_index_expression(e),
+            Attribute(ref e) => self.analyze_attribute_expression(e),
+            List(ref e) => self.analyze_list_literal(e),
+            Tuple(ref e) => self.analyze_tuple_literal(e),
+            Map(ref e) => self.analyze_map_literal(e),
+            Record(ref e) => self.analyze_record_literal(e),
         }
     }
 
@@ -396,8 +397,10 @@ impl Analyzer {
     fn analyze_binary_expression(&mut self, expr: &ptree::BinaryExpression) -> ast::Expression {
         let left = self.analyze_expression(&expr.left);
         let right = self.analyze_expression(&expr.right);
+
+        use common::BinaryOpType::*;
         match expr.op {
-            common::BinaryOpType::Concat => match &left.type_ {
+            Concat => match &left.type_ {
                 ast::Type::String => {
                     if !right.type_.matches(&ast::Type::String) {
                         self.error_type_mismatch(
@@ -443,7 +446,7 @@ impl Analyzer {
                     ast::EXPRESSION_ERROR.clone()
                 }
             },
-            common::BinaryOpType::Or | common::BinaryOpType::And => {
+            Or | And => {
                 self.assert_type(&left.type_, &ast::Type::Boolean, expr.left.location.clone());
                 self.assert_type(
                     &right.type_,
@@ -480,8 +483,10 @@ impl Analyzer {
     ) -> ast::Expression {
         let left = self.analyze_expression(&expr.left);
         let right = self.analyze_expression(&expr.right);
+
+        use common::ComparisonOpType::*;
         match expr.op {
-            common::ComparisonOpType::Equals | common::ComparisonOpType::NotEquals => {
+            Equals | NotEquals => {
                 self.assert_type(&left.type_, &right.type_, expr.left.location.clone());
                 ast::Expression {
                     kind: ast::ExpressionKind::Comparison(ast::ComparisonExpression {
@@ -492,10 +497,7 @@ impl Analyzer {
                     type_: ast::Type::Boolean,
                 }
             }
-            common::ComparisonOpType::LessThan
-            | common::ComparisonOpType::LessThanEquals
-            | common::ComparisonOpType::GreaterThan
-            | common::ComparisonOpType::GreaterThanEquals => {
+            LessThan | LessThanEquals | GreaterThan | GreaterThanEquals => {
                 self.assert_type(&left.type_, &ast::Type::I64, expr.left.location.clone());
                 self.assert_type(&right.type_, &ast::Type::I64, expr.right.location.clone());
                 ast::Expression {
@@ -512,8 +514,10 @@ impl Analyzer {
 
     fn analyze_unary_expression(&mut self, expr: &ptree::UnaryExpression) -> ast::Expression {
         let operand = self.analyze_expression(&expr.operand);
+
+        use common::UnaryOpType::*;
         match expr.op {
-            common::UnaryOpType::Negate => {
+            Negate => {
                 self.assert_type(
                     &operand.type_,
                     &ast::Type::I64,
@@ -527,7 +531,7 @@ impl Analyzer {
                     type_: ast::Type::I64,
                 }
             }
-            common::UnaryOpType::Not => {
+            Not => {
                 self.assert_type(
                     &operand.type_,
                     &ast::Type::Boolean,
@@ -591,14 +595,15 @@ impl Analyzer {
         let value = self.analyze_expression(&expr.value);
         let index = self.analyze_expression(&expr.index);
 
+        use ast::Type::*;
         match &value.type_ {
-            ast::Type::List(ref t) => {
+            List(ref t) => {
                 self.assert_type(&index.type_, &ast::Type::I64, expr.index.location.clone());
                 let type_ = *t.clone();
                 ast::Expression {
                     kind: ast::ExpressionKind::Call(ast::CallExpression {
                         function: ast::SymbolEntry {
-                            unique_name: String::from("venice_list_index"),
+                            unique_name: std::string::String::from("venice_list_index"),
                             type_: ast::Type::Error,
                             constant: true,
                             external: true,
@@ -610,7 +615,7 @@ impl Analyzer {
                     type_,
                 }
             }
-            ast::Type::Map {
+            Map {
                 key: key_type,
                 value: ref value_type,
             } => {
@@ -770,8 +775,9 @@ impl Analyzer {
     }
 
     fn resolve_type(&mut self, type_: &ptree::Type) -> ast::Type {
+        use ptree::TypeKind::*;
         match &type_.kind {
-            ptree::TypeKind::Literal(s) => {
+            Literal(s) => {
                 if let Some(entry) = self.types.get(s) {
                     entry.type_
                 } else {
@@ -780,7 +786,7 @@ impl Analyzer {
                     ast::Type::Error
                 }
             }
-            ptree::TypeKind::Parameterized(ptree::ParameterizedType { symbol, parameters }) => {
+            Parameterized(ptree::ParameterizedType { symbol, parameters }) => {
                 if symbol == "list" {
                     if parameters.len() == 1 {
                         let item_type = self.resolve_type(&parameters[0]);

@@ -273,11 +273,12 @@ impl SymbolEntry {
 
 impl Type {
     pub fn matches(&self, other: &Type) -> bool {
+        use Type::*;
         match (self, other) {
-            (Type::Boolean, Type::Boolean) => true,
-            (Type::I64, Type::I64) => true,
-            (Type::String, Type::String) => true,
-            (Type::Tuple(ts1), Type::Tuple(ts2)) => {
+            (Boolean, Boolean) => true,
+            (I64, I64) => true,
+            (String, String) => true,
+            (Tuple(ts1), Tuple(ts2)) => {
                 if ts1.len() != ts2.len() {
                     return false;
                 }
@@ -288,7 +289,7 @@ impl Type {
                 }
                 true
             }
-            (Type::List(t1), Type::List(t2)) => t1.matches(t2),
+            (List(t1), List(t2)) => t1.matches(t2),
             (
                 Type::Map {
                     key: key1,
@@ -304,8 +305,9 @@ impl Type {
     }
 
     pub fn stack_size(&self) -> usize {
+        use Type::*;
         match self {
-            Type::Void | Type::Error => 0,
+            Void | Error => 0,
             // Everything else is either a primitive value or a pointer.
             _ => 8,
         }
@@ -324,11 +326,12 @@ impl fmt::Display for Program {
 
 impl fmt::Display for Declaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Declaration::*;
         match self {
-            Declaration::Function(declaration) => write!(f, "{}", declaration),
-            Declaration::Const(declaration) => write!(f, "{}", declaration),
-            Declaration::Record(declaration) => write!(f, "{}", declaration),
-            Declaration::Error => write!(f, "error"),
+            Function(declaration) => write!(f, "{}", declaration),
+            Const(declaration) => write!(f, "{}", declaration),
+            Record(declaration) => write!(f, "{}", declaration),
+            Error => write!(f, "error"),
         }
     }
 }
@@ -372,16 +375,17 @@ impl fmt::Display for RecordDeclaration {
 
 impl fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Statement::*;
         match self {
-            Statement::Let(stmt) => write!(f, "{}", stmt),
-            Statement::Assign(stmt) => write!(f, "{}", stmt),
-            Statement::If(stmt) => write!(f, "{}", stmt),
-            Statement::While(stmt) => write!(f, "{}", stmt),
-            Statement::For(stmt) => write!(f, "{}", stmt),
-            Statement::Return(stmt) => write!(f, "{}", stmt),
-            Statement::Assert(stmt) => write!(f, "{}", stmt),
-            Statement::Expression(stmt) => write!(f, "{}", stmt),
-            Statement::Error => write!(f, "error"),
+            Let(stmt) => write!(f, "{}", stmt),
+            Assign(stmt) => write!(f, "{}", stmt),
+            If(stmt) => write!(f, "{}", stmt),
+            While(stmt) => write!(f, "{}", stmt),
+            For(stmt) => write!(f, "{}", stmt),
+            Return(stmt) => write!(f, "{}", stmt),
+            Assert(stmt) => write!(f, "{}", stmt),
+            Expression(stmt) => write!(f, "{}", stmt),
+            Error => write!(f, "error"),
         }
     }
 }
@@ -453,22 +457,23 @@ impl fmt::Display for Expression {
 
 impl fmt::Display for ExpressionKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use ExpressionKind::*;
         match self {
-            ExpressionKind::Boolean(e) => write!(f, "{}", e),
-            ExpressionKind::Integer(e) => write!(f, "{}", e),
-            ExpressionKind::String(e) => write!(f, "{:?}", e),
-            ExpressionKind::Symbol(e) => write!(f, "{}", e),
-            ExpressionKind::Binary(e) => write!(f, "{}", e),
-            ExpressionKind::Comparison(e) => write!(f, "{}", e),
-            ExpressionKind::Unary(e) => write!(f, "{}", e),
-            ExpressionKind::Call(e) => write!(f, "{}", e),
-            ExpressionKind::Index(e) => write!(f, "{}", e),
-            ExpressionKind::TupleIndex(e) => write!(f, "{}", e),
-            ExpressionKind::Attribute(e) => write!(f, "{}", e),
-            ExpressionKind::Tuple(e) => write!(f, "{}", e),
-            ExpressionKind::Map(e) => write!(f, "{}", e),
-            ExpressionKind::Record(e) => write!(f, "{}", e),
-            ExpressionKind::Error => write!(f, "error"),
+            Boolean(e) => write!(f, "{}", e),
+            Integer(e) => write!(f, "{}", e),
+            String(e) => write!(f, "{:?}", e),
+            Symbol(e) => write!(f, "{}", e),
+            Binary(e) => write!(f, "{}", e),
+            Comparison(e) => write!(f, "{}", e),
+            Unary(e) => write!(f, "{}", e),
+            Call(e) => write!(f, "{}", e),
+            Index(e) => write!(f, "{}", e),
+            TupleIndex(e) => write!(f, "{}", e),
+            Attribute(e) => write!(f, "{}", e),
+            Tuple(e) => write!(f, "{}", e),
+            Map(e) => write!(f, "{}", e),
+            Record(e) => write!(f, "{}", e),
+            Error => write!(f, "error"),
         }
     }
 }
@@ -554,12 +559,13 @@ impl fmt::Display for RecordLiteral {
 
 impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Type::*;
         match self {
-            Type::I64 => write!(f, "i64"),
-            Type::Boolean => write!(f, "bool"),
-            Type::String => write!(f, "string"),
-            Type::Void => write!(f, "void"),
-            Type::Tuple(ts) => {
+            I64 => write!(f, "i64"),
+            Boolean => write!(f, "bool"),
+            String => write!(f, "string"),
+            Void => write!(f, "void"),
+            Tuple(ts) => {
                 write!(f, "(")?;
                 for (i, t) in ts.iter().enumerate() {
                     write!(f, "{}", t)?;
@@ -569,13 +575,13 @@ impl fmt::Display for Type {
                 }
                 write!(f, ")")
             }
-            Type::List(t) => {
+            List(t) => {
                 write!(f, "list<{}>", t)
             }
-            Type::Map { key, value } => {
+            Map { key, value } => {
                 write!(f, "map<{}, {}>", key, value)
             }
-            Type::Function {
+            Function {
                 parameters,
                 return_type,
             } => {
@@ -585,8 +591,8 @@ impl fmt::Display for Type {
                 }
                 write!(f, "{}>", return_type)
             }
-            Type::Record(name) => write!(f, "{}", name),
-            Type::Error => write!(f, "error"),
+            Record(name) => write!(f, "{}", name),
+            Error => write!(f, "error"),
         }
     }
 }

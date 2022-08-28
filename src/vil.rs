@@ -77,10 +77,11 @@ const RETURN_REGISTER_INDEX: u8 = 13;
 
 impl Register {
     pub fn index(self) -> u8 {
+        use Register::*;
         match self {
-            Register::Param(i) => i,
-            Register::General(i) => i,
-            Register::Return => RETURN_REGISTER_INDEX,
+            Param(i) => i,
+            General(i) => i,
+            Return => RETURN_REGISTER_INDEX,
         }
     }
 
@@ -174,54 +175,57 @@ impl fmt::Display for Instruction {
 
 impl fmt::Display for InstructionKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use InstructionKind::*;
         match self {
-            InstructionKind::Add(r1, r2, r3) => write!(f, "{} = add {}, {}", r1, r2, r3),
-            InstructionKind::Call(func) => write!(f, "call {}", func),
-            InstructionKind::CallVariadic(func) => write!(f, "call_variadic {}", func),
-            InstructionKind::CalleeSave(r) => write!(f, "callee_save {}", r),
-            InstructionKind::CalleeRestore(r) => write!(f, "{} = callee_restore", r),
-            InstructionKind::CallerSave(r) => write!(f, "caller_save {}", r),
-            InstructionKind::CallerRestore(r) => write!(f, "{} = caller_restore", r),
-            InstructionKind::Cmp(r1, r2) => write!(f, "cmp {}, {}", r1, r2),
-            InstructionKind::Div(r1, r2, r3) => write!(f, "{} = div {}, {}", r1, r2, r3),
-            InstructionKind::FrameSetUp(size) => write!(f, "frame_set_up {}", size),
-            InstructionKind::FrameTearDown(size) => write!(f, "frame_tear_down {}", size),
-            InstructionKind::Load(r, offset) => write!(f, "{} = load {}", r, offset),
-            InstructionKind::Jump(label) => write!(f, "jump {}", label),
-            InstructionKind::JumpEq(l1, l2) => write!(f, "jump_eq {} {}", l1, l2),
-            InstructionKind::JumpGt(l1, l2) => write!(f, "jump_gt {} {}", l1, l2),
-            InstructionKind::JumpGte(l1, l2) => write!(f, "jump_gte {} {}", l1, l2),
-            InstructionKind::JumpLt(l1, l2) => write!(f, "jump_lt {} {}", l1, l2),
-            InstructionKind::JumpLte(l1, l2) => write!(f, "jump_lte {} {}", l1, l2),
-            InstructionKind::JumpNeq(l1, l2) => write!(f, "jump_neq {} {}", l1, l2),
-            InstructionKind::LogicalNot(r1, r2) => write!(f, "{} = logical_not {}", r1, r2),
-            InstructionKind::Move(r1, r2) => write!(f, "{} = move {}", r1, r2),
-            InstructionKind::Mul(r1, r2, r3) => write!(f, "{} = mul {}, {}", r1, r2, r3),
-            InstructionKind::Negate(r1, r2) => write!(f, "{} = negate {}", r1, r2),
-            InstructionKind::Ret => write!(f, "ret"),
-            InstructionKind::Set(r, x) => write!(f, "{} = set {}", r, x),
-            InstructionKind::Store(r, offset) => write!(f, "store {}, {}", r, offset),
-            InstructionKind::Sub(r1, r2, r3) => write!(f, "{} = sub {}, {}", r1, r2, r3),
-            InstructionKind::ToDo(s) => write!(f, "<todo: {}>", s),
+            Add(r1, r2, r3) => write!(f, "{} = add {}, {}", r1, r2, r3),
+            Call(func) => write!(f, "call {}", func),
+            CallVariadic(func) => write!(f, "call_variadic {}", func),
+            CalleeSave(r) => write!(f, "callee_save {}", r),
+            CalleeRestore(r) => write!(f, "{} = callee_restore", r),
+            CallerSave(r) => write!(f, "caller_save {}", r),
+            CallerRestore(r) => write!(f, "{} = caller_restore", r),
+            Cmp(r1, r2) => write!(f, "cmp {}, {}", r1, r2),
+            Div(r1, r2, r3) => write!(f, "{} = div {}, {}", r1, r2, r3),
+            FrameSetUp(size) => write!(f, "frame_set_up {}", size),
+            FrameTearDown(size) => write!(f, "frame_tear_down {}", size),
+            Load(r, offset) => write!(f, "{} = load {}", r, offset),
+            Jump(label) => write!(f, "jump {}", label),
+            JumpEq(l1, l2) => write!(f, "jump_eq {} {}", l1, l2),
+            JumpGt(l1, l2) => write!(f, "jump_gt {} {}", l1, l2),
+            JumpGte(l1, l2) => write!(f, "jump_gte {} {}", l1, l2),
+            JumpLt(l1, l2) => write!(f, "jump_lt {} {}", l1, l2),
+            JumpLte(l1, l2) => write!(f, "jump_lte {} {}", l1, l2),
+            JumpNeq(l1, l2) => write!(f, "jump_neq {} {}", l1, l2),
+            LogicalNot(r1, r2) => write!(f, "{} = logical_not {}", r1, r2),
+            Move(r1, r2) => write!(f, "{} = move {}", r1, r2),
+            Mul(r1, r2, r3) => write!(f, "{} = mul {}, {}", r1, r2, r3),
+            Negate(r1, r2) => write!(f, "{} = negate {}", r1, r2),
+            Ret => write!(f, "ret"),
+            Set(r, x) => write!(f, "{} = set {}", r, x),
+            Store(r, offset) => write!(f, "store {}, {}", r, offset),
+            Sub(r1, r2, r3) => write!(f, "{} = sub {}, {}", r1, r2, r3),
+            ToDo(s) => write!(f, "<todo: {}>", s),
         }
     }
 }
 
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Register::*;
         match self {
-            Register::Param(i) => write!(f, "%rp{}", i),
-            Register::General(i) => write!(f, "%rg{}", i),
-            Register::Return => write!(f, "%rt"),
+            Param(i) => write!(f, "%rp{}", i),
+            General(i) => write!(f, "%rg{}", i),
+            Return => write!(f, "%rt"),
         }
     }
 }
 
 impl fmt::Display for Immediate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Immediate::*;
         match self {
-            Immediate::Integer(x) => write!(f, "{}", x),
-            Immediate::Label(s) => write!(f, "{}", s),
+            Integer(x) => write!(f, "{}", x),
+            Label(s) => write!(f, "{}", s),
         }
     }
 }

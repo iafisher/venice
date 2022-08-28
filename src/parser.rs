@@ -150,12 +150,14 @@ impl Parser {
 
     fn match_statement(&mut self) -> Result<ptree::Statement, ()> {
         let mut token = self.lexer.token();
+
+        use TokenType::*;
         match token.type_ {
-            TokenType::Assert => self.match_assert_statement().map(ptree::Statement::Assert),
-            TokenType::If => self.match_if_statement().map(ptree::Statement::If),
-            TokenType::Let => self.match_let_statement().map(ptree::Statement::Let),
-            TokenType::Return => self.match_return_statement().map(ptree::Statement::Return),
-            TokenType::While => self.match_while_statement().map(ptree::Statement::While),
+            Assert => self.match_assert_statement().map(ptree::Statement::Assert),
+            If => self.match_if_statement().map(ptree::Statement::If),
+            Let => self.match_let_statement().map(ptree::Statement::Let),
+            Return => self.match_return_statement().map(ptree::Statement::Return),
+            While => self.match_while_statement().map(ptree::Statement::While),
             _ => {
                 let expr = self.match_expression()?;
                 token = self.lexer.token();
@@ -446,8 +448,10 @@ impl Parser {
 
     fn match_literal(&mut self) -> Result<ptree::Expression, ()> {
         let token = self.lexer.token();
+
+        use TokenType::*;
         match token.type_ {
-            TokenType::Integer => {
+            Integer => {
                 self.lexer.next();
                 if let Ok(x) = token.value.parse::<i64>() {
                     Ok(ptree::Expression {
@@ -459,21 +463,21 @@ impl Parser {
                     Err(())
                 }
             }
-            TokenType::True => {
+            True => {
                 self.lexer.next();
                 Ok(ptree::Expression {
                     kind: ptree::ExpressionKind::Boolean(true),
                     location: token.location.clone(),
                 })
             }
-            TokenType::False => {
+            False => {
                 self.lexer.next();
                 Ok(ptree::Expression {
                     kind: ptree::ExpressionKind::Boolean(false),
                     location: token.location.clone(),
                 })
             }
-            TokenType::String => {
+            String => {
                 self.lexer.next();
                 if let Ok(s) = parse_string_literal(&token.value) {
                     Ok(ptree::Expression {
@@ -485,21 +489,21 @@ impl Parser {
                     Err(())
                 }
             }
-            TokenType::Symbol => {
+            Symbol => {
                 self.lexer.next();
                 Ok(ptree::Expression {
                     kind: ptree::ExpressionKind::Symbol(token.value),
                     location: token.location.clone(),
                 })
             }
-            TokenType::ParenOpen => {
+            ParenOpen => {
                 self.lexer.next();
                 let expr = self.match_expression()?;
                 self.expect_token(&self.lexer.token(), TokenType::ParenClose, ")")?;
                 self.lexer.next();
                 Ok(expr)
             }
-            TokenType::SquareOpen => {
+            SquareOpen => {
                 self.lexer.next();
                 let items = self.match_expression_list()?;
                 self.expect_token(&self.lexer.token(), TokenType::SquareClose, "]")?;
@@ -512,7 +516,7 @@ impl Parser {
                     location: token.location.clone(),
                 })
             }
-            TokenType::Minus => {
+            Minus => {
                 self.lexer.next();
                 let operand = self.match_expression()?;
                 Ok(ptree::Expression {
@@ -650,27 +654,24 @@ lazy_static! {
 }
 
 fn is_binary_comparison_op(type_: TokenType) -> bool {
+    use TokenType::*;
     matches!(
         type_,
-        TokenType::Equals
-            | TokenType::GreaterThan
-            | TokenType::GreaterThanEquals
-            | TokenType::LessThan
-            | TokenType::LessThanEquals
-            | TokenType::NotEquals
+        Equals | GreaterThan | GreaterThanEquals | LessThan | LessThanEquals | NotEquals
     )
 }
 
 fn token_type_to_binary_op_type(type_: TokenType) -> common::BinaryOpType {
+    use common::BinaryOpType::*;
     match type_ {
-        TokenType::And => common::BinaryOpType::And,
-        TokenType::Concat => common::BinaryOpType::Concat,
-        TokenType::Minus => common::BinaryOpType::Subtract,
-        TokenType::Or => common::BinaryOpType::Or,
-        TokenType::Percent => common::BinaryOpType::Modulo,
-        TokenType::Plus => common::BinaryOpType::Add,
-        TokenType::Slash => common::BinaryOpType::Divide,
-        TokenType::Star => common::BinaryOpType::Multiply,
+        TokenType::And => And,
+        TokenType::Concat => Concat,
+        TokenType::Minus => Subtract,
+        TokenType::Or => Or,
+        TokenType::Percent => Modulo,
+        TokenType::Plus => Add,
+        TokenType::Slash => Divide,
+        TokenType::Star => Multiply,
         _ => {
             panic!("token type does not correspond to binary op type");
         }
@@ -678,13 +679,14 @@ fn token_type_to_binary_op_type(type_: TokenType) -> common::BinaryOpType {
 }
 
 fn token_type_to_comparison_op_type(type_: TokenType) -> common::ComparisonOpType {
+    use common::ComparisonOpType::*;
     match type_ {
-        TokenType::Equals => common::ComparisonOpType::Equals,
-        TokenType::GreaterThan => common::ComparisonOpType::GreaterThan,
-        TokenType::GreaterThanEquals => common::ComparisonOpType::GreaterThanEquals,
-        TokenType::LessThan => common::ComparisonOpType::LessThan,
-        TokenType::LessThanEquals => common::ComparisonOpType::LessThanEquals,
-        TokenType::NotEquals => common::ComparisonOpType::NotEquals,
+        TokenType::Equals => Equals,
+        TokenType::GreaterThan => GreaterThan,
+        TokenType::GreaterThanEquals => GreaterThanEquals,
+        TokenType::LessThan => LessThan,
+        TokenType::LessThanEquals => LessThanEquals,
+        TokenType::NotEquals => NotEquals,
         _ => {
             panic!("token type does not correspond to comparison op type");
         }
