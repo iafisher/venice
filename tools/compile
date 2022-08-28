@@ -1,0 +1,14 @@
+#!/bin/bash
+# Copyright 2022 The Venice Authors. All rights reserved.
+# Use of this source code is governed by an MIT-style license that can be
+# found in the LICENSE file.
+#
+# Compile a Venice program with debugging information.
+
+set -eu
+
+main() {
+  cargo run -- "$1" --debug --keep-intermediate
+}
+
+main "$@"

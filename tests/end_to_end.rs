@@ -49,6 +49,11 @@ fn test_05_multiply_divide() {
 }
 
 #[test]
+fn test_06_panic() {
+    test_e2e_expect_error("06_panic");
+}
+
+#[test]
 fn test_10_fibonacci() {
     test_e2e("10_fibonacci");
 }
@@ -74,10 +79,18 @@ fn test_14_file_io() {
 }
 
 fn test_e2e(base_name: &str) {
-    test_e2e_with_args(base_name, &[]);
+    test_e2e_full_options(base_name, &[], /* expect_error= */ false);
 }
 
 fn test_e2e_with_args(base_name: &str, args: &[&str]) {
+    test_e2e_full_options(base_name, args, /* expect_error= */ false);
+}
+
+fn test_e2e_expect_error(base_name: &str) {
+    test_e2e_full_options(base_name, &[], /* expect_error= */ true);
+}
+
+fn test_e2e_full_options(base_name: &str, args: &[&str], expect_error: bool) {
     let bin_path = build_path(base_name, "");
     let obj_path = build_path(base_name, "o");
     let vil_path = build_path(base_name, "vil");
@@ -117,7 +130,12 @@ fn test_e2e_with_args(base_name: &str, args: &[&str]) {
         .args(args)
         .output()
         .unwrap();
-    assert!(output.status.success());
+
+    if expect_error {
+        assert!(!output.status.success());
+    } else {
+        assert!(output.status.success());
+    }
 
     // Check the output.
     let stdout = str::from_utf8(&output.stdout).unwrap();

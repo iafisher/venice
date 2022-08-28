@@ -28,7 +28,7 @@ venice_main_0:
   pushq %r10
   pushq %r11
   subq $8, %rsp
-  call venice_println
+  call venice_panic
   addq $8, %rsp
   popq %r11
   popq %r10
@@ -45,5 +45,5 @@ venice_main_0:
   retq
 
 .s_0:
-  .string "Hello, world!"
+  .string "oops"
 

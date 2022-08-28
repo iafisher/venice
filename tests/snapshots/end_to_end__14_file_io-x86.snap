@@ -18,14 +18,18 @@ venice_main_0:
   movq %r12, %rdi
   pushq %r10
   pushq %r11
+  subq $8, %rsp
   call venice_string_new
+  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r11
   movq %r11, %rdi
   pushq %r10
   pushq %r11
+  subq $8, %rsp
   call venice_file_open
+  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r10
@@ -34,7 +38,9 @@ venice_main_0:
   movq %r11, %rdi
   pushq %r10
   pushq %r11
+  subq $8, %rsp
   call venice_file_read_all
+  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r10
@@ -43,7 +49,9 @@ venice_main_0:
   movq %r11, %rdi
   pushq %r10
   pushq %r11
+  subq $8, %rsp
   call venice_file_close
+  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r10
@@ -51,14 +59,18 @@ venice_main_0:
   movq %r12, %rdi
   pushq %r10
   pushq %r11
+  subq $8, %rsp
   call venice_string_new
+  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r11
   movq %r11, %rdi
   pushq %r10
   pushq %r11
+  subq $8, %rsp
   call venice_print
+  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r10
@@ -66,14 +78,18 @@ venice_main_0:
   movq %r12, %rdi
   pushq %r10
   pushq %r11
+  subq $8, %rsp
   call venice_string_length
+  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r11
   movq %r11, %rdi
   pushq %r10
   pushq %r11
+  subq $8, %rsp
   call venice_printint
+  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r10

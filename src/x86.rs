@@ -27,6 +27,7 @@ pub struct Block {
 
 pub enum Instruction {
     Add(Value, Value),
+    And(Value, Value),
     Call(String),
     Cmp(Value, Value),
     IDiv(Value),
@@ -85,6 +86,7 @@ pub enum DataValue {
 
 struct Generator {
     program: Program,
+    stack_alignment: i64,
 }
 
 impl Generator {
@@ -95,6 +97,7 @@ impl Generator {
                 blocks: Vec::new(),
                 data: Vec::new(),
             },
+            stack_alignment: 0,
         }
     }
 
@@ -114,6 +117,8 @@ impl Generator {
     }
 
     fn generate_declaration(&mut self, declaration: &vil::FunctionDeclaration) {
+        self.stack_alignment = 8;
+
         let block = Block {
             // TODO: replace this with more robust logic
             global: declaration.name == "venice_main",
@@ -231,7 +236,9 @@ impl Generator {
                 instructions.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
             Call(label) => {
+                self.align_stack(instructions);
                 instructions.push(Instruction::Call(label.0.clone()));
+                self.unalign_stack(instructions);
             }
             CallVariadic(label) => {
                 // The System V ABI requires setting AL to the number of vector registers when
@@ -240,16 +247,23 @@ impl Generator {
                     Value::SpecialRegister(String::from("al")),
                     Value::Immediate(0),
                 ));
+
+                self.align_stack(instructions);
                 instructions.push(Instruction::Call(label.0.clone()));
+                self.unalign_stack(instructions);
             }
             FrameSetUp(size) => {
                 instructions.push(Instruction::Push(RBP));
+                self.stack_alignment += 8;
                 instructions.push(Instruction::Mov(RBP, RSP));
                 instructions.push(Instruction::Sub(RSP, Value::Immediate(*size as i64)));
+                self.stack_alignment += *size as i64;
             }
             FrameTearDown(size) => {
                 instructions.push(Instruction::Add(RSP, Value::Immediate(*size as i64)));
+                self.stack_alignment -= *size as i64;
                 instructions.push(Instruction::Pop(RBP));
+                self.stack_alignment -= 8;
             }
             Ret => {
                 instructions.push(Instruction::Ret);
@@ -283,16 +297,34 @@ impl Generator {
             }
             CalleeRestore(r) => {
                 instructions.push(Instruction::Pop(Value::r(r)));
+                self.stack_alignment -= 8;
             }
             CalleeSave(r) => {
                 instructions.push(Instruction::Push(Value::r(r)));
+                self.stack_alignment += 8;
             }
             CallerRestore(r) => {
                 instructions.push(Instruction::Pop(Value::r(r)));
+                self.stack_alignment -= 8;
             }
             CallerSave(r) => {
                 instructions.push(Instruction::Push(Value::r(r)));
+                self.stack_alignment += 8;
             }
+        }
+    }
+
+    fn align_stack(&mut self, instructions: &mut Vec<Instruction>) {
+        let diff = self.stack_alignment % 16;
+        if diff > 0 {
+            instructions.push(Instruction::Sub(RSP, Value::Immediate(diff)));
+        }
+    }
+
+    fn unalign_stack(&mut self, instructions: &mut Vec<Instruction>) {
+        let diff = self.stack_alignment % 16;
+        if diff > 0 {
+            instructions.push(Instruction::Add(RSP, Value::Immediate(diff)));
         }
     }
 }
@@ -339,6 +371,7 @@ impl fmt::Display for Instruction {
         use Instruction::*;
         match self {
             Add(x, y) => write!(f, "addq {}, {}", y, x),
+            And(x, y) => write!(f, "andq {}, {}", y, x),
             Call(l) => write!(f, "call {}", l),
             Cmp(x, y) => write!(f, "cmpq {}, {}", y, x),
             IDiv(x) => write!(f, "divq {}", x),
