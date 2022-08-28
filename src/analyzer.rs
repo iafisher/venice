@@ -1012,6 +1012,16 @@ impl SymbolTable {
                 },
             ),
         );
+        symbols.insert(
+            String::from("panic"),
+            ast::SymbolEntry::external(
+                "venice_panic",
+                ast::Type::Function {
+                    parameters: vec![ast::Type::String],
+                    return_type: Box::new(ast::Type::Void),
+                },
+            ),
+        );
 
         SymbolTable {
             environments: vec![symbols],

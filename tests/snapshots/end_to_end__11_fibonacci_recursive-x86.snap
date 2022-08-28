@@ -5,14 +5,14 @@ expression: x86_output
 fibonacci__0:
 
 fibonacci__0_0:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $8, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
-  pushq %rbp
-  movq %rsp, %rbp
-  subq $8, %rsp
   movq %rdi, -8(%rbp)
   movq -8(%rbp), %r10
   movq $0, %r11
@@ -23,13 +23,13 @@ fibonacci__0_0:
 if_true_1:
   movq $0, %r12
   movq %r12, %rax
-  addq $8, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $8, %rsp
+  popq %rbp
   retq
   jmp if_end_3
 
@@ -43,13 +43,13 @@ if_false_2:
 if_true_4:
   movq $1, %r12
   movq %r12, %rax
-  addq $8, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $8, %rsp
+  popq %rbp
   retq
   jmp if_end_6
 
@@ -79,13 +79,13 @@ if_false_5:
   movq %r13, %r10
   addq %r11, %r10
   movq %r10, %rax
-  addq $8, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $8, %rsp
+  popq %rbp
   retq
   jmp if_end_6
 
@@ -98,14 +98,14 @@ if_end_3:
 venice_main:
 
 venice_main_7:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $8, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
-  pushq %rbp
-  movq %rsp, %rbp
-  subq $8, %rsp
   movq $12, %r11
   movq %r11, %rdi
   pushq %r10
@@ -125,13 +125,13 @@ venice_main_7:
   movq %rax, %r10
   movq $0, %r10
   movq %r10, %rax
-  addq $8, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $8, %rsp
+  popq %rbp
   retq
 
 

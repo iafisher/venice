@@ -8,7 +8,7 @@ MAKEFLAGS += --no-builtin-rules
 
 FLAGS = -Wall -Werror -Wextra
 LIB_FLAGS = -fPIC -shared
-SRCS = internal.c io.c list.c string.c
+SRCS = internal.c io.c list.c misc.c string.c
 
 all: libvenice.so libvenice-debug.so main.o main-debug.o
 

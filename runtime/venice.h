@@ -131,4 +131,11 @@ venice_string_t* venice_file_read_all_with_buffer_size(FILE* f,
 // Closes the file.
 void venice_file_close(FILE* f);
 
+
+/***
+ * Miscellaneous program utilities
+ */
+
+void venice_panic(venice_string_t* message);
+
 #endif // VENICE_H_

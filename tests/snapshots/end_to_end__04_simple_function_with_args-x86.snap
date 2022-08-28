@@ -5,14 +5,14 @@ expression: x86_output
 sub__0:
 
 sub__0_0:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $16, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
-  pushq %rbp
-  movq %rsp, %rbp
-  subq $16, %rsp
   movq %rdi, -8(%rbp)
   movq %rsi, -16(%rbp)
   movq -8(%rbp), %r11
@@ -20,27 +20,27 @@ sub__0_0:
   movq %r11, %r10
   subq %r12, %r10
   movq %r10, %rax
-  addq $16, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $16, %rsp
+  popq %rbp
   retq
 
 .globl venice_main
 venice_main:
 
 venice_main_1:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $8, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
-  pushq %rbp
-  movq %rsp, %rbp
-  subq $8, %rsp
   movq $47, %r11
   movq %r11, %rdi
   movq $5, %r12
@@ -62,13 +62,13 @@ venice_main_1:
   movq %rax, %r10
   movq $0, %r10
   movq %r10, %rax
-  addq $8, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $8, %rsp
+  popq %rbp
   retq
 
 

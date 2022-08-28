@@ -5,40 +5,40 @@ expression: x86_output
 two_plus_two__0:
 
 two_plus_two__0_0:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $0, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
-  pushq %rbp
-  movq %rsp, %rbp
-  subq $0, %rsp
   movq $2, %r11
   movq $2, %r12
   movq %r12, %r10
   addq %r11, %r10
   movq %r10, %rax
-  addq $0, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $0, %rsp
+  popq %rbp
   retq
 
 .globl venice_main
 venice_main:
 
 venice_main_1:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $8, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
-  pushq %rbp
-  movq %rsp, %rbp
-  subq $8, %rsp
   pushq %r10
   pushq %r11
   call two_plus_two__0
@@ -56,13 +56,13 @@ venice_main_1:
   movq %rax, %r10
   movq $0, %r10
   movq %r10, %rax
-  addq $8, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $8, %rsp
+  popq %rbp
   retq
 
 

@@ -11,12 +11,12 @@ extern venice_printint;
 func venice_main {
 
 venice_main_0:
+  frame_set_up 8
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4
   callee_save %rg5
   callee_save %rg6
-  frame_set_up 8
   %rg1 = set 3
   %rp0 = move %rg1
   %rg3 = set 1
@@ -53,12 +53,12 @@ venice_main_0:
   %rg0 = move %rt
   %rg0 = set 0
   %rt = move %rg0
-  frame_tear_down 8
   %rg6 = callee_restore
   %rg5 = callee_restore
   %rg4 = callee_restore
   %rg3 = callee_restore
   %rg2 = callee_restore
+  frame_tear_down 8
   ret
 }
 

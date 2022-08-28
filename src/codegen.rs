@@ -69,13 +69,13 @@ impl Generator {
         let label = self.claim_label(name);
         self.start_block(label, None);
 
+        let stack_frame_size = self.info.as_ref().unwrap().stack_frame_size;
+        self.push(vil::InstructionKind::FrameSetUp(stack_frame_size));
+
         // Save callee-save registers.
         for i in 2..vil::GP_REGISTER_COUNT {
             self.push(vil::InstructionKind::CalleeSave(vil::Register::gp(i)));
         }
-
-        let stack_frame_size = self.info.as_ref().unwrap().stack_frame_size;
-        self.push(vil::InstructionKind::FrameSetUp(stack_frame_size));
 
         // Move parameters from registers onto the stack.
         for (i, parameter) in declaration.parameters.iter().enumerate() {
@@ -358,15 +358,15 @@ impl Generator {
     fn generate_return_statement(&mut self, stmt: &ast::ReturnStatement) {
         let register = self.generate_expression(&stmt.value);
         self.push(vil::InstructionKind::Move(vil::Register::Return, register));
-        self.push(vil::InstructionKind::FrameTearDown(
-            self.info.as_ref().unwrap().stack_frame_size,
-        ));
 
         // Restore callee-save registers.
         for i in (2..vil::GP_REGISTER_COUNT).rev() {
             self.push(vil::InstructionKind::CalleeRestore(vil::Register::gp(i)));
         }
 
+        self.push(vil::InstructionKind::FrameTearDown(
+            self.info.as_ref().unwrap().stack_frame_size,
+        ));
         self.push(vil::InstructionKind::Ret);
     }
 

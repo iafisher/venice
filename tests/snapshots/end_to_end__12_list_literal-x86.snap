@@ -6,14 +6,14 @@ expression: x86_output
 venice_main:
 
 venice_main_0:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $8, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
-  pushq %rbp
-  movq %rsp, %rbp
-  subq $8, %rsp
   movq $3, %r11
   movq %r11, %rdi
   movq $1, %r13
@@ -53,13 +53,13 @@ venice_main_0:
   movq %rax, %r10
   movq $0, %r10
   movq %r10, %rax
-  addq $8, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $8, %rsp
+  popq %rbp
   retq
 
 

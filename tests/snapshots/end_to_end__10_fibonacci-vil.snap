@@ -9,12 +9,12 @@ extern venice_printint;
 func venice_main {
 
 venice_main_0:
+  frame_set_up 8
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4
   callee_save %rg5
   callee_save %rg6
-  frame_set_up 8
   %rg1 = set 12
   %rp0 = move %rg1
   caller_save %rg0
@@ -34,24 +34,24 @@ venice_main_0:
   %rg0 = move %rt
   %rg0 = set 0
   %rt = move %rg0
-  frame_tear_down 8
   %rg6 = callee_restore
   %rg5 = callee_restore
   %rg4 = callee_restore
   %rg3 = callee_restore
   %rg2 = callee_restore
+  frame_tear_down 8
   ret
 }
 
 func fibonacci__0 {
 
 fibonacci__0_1:
+  frame_set_up 40
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4
   callee_save %rg5
   callee_save %rg6
-  frame_set_up 40
   store %rp0, -8  // n__2
   %rg0 = set 1
   store %rg0, -16  // fib_i__3
@@ -85,12 +85,12 @@ while_3:
 while_end_4:
   %rg0 = load -16  // fib_i__3
   %rt = move %rg0
-  frame_tear_down 40
   %rg6 = callee_restore
   %rg5 = callee_restore
   %rg4 = callee_restore
   %rg3 = callee_restore
   %rg2 = callee_restore
+  frame_tear_down 40
   ret
 }
 

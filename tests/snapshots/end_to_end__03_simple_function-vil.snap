@@ -9,34 +9,34 @@ extern venice_printint;
 func two_plus_two__0 {
 
 two_plus_two__0_0:
+  frame_set_up 0
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4
   callee_save %rg5
   callee_save %rg6
-  frame_set_up 0
   %rg1 = set 2
   %rg2 = set 2
   %rg0 = add %rg1, %rg2
   %rt = move %rg0
-  frame_tear_down 0
   %rg6 = callee_restore
   %rg5 = callee_restore
   %rg4 = callee_restore
   %rg3 = callee_restore
   %rg2 = callee_restore
+  frame_tear_down 0
   ret
 }
 
 func venice_main {
 
 venice_main_1:
+  frame_set_up 8
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4
   callee_save %rg5
   callee_save %rg6
-  frame_set_up 8
   caller_save %rg0
   caller_save %rg1
   call %two_plus_two__0
@@ -54,12 +54,12 @@ venice_main_1:
   %rg0 = move %rt
   %rg0 = set 0
   %rt = move %rg0
-  frame_tear_down 8
   %rg6 = callee_restore
   %rg5 = callee_restore
   %rg4 = callee_restore
   %rg3 = callee_restore
   %rg2 = callee_restore
+  frame_tear_down 8
   ret
 }
 

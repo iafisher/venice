@@ -6,14 +6,14 @@ expression: x86_output
 venice_main:
 
 venice_main_0:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $8, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
-  pushq %rbp
-  movq %rsp, %rbp
-  subq $8, %rsp
   movq $12, %r11
   movq %r11, %rdi
   pushq %r10
@@ -33,26 +33,26 @@ venice_main_0:
   movq %rax, %r10
   movq $0, %r10
   movq %r10, %rax
-  addq $8, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $8, %rsp
+  popq %rbp
   retq
 
 fibonacci__0:
 
 fibonacci__0_1:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $40, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
-  pushq %rbp
-  movq %rsp, %rbp
-  subq $40, %rsp
   movq %rdi, -8(%rbp)
   movq $1, %r10
   movq %r10, -16(%rbp)
@@ -89,13 +89,13 @@ while_3:
 while_end_4:
   movq -16(%rbp), %r10
   movq %r10, %rax
-  addq $40, %rsp
-  popq %rbp
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
+  addq $40, %rsp
+  popq %rbp
   retq
 
 
