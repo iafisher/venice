@@ -550,6 +550,7 @@ impl Analyzer {
                     kind: ast::ExpressionKind::Call(ast::CallExpression {
                         function: entry.clone(),
                         arguments,
+                        variadic: false,
                     }),
                     type_: *return_type.clone(),
                 }
@@ -574,9 +575,16 @@ impl Analyzer {
                 self.assert_type(&index.type_, &ast::Type::I64, expr.index.location.clone());
                 let type_ = *t.clone();
                 ast::Expression {
-                    kind: ast::ExpressionKind::Index(ast::IndexExpression {
-                        value: Box::new(value),
-                        index: Box::new(index),
+                    kind: ast::ExpressionKind::Call(ast::CallExpression {
+                        function: ast::SymbolEntry {
+                            unique_name: String::from("venice_list_index"),
+                            type_: ast::Type::Error,
+                            constant: true,
+                            external: true,
+                            stack_offset: 0,
+                        },
+                        arguments: vec![value, index],
+                        variadic: false,
                     }),
                     type_,
                 }
@@ -646,9 +654,15 @@ impl Analyzer {
             return ast::EXPRESSION_ERROR.clone();
         }
 
+        let mut arguments = Vec::new();
+        arguments.push(ast::Expression {
+            kind: ast::ExpressionKind::Integer(expr.items.len() as i64),
+            type_: ast::Type::I64,
+        });
+
         let first_item = self.analyze_expression(&expr.items[0]);
         let item_type = first_item.type_.clone();
-        let mut items = vec![first_item];
+        arguments.push(first_item);
 
         for i in 1..expr.items.len() {
             let typed_item = self.analyze_expression(&expr.items[i]);
@@ -657,10 +671,20 @@ impl Analyzer {
                 &item_type,
                 expr.items[i].location.clone(),
             );
-            items.push(typed_item);
+            arguments.push(typed_item);
         }
         ast::Expression {
-            kind: ast::ExpressionKind::List(ast::ListLiteral { items }),
+            kind: ast::ExpressionKind::Call(ast::CallExpression {
+                function: ast::SymbolEntry {
+                    unique_name: String::from("venice_list_new"),
+                    type_: ast::Type::Error,
+                    constant: true,
+                    external: true,
+                    stack_offset: 0,
+                },
+                arguments,
+                variadic: true,
+            }),
             type_: ast::Type::List(Box::new(item_type)),
         }
     }
@@ -727,17 +751,31 @@ impl Analyzer {
     fn resolve_type(&mut self, type_: &ptree::Type) -> ast::Type {
         match &type_.kind {
             ptree::TypeKind::Literal(s) => {
-                if let Some(semantic_type_) = self.types.get(s) {
-                    semantic_type_.type_
+                if let Some(entry) = self.types.get(s) {
+                    entry.type_
                 } else {
                     let msg = format!("unknown type {}", s);
                     self.error(&msg, type_.location.clone());
                     ast::Type::Error
                 }
             }
-            _ => {
-                // TODO
-                ast::Type::Error
+            ptree::TypeKind::Parameterized(ptree::ParameterizedType { symbol, parameters }) => {
+                if symbol == "list" {
+                    if parameters.len() == 1 {
+                        let item_type = self.resolve_type(&parameters[0]);
+                        ast::Type::List(Box::new(item_type))
+                    } else {
+                        self.error(
+                            "expected 1 type parameter to 'list'",
+                            type_.location.clone(),
+                        );
+                        ast::Type::Error
+                    }
+                } else {
+                    let msg = format!("unknown type {}", symbol);
+                    self.error(&msg, type_.location.clone());
+                    ast::Type::Error
+                }
             }
         }
     }

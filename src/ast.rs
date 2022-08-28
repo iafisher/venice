@@ -129,7 +129,6 @@ pub enum ExpressionKind {
     Index(IndexExpression),
     TupleIndex(TupleIndexExpression),
     Attribute(AttributeExpression),
-    List(ListLiteral),
     Tuple(TupleLiteral),
     Map(MapLiteral),
     Record(RecordLiteral),
@@ -165,6 +164,7 @@ pub struct UnaryExpression {
 pub struct CallExpression {
     pub function: SymbolEntry,
     pub arguments: Vec<Expression>,
+    pub variadic: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -183,11 +183,6 @@ pub struct TupleIndexExpression {
 pub struct AttributeExpression {
     pub value: Box<Expression>,
     pub attribute: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct ListLiteral {
-    pub items: Vec<Expression>,
 }
 
 #[derive(Clone, Debug)]
@@ -224,12 +219,6 @@ pub enum Type {
     },
     Record(String),
     Error,
-}
-
-#[derive(Clone, Debug)]
-pub struct ParameterizedType {
-    symbol: String,
-    parameters: Vec<Type>,
 }
 
 #[derive(Clone, Debug)]
@@ -283,6 +272,17 @@ impl Type {
                 }
                 true
             }
+            (Type::List(t1), Type::List(t2)) => t1.matches(t2),
+            (
+                Type::Map {
+                    key: key1,
+                    value: value1,
+                },
+                Type::Map {
+                    key: key2,
+                    value: value2,
+                },
+            ) => key1.matches(key2) && value1.matches(value2),
             _ => false,
         }
     }
@@ -449,7 +449,6 @@ impl fmt::Display for ExpressionKind {
             ExpressionKind::Index(e) => write!(f, "{}", e),
             ExpressionKind::TupleIndex(e) => write!(f, "{}", e),
             ExpressionKind::Attribute(e) => write!(f, "{}", e),
-            ExpressionKind::List(e) => write!(f, "{}", e),
             ExpressionKind::Tuple(e) => write!(f, "{}", e),
             ExpressionKind::Map(e) => write!(f, "{}", e),
             ExpressionKind::Record(e) => write!(f, "{}", e),
@@ -504,16 +503,6 @@ impl fmt::Display for TupleIndexExpression {
 impl fmt::Display for AttributeExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "(attrib {} {})", self.value, self.attribute)
-    }
-}
-
-impl fmt::Display for ListLiteral {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(list")?;
-        for item in &self.items {
-            write!(f, " {}", item)?;
-        }
-        write!(f, ")")
     }
 }
 
@@ -581,7 +570,7 @@ impl fmt::Display for Type {
                 write!(f, "{}>", return_type)
             }
             Type::Record(name) => write!(f, "{}", name),
-            Type::Error => write!(f, "unknown"),
+            Type::Error => write!(f, "error"),
         }
     }
 }

@@ -1,0 +1,74 @@
+---
+source: tests/end_to_end.rs
+expression: x86_output
+---
+extern venice_list_new
+extern venice_list_index
+extern venice_printint
+
+
+section .text
+
+global main
+main:
+
+main_0:
+  push r12
+  push r13
+  push r14
+  push r15
+  push rbx
+  push rbp
+  mov rbp, rsp
+  sub rsp, 8
+  mov r11, 3
+  mov rdi, r11
+  mov r13, 1
+  mov r12, r13
+  neg r12
+  mov rsi, r12
+  mov r14, 42
+  mov rdx, r14
+  mov rbx, 1
+  mov r15, rbx
+  neg r15
+  mov rcx, r15
+  push r10
+  push r11
+  mov al, 0
+  call venice_list_new
+  pop r11
+  pop r10
+  mov r10, rax
+  mov [rbp-8], r10
+  mov r12, [rbp-8]
+  mov rdi, r12
+  mov r13, 1
+  mov rsi, r13
+  push r10
+  push r11
+  call venice_list_index
+  pop r11
+  pop r10
+  mov r11, rax
+  mov rdi, r11
+  push r10
+  push r11
+  call venice_printint
+  pop r11
+  pop r10
+  mov r10, rax
+  mov r10, 0
+  mov rax, r10
+  add rsp, 8
+  pop rbp
+  pop rbx
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  ret
+
+section .data
+
+

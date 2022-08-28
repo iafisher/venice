@@ -105,6 +105,7 @@ impl Generator {
                 self.push(vil::InstructionKind::Set(r, vil::Immediate::Label(label)));
             }
             ast::ExpressionKind::Binary(b) => self.generate_binary_expression(b, r),
+            ast::ExpressionKind::Unary(e) => self.generate_unary_expression(e, r),
             ast::ExpressionKind::Comparison(b) => self.generate_comparison_expression(b, r),
             ast::ExpressionKind::Call(e) => self.generate_call_expression(e, r),
             ast::ExpressionKind::Symbol(symbol) => {
@@ -172,6 +173,19 @@ impl Generator {
         self.reset_register_counter(old_register_counter);
     }
 
+    fn generate_unary_expression(&mut self, expr: &ast::UnaryExpression, r: vil::Register) {
+        let operand = self.generate_expression(&expr.operand);
+
+        match expr.op {
+            common::UnaryOpType::Negate => {
+                self.push(vil::InstructionKind::Negate(r, operand));
+            }
+            common::UnaryOpType::Not => {
+                self.push(vil::InstructionKind::LogicalNot(r, operand));
+            }
+        }
+    }
+
     fn generate_comparison_expression(
         &mut self,
         expr: &ast::ComparisonExpression,
@@ -224,9 +238,15 @@ impl Generator {
         self.push(vil::InstructionKind::CallerSave(vil::Register::gp(0)));
         self.push(vil::InstructionKind::CallerSave(vil::Register::gp(1)));
 
-        self.push(vil::InstructionKind::Call(vil::FunctionLabel(
-            unique_name.clone(),
-        )));
+        if expr.variadic {
+            self.push(vil::InstructionKind::CallVariadic(vil::FunctionLabel(
+                unique_name.clone(),
+            )));
+        } else {
+            self.push(vil::InstructionKind::Call(vil::FunctionLabel(
+                unique_name.clone(),
+            )));
+        }
 
         // Restore caller-save registers.
         self.push(vil::InstructionKind::CallerRestore(vil::Register::gp(1)));

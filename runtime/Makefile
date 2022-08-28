@@ -8,4 +8,4 @@ MAKEFLAGS += --no-builtin-rules
 
 # TODO: Remove -g debugging flag.
 libvenice.so: venice.c
-	gcc -fPIC -shared -g -o $@ $^
+	gcc -Wall -Werror -Wextra -fPIC -shared -g -o $@ $^

@@ -35,10 +35,13 @@ pub enum Instruction {
     Jmp(String),
     Jne(String),
     Mov(Value, Value),
+    Neg(Value),
     Pop(Value),
     Push(Value),
     Ret,
+    SetE(Value),
     Sub(Value, Value),
+    Test(Value, Value),
     Xor(Value, Value),
     ToDo(String),
 }
@@ -46,6 +49,7 @@ pub enum Instruction {
 pub enum Value {
     Immediate(i64),
     Register(Register),
+    SpecialRegister(String),
     Label(String),
     Memory {
         scale: u8,
@@ -179,6 +183,18 @@ impl Generator {
                 // Move RAX into the destination register.
                 instructions.push(Instruction::Mov(Value::r(r1), RAX));
             }
+            vil::InstructionKind::Negate(r1, r2) => {
+                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
+                instructions.push(Instruction::Neg(Value::r(r1)));
+            }
+            vil::InstructionKind::LogicalNot(r1, r2) => {
+                instructions.push(Instruction::Xor(RAX, RAX));
+                instructions.push(Instruction::Test(RAX, Value::r(r2)));
+                instructions.push(Instruction::SetE(Value::SpecialRegister(String::from(
+                    "al",
+                ))));
+                instructions.push(Instruction::Mov(Value::r(r1), RAX));
+            }
             vil::InstructionKind::Load(r, offset) => {
                 instructions.push(Instruction::Mov(
                     Value::r(r),
@@ -205,6 +221,13 @@ impl Generator {
                 instructions.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
             vil::InstructionKind::Call(label) => {
+                instructions.push(Instruction::Call(label.0.clone()));
+            }
+            vil::InstructionKind::CallVariadic(label) => {
+                instructions.push(Instruction::Mov(
+                    Value::SpecialRegister(String::from("al")),
+                    Value::Immediate(0),
+                ));
                 instructions.push(Instruction::Call(label.0.clone()));
             }
             vil::InstructionKind::FrameSetUp(size) => {
@@ -330,10 +353,13 @@ impl fmt::Display for Instruction {
             Instruction::Jmp(l) => write!(f, "jmp {}", l),
             Instruction::Jne(l) => write!(f, "jne {}", l),
             Instruction::Mov(x, y) => write!(f, "mov {}, {}", x, y),
+            Instruction::Neg(x) => write!(f, "neg {}", x),
             Instruction::Pop(x) => write!(f, "pop {}", x),
             Instruction::Push(x) => write!(f, "push {}", x),
             Instruction::Ret => write!(f, "ret"),
+            Instruction::SetE(x) => write!(f, "sete {}", x),
             Instruction::Sub(x, y) => write!(f, "sub {}, {}", x, y),
+            Instruction::Test(x, y) => write!(f, "test {}, {}", x, y),
             Instruction::Xor(x, y) => write!(f, "xor {}, {}", x, y),
             Instruction::ToDo(s) => write!(f, "<todo: {}>", s),
         }
@@ -345,6 +371,7 @@ impl fmt::Display for Value {
         match self {
             Value::Immediate(x) => write!(f, "{}", x),
             Value::Register(r) => write!(f, "{}", r),
+            Value::SpecialRegister(s) => write!(f, "{}", s),
             Value::Label(s) => write!(f, "{}", s),
             Value::Memory {
                 scale,

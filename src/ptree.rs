@@ -233,11 +233,11 @@ pub struct Type {
 #[derive(Debug)]
 pub enum TypeKind {
     Literal(String),
-    Parameterized(SyntacticParameterizedType),
+    Parameterized(ParameterizedType),
 }
 
 #[derive(Debug)]
-pub struct SyntacticParameterizedType {
+pub struct ParameterizedType {
     pub symbol: String,
     pub parameters: Vec<Type>,
 }

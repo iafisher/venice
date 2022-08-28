@@ -48,6 +48,11 @@ fn test_11_fibonacci_recursive() {
     test_e2e("11_fibonacci_recursive");
 }
 
+#[test]
+fn test_12_list_literal() {
+    test_e2e("12_list_literal");
+}
+
 fn test_e2e(folder: &str) {
     let bin_path = build_path(folder, "program");
     let obj_path = build_path(folder, "program.o");

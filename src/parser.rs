@@ -347,6 +347,19 @@ impl Parser {
                             kind: ptree::ExpressionKind::Call(call),
                             location: token.location.clone(),
                         };
+                    } else if token.type_ == TokenType::SquareOpen {
+                        self.lexer.next();
+                        let index = self.match_expression()?;
+                        self.expect_token(&self.lexer.token(), TokenType::SquareClose, "]")?;
+                        self.lexer.next();
+                        expr = ptree::Expression {
+                            kind: ptree::ExpressionKind::Index(ptree::IndexExpression {
+                                value: Box::new(expr),
+                                index: Box::new(index),
+                                location: token.location.clone(),
+                            }),
+                            location: token.location.clone(),
+                        };
                     } else {
                         self.lexer.next();
                         let right = self.match_expression_with_precedence(*other_precedence)?;
@@ -483,6 +496,31 @@ impl Parser {
                 self.lexer.next();
                 Ok(expr)
             }
+            TokenType::SquareOpen => {
+                self.lexer.next();
+                let items = self.match_expression_list()?;
+                self.expect_token(&self.lexer.token(), TokenType::SquareClose, "]")?;
+                self.lexer.next();
+                Ok(ptree::Expression {
+                    kind: ptree::ExpressionKind::List(ptree::ListLiteral {
+                        items,
+                        location: token.location.clone(),
+                    }),
+                    location: token.location.clone(),
+                })
+            }
+            TokenType::Minus => {
+                self.lexer.next();
+                let operand = self.match_expression()?;
+                Ok(ptree::Expression {
+                    kind: ptree::ExpressionKind::Unary(ptree::UnaryExpression {
+                        op: common::UnaryOpType::Negate,
+                        operand: Box::new(operand),
+                        location: token.location.clone(),
+                    }),
+                    location: token.location.clone(),
+                })
+            }
             _ => {
                 self.unexpected(&token, "start of expression");
                 self.lexer.next();
@@ -492,14 +530,48 @@ impl Parser {
     }
 
     fn match_type(&mut self) -> Result<ptree::Type, ()> {
-        let token = self.lexer.token();
+        let mut token = self.lexer.token();
+        let location = token.location.clone();
         self.expect_token(&token, TokenType::Symbol, "type")?;
-        self.lexer.next();
-        // TODO: handle parameterized types
-        Ok(ptree::Type {
-            kind: ptree::TypeKind::Literal(token.value),
-            location: token.location.clone(),
-        })
+        let symbol = token.value;
+        token = self.lexer.next();
+
+        if token.type_ == TokenType::LessThan {
+            let mut parameters = Vec::new();
+            self.lexer.next();
+            loop {
+                token = self.lexer.token();
+                if token.type_ == TokenType::GreaterThan {
+                    break;
+                } else {
+                    let type_ = self.match_type()?;
+                    parameters.push(type_);
+                    token = self.lexer.token();
+                    if token.type_ == TokenType::Comma {
+                        self.lexer.next();
+                    } else if token.type_ == TokenType::GreaterThan {
+                        break;
+                    } else {
+                        self.unexpected(&token, "comma or >");
+                        self.lexer.next();
+                        return Err(());
+                    }
+                }
+            }
+            self.lexer.next();
+            Ok(ptree::Type {
+                kind: ptree::TypeKind::Parameterized(ptree::ParameterizedType {
+                    symbol,
+                    parameters,
+                }),
+                location,
+            })
+        } else {
+            Ok(ptree::Type {
+                kind: ptree::TypeKind::Literal(symbol),
+                location: location,
+            })
+        }
     }
 
     fn expect_token(
@@ -568,6 +640,8 @@ lazy_static! {
         m.insert(TokenType::Star, PRECEDENCE_MULTIPLICATION);
         // '(' is the "operator" for function calls.
         m.insert(TokenType::ParenOpen, PRECEDENCE_CALL);
+        // '[' is the "operator" for indexing.
+        m.insert(TokenType::SquareOpen, PRECEDENCE_CALL);
         m
     };
 }
@@ -630,9 +704,30 @@ mod tests {
     }
 
     #[test]
+    fn negative_number() {
+        let expr = parse_expression("-1");
+        assert_eq!(format!("{}", expr), "(unary Negate 1)");
+    }
+
+    #[test]
+    fn list_index() {
+        let expr = parse_expression("a + b[0]");
+        assert_eq!(format!("{}", expr), "(binary Add a (index b 0))");
+    }
+
+    #[test]
     fn let_statement() {
         let stmt = parse_statement("let x: i64 = 0;");
         assert_eq!(format!("{}", stmt), "(let x (type i64) 0)");
+    }
+
+    #[test]
+    fn let_statement_with_list_literal() {
+        let stmt = parse_statement("let xs: list<i64> = [1, 2, 3];");
+        assert_eq!(
+            format!("{}", stmt),
+            "(let xs (type list (type i64)) (list 1 2 3))"
+        );
     }
 
     #[test]

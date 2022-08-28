@@ -1,0 +1,5 @@
+func main() -> i64 {
+  let numbers: list<i64> = [-1, 42, -1];
+  printint(numbers[1]);
+  return 0;
+}
