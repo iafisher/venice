@@ -15,38 +15,38 @@ fibonacci__1_0:
   callee_save %rg5
   callee_save %rg6
   frame_set_up 40
-  %n__0 = store %rp0, -8
+  store %rp0, -8  // n__0
   %rg0 = set 1
-  %fib_i__2 = store %rg0, -16
+  store %rg0, -16  // fib_i__2
   %rg0 = set 0
-  %fib_i_minus_1__3 = store %rg0, -24
+  store %rg0, -24  // fib_i_minus_1__3
   %rg0 = set 1
-  %i__4 = store %rg0, -32
+  store %rg0, -32  // i__4
   jump %while_cond_1
 
 while_cond_1:
-  %rg0 = load %i__4, -32
-  %rg1 = load %n__0, -8
+  %rg0 = load -32  // i__4
+  %rg1 = load -8  // n__0
   cmp %rg0, %rg1
   jump_lt %while_2 %while_end_3
 
 while_2:
-  %rg2 = load %fib_i__2, -16
-  %tmp__5 = store %rg2, -40
-  %rg1 = load %fib_i__2, -16
-  %rg2 = load %fib_i_minus_1__3, -24
+  %rg2 = load -16  // fib_i__2
+  store %rg2, -40  // tmp__5
+  %rg1 = load -16  // fib_i__2
+  %rg2 = load -24  // fib_i_minus_1__3
   %rg0 = add %rg1, %rg2
-  %fib_i__2 = store %rg0, -16
-  %rg0 = load %tmp__5, -40
-  %fib_i_minus_1__3 = store %rg0, -24
-  %rg1 = load %i__4, -32
+  store %rg0, -16  // fib_i__2
+  %rg0 = load -40  // tmp__5
+  store %rg0, -24  // fib_i_minus_1__3
+  %rg1 = load -32  // i__4
   %rg2 = set 1
   %rg0 = add %rg1, %rg2
-  %i__4 = store %rg0, -32
+  store %rg0, -32  // i__4
   jump %while_cond_1
 
 while_end_3:
-  %rg0 = load %fib_i__2, -16
+  %rg0 = load -16  // fib_i__2
   %rt = move %rg0
   frame_tear_down 40
   %rg6 = callee_restore
@@ -74,8 +74,8 @@ main_4:
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg0 = move %rt
-  %x__6 = store %rg0, -8
-  %rg1 = load %x__6, -8
+  store %rg0, -8  // x__6
+  %rg1 = load -8  // x__6
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1

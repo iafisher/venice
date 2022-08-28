@@ -43,8 +43,8 @@ main_1:
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg0 = move %rt
-  %x__1 = store %rg0, -8
-  %rg1 = load %x__1, -8
+  store %rg0, -8  // x__1
+  %rg1 = load -8  // x__1
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1

@@ -22,7 +22,13 @@ pub struct Block {
 }
 
 #[derive(Debug)]
-pub enum Instruction {
+pub struct Instruction {
+    pub kind: InstructionKind,
+    pub comment: String,
+}
+
+#[derive(Debug)]
+pub enum InstructionKind {
     Add(Register, Register, Register),
     Call(FunctionLabel),
     CalleeRestore(Register),
@@ -40,12 +46,12 @@ pub enum Instruction {
     JumpLt(Label, Label),
     JumpLte(Label, Label),
     JumpNeq(Label, Label),
-    Load(Register, Memory, i32),
+    Load(Register, i32),
     Move(Register, Register),
     Mul(Register, Register, Register),
     Ret,
     Set(Register, Immediate),
-    Store(Memory, Register, i32),
+    Store(Register, i32),
     Sub(Register, Register, Register),
     ToDo(String),
 }
@@ -100,8 +106,6 @@ pub enum Immediate {
     Label(String),
 }
 #[derive(Clone, Debug)]
-pub struct Memory(pub String);
-#[derive(Clone, Debug)]
 pub struct Label(pub String);
 #[derive(Clone, Debug)]
 pub struct FunctionLabel(pub String);
@@ -145,7 +149,7 @@ impl fmt::Display for Block {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "\n{}:\n", self.name)?;
         for instruction in &self.instructions {
-            writeln!(f, "{}", instruction)?;
+            writeln!(f, "  {}", instruction)?;
         }
         fmt::Result::Ok(())
     }
@@ -153,32 +157,42 @@ impl fmt::Display for Block {
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.kind)?;
+        if !self.comment.is_empty() {
+            write!(f, "  // {}", self.comment)?;
+        }
+        fmt::Result::Ok(())
+    }
+}
+
+impl fmt::Display for InstructionKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Instruction::Add(r1, r2, r3) => write!(f, "  {} = add {}, {}", r1, r2, r3),
-            Instruction::Call(func) => write!(f, "  call {}", func),
-            Instruction::CalleeSave(r) => write!(f, "  callee_save {}", r),
-            Instruction::CalleeRestore(r) => write!(f, "  {} = callee_restore", r),
-            Instruction::CallerSave(r) => write!(f, "  caller_save {}", r),
-            Instruction::CallerRestore(r) => write!(f, "  {} = caller_restore", r),
-            Instruction::Cmp(r1, r2) => write!(f, "  cmp {}, {}", r1, r2),
-            Instruction::Div(r1, r2, r3) => write!(f, "  {} = div {}, {}", r1, r2, r3),
-            Instruction::FrameSetUp(size) => write!(f, "  frame_set_up {}", size),
-            Instruction::FrameTearDown(size) => write!(f, "  frame_tear_down {}", size),
-            Instruction::Load(r, mem, offset) => write!(f, "  {} = load {}, {}", r, mem, offset),
-            Instruction::Jump(label) => write!(f, "  jump {}", label),
-            Instruction::JumpEq(l1, l2) => write!(f, "  jump_eq {} {}", l1, l2),
-            Instruction::JumpGt(l1, l2) => write!(f, "  jump_gt {} {}", l1, l2),
-            Instruction::JumpGte(l1, l2) => write!(f, "  jump_gte {} {}", l1, l2),
-            Instruction::JumpLt(l1, l2) => write!(f, "  jump_lt {} {}", l1, l2),
-            Instruction::JumpLte(l1, l2) => write!(f, "  jump_lte {} {}", l1, l2),
-            Instruction::JumpNeq(l1, l2) => write!(f, "  jump_neq {} {}", l1, l2),
-            Instruction::Move(r1, r2) => write!(f, "  {} = move {}", r1, r2),
-            Instruction::Mul(r1, r2, r3) => write!(f, "  {} = mul {}, {}", r1, r2, r3),
-            Instruction::Ret => write!(f, "  ret"),
-            Instruction::Set(r, x) => write!(f, "  {} = set {}", r, x),
-            Instruction::Store(mem, r, offset) => write!(f, "  {} = store {}, {}", mem, r, offset),
-            Instruction::Sub(r1, r2, r3) => write!(f, "  {} = sub {}, {}", r1, r2, r3),
-            Instruction::ToDo(s) => write!(f, "  <todo: {}>", s),
+            InstructionKind::Add(r1, r2, r3) => write!(f, "{} = add {}, {}", r1, r2, r3),
+            InstructionKind::Call(func) => write!(f, "call {}", func),
+            InstructionKind::CalleeSave(r) => write!(f, "callee_save {}", r),
+            InstructionKind::CalleeRestore(r) => write!(f, "{} = callee_restore", r),
+            InstructionKind::CallerSave(r) => write!(f, "caller_save {}", r),
+            InstructionKind::CallerRestore(r) => write!(f, "{} = caller_restore", r),
+            InstructionKind::Cmp(r1, r2) => write!(f, "cmp {}, {}", r1, r2),
+            InstructionKind::Div(r1, r2, r3) => write!(f, "{} = div {}, {}", r1, r2, r3),
+            InstructionKind::FrameSetUp(size) => write!(f, "frame_set_up {}", size),
+            InstructionKind::FrameTearDown(size) => write!(f, "frame_tear_down {}", size),
+            InstructionKind::Load(r, offset) => write!(f, "{} = load {}", r, offset),
+            InstructionKind::Jump(label) => write!(f, "jump {}", label),
+            InstructionKind::JumpEq(l1, l2) => write!(f, "jump_eq {} {}", l1, l2),
+            InstructionKind::JumpGt(l1, l2) => write!(f, "jump_gt {} {}", l1, l2),
+            InstructionKind::JumpGte(l1, l2) => write!(f, "jump_gte {} {}", l1, l2),
+            InstructionKind::JumpLt(l1, l2) => write!(f, "jump_lt {} {}", l1, l2),
+            InstructionKind::JumpLte(l1, l2) => write!(f, "jump_lte {} {}", l1, l2),
+            InstructionKind::JumpNeq(l1, l2) => write!(f, "jump_neq {} {}", l1, l2),
+            InstructionKind::Move(r1, r2) => write!(f, "{} = move {}", r1, r2),
+            InstructionKind::Mul(r1, r2, r3) => write!(f, "{} = mul {}, {}", r1, r2, r3),
+            InstructionKind::Ret => write!(f, "ret"),
+            InstructionKind::Set(r, x) => write!(f, "{} = set {}", r, x),
+            InstructionKind::Store(r, offset) => write!(f, "store {}, {}", r, offset),
+            InstructionKind::Sub(r1, r2, r3) => write!(f, "{} = sub {}, {}", r1, r2, r3),
+            InstructionKind::ToDo(s) => write!(f, "<todo: {}>", s),
         }
     }
 }
@@ -199,12 +213,6 @@ impl fmt::Display for Immediate {
             Immediate::Integer(x) => write!(f, "{}", x),
             Immediate::Label(s) => write!(f, "{}", s),
         }
-    }
-}
-
-impl fmt::Display for Memory {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "%{}", self.0)
     }
 }
 

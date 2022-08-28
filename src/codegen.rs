@@ -18,7 +18,6 @@ pub fn generate(ast: &ast::Program) -> Result<vil::Program, errors::VeniceError>
         info: None,
         label_counter: 0,
         register_counter: 0,
-        symbol_counter: 0,
         string_counter: 0,
     };
     generator.generate_program(ast);
@@ -32,7 +31,6 @@ struct Generator {
 
     // Counters for generating unique symbols.
     label_counter: u32,
-    symbol_counter: u32,
     string_counter: u32,
 
     // The counter of current registers in use.
@@ -51,7 +49,7 @@ impl Generator {
             ast::Declaration::Function(decl) => self.generate_function_declaration(decl),
             _ => {
                 // TODO
-                self.push(vil::Instruction::ToDo(String::from("declaration")));
+                self.push(vil::InstructionKind::ToDo(String::from("declaration")));
             }
         }
     }
@@ -69,20 +67,21 @@ impl Generator {
 
         // Save callee-save registers.
         for i in 2..vil::GP_REGISTER_COUNT {
-            self.push(vil::Instruction::CalleeSave(vil::Register::gp(i)));
+            self.push(vil::InstructionKind::CalleeSave(vil::Register::gp(i)));
         }
 
         let stack_frame_size = self.info.as_ref().unwrap().stack_frame_size;
-        self.push(vil::Instruction::FrameSetUp(stack_frame_size));
+        self.push(vil::InstructionKind::FrameSetUp(stack_frame_size));
 
         // Move parameters from registers onto the stack.
         for (i, parameter) in declaration.parameters.iter().enumerate() {
-            let symbol = vil::Memory(parameter.name.unique_name.clone());
-            self.push(vil::Instruction::Store(
-                symbol,
-                vil::Register::param(i as u8),
-                parameter.name.stack_offset,
-            ));
+            self.push_with_comment(
+                vil::InstructionKind::Store(
+                    vil::Register::param(i as u8),
+                    parameter.name.stack_offset,
+                ),
+                &parameter.name.unique_name,
+            );
         }
 
         self.generate_block(&declaration.body);
@@ -92,29 +91,31 @@ impl Generator {
         let r = self.claim_register();
         match &expr.kind {
             ast::ExpressionKind::Boolean(x) => {
-                self.push(vil::Instruction::Set(r, vil::Immediate::Integer(*x as i64)));
+                self.push(vil::InstructionKind::Set(
+                    r,
+                    vil::Immediate::Integer(*x as i64),
+                ));
             }
             ast::ExpressionKind::Integer(x) => {
-                self.push(vil::Instruction::Set(r, vil::Immediate::Integer(*x)));
+                self.push(vil::InstructionKind::Set(r, vil::Immediate::Integer(*x)));
             }
             ast::ExpressionKind::String(s) => {
                 let label = self.claim_string_label();
                 self.program.strings.insert(label.clone(), s.clone());
-                self.push(vil::Instruction::Set(r, vil::Immediate::Label(label)));
+                self.push(vil::InstructionKind::Set(r, vil::Immediate::Label(label)));
             }
             ast::ExpressionKind::Binary(b) => self.generate_binary_expression(b, r),
             ast::ExpressionKind::Comparison(b) => self.generate_comparison_expression(b, r),
             ast::ExpressionKind::Call(e) => self.generate_call_expression(e, r),
             ast::ExpressionKind::Symbol(symbol) => {
-                self.push(vil::Instruction::Load(
-                    r,
-                    vil::Memory(symbol.unique_name.clone()),
-                    symbol.stack_offset,
-                ));
+                self.push_with_comment(
+                    vil::InstructionKind::Load(r, symbol.stack_offset),
+                    &symbol.unique_name,
+                );
             }
             x => {
                 // TODO
-                self.push(vil::Instruction::ToDo(format!("{:?}", x)));
+                self.push(vil::InstructionKind::ToDo(format!("{:?}", x)));
             }
         }
         r
@@ -132,15 +133,15 @@ impl Generator {
             let left = self.generate_expression(&cmp_expr.left);
             let right = self.generate_expression(&cmp_expr.right);
 
-            self.push(vil::Instruction::Cmp(left, right));
+            self.push(vil::InstructionKind::Cmp(left, right));
             let exit = get_comparison_instruction(cmp_expr.op, true_label, false_label);
             self.push(exit);
         } else {
             let register = self.generate_expression(expr);
             let tmp = self.claim_register();
-            self.push(vil::Instruction::Set(tmp, vil::Immediate::Integer(1)));
-            self.push(vil::Instruction::Cmp(register, tmp));
-            self.push(vil::Instruction::JumpEq(true_label, false_label));
+            self.push(vil::InstructionKind::Set(tmp, vil::Immediate::Integer(1)));
+            self.push(vil::InstructionKind::Cmp(register, tmp));
+            self.push(vil::InstructionKind::JumpEq(true_label, false_label));
         }
     }
 
@@ -152,16 +153,16 @@ impl Generator {
 
         match expr.op {
             common::BinaryOpType::Add => {
-                self.push(vil::Instruction::Add(r, left, right));
+                self.push(vil::InstructionKind::Add(r, left, right));
             }
             common::BinaryOpType::Divide => {
-                self.push(vil::Instruction::Div(r, left, right));
+                self.push(vil::InstructionKind::Div(r, left, right));
             }
             common::BinaryOpType::Multiply => {
-                self.push(vil::Instruction::Mul(r, left, right));
+                self.push(vil::InstructionKind::Mul(r, left, right));
             }
             common::BinaryOpType::Subtract => {
-                self.push(vil::Instruction::Sub(r, left, right));
+                self.push(vil::InstructionKind::Sub(r, left, right));
             }
             _ => {
                 // TODO
@@ -183,16 +184,22 @@ impl Generator {
         let false_label = self.claim_label("eq");
         let end_label = self.claim_label("eq_end");
 
-        self.push(vil::Instruction::Cmp(left, right));
+        self.push(vil::InstructionKind::Cmp(left, right));
 
         let exit = get_comparison_instruction(expr.op, true_label.clone(), false_label.clone());
         self.start_block(true_label, Some(exit));
-        self.push(vil::Instruction::Set(r, vil::Immediate::Integer(1)));
+        self.push(vil::InstructionKind::Set(r, vil::Immediate::Integer(1)));
 
-        self.start_block(false_label, Some(vil::Instruction::Jump(end_label.clone())));
-        self.push(vil::Instruction::Set(r, vil::Immediate::Integer(0)));
+        self.start_block(
+            false_label,
+            Some(vil::InstructionKind::Jump(end_label.clone())),
+        );
+        self.push(vil::InstructionKind::Set(r, vil::Immediate::Integer(0)));
 
-        self.start_block(end_label.clone(), Some(vil::Instruction::Jump(end_label)));
+        self.start_block(
+            end_label.clone(),
+            Some(vil::InstructionKind::Jump(end_label)),
+        );
     }
 
     fn generate_call_expression(&mut self, expr: &ast::CallExpression, r: vil::Register) {
@@ -202,7 +209,7 @@ impl Generator {
 
         for (i, argument) in expr.arguments.iter().enumerate() {
             let argument_register = self.generate_expression(argument);
-            self.push(vil::Instruction::Move(
+            self.push(vil::InstructionKind::Move(
                 vil::Register::param(i.try_into().unwrap()),
                 argument_register,
             ));
@@ -214,18 +221,18 @@ impl Generator {
         }
 
         // Save caller-save registers.
-        self.push(vil::Instruction::CallerSave(vil::Register::gp(0)));
-        self.push(vil::Instruction::CallerSave(vil::Register::gp(1)));
+        self.push(vil::InstructionKind::CallerSave(vil::Register::gp(0)));
+        self.push(vil::InstructionKind::CallerSave(vil::Register::gp(1)));
 
-        self.push(vil::Instruction::Call(vil::FunctionLabel(
+        self.push(vil::InstructionKind::Call(vil::FunctionLabel(
             unique_name.clone(),
         )));
 
         // Restore caller-save registers.
-        self.push(vil::Instruction::CallerRestore(vil::Register::gp(1)));
-        self.push(vil::Instruction::CallerRestore(vil::Register::gp(0)));
+        self.push(vil::InstructionKind::CallerRestore(vil::Register::gp(1)));
+        self.push(vil::InstructionKind::CallerRestore(vil::Register::gp(0)));
 
-        self.push(vil::Instruction::Move(r, vil::Register::Return));
+        self.push(vil::InstructionKind::Move(r, vil::Register::Return));
     }
 
     fn generate_block(&mut self, block: &[ast::Statement]) {
@@ -256,11 +263,10 @@ impl Generator {
 
     fn generate_assign_statement(&mut self, stmt: &ast::AssignStatement) {
         let register = self.generate_expression(&stmt.value);
-        self.push(vil::Instruction::Store(
-            vil::Memory(stmt.symbol.unique_name.clone()),
-            register,
-            stmt.symbol.stack_offset,
-        ));
+        self.push_with_comment(
+            vil::InstructionKind::Store(register, stmt.symbol.stack_offset),
+            &stmt.symbol.unique_name,
+        );
     }
 
     fn generate_if_statement(&mut self, stmt: &ast::IfStatement) {
@@ -298,35 +304,39 @@ impl Generator {
         self.start_block(true_label, None);
         self.generate_block(&stmt.body);
 
-        self.start_block(false_label, Some(vil::Instruction::Jump(end_label.clone())));
+        self.start_block(
+            false_label,
+            Some(vil::InstructionKind::Jump(end_label.clone())),
+        );
         self.generate_block(&stmt.else_body);
 
-        self.start_block(end_label.clone(), Some(vil::Instruction::Jump(end_label)));
+        self.start_block(
+            end_label.clone(),
+            Some(vil::InstructionKind::Jump(end_label)),
+        );
     }
 
     fn generate_let_statement(&mut self, stmt: &ast::LetStatement) {
-        let symbol = vil::Memory(stmt.symbol.unique_name.clone());
         let register = self.generate_expression(&stmt.value);
-        self.push(vil::Instruction::Store(
-            symbol,
-            register,
-            stmt.symbol.stack_offset,
-        ));
+        self.push_with_comment(
+            vil::InstructionKind::Store(register, stmt.symbol.stack_offset),
+            &stmt.symbol.unique_name,
+        );
     }
 
     fn generate_return_statement(&mut self, stmt: &ast::ReturnStatement) {
         let register = self.generate_expression(&stmt.value);
-        self.push(vil::Instruction::Move(vil::Register::Return, register));
-        self.push(vil::Instruction::FrameTearDown(
+        self.push(vil::InstructionKind::Move(vil::Register::Return, register));
+        self.push(vil::InstructionKind::FrameTearDown(
             self.info.as_ref().unwrap().stack_frame_size,
         ));
 
         // Restore callee-save registers.
         for i in (2..vil::GP_REGISTER_COUNT).rev() {
-            self.push(vil::Instruction::CalleeRestore(vil::Register::gp(i)));
+            self.push(vil::InstructionKind::CalleeRestore(vil::Register::gp(i)));
         }
 
-        self.push(vil::Instruction::Ret);
+        self.push(vil::InstructionKind::Ret);
     }
 
     fn generate_while_statement(&mut self, stmt: &ast::WhileStatement) {
@@ -351,7 +361,7 @@ impl Generator {
 
         self.start_block(
             cond_label.clone(),
-            Some(vil::Instruction::Jump(cond_label.clone())),
+            Some(vil::InstructionKind::Jump(cond_label.clone())),
         );
         self.generate_expression_as_condition(
             &stmt.condition,
@@ -362,10 +372,10 @@ impl Generator {
         self.start_block(loop_label, None);
         self.generate_block(&stmt.body);
 
-        self.start_block(end_label, Some(vil::Instruction::Jump(cond_label)));
+        self.start_block(end_label, Some(vil::InstructionKind::Jump(cond_label)));
     }
 
-    fn start_block(&mut self, label: vil::Label, exit_previous: Option<vil::Instruction>) {
+    fn start_block(&mut self, label: vil::Label, exit_previous: Option<vil::InstructionKind>) {
         let block = vil::Block {
             name: label.0,
             instructions: Vec::new(),
@@ -384,12 +394,6 @@ impl Generator {
         vil::Label(label)
     }
 
-    fn claim_symbol(&mut self, prefix: &str) -> vil::Memory {
-        let symbol = format!("{}_{}", prefix, self.symbol_counter);
-        self.symbol_counter += 1;
-        vil::Memory(symbol)
-    }
-
     fn claim_register(&mut self) -> vil::Register {
         let register = vil::Register::gp(self.register_counter);
         self.register_counter += 1;
@@ -402,8 +406,18 @@ impl Generator {
         label
     }
 
-    fn push(&mut self, instruction: vil::Instruction) {
-        self.current_block().instructions.push(instruction)
+    fn push(&mut self, instruction: vil::InstructionKind) {
+        self.current_block().instructions.push(vil::Instruction {
+            kind: instruction,
+            comment: String::new(),
+        })
+    }
+
+    fn push_with_comment(&mut self, instruction: vil::InstructionKind, comment: &str) {
+        self.current_block().instructions.push(vil::Instruction {
+            kind: instruction,
+            comment: String::from(comment),
+        })
     }
 
     fn reset_register_counter(&mut self, count: u8) {
@@ -426,17 +440,21 @@ fn get_comparison_instruction(
     op: common::ComparisonOpType,
     true_label: vil::Label,
     false_label: vil::Label,
-) -> vil::Instruction {
+) -> vil::InstructionKind {
     match op {
-        common::ComparisonOpType::Equals => vil::Instruction::JumpEq(true_label, false_label),
-        common::ComparisonOpType::GreaterThan => vil::Instruction::JumpGt(true_label, false_label),
+        common::ComparisonOpType::Equals => vil::InstructionKind::JumpEq(true_label, false_label),
+        common::ComparisonOpType::GreaterThan => {
+            vil::InstructionKind::JumpGt(true_label, false_label)
+        }
         common::ComparisonOpType::GreaterThanEquals => {
-            vil::Instruction::JumpGte(true_label, false_label)
+            vil::InstructionKind::JumpGte(true_label, false_label)
         }
-        common::ComparisonOpType::LessThan => vil::Instruction::JumpLt(true_label, false_label),
+        common::ComparisonOpType::LessThan => vil::InstructionKind::JumpLt(true_label, false_label),
         common::ComparisonOpType::LessThanEquals => {
-            vil::Instruction::JumpLte(true_label, false_label)
+            vil::InstructionKind::JumpLte(true_label, false_label)
         }
-        common::ComparisonOpType::NotEquals => vil::Instruction::JumpNeq(true_label, false_label),
+        common::ComparisonOpType::NotEquals => {
+            vil::InstructionKind::JumpNeq(true_label, false_label)
+        }
     }
 }

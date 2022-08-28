@@ -15,10 +15,10 @@ sub__2_0:
   callee_save %rg5
   callee_save %rg6
   frame_set_up 16
-  %x__0 = store %rp0, -8
-  %y__1 = store %rp1, -16
-  %rg1 = load %x__0, -8
-  %rg2 = load %y__1, -16
+  store %rp0, -8  // x__0
+  store %rp1, -16  // y__1
+  %rg1 = load -8  // x__0
+  %rg2 = load -16  // y__1
   %rg0 = sub %rg1, %rg2
   %rt = move %rg0
   frame_tear_down 16
@@ -49,8 +49,8 @@ main_1:
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg0 = move %rt
-  %x__3 = store %rg0, -8
-  %rg1 = load %x__3, -8
+  store %rg0, -8  // x__3
+  %rg1 = load -8  // x__3
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1

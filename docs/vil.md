@@ -45,24 +45,16 @@ The `move` instruction copies a value from one register to another:
 ```
 
 ### Memory access
-The `alloca` instruction is used to declare named memory locations.
+The `load` instruction allows you to load the contents of a memory location into a register. It takes an offset from the top of the stack frame.
 
 ```
-%result = alloca:i64 8
+%rg0 = load -8
 ```
 
-Its operand is the number of bytes on the stack that the value will occupy; it must be a constant. `%result` is declared to be a pointer to type `i64`. 
-
-The `load` instruction allows you to load the contents of a memory location into a register. It takes a pointer argument and an index (which may be a constant or a register).
+The `store` instruction allows you to save the contents of a register into a memory location. Like `store`, it takes an offset from the top of the stack frame.
 
 ```
-%rg0 = load %result, 0
-```
-
-The `store` instruction allows you to save the contents of a register into a memory location. Its types are flipped compared to `load`: the destination is a pointer and the first operand is a register.
-
-```
-%result = store %rg0, 1
+store %rg0, -8
 ```
 
 ### Arithmetic and bitwise operations

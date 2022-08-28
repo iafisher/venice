@@ -136,8 +136,8 @@ impl Generator {
         instructions: &mut Vec<Instruction>,
         instruction: &vil::Instruction,
     ) {
-        match instruction {
-            vil::Instruction::Set(r, imm) => match imm {
+        match &instruction.kind {
+            vil::InstructionKind::Set(r, imm) => match imm {
                 vil::Immediate::Integer(x) => {
                     instructions.push(Instruction::Mov(Value::r(r), Value::Immediate(*x)));
                 }
@@ -145,22 +145,22 @@ impl Generator {
                     instructions.push(Instruction::Mov(Value::r(r), Value::Label(s.clone())));
                 }
             },
-            vil::Instruction::Move(r1, r2) => {
+            vil::InstructionKind::Move(r1, r2) => {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
-            vil::Instruction::Add(r1, r2, r3) => {
+            vil::InstructionKind::Add(r1, r2, r3) => {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r3)));
                 instructions.push(Instruction::Add(Value::r(r1), Value::r(r2)));
             }
-            vil::Instruction::Sub(r1, r2, r3) => {
+            vil::InstructionKind::Sub(r1, r2, r3) => {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
                 instructions.push(Instruction::Sub(Value::r(r1), Value::r(r3)));
             }
-            vil::Instruction::Mul(r1, r2, r3) => {
+            vil::InstructionKind::Mul(r1, r2, r3) => {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
                 instructions.push(Instruction::IMul(Value::r(r1), Value::r(r3)));
             }
-            vil::Instruction::Div(r1, r2, r3) => {
+            vil::InstructionKind::Div(r1, r2, r3) => {
                 // In x86, `div RXX` computes RDX:RAX / RXX and stores the quotient in RAX and the
                 // remainder in RDX.
                 //
@@ -179,7 +179,7 @@ impl Generator {
                 // Move RAX into the destination register.
                 instructions.push(Instruction::Mov(Value::r(r1), RAX));
             }
-            vil::Instruction::Load(r, _, offset) => {
+            vil::InstructionKind::Load(r, offset) => {
                 instructions.push(Instruction::Mov(
                     Value::r(r),
                     Value::Memory {
@@ -190,7 +190,7 @@ impl Generator {
                     },
                 ));
             }
-            vil::Instruction::Store(_, r, offset) => {
+            vil::InstructionKind::Store(r, offset) => {
                 instructions.push(Instruction::Mov(
                     Value::Memory {
                         scale: 1,
@@ -201,64 +201,64 @@ impl Generator {
                     Value::r(r),
                 ));
             }
-            vil::Instruction::Cmp(r1, r2) => {
+            vil::InstructionKind::Cmp(r1, r2) => {
                 instructions.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
-            vil::Instruction::Call(label) => {
+            vil::InstructionKind::Call(label) => {
                 instructions.push(Instruction::Call(label.0.clone()));
             }
-            vil::Instruction::FrameSetUp(size) => {
+            vil::InstructionKind::FrameSetUp(size) => {
                 instructions.push(Instruction::Push(RBP));
                 instructions.push(Instruction::Mov(RBP, RSP));
                 instructions.push(Instruction::Sub(RSP, Value::Immediate(*size as i64)));
             }
-            vil::Instruction::FrameTearDown(size) => {
+            vil::InstructionKind::FrameTearDown(size) => {
                 instructions.push(Instruction::Add(RSP, Value::Immediate(*size as i64)));
                 instructions.push(Instruction::Pop(RBP));
             }
-            vil::Instruction::Ret => {
+            vil::InstructionKind::Ret => {
                 instructions.push(Instruction::Ret);
             }
-            vil::Instruction::Jump(l) => {
+            vil::InstructionKind::Jump(l) => {
                 instructions.push(Instruction::Jmp(l.0.clone()));
             }
-            vil::Instruction::JumpEq(true_label, false_label) => {
+            vil::InstructionKind::JumpEq(true_label, false_label) => {
                 instructions.push(Instruction::Je(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::Instruction::JumpGt(true_label, false_label) => {
+            vil::InstructionKind::JumpGt(true_label, false_label) => {
                 instructions.push(Instruction::Jg(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::Instruction::JumpGte(true_label, false_label) => {
+            vil::InstructionKind::JumpGte(true_label, false_label) => {
                 instructions.push(Instruction::Jge(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::Instruction::JumpLt(true_label, false_label) => {
+            vil::InstructionKind::JumpLt(true_label, false_label) => {
                 instructions.push(Instruction::Jl(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::Instruction::JumpLte(true_label, false_label) => {
+            vil::InstructionKind::JumpLte(true_label, false_label) => {
                 instructions.push(Instruction::Jle(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::Instruction::JumpNeq(true_label, false_label) => {
+            vil::InstructionKind::JumpNeq(true_label, false_label) => {
                 instructions.push(Instruction::Jne(true_label.0.clone()));
                 instructions.push(Instruction::Jmp(false_label.0.clone()));
             }
-            vil::Instruction::CalleeRestore(r) => {
+            vil::InstructionKind::CalleeRestore(r) => {
                 instructions.push(Instruction::Pop(Value::r(r)));
             }
-            vil::Instruction::CalleeSave(r) => {
+            vil::InstructionKind::CalleeSave(r) => {
                 instructions.push(Instruction::Push(Value::r(r)));
             }
-            vil::Instruction::CallerRestore(r) => {
+            vil::InstructionKind::CallerRestore(r) => {
                 instructions.push(Instruction::Pop(Value::r(r)));
             }
-            vil::Instruction::CallerSave(r) => {
+            vil::InstructionKind::CallerSave(r) => {
                 instructions.push(Instruction::Push(Value::r(r)));
             }
-            vil::Instruction::ToDo(s) => {
+            vil::InstructionKind::ToDo(s) => {
                 // TODO
                 instructions.push(Instruction::ToDo(s.clone()));
             }
