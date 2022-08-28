@@ -824,6 +824,12 @@ if x == 0 {
         );
     }
 
+    #[test]
+    fn statement_with_comment() {
+        let stmt = parse_statement("// test\na = b;\n");
+        assert_eq!(format!("{}", stmt), "(assign a b)");
+    }
+
     fn parse_function_declaration(program: &str) -> ptree::FunctionDeclaration {
         let mut parser = Parser::new(lexer::Lexer::new("<string>", program));
         let r = parser.match_function_declaration();

@@ -188,7 +188,7 @@ impl Lexer {
 
     /// Advances to the next token and returns it.
     pub fn next(&mut self) -> Token {
-        self.skip_whitespace();
+        self.skip_whitespace_and_comments();
 
         if self.done() {
             return self.make_token(TokenType::End);
@@ -266,9 +266,19 @@ impl Lexer {
         }
     }
 
-    fn skip_whitespace(&mut self) {
-        while !self.done() && self.ch().is_whitespace() {
-            self.increment_index();
+    fn skip_whitespace_and_comments(&mut self) {
+        loop {
+            if self.done() {
+                break;
+            } else if self.ch().is_whitespace() {
+                self.increment_index();
+            } else if self.ch() == '/' && self.peek(1) == '/' {
+                while !self.done() && self.ch() != '\n' {
+                    self.increment_index();
+                }
+            } else {
+                break;
+            }
         }
     }
 
@@ -416,5 +426,12 @@ mod tests {
         // A two-character string literal: a backslash followed by a double quote
         let lexer = Lexer::new("<string>", r#""\"""#);
         assert_eq!(lexer.token(), token(TokenType::String, r#""\"""#));
+    }
+
+    #[test]
+    fn ignore_comments() {
+        let mut lexer = Lexer::new("<string>", "a // test\nb");
+        assert_eq!(lexer.token(), token(TokenType::Symbol, "a"));
+        assert_eq!(lexer.next(), token(TokenType::Symbol, "b"));
     }
 }
