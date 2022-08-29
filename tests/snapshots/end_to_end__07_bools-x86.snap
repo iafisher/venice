@@ -1,0 +1,117 @@
+---
+source: tests/end_to_end.rs
+expression: x86_output
+---
+.globl venice_main
+venice_main:
+
+venice_main_0:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $24, %rsp
+  pushq %r12
+  pushq %r13
+  pushq %r14
+  pushq %r15
+  pushq %rbx
+  movq $1, %r10
+  movq %r10, -8(%rbp)
+  movq $0, %r10
+  movq %r10, -16(%rbp)
+  movq -8(%rbp), %r10
+  movq $1, %rax
+  cmpq %rax, %r10
+  je if_true_4
+  jmp if_false_5
+
+if_true_4:
+  movq -16(%rbp), %r10
+  movq %r10, %r10
+  jmp if_end_6
+
+if_false_5:
+  movq $0, %r10
+  movq %r10, %r10
+  jmp if_end_6
+
+if_end_6:
+  movq $1, %rax
+  cmpq %rax, %r10
+  je if_true_1
+  jmp if_false_2
+
+if_true_1:
+  movq $1, %r10
+  movq %r10, %r10
+  jmp if_end_3
+
+if_false_2:
+  movq -16(%rbp), %r10
+  xorq %rax, %rax
+  testq %r10, %rax
+  sete %al
+  movq %rax, %r10
+  movq %r10, %r10
+  jmp if_end_3
+
+if_end_3:
+  movq %r10, -24(%rbp)
+  movq -24(%rbp), %r10
+  movq $1, %rax
+  cmpq %rax, %r10
+  je if_true_7
+  jmp if_false_8
+
+if_true_7:
+  movq $.s_0, %r10
+  movq %r10, %rdi
+  pushq %r10
+  pushq %r11
+  call venice_string_new
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, %rdi
+  pushq %r10
+  pushq %r11
+  call venice_println
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  jmp if_end_9
+
+if_false_8:
+  movq $.s_1, %r10
+  movq %r10, %rdi
+  pushq %r10
+  pushq %r11
+  call venice_string_new
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, %rdi
+  pushq %r10
+  pushq %r11
+  call venice_println
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  jmp if_end_9
+
+if_end_9:
+  movq $0, %r10
+  movq %r10, %rax
+  popq %rbx
+  popq %r15
+  popq %r14
+  popq %r13
+  popq %r12
+  addq $24, %rsp
+  popq %rbp
+  retq
+
+.s_0:
+  .string "pass"
+.s_1:
+  .string "fail"
+

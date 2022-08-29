@@ -110,6 +110,7 @@ impl Generator {
             Unary(e) => self.generate_unary_expression(e, r),
             Comparison(b) => self.generate_comparison_expression(b, r),
             Call(e) => self.generate_call_expression(e, r),
+            If(e) => self.generate_if_expression(e, r),
             Symbol(symbol) => {
                 self.push_with_comment(
                     vil::InstructionKind::Load(r, symbol.stack_offset),
@@ -154,22 +155,32 @@ impl Generator {
     }
 
     fn generate_binary_expression(&mut self, expr: &ast::BinaryExpression, r: vil::Register) {
-        let left = self.generate_expression(&expr.left);
-        let right = self.generate_expression(&expr.right);
-
         use common::BinaryOpType::*;
         match expr.op {
             Add => {
+                let left = self.generate_expression(&expr.left);
+                let right = self.generate_expression(&expr.right);
                 self.push(vil::InstructionKind::Add(r, left, right));
             }
             Divide => {
+                let left = self.generate_expression(&expr.left);
+                let right = self.generate_expression(&expr.right);
                 self.push(vil::InstructionKind::Div(r, left, right));
             }
             Multiply => {
+                let left = self.generate_expression(&expr.left);
+                let right = self.generate_expression(&expr.right);
                 self.push(vil::InstructionKind::Mul(r, left, right));
             }
             Subtract => {
+                let left = self.generate_expression(&expr.left);
+                let right = self.generate_expression(&expr.right);
                 self.push(vil::InstructionKind::Sub(r, left, right));
+            }
+            And | Or => {
+                panic!(
+                    "internal error: and/or expressions should have been converted by the analyzer"
+                );
             }
             _ => {
                 panic!("internal error: operator not implemented: {:?}", expr.op);
@@ -258,6 +269,42 @@ impl Generator {
         self.push(vil::InstructionKind::CallerRestore(vil::Register::gp(0)));
 
         self.push(vil::InstructionKind::Move(r, vil::Register::Return));
+    }
+
+    fn generate_if_expression(&mut self, expr: &ast::IfExpression, r: vil::Register) {
+        let true_label = self.claim_label("if_true");
+        let false_label = self.claim_label("if_false");
+        let end_label = self.claim_label("if_end");
+
+        let condition = self.generate_expression(&expr.condition);
+        let scratch = vil::Register::scratch();
+        self.push(vil::InstructionKind::Set(
+            scratch,
+            vil::Immediate::Integer(1),
+        ));
+        self.push(vil::InstructionKind::Cmp(condition, scratch));
+
+        self.start_block(
+            true_label.clone(),
+            Some(vil::InstructionKind::JumpEq(
+                true_label,
+                false_label.clone(),
+            )),
+        );
+        let true_value = self.generate_expression(&expr.true_value);
+        self.push(vil::InstructionKind::Move(r.clone(), true_value));
+
+        self.start_block(
+            false_label,
+            Some(vil::InstructionKind::Jump(end_label.clone())),
+        );
+        let false_value = self.generate_expression(&expr.false_value);
+        self.push(vil::InstructionKind::Move(r.clone(), false_value));
+
+        self.start_block(
+            end_label.clone(),
+            Some(vil::InstructionKind::Jump(end_label)),
+        );
     }
 
     fn generate_block(&mut self, block: &[ast::Statement]) {

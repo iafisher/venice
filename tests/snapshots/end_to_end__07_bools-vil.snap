@@ -1,0 +1,114 @@
+---
+source: tests/end_to_end.rs
+expression: vil_output
+---
+extern venice_string_new;
+extern venice_println;
+extern venice_string_new;
+extern venice_println;
+
+
+
+func venice_main {
+
+venice_main_0:
+  frame_set_up 24
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
+  %rg0 = set 1
+  store %rg0, -8  // x__0
+  %rg0 = set 0
+  store %rg0, -16  // y__1
+  %rg0 = load -8  // x__0
+  %rt = set 1
+  cmp %rg0, %rt
+  jump_eq %if_true_4 %if_false_5
+
+if_true_4:
+  %rg0 = load -16  // y__1
+  %rg0 = move %rg0
+  jump %if_end_6
+
+if_false_5:
+  %rg0 = set 0
+  %rg0 = move %rg0
+  jump %if_end_6
+
+if_end_6:
+  %rt = set 1
+  cmp %rg0, %rt
+  jump_eq %if_true_1 %if_false_2
+
+if_true_1:
+  %rg0 = set 1
+  %rg0 = move %rg0
+  jump %if_end_3
+
+if_false_2:
+  %rg0 = load -16  // y__1
+  %rg0 = logical_not %rg0
+  %rg0 = move %rg0
+  jump %if_end_3
+
+if_end_3:
+  store %rg0, -24  // z__2
+  %rg0 = load -24  // z__2
+  %rt = set 1
+  cmp %rg0, %rt
+  jump_eq %if_true_7 %if_false_8
+
+if_true_7:
+  %rg0 = set s_0
+  %rp0 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_string_new
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rp0 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_println
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  jump %if_end_9
+
+if_false_8:
+  %rg0 = set s_1
+  %rp0 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_string_new
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rp0 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_println
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  jump %if_end_9
+
+if_end_9:
+  %rg0 = set 0
+  %rt = move %rg0
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
+  frame_tear_down 24
+  ret
+}
+
+
+data s_0 = "pass";
+data s_1 = "fail";
+

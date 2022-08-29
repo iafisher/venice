@@ -518,10 +518,22 @@ impl Parser {
             }
             Minus => {
                 self.lexer.next();
-                let operand = self.match_expression()?;
+                let operand = self.match_expression_with_precedence(PRECEDENCE_UNARY_MINUS)?;
                 Ok(ptree::Expression {
                     kind: ptree::ExpressionKind::Unary(ptree::UnaryExpression {
                         op: common::UnaryOpType::Negate,
+                        operand: Box::new(operand),
+                        location: token.location.clone(),
+                    }),
+                    location: token.location.clone(),
+                })
+            }
+            Not => {
+                self.lexer.next();
+                let operand = self.match_expression_with_precedence(PRECEDENCE_NOT)?;
+                Ok(ptree::Expression {
+                    kind: ptree::ExpressionKind::Unary(ptree::UnaryExpression {
+                        op: common::UnaryOpType::Not,
                         operand: Box::new(operand),
                         location: token.location.clone(),
                     }),
@@ -627,14 +639,20 @@ impl Parser {
 }
 
 const PRECEDENCE_LOWEST: u32 = 0;
-const PRECEDENCE_COMPARISON: u32 = 1;
-const PRECEDENCE_ADDITION: u32 = 2;
-const PRECEDENCE_MULTIPLICATION: u32 = 3;
-const PRECEDENCE_CALL: u32 = 4;
+const PRECEDENCE_OR: u32 = 1;
+const PRECEDENCE_AND: u32 = 2;
+const PRECEDENCE_NOT: u32 = 3;
+const PRECEDENCE_COMPARISON: u32 = 4;
+const PRECEDENCE_ADDITION: u32 = 5;
+const PRECEDENCE_MULTIPLICATION: u32 = 6;
+const PRECEDENCE_UNARY_MINUS: u32 = 7;
+const PRECEDENCE_CALL: u32 = 8;
 
 lazy_static! {
     static ref PRECEDENCE: HashMap<TokenType, u32> = {
         let mut m = HashMap::new();
+        m.insert(TokenType::Or, PRECEDENCE_OR);
+        m.insert(TokenType::And, PRECEDENCE_AND);
         m.insert(TokenType::GreaterThan, PRECEDENCE_COMPARISON);
         m.insert(TokenType::GreaterThanEquals, PRECEDENCE_COMPARISON);
         m.insert(TokenType::LessThan, PRECEDENCE_COMPARISON);
@@ -724,6 +742,15 @@ mod tests {
     fn list_index() {
         let expr = parse_expression("a + b[0]");
         assert_eq!(format!("{}", expr), "(binary Add a (index b 0))");
+    }
+
+    #[test]
+    fn boolean_operators() {
+        let expr = parse_expression("x and y or not y");
+        assert_eq!(
+            format!("{}", expr),
+            "(binary Or (binary And x y) (unary Not y))"
+        );
     }
 
     #[test]

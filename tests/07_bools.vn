@@ -1,0 +1,11 @@
+func main() -> i64 {
+  let x: bool = true;
+  let y: bool = false;
+  let z: bool = x and y or not y;
+  if z {
+    println("pass");
+  } else {
+    println("fail");
+  }
+  return 0;
+}

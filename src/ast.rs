@@ -153,6 +153,7 @@ pub enum ExpressionKind {
     Comparison(ComparisonExpression),
     Unary(UnaryExpression),
     Call(CallExpression),
+    If(IfExpression),
     Index(IndexExpression),
     TupleIndex(TupleIndexExpression),
     Attribute(AttributeExpression),
@@ -193,6 +194,13 @@ pub struct CallExpression {
     pub function: SymbolEntry,
     pub arguments: Vec<Expression>,
     pub variadic: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct IfExpression {
+    pub condition: Box<Expression>,
+    pub true_value: Box<Expression>,
+    pub false_value: Box<Expression>,
 }
 
 #[derive(Clone, Debug)]
@@ -485,6 +493,7 @@ impl fmt::Display for ExpressionKind {
             Comparison(e) => write!(f, "{}", e),
             Unary(e) => write!(f, "{}", e),
             Call(e) => write!(f, "{}", e),
+            If(e) => write!(f, "{}", e),
             Index(e) => write!(f, "{}", e),
             TupleIndex(e) => write!(f, "{}", e),
             Attribute(e) => write!(f, "{}", e),
@@ -524,6 +533,16 @@ impl fmt::Display for CallExpression {
             write!(f, "{}", argument)?;
         }
         write!(f, "))")
+    }
+}
+
+impl fmt::Display for IfExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "(if {} {} {})",
+            self.condition, self.true_value, self.false_value
+        )
     }
 }
 

@@ -476,18 +476,44 @@ impl Analyzer {
                     ast::EXPRESSION_ERROR.clone()
                 }
             },
-            Or | And => {
+            And => {
                 self.assert_type(&left.type_, &ast::Type::Boolean, expr.left.location.clone());
                 self.assert_type(
                     &right.type_,
                     &ast::Type::Boolean,
                     expr.right.location.clone(),
                 );
+
+                // `and` expressions are converted to `if` expressions.
                 ast::Expression::new(
-                    ast::ExpressionKind::Binary(ast::BinaryExpression {
-                        op: expr.op,
-                        left: Box::new(left),
-                        right: Box::new(right),
+                    ast::ExpressionKind::If(ast::IfExpression {
+                        condition: Box::new(left),
+                        true_value: Box::new(right),
+                        false_value: Box::new(ast::Expression::new(
+                            ast::ExpressionKind::Boolean(false),
+                            ast::Type::Boolean,
+                        )),
+                    }),
+                    ast::Type::Boolean,
+                )
+            }
+            Or => {
+                self.assert_type(&left.type_, &ast::Type::Boolean, expr.left.location.clone());
+                self.assert_type(
+                    &right.type_,
+                    &ast::Type::Boolean,
+                    expr.right.location.clone(),
+                );
+
+                // `or` expressions are converted to `if` expressions.
+                ast::Expression::new(
+                    ast::ExpressionKind::If(ast::IfExpression {
+                        condition: Box::new(left),
+                        true_value: Box::new(ast::Expression::new(
+                            ast::ExpressionKind::Boolean(true),
+                            ast::Type::Boolean,
+                        )),
+                        false_value: Box::new(right),
                     }),
                     ast::Type::Boolean,
                 )
@@ -572,7 +598,7 @@ impl Analyzer {
                         op: expr.op,
                         operand: Box::new(operand),
                     }),
-                    ast::Type::I64,
+                    ast::Type::Boolean,
                 )
             }
         }
@@ -946,6 +972,12 @@ fn allocate_registers(expr: &mut ast::Expression, register: u8) {
             for mut argument in &mut e.arguments {
                 allocate_registers(&mut argument, register);
             }
+            expr.register = register;
+        }
+        If(ref mut e) => {
+            allocate_registers(&mut e.condition, register);
+            allocate_registers(&mut e.true_value, register);
+            allocate_registers(&mut e.false_value, register);
             expr.register = register;
         }
         Index(ref mut e) => {

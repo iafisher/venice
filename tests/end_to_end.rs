@@ -54,6 +54,11 @@ fn test_06_panic() {
 }
 
 #[test]
+fn test_07_bools() {
+    test_e2e("07_bools");
+}
+
+#[test]
 fn test_10_fibonacci() {
     test_e2e("10_fibonacci");
 }
