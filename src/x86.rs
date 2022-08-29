@@ -163,16 +163,16 @@ impl Generator {
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
             Add(r1, r2, r3) => {
-                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r3)));
-                instructions.push(Instruction::Add(Value::r(r1), Value::r(r2)));
+                instructions.push(Instruction::Add(Value::r(r2), Value::r(r3)));
+                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
             Sub(r1, r2, r3) => {
+                instructions.push(Instruction::Sub(Value::r(r2), Value::r(r3)));
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
-                instructions.push(Instruction::Sub(Value::r(r1), Value::r(r3)));
             }
             Mul(r1, r2, r3) => {
+                instructions.push(Instruction::IMul(Value::r(r2), Value::r(r3)));
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
-                instructions.push(Instruction::IMul(Value::r(r1), Value::r(r3)));
             }
             Div(r1, r2, r3) => {
                 // In x86, `div RXX` computes RDX:RAX / RXX and stores the quotient in RAX and the
@@ -194,8 +194,8 @@ impl Generator {
                 instructions.push(Instruction::Mov(Value::r(r1), RAX));
             }
             Negate(r1, r2) => {
+                instructions.push(Instruction::Neg(Value::r(r2)));
                 instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
-                instructions.push(Instruction::Neg(Value::r(r1)));
             }
             LogicalNot(r1, r2) => {
                 // XOR RAX with itself to produce 0, then test it against the source register and

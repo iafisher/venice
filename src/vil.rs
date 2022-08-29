@@ -111,6 +111,10 @@ impl Register {
         }
         Register::General(i)
     }
+
+    pub fn scratch() -> Self {
+        Register::Return
+    }
 }
 
 #[derive(Clone, Debug)]

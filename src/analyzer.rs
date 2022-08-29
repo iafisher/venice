@@ -14,7 +14,9 @@ use std::collections::HashMap;
 /// Analyzes the parse tree into an abstract syntax tree.
 pub fn analyze(ptree: &ptree::Program) -> Result<ast::Program, Vec<errors::VeniceError>> {
     let mut analyzer = Analyzer::new();
-    let program = analyzer.analyze_program(ptree);
+    let mut program = analyzer.analyze_program(ptree);
+    allocate_registers_in_program(&mut program);
+
     if !analyzer.errors.is_empty() {
         Err(analyzer.errors.clone())
     } else {
@@ -373,16 +375,12 @@ impl Analyzer {
     fn analyze_expression(&mut self, expr: &ptree::Expression) -> ast::Expression {
         use ptree::ExpressionKind::*;
         match &expr.kind {
-            Boolean(x) => ast::Expression {
-                kind: ast::ExpressionKind::Boolean(*x),
-                type_: ast::Type::Boolean,
-            },
-            Integer(x) => ast::Expression {
-                kind: ast::ExpressionKind::Integer(*x),
-                type_: ast::Type::I64,
-            },
-            String(x) => ast::Expression {
-                kind: ast::ExpressionKind::Call(ast::CallExpression {
+            Boolean(x) => {
+                ast::Expression::new(ast::ExpressionKind::Boolean(*x), ast::Type::Boolean)
+            }
+            Integer(x) => ast::Expression::new(ast::ExpressionKind::Integer(*x), ast::Type::I64),
+            String(x) => ast::Expression::new(
+                ast::ExpressionKind::Call(ast::CallExpression {
                     function: ast::SymbolEntry {
                         unique_name: std::string::String::from("venice_string_new"),
                         type_: ast::Type::Error,
@@ -390,18 +388,18 @@ impl Analyzer {
                         external: true,
                         stack_offset: 0,
                     },
-                    arguments: vec![ast::Expression {
-                        kind: ast::ExpressionKind::String(x.clone()),
+                    arguments: vec![ast::Expression::new(
+                        ast::ExpressionKind::String(x.clone()),
                         // Technically this should have a different type from the overall type of
                         // the expression, because it is a raw string literal rather than a
                         // `venice_string_t` runtime object, but since nothing accesses its type it
                         // doesn't really matter.
-                        type_: ast::Type::String,
-                    }],
+                        ast::Type::String,
+                    )],
                     variadic: false,
                 }),
-                type_: ast::Type::String,
-            },
+                ast::Type::String,
+            ),
             Symbol(ref e) => self.analyze_symbol(e, &expr.location),
             Binary(ref e) => self.analyze_binary_expression(e),
             Comparison(ref e) => self.analyze_comparison_expression(e),
@@ -419,10 +417,7 @@ impl Analyzer {
 
     fn analyze_symbol(&mut self, name: &str, location: &common::Location) -> ast::Expression {
         if let Some(entry) = self.symbols.get(name) {
-            ast::Expression {
-                kind: ast::ExpressionKind::Symbol(entry.clone()),
-                type_: entry.type_,
-            }
+            ast::Expression::new(ast::ExpressionKind::Symbol(entry.clone()), entry.type_)
         } else {
             self.error("unknown symbol", location.clone());
             ast::EXPRESSION_ERROR.clone()
@@ -445,14 +440,14 @@ impl Analyzer {
                         );
                         ast::EXPRESSION_ERROR.clone()
                     } else {
-                        ast::Expression {
-                            kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                        ast::Expression::new(
+                            ast::ExpressionKind::Binary(ast::BinaryExpression {
                                 op: common::BinaryOpType::Concat,
                                 left: Box::new(left),
                                 right: Box::new(right),
                             }),
-                            type_: ast::Type::String,
-                        }
+                            ast::Type::String,
+                        )
                     }
                 }
                 ast::Type::List(_) => {
@@ -465,14 +460,14 @@ impl Analyzer {
                         ast::EXPRESSION_ERROR.clone()
                     } else {
                         let type_ = left.type_.clone();
-                        ast::Expression {
-                            kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                        ast::Expression::new(
+                            ast::ExpressionKind::Binary(ast::BinaryExpression {
                                 op: common::BinaryOpType::Concat,
                                 left: Box::new(left),
                                 right: Box::new(right),
                             }),
                             type_,
-                        }
+                        )
                     }
                 }
                 _ => {
@@ -488,26 +483,26 @@ impl Analyzer {
                     &ast::Type::Boolean,
                     expr.right.location.clone(),
                 );
-                ast::Expression {
-                    kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                ast::Expression::new(
+                    ast::ExpressionKind::Binary(ast::BinaryExpression {
                         op: expr.op,
                         left: Box::new(left),
                         right: Box::new(right),
                     }),
-                    type_: ast::Type::Boolean,
-                }
+                    ast::Type::Boolean,
+                )
             }
             _ => {
                 self.assert_type(&left.type_, &ast::Type::I64, expr.left.location.clone());
                 self.assert_type(&right.type_, &ast::Type::I64, expr.right.location.clone());
-                ast::Expression {
-                    kind: ast::ExpressionKind::Binary(ast::BinaryExpression {
+                ast::Expression::new(
+                    ast::ExpressionKind::Binary(ast::BinaryExpression {
                         op: expr.op,
                         left: Box::new(left),
                         right: Box::new(right),
                     }),
-                    type_: ast::Type::I64,
-                }
+                    ast::Type::I64,
+                )
             }
         }
     }
@@ -523,26 +518,26 @@ impl Analyzer {
         match expr.op {
             Equals | NotEquals => {
                 self.assert_type(&left.type_, &right.type_, expr.left.location.clone());
-                ast::Expression {
-                    kind: ast::ExpressionKind::Comparison(ast::ComparisonExpression {
+                ast::Expression::new(
+                    ast::ExpressionKind::Comparison(ast::ComparisonExpression {
                         op: expr.op,
                         left: Box::new(left),
                         right: Box::new(right),
                     }),
-                    type_: ast::Type::Boolean,
-                }
+                    ast::Type::Boolean,
+                )
             }
             LessThan | LessThanEquals | GreaterThan | GreaterThanEquals => {
                 self.assert_type(&left.type_, &ast::Type::I64, expr.left.location.clone());
                 self.assert_type(&right.type_, &ast::Type::I64, expr.right.location.clone());
-                ast::Expression {
-                    kind: ast::ExpressionKind::Comparison(ast::ComparisonExpression {
+                ast::Expression::new(
+                    ast::ExpressionKind::Comparison(ast::ComparisonExpression {
                         op: expr.op,
                         left: Box::new(left),
                         right: Box::new(right),
                     }),
-                    type_: ast::Type::Boolean,
-                }
+                    ast::Type::Boolean,
+                )
             }
         }
     }
@@ -558,13 +553,13 @@ impl Analyzer {
                     &ast::Type::I64,
                     expr.operand.location.clone(),
                 );
-                ast::Expression {
-                    kind: ast::ExpressionKind::Unary(ast::UnaryExpression {
+                ast::Expression::new(
+                    ast::ExpressionKind::Unary(ast::UnaryExpression {
                         op: expr.op,
                         operand: Box::new(operand),
                     }),
-                    type_: ast::Type::I64,
-                }
+                    ast::Type::I64,
+                )
             }
             Not => {
                 self.assert_type(
@@ -572,13 +567,13 @@ impl Analyzer {
                     &ast::Type::Boolean,
                     expr.operand.location.clone(),
                 );
-                ast::Expression {
-                    kind: ast::ExpressionKind::Unary(ast::UnaryExpression {
+                ast::Expression::new(
+                    ast::ExpressionKind::Unary(ast::UnaryExpression {
                         op: expr.op,
                         operand: Box::new(operand),
                     }),
-                    type_: ast::Type::I64,
-                }
+                    ast::Type::I64,
+                )
             }
         }
     }
@@ -606,14 +601,14 @@ impl Analyzer {
                     arguments.push(typed_argument);
                 }
 
-                ast::Expression {
-                    kind: ast::ExpressionKind::Call(ast::CallExpression {
+                ast::Expression::new(
+                    ast::ExpressionKind::Call(ast::CallExpression {
                         function: entry.clone(),
                         arguments,
                         variadic: false,
                     }),
-                    type_: *return_type.clone(),
-                }
+                    *return_type.clone(),
+                )
             } else {
                 let msg = format!("cannot call non-function type {}", entry.type_);
                 self.error(&msg, expr.location.clone());
@@ -635,8 +630,8 @@ impl Analyzer {
             List(ref t) => {
                 self.assert_type(&index.type_, &ast::Type::I64, expr.index.location.clone());
                 let type_ = *t.clone();
-                ast::Expression {
-                    kind: ast::ExpressionKind::Call(ast::CallExpression {
+                ast::Expression::new(
+                    ast::ExpressionKind::Call(ast::CallExpression {
                         function: ast::SymbolEntry {
                             unique_name: std::string::String::from("venice_list_index"),
                             type_: ast::Type::Error,
@@ -648,7 +643,7 @@ impl Analyzer {
                         variadic: false,
                     }),
                     type_,
-                }
+                )
             }
             Map {
                 key: key_type,
@@ -656,13 +651,13 @@ impl Analyzer {
             } => {
                 self.assert_type(&index.type_, key_type, expr.index.location.clone());
                 let type_ = *value_type.clone();
-                ast::Expression {
-                    kind: ast::ExpressionKind::Index(ast::IndexExpression {
+                ast::Expression::new(
+                    ast::ExpressionKind::Index(ast::IndexExpression {
                         value: Box::new(value),
                         index: Box::new(index),
                     }),
                     type_,
-                }
+                )
             }
             _ => {
                 let msg = format!("cannot index non-list, non-map type {}", value.type_);
@@ -683,13 +678,13 @@ impl Analyzer {
                 ast::EXPRESSION_ERROR.clone()
             } else {
                 let type_ = ts[expr.index].clone();
-                ast::Expression {
-                    kind: ast::ExpressionKind::TupleIndex(ast::TupleIndexExpression {
+                ast::Expression::new(
+                    ast::ExpressionKind::TupleIndex(ast::TupleIndexExpression {
                         value: Box::new(value),
                         index: expr.index,
                     }),
                     type_,
-                }
+                )
             }
         } else {
             let msg = format!("cannot index non-tuple type {}", value.type_);
@@ -716,10 +711,10 @@ impl Analyzer {
         }
 
         let mut arguments = Vec::new();
-        arguments.push(ast::Expression {
-            kind: ast::ExpressionKind::Integer(expr.items.len() as i64),
-            type_: ast::Type::I64,
-        });
+        arguments.push(ast::Expression::new(
+            ast::ExpressionKind::Integer(expr.items.len() as i64),
+            ast::Type::I64,
+        ));
 
         let first_item = self.analyze_expression(&expr.items[0]);
         let item_type = first_item.type_.clone();
@@ -734,8 +729,8 @@ impl Analyzer {
             );
             arguments.push(typed_item);
         }
-        ast::Expression {
-            kind: ast::ExpressionKind::Call(ast::CallExpression {
+        ast::Expression::new(
+            ast::ExpressionKind::Call(ast::CallExpression {
                 function: ast::SymbolEntry {
                     unique_name: String::from("venice_list_from_varargs"),
                     type_: ast::Type::Error,
@@ -746,8 +741,8 @@ impl Analyzer {
                 arguments,
                 variadic: true,
             }),
-            type_: ast::Type::List(Box::new(item_type)),
-        }
+            ast::Type::List(Box::new(item_type)),
+        )
     }
 
     fn analyze_tuple_literal(&mut self, expr: &ptree::TupleLiteral) -> ast::Expression {
@@ -758,10 +753,10 @@ impl Analyzer {
             types.push(typed_item.type_.clone());
             items.push(typed_item);
         }
-        ast::Expression {
-            kind: ast::ExpressionKind::Tuple(ast::TupleLiteral { items }),
-            type_: ast::Type::Tuple(types),
-        }
+        ast::Expression::new(
+            ast::ExpressionKind::Tuple(ast::TupleLiteral { items }),
+            ast::Type::Tuple(types),
+        )
     }
 
     fn analyze_map_literal(&mut self, expr: &ptree::MapLiteral) -> ast::Expression {
@@ -794,13 +789,13 @@ impl Analyzer {
             items.push((typed_key, typed_value));
         }
 
-        ast::Expression {
-            kind: ast::ExpressionKind::Map(ast::MapLiteral { items }),
-            type_: ast::Type::Map {
+        ast::Expression::new(
+            ast::ExpressionKind::Map(ast::MapLiteral { items }),
+            ast::Type::Map {
                 key: Box::new(key_type),
                 value: Box::new(value_type),
             },
-        }
+        )
     }
 
     fn analyze_record_literal(&mut self, expr: &ptree::RecordLiteral) -> ast::Expression {
@@ -875,6 +870,94 @@ impl Analyzer {
         } else {
             let msg = format!("expected {}, got {}", expected, actual);
             self.error(&msg, location);
+        }
+    }
+}
+
+fn allocate_registers_in_program(program: &mut ast::Program) {
+    for declaration in &mut program.declarations {
+        match declaration {
+            ast::Declaration::Function(decl) => {
+                allocate_registers_in_block(&mut decl.body);
+            }
+            _ => {
+                // No need to allocate registers for other kinds of declarations.
+            }
+        }
+    }
+}
+
+fn allocate_registers_in_block(block: &mut Vec<ast::Statement>) {
+    for statement in block {
+        match statement {
+            ast::Statement::Assert(stmt) => {
+                allocate_registers(&mut stmt.condition, 0);
+            }
+            ast::Statement::Assign(stmt) => {
+                allocate_registers(&mut stmt.value, 0);
+            }
+            ast::Statement::Expression(expr) => {
+                allocate_registers(expr, 0);
+            }
+            ast::Statement::For(stmt) => {
+                allocate_registers_in_block(&mut stmt.body);
+            }
+            ast::Statement::If(stmt) => {
+                allocate_registers(&mut stmt.condition, 0);
+                allocate_registers_in_block(&mut stmt.body);
+                allocate_registers_in_block(&mut stmt.else_body);
+            }
+            ast::Statement::Let(stmt) => {
+                allocate_registers(&mut stmt.value, 0);
+            }
+            ast::Statement::Return(stmt) => {
+                allocate_registers(&mut stmt.value, 0);
+            }
+            ast::Statement::While(stmt) => {
+                allocate_registers(&mut stmt.condition, 0);
+                allocate_registers_in_block(&mut stmt.body);
+            }
+            ast::Statement::Error => {}
+        }
+    }
+}
+
+fn allocate_registers(expr: &mut ast::Expression, register: u8) {
+    use ast::ExpressionKind::*;
+    match &mut expr.kind {
+        Boolean(_) | Integer(_) | String(_) | Symbol(_) => {
+            expr.register = register;
+        }
+        Binary(ref mut e) => {
+            allocate_registers(&mut e.left, register);
+            allocate_registers(&mut e.right, register + 1);
+            expr.register = register + 1;
+        }
+        Comparison(ref mut e) => {
+            allocate_registers(&mut e.left, register);
+            allocate_registers(&mut e.right, register + 1);
+            expr.register = register + 1;
+        }
+        Unary(ref mut e) => {
+            allocate_registers(&mut e.operand, register);
+            expr.register = register;
+        }
+        Call(ref mut e) => {
+            for mut argument in &mut e.arguments {
+                allocate_registers(&mut argument, register);
+            }
+            expr.register = register;
+        }
+        Index(ref mut e) => {
+            allocate_registers(&mut e.value, register);
+            allocate_registers(&mut e.index, register + 1);
+            expr.register = register + 1;
+        }
+        _ => {
+            panic!(
+                "internal error: register allocation not implemented for {:?}",
+                expr.kind
+            );
         }
     }
 }

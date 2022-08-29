@@ -14,8 +14,8 @@ venice_main_0:
   pushq %r14
   pushq %r15
   pushq %rbx
-  movq $12, %r11
-  movq %r11, %rdi
+  movq $12, %r10
+  movq %r10, %rdi
   pushq %r10
   pushq %r11
   call fibonacci__0
@@ -23,8 +23,8 @@ venice_main_0:
   popq %r10
   movq %rax, %r10
   movq %r10, -8(%rbp)
-  movq -8(%rbp), %r11
-  movq %r11, %rdi
+  movq -8(%rbp), %r10
+  movq %r10, %rdi
   pushq %r10
   pushq %r11
   call venice_printint
@@ -70,20 +70,20 @@ while_cond_2:
   jmp while_end_4
 
 while_3:
-  movq -16(%rbp), %r12
-  movq %r12, -40(%rbp)
-  movq -16(%rbp), %r11
-  movq -24(%rbp), %r12
-  movq %r12, %r10
+  movq -16(%rbp), %r10
+  movq %r10, -40(%rbp)
+  movq -16(%rbp), %r10
+  movq -24(%rbp), %r11
   addq %r11, %r10
-  movq %r10, -16(%rbp)
+  movq %r10, %r11
+  movq %r11, -16(%rbp)
   movq -40(%rbp), %r10
   movq %r10, -24(%rbp)
-  movq -32(%rbp), %r11
-  movq $1, %r12
-  movq %r12, %r10
+  movq -32(%rbp), %r10
+  movq $1, %r11
   addq %r11, %r10
-  movq %r10, -32(%rbp)
+  movq %r10, %r11
+  movq %r11, -32(%rbp)
   jmp while_cond_2
 
 while_end_4:

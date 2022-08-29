@@ -130,6 +130,17 @@ pub struct AssertStatement {
 pub struct Expression {
     pub kind: ExpressionKind,
     pub type_: Type,
+    pub register: u8,
+}
+
+impl Expression {
+    pub fn new(kind: ExpressionKind, type_: Type) -> Self {
+        Expression {
+            kind,
+            type_,
+            register: 0,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -154,6 +165,7 @@ pub enum ExpressionKind {
 pub const EXPRESSION_ERROR: Expression = Expression {
     kind: ExpressionKind::Error,
     type_: Type::Error,
+    register: 0,
 };
 
 #[derive(Clone, Debug)]

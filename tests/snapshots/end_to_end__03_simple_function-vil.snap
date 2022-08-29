@@ -15,10 +15,10 @@ two_plus_two__0_0:
   callee_save %rg4
   callee_save %rg5
   callee_save %rg6
+  %rg0 = set 2
   %rg1 = set 2
-  %rg2 = set 2
-  %rg0 = add %rg1, %rg2
-  %rt = move %rg0
+  %rg1 = add %rg0, %rg1
+  %rt = move %rg1
   %rg6 = callee_restore
   %rg5 = callee_restore
   %rg4 = callee_restore
@@ -44,8 +44,8 @@ venice_main_1:
   %rg0 = caller_restore
   %rg0 = move %rt
   store %rg0, -8  // x__1
-  %rg1 = load -8  // x__1
-  %rp0 = move %rg1
+  %rg0 = load -8  // x__1
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_printint

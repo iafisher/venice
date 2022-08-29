@@ -21,7 +21,6 @@ pub fn generate(ast: &ast::Program) -> Result<vil::Program, errors::VeniceError>
         },
         info: None,
         label_counter: 0,
-        register_counter: 0,
         string_counter: 0,
     };
     generator.generate_program(ast);
@@ -36,9 +35,6 @@ struct Generator {
     // Counters for generating unique symbols.
     label_counter: u32,
     string_counter: u32,
-
-    // The counter of current registers in use.
-    register_counter: u8,
 }
 
 impl Generator {
@@ -92,7 +88,7 @@ impl Generator {
     }
 
     fn generate_expression(&mut self, expr: &ast::Expression) -> vil::Register {
-        let r = self.claim_register();
+        let r = vil::Register::gp(expr.register);
 
         use ast::ExpressionKind::*;
         match &expr.kind {
@@ -147,16 +143,17 @@ impl Generator {
             self.push(exit);
         } else {
             let register = self.generate_expression(expr);
-            let tmp = self.claim_register();
-            self.push(vil::InstructionKind::Set(tmp, vil::Immediate::Integer(1)));
-            self.push(vil::InstructionKind::Cmp(register, tmp));
+            let scratch = vil::Register::scratch();
+            self.push(vil::InstructionKind::Set(
+                scratch,
+                vil::Immediate::Integer(1),
+            ));
+            self.push(vil::InstructionKind::Cmp(register, scratch));
             self.push(vil::InstructionKind::JumpEq(true_label, false_label));
         }
     }
 
     fn generate_binary_expression(&mut self, expr: &ast::BinaryExpression, r: vil::Register) {
-        let old_register_counter = r.index() + 1;
-
         let left = self.generate_expression(&expr.left);
         let right = self.generate_expression(&expr.right);
 
@@ -178,8 +175,6 @@ impl Generator {
                 panic!("internal error: operator not implemented: {:?}", expr.op);
             }
         }
-
-        self.reset_register_counter(old_register_counter);
     }
 
     fn generate_unary_expression(&mut self, expr: &ast::UnaryExpression, r: vil::Register) {
@@ -268,10 +263,6 @@ impl Generator {
     fn generate_block(&mut self, block: &[ast::Statement]) {
         for stmt in block {
             self.generate_statement(stmt);
-            // Reset register counter in between statements. Any value that a statement
-            // produces that must persist (e.g., `let` bindings) must be stored in
-            // memory.
-            self.reset_register_counter(0);
         }
     }
 
@@ -425,12 +416,6 @@ impl Generator {
         vil::Label(label)
     }
 
-    fn claim_register(&mut self) -> vil::Register {
-        let register = vil::Register::gp(self.register_counter);
-        self.register_counter += 1;
-        register
-    }
-
     fn claim_string_label(&mut self) -> String {
         let label = format!("s_{}", self.string_counter);
         self.string_counter += 1;
@@ -449,10 +434,6 @@ impl Generator {
             kind: instruction,
             comment: String::from(comment),
         })
-    }
-
-    fn reset_register_counter(&mut self, count: u8) {
-        self.register_counter = count;
     }
 
     fn current_function(&mut self) -> &mut vil::FunctionDeclaration {

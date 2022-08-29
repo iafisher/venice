@@ -19,38 +19,38 @@ venice_main_0:
   callee_save %rg5
   callee_save %rg6
   %rg0 = set 1
-  %rg1 = set 1
-  cmp %rg0, %rg1
+  %rt = set 1
+  cmp %rg0, %rt
   jump_eq %if_true_1 %if_false_2
 
 if_true_1:
-  %rg4 = set s_0
-  %rp0 = move %rg4
+  %rg0 = set s_0
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_string_new
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg3 = move %rt
-  %rp0 = move %rg3
+  %rg0 = move %rt
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_println
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg2 = move %rt
+  %rg0 = move %rt
   jump %if_end_3
 
 if_false_2:
-  %rg2 = set s_1
-  %rp0 = move %rg2
+  %rg0 = set s_1
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_string_new
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg1 = move %rt
-  %rp0 = move %rg1
+  %rg0 = move %rt
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_println

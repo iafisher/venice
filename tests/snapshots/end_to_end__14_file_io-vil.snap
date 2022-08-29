@@ -22,15 +22,15 @@ venice_main_0:
   callee_save %rg4
   callee_save %rg5
   callee_save %rg6
-  %rg2 = set s_0
-  %rp0 = move %rg2
+  %rg0 = set s_0
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_string_new
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg1 = move %rt
-  %rp0 = move %rg1
+  %rg0 = move %rt
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_file_open
@@ -38,8 +38,8 @@ venice_main_0:
   %rg0 = caller_restore
   %rg0 = move %rt
   store %rg0, -8  // f__0
-  %rg1 = load -8  // f__0
-  %rp0 = move %rg1
+  %rg0 = load -8  // f__0
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_file_read_all
@@ -47,38 +47,38 @@ venice_main_0:
   %rg0 = caller_restore
   %rg0 = move %rt
   store %rg0, -16  // content__1
-  %rg1 = load -8  // f__0
-  %rp0 = move %rg1
+  %rg0 = load -8  // f__0
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_file_close
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg0 = move %rt
-  %rg2 = set s_1
-  %rp0 = move %rg2
+  %rg0 = set s_1
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_string_new
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg1 = move %rt
-  %rp0 = move %rg1
+  %rg0 = move %rt
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_print
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg0 = move %rt
-  %rg2 = load -16  // content__1
-  %rp0 = move %rg2
+  %rg0 = load -16  // content__1
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_string_length
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg1 = move %rt
-  %rp0 = move %rg1
+  %rg0 = move %rt
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_printint

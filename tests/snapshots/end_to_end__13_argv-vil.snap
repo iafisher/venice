@@ -24,30 +24,30 @@ venice_main_0:
   callee_save %rg5
   callee_save %rg6
   store %rp0, -8  // args__0
-  %rg2 = set s_0
-  %rp0 = move %rg2
+  %rg0 = set s_0
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_string_new
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg1 = move %rt
-  %rp0 = move %rg1
+  %rg0 = move %rt
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_print
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg0 = move %rt
-  %rg2 = load -8  // args__0
-  %rp0 = move %rg2
+  %rg0 = load -8  // args__0
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_list_length
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg1 = move %rt
-  %rp0 = move %rg1
+  %rg0 = move %rt
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_printint
@@ -60,8 +60,8 @@ venice_main_0:
 
 while_cond_1:
   %rg0 = load -16  // i__1
-  %rg2 = load -8  // args__0
-  %rp0 = move %rg2
+  %rg1 = load -8  // args__0
+  %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1
   call %venice_list_length
@@ -72,42 +72,42 @@ while_cond_1:
   jump_lt %while_2 %while_end_3
 
 while_2:
-  %rg5 = set s_1
-  %rp0 = move %rg5
+  %rg0 = set s_1
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_string_new
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg4 = move %rt
-  %rp0 = move %rg4
+  %rg0 = move %rt
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_print
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg3 = move %rt
-  %rg2 = load -8  // args__0
-  %rp0 = move %rg2
-  %rg3 = load -16  // i__1
-  %rp1 = move %rg3
+  %rg0 = move %rt
+  %rg0 = load -8  // args__0
+  %rp0 = move %rg0
+  %rg0 = load -16  // i__1
+  %rp1 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_list_index
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg1 = move %rt
-  %rp0 = move %rg1
+  %rg0 = move %rt
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_println
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg0 = move %rt
-  %rg1 = load -16  // i__1
-  %rg2 = set 1
-  %rg0 = add %rg1, %rg2
-  store %rg0, -16  // i__1
+  %rg0 = load -16  // i__1
+  %rg1 = set 1
+  %rg1 = add %rg0, %rg1
+  store %rg1, -16  // i__1
   jump %while_cond_1
 
 while_end_3:

@@ -14,18 +14,18 @@ venice_main_0:
   pushq %r14
   pushq %r15
   pushq %rbx
-  movq $3, %r11
-  movq %r11, %rdi
-  movq $1, %r13
-  movq %r13, %r12
-  negq %r12
-  movq %r12, %rsi
-  movq $42, %r14
-  movq %r14, %rdx
-  movq $1, %rbx
-  movq %rbx, %r15
-  negq %r15
-  movq %r15, %rcx
+  movq $3, %r10
+  movq %r10, %rdi
+  movq $1, %r10
+  negq %r10
+  movq %r10, %r10
+  movq %r10, %rsi
+  movq $42, %r10
+  movq %r10, %rdx
+  movq $1, %r10
+  negq %r10
+  movq %r10, %r10
+  movq %r10, %rcx
   pushq %r10
   pushq %r11
   movb $0, %al
@@ -34,17 +34,17 @@ venice_main_0:
   popq %r10
   movq %rax, %r10
   movq %r10, -8(%rbp)
-  movq -8(%rbp), %r12
-  movq %r12, %rdi
-  movq $1, %r13
-  movq %r13, %rsi
+  movq -8(%rbp), %r10
+  movq %r10, %rdi
+  movq $1, %r10
+  movq %r10, %rsi
   pushq %r10
   pushq %r11
   call venice_list_index
   popq %r11
   popq %r10
-  movq %rax, %r11
-  movq %r11, %rdi
+  movq %rax, %r10
+  movq %r10, %rdi
   pushq %r10
   pushq %r11
   call venice_printint

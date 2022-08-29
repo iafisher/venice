@@ -21,8 +21,8 @@ fibonacci__0_0:
   jmp if_false_2
 
 if_true_1:
-  movq $0, %r12
-  movq %r12, %rax
+  movq $0, %r10
+  movq %r10, %rax
   popq %rbx
   popq %r15
   popq %r14
@@ -41,8 +41,8 @@ if_false_2:
   jmp if_false_5
 
 if_true_4:
-  movq $1, %r12
-  movq %r12, %rax
+  movq $1, %r10
+  movq %r10, %rax
   popq %rbx
   popq %r15
   popq %r14
@@ -54,10 +54,21 @@ if_true_4:
   jmp if_end_6
 
 if_false_5:
-  movq -8(%rbp), %r13
-  movq $1, %r14
-  movq %r13, %r12
-  subq %r14, %r12
+  movq -8(%rbp), %r10
+  movq $1, %r11
+  subq %r11, %r10
+  movq %r10, %r11
+  movq %r11, %rdi
+  pushq %r10
+  pushq %r11
+  call fibonacci__0
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq -8(%rbp), %r11
+  movq $2, %r12
+  subq %r12, %r11
+  movq %r11, %r12
   movq %r12, %rdi
   pushq %r10
   pushq %r11
@@ -65,20 +76,9 @@ if_false_5:
   popq %r11
   popq %r10
   movq %rax, %r11
-  movq -8(%rbp), %r15
-  movq $2, %rbx
-  movq %r15, %r14
-  subq %rbx, %r14
-  movq %r14, %rdi
-  pushq %r10
-  pushq %r11
-  call fibonacci__0
-  popq %r11
-  popq %r10
-  movq %rax, %r13
-  movq %r13, %r10
   addq %r11, %r10
-  movq %r10, %rax
+  movq %r10, %r11
+  movq %r11, %rax
   popq %rbx
   popq %r15
   popq %r14
@@ -106,8 +106,8 @@ venice_main_7:
   pushq %r14
   pushq %r15
   pushq %rbx
-  movq $12, %r11
-  movq %r11, %rdi
+  movq $12, %r10
+  movq %r10, %rdi
   pushq %r10
   pushq %r11
   call fibonacci__0
@@ -115,8 +115,8 @@ venice_main_7:
   popq %r10
   movq %rax, %r10
   movq %r10, -8(%rbp)
-  movq -8(%rbp), %r11
-  movq %r11, %rdi
+  movq -8(%rbp), %r10
+  movq %r10, %rdi
   pushq %r10
   pushq %r11
   call venice_printint
