@@ -661,6 +661,7 @@ lazy_static! {
         m.insert(TokenType::NotEquals, PRECEDENCE_COMPARISON);
         m.insert(TokenType::Minus, PRECEDENCE_ADDITION);
         m.insert(TokenType::Plus, PRECEDENCE_ADDITION);
+        m.insert(TokenType::Concat, PRECEDENCE_ADDITION);
         m.insert(TokenType::Slash, PRECEDENCE_MULTIPLICATION);
         m.insert(TokenType::Star, PRECEDENCE_MULTIPLICATION);
         // '(' is the "operator" for function calls.

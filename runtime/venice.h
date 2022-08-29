@@ -54,6 +54,10 @@ venice_string_t* venice_string_new(char* data);
 // Returns the string's length in bytes. Does not include the null terminator.
 uint64_t venice_string_length(venice_string_t* string);
 
+// Returns the concatenation of `left` and `right`, which are left unmodified.
+venice_string_t* venice_string_concat(venice_string_t* left,
+                                      venice_string_t* right);
+
 
 /***
  * List functions

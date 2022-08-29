@@ -349,7 +349,7 @@ mod tests {
 
     #[test]
     fn operators() {
-        let mut lexer = Lexer::new("<string>", "+-*/%++ < > != == <= >= =");
+        let mut lexer = Lexer::new("<string>", "+-*/%++ < > != == <= >= = ++");
         assert_eq!(lexer.token(), token(TokenType::Plus, "+"));
         assert_eq!(lexer.next(), token(TokenType::Minus, "-"));
         assert_eq!(lexer.next(), token(TokenType::Star, "*"));
@@ -363,6 +363,7 @@ mod tests {
         assert_eq!(lexer.next(), token(TokenType::LessThanEquals, "<="));
         assert_eq!(lexer.next(), token(TokenType::GreaterThanEquals, ">="));
         assert_eq!(lexer.next(), token(TokenType::Assign, "="));
+        assert_eq!(lexer.next(), token(TokenType::Concat, "++"));
         assert_eq!(lexer.next(), token(TokenType::End, ""));
     }
 

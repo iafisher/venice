@@ -441,10 +441,16 @@ impl Analyzer {
                         ast::EXPRESSION_ERROR.clone()
                     } else {
                         ast::Expression::new(
-                            ast::ExpressionKind::Binary(ast::BinaryExpression {
-                                op: common::BinaryOpType::Concat,
-                                left: Box::new(left),
-                                right: Box::new(right),
+                            ast::ExpressionKind::Call(ast::CallExpression {
+                                function: ast::SymbolEntry {
+                                    unique_name: std::string::String::from("venice_string_concat"),
+                                    type_: ast::Type::Error,
+                                    constant: true,
+                                    external: true,
+                                    stack_offset: 0,
+                                },
+                                arguments: vec![left, right],
+                                variadic: false,
                             }),
                             ast::Type::String,
                         )

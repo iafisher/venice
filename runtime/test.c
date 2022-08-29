@@ -86,6 +86,14 @@ void test_file_read_all() {
   global_tests_passed++;
 }
 
+void test_string_concat() {
+  venice_string_t* left = venice_string_new("Hello");
+  venice_string_t* right = venice_string_new(", world!");
+  venice_string_t* result = venice_string_concat(left, right);
+  ASSERT_STRING_EQ(result->data, "Hello, world!");
+  global_tests_passed++;
+}
+
 
 /**
  * Test runner
@@ -100,6 +108,7 @@ int main(int argc, char* argv[]) {
   test_list_from_varargs();
   test_list_append();
   test_file_read_all();
+  test_string_concat();
 
   if (global_tests_failed > 0) {
     printf("\n");
