@@ -64,8 +64,9 @@ fibonacci__0_1:
 
 while_cond_2:
   movq -32(%rbp), %r10
-  movq -8(%rbp), %r11
-  cmpq %r11, %r10
+  movq %r10, %r11
+  movq -8(%rbp), %r10
+  cmpq %r10, %r11
   jl while_3
   jmp while_end_4
 
@@ -73,16 +74,18 @@ while_3:
   movq -16(%rbp), %r10
   movq %r10, -40(%rbp)
   movq -16(%rbp), %r10
-  movq -24(%rbp), %r11
-  addq %r11, %r10
   movq %r10, %r11
+  movq -24(%rbp), %r10
+  addq %r10, %r11
+  movq %r11, %r11
   movq %r11, -16(%rbp)
   movq -40(%rbp), %r10
   movq %r10, -24(%rbp)
   movq -32(%rbp), %r10
-  movq $1, %r11
-  addq %r11, %r10
   movq %r10, %r11
+  movq $1, %r10
+  addq %r10, %r11
+  movq %r11, %r11
   movq %r11, -32(%rbp)
   jmp while_cond_2
 

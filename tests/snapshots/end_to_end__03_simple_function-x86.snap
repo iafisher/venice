@@ -14,9 +14,10 @@ two_plus_two__0_0:
   pushq %r15
   pushq %rbx
   movq $2, %r10
-  movq $2, %r11
-  addq %r11, %r10
   movq %r10, %r11
+  movq $2, %r10
+  addq %r10, %r11
+  movq %r11, %r11
   movq %r11, %rax
   popq %rbx
   popq %r15

@@ -15,8 +15,9 @@ fibonacci__0_0:
   pushq %rbx
   movq %rdi, -8(%rbp)
   movq -8(%rbp), %r10
-  movq $0, %r11
-  cmpq %r11, %r10
+  movq %r10, %r11
+  movq $0, %r10
+  cmpq %r10, %r11
   je if_true_1
   jmp if_false_2
 
@@ -35,8 +36,9 @@ if_true_1:
 
 if_false_2:
   movq -8(%rbp), %r10
-  movq $1, %r11
-  cmpq %r11, %r10
+  movq %r10, %r11
+  movq $1, %r10
+  cmpq %r10, %r11
   je if_true_4
   jmp if_false_5
 
@@ -55,30 +57,33 @@ if_true_4:
 
 if_false_5:
   movq -8(%rbp), %r10
-  movq $1, %r11
-  subq %r11, %r10
   movq %r10, %r11
+  movq $1, %r10
+  subq %r10, %r11
+  movq %r11, %r11
   movq %r11, %rdi
   pushq %r10
   pushq %r11
   call fibonacci__0
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq -8(%rbp), %r11
-  movq $2, %r12
-  subq %r12, %r11
+  movq %rax, %r11
   movq %r11, %r12
-  movq %r12, %rdi
+  movq -8(%rbp), %r10
+  movq %r10, %r11
+  movq $2, %r10
+  subq %r10, %r11
+  movq %r11, %r11
+  movq %r11, %rdi
   pushq %r10
   pushq %r11
   call fibonacci__0
   popq %r11
   popq %r10
   movq %rax, %r11
-  addq %r11, %r10
-  movq %r10, %r11
-  movq %r11, %rax
+  addq %r11, %r12
+  movq %r12, %r12
+  movq %r12, %rax
   popq %rbx
   popq %r15
   popq %r14

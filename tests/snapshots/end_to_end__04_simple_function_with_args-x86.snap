@@ -16,9 +16,10 @@ sub__0_0:
   movq %rdi, -8(%rbp)
   movq %rsi, -16(%rbp)
   movq -8(%rbp), %r10
-  movq -16(%rbp), %r11
-  subq %r11, %r10
   movq %r10, %r11
+  movq -16(%rbp), %r10
+  subq %r10, %r11
+  movq %r11, %r11
   movq %r11, %rax
   popq %rbx
   popq %r15

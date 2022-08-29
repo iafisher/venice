@@ -135,11 +135,13 @@ impl Generator {
         true_label: vil::Label,
         false_label: vil::Label,
     ) {
+        let r = vil::Register::gp(expr.register);
         if let ast::ExpressionKind::Comparison(cmp_expr) = &expr.kind {
             let left = self.generate_expression(&cmp_expr.left);
+            self.push(vil::InstructionKind::Move(r, left));
             let right = self.generate_expression(&cmp_expr.right);
 
-            self.push(vil::InstructionKind::Cmp(left, right));
+            self.push(vil::InstructionKind::Cmp(r, right));
             let exit = get_comparison_instruction(cmp_expr.op, true_label, false_label);
             self.push(exit);
         } else {
@@ -159,23 +161,27 @@ impl Generator {
         match expr.op {
             Add => {
                 let left = self.generate_expression(&expr.left);
+                self.push(vil::InstructionKind::Move(r, left));
                 let right = self.generate_expression(&expr.right);
-                self.push(vil::InstructionKind::Add(r, left, right));
+                self.push(vil::InstructionKind::Add(r, r, right));
             }
             Divide => {
                 let left = self.generate_expression(&expr.left);
+                self.push(vil::InstructionKind::Move(r, left));
                 let right = self.generate_expression(&expr.right);
-                self.push(vil::InstructionKind::Div(r, left, right));
+                self.push(vil::InstructionKind::Div(r, r, right));
             }
             Multiply => {
                 let left = self.generate_expression(&expr.left);
+                self.push(vil::InstructionKind::Move(r, left));
                 let right = self.generate_expression(&expr.right);
-                self.push(vil::InstructionKind::Mul(r, left, right));
+                self.push(vil::InstructionKind::Mul(r, r, right));
             }
             Subtract => {
                 let left = self.generate_expression(&expr.left);
+                self.push(vil::InstructionKind::Move(r, left));
                 let right = self.generate_expression(&expr.right);
-                self.push(vil::InstructionKind::Sub(r, left, right));
+                self.push(vil::InstructionKind::Sub(r, r, right));
             }
             And | Or => {
                 panic!(

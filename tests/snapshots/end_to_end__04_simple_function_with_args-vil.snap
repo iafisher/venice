@@ -18,8 +18,9 @@ sub__0_0:
   store %rp0, -8  // x__1
   store %rp1, -16  // y__2
   %rg0 = load -8  // x__1
-  %rg1 = load -16  // y__2
-  %rg1 = sub %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = load -16  // y__2
+  %rg1 = sub %rg1, %rg0
   %rt = move %rg1
   %rg6 = callee_restore
   %rg5 = callee_restore

@@ -63,22 +63,25 @@ fibonacci__0_1:
 
 while_cond_2:
   %rg0 = load -32  // i__5
-  %rg1 = load -8  // n__2
-  cmp %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = load -8  // n__2
+  cmp %rg1, %rg0
   jump_lt %while_3 %while_end_4
 
 while_3:
   %rg0 = load -16  // fib_i__3
   store %rg0, -40  // tmp__6
   %rg0 = load -16  // fib_i__3
-  %rg1 = load -24  // fib_i_minus_1__4
-  %rg1 = add %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = load -24  // fib_i_minus_1__4
+  %rg1 = add %rg1, %rg0
   store %rg1, -16  // fib_i__3
   %rg0 = load -40  // tmp__6
   store %rg0, -24  // fib_i_minus_1__4
   %rg0 = load -32  // i__5
-  %rg1 = set 1
-  %rg1 = add %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = set 1
+  %rg1 = add %rg1, %rg0
   store %rg1, -32  // i__5
   jump %while_cond_2
 

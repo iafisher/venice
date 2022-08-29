@@ -15,9 +15,10 @@ venice_main_0:
   pushq %r15
   pushq %rbx
   movq $21, %r10
-  movq $2, %r11
-  imulq %r11, %r10
   movq %r10, %r11
+  movq $2, %r10
+  imulq %r10, %r11
+  movq %r11, %r11
   movq %r11, -8(%rbp)
   movq -8(%rbp), %r10
   movq %r10, %rdi
@@ -30,10 +31,11 @@ venice_main_0:
   popq %r10
   movq %rax, %r10
   movq $84, %r10
-  movq $2, %r11
+  movq %r10, %r11
+  movq $2, %r10
   xorq %rdx, %rdx
-  movq %r10, %rax
-  divq %r11
+  movq %r11, %rax
+  divq %r10
   movq %rax, %r11
   movq %r11, -16(%rbp)
   movq -16(%rbp), %r10

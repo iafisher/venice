@@ -9,6 +9,7 @@ use super::ast;
 use super::common;
 use super::errors;
 use super::ptree;
+use std::cmp;
 use std::collections::HashMap;
 
 /// Analyzes the parse tree into an abstract syntax tree.
@@ -923,30 +924,30 @@ fn allocate_registers_in_block(block: &mut Vec<ast::Statement>) {
     for statement in block {
         match statement {
             ast::Statement::Assert(stmt) => {
-                allocate_registers(&mut stmt.condition, 0);
+                allocate_registers(&mut stmt.condition);
             }
             ast::Statement::Assign(stmt) => {
-                allocate_registers(&mut stmt.value, 0);
+                allocate_registers(&mut stmt.value);
             }
             ast::Statement::Expression(expr) => {
-                allocate_registers(expr, 0);
+                allocate_registers(expr);
             }
             ast::Statement::For(stmt) => {
                 allocate_registers_in_block(&mut stmt.body);
             }
             ast::Statement::If(stmt) => {
-                allocate_registers(&mut stmt.condition, 0);
+                allocate_registers(&mut stmt.condition);
                 allocate_registers_in_block(&mut stmt.body);
                 allocate_registers_in_block(&mut stmt.else_body);
             }
             ast::Statement::Let(stmt) => {
-                allocate_registers(&mut stmt.value, 0);
+                allocate_registers(&mut stmt.value);
             }
             ast::Statement::Return(stmt) => {
-                allocate_registers(&mut stmt.value, 0);
+                allocate_registers(&mut stmt.value);
             }
             ast::Statement::While(stmt) => {
-                allocate_registers(&mut stmt.condition, 0);
+                allocate_registers(&mut stmt.condition);
                 allocate_registers_in_block(&mut stmt.body);
             }
             ast::Statement::Error => {}
@@ -954,42 +955,42 @@ fn allocate_registers_in_block(block: &mut Vec<ast::Statement>) {
     }
 }
 
-fn allocate_registers(expr: &mut ast::Expression, register: u8) {
+fn allocate_registers(expr: &mut ast::Expression) -> u8 {
     use ast::ExpressionKind::*;
     match &mut expr.kind {
         Boolean(_) | Integer(_) | String(_) | Symbol(_) => {
-            expr.register = register;
+            expr.register = 0;
         }
         Binary(ref mut e) => {
-            allocate_registers(&mut e.left, register);
-            allocate_registers(&mut e.right, register + 1);
-            expr.register = register + 1;
+            let left = allocate_registers(&mut e.left);
+            let right = allocate_registers(&mut e.right);
+            expr.register = allocate_register_binary(left, right);
         }
         Comparison(ref mut e) => {
-            allocate_registers(&mut e.left, register);
-            allocate_registers(&mut e.right, register + 1);
-            expr.register = register + 1;
+            let left = allocate_registers(&mut e.left);
+            let right = allocate_registers(&mut e.right);
+            expr.register = allocate_register_binary(left, right);
         }
         Unary(ref mut e) => {
-            allocate_registers(&mut e.operand, register);
-            expr.register = register;
+            expr.register = allocate_registers(&mut e.operand);
         }
         Call(ref mut e) => {
+            let mut argument_registers = Vec::new();
             for mut argument in &mut e.arguments {
-                allocate_registers(&mut argument, register);
+                argument_registers.push(allocate_registers(&mut argument));
             }
-            expr.register = register;
+            expr.register = argument_registers.into_iter().max().unwrap_or(0);
         }
         If(ref mut e) => {
-            allocate_registers(&mut e.condition, register);
-            allocate_registers(&mut e.true_value, register);
-            allocate_registers(&mut e.false_value, register);
-            expr.register = register;
+            allocate_registers(&mut e.condition);
+            let left = allocate_registers(&mut e.true_value);
+            let right = allocate_registers(&mut e.false_value);
+            expr.register = allocate_register_binary(left, right);
         }
         Index(ref mut e) => {
-            allocate_registers(&mut e.value, register);
-            allocate_registers(&mut e.index, register + 1);
-            expr.register = register + 1;
+            let left = allocate_registers(&mut e.value);
+            let right = allocate_registers(&mut e.index);
+            expr.register = allocate_register_binary(left, right);
         }
         _ => {
             panic!(
@@ -997,6 +998,15 @@ fn allocate_registers(expr: &mut ast::Expression, register: u8) {
                 expr.kind
             );
         }
+    }
+    expr.register
+}
+
+fn allocate_register_binary(left: u8, right: u8) -> u8 {
+    if left == right {
+        left + 1
+    } else {
+        cmp::max(left, right)
     }
 }
 

@@ -29,32 +29,32 @@ venice_main_0:
 
 if_true_4:
   %rg0 = load -16  // y__1
-  %rg0 = move %rg0
+  %rg1 = move %rg0
   jump %if_end_6
 
 if_false_5:
   %rg0 = set 0
-  %rg0 = move %rg0
+  %rg1 = move %rg0
   jump %if_end_6
 
 if_end_6:
   %rt = set 1
-  cmp %rg0, %rt
+  cmp %rg1, %rt
   jump_eq %if_true_1 %if_false_2
 
 if_true_1:
   %rg0 = set 1
-  %rg0 = move %rg0
+  %rg1 = move %rg0
   jump %if_end_3
 
 if_false_2:
   %rg0 = load -16  // y__1
   %rg0 = logical_not %rg0
-  %rg0 = move %rg0
+  %rg1 = move %rg0
   jump %if_end_3
 
 if_end_3:
-  store %rg0, -24  // z__2
+  store %rg1, -24  // z__2
   %rg0 = load -24  // z__2
   %rt = set 1
   cmp %rg0, %rt

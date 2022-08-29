@@ -17,8 +17,9 @@ venice_main_0:
   callee_save %rg5
   callee_save %rg6
   %rg0 = set 21
-  %rg1 = set 2
-  %rg1 = mul %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = set 2
+  %rg1 = mul %rg1, %rg0
   store %rg1, -8  // x__0
   %rg0 = load -8  // x__0
   %rp0 = move %rg0
@@ -29,8 +30,9 @@ venice_main_0:
   %rg0 = caller_restore
   %rg0 = move %rt
   %rg0 = set 84
-  %rg1 = set 2
-  %rg1 = div %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = set 2
+  %rg1 = div %rg1, %rg0
   store %rg1, -16  // y__1
   %rg0 = load -16  // y__1
   %rp0 = move %rg0

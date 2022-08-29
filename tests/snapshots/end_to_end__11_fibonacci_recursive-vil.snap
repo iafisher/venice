@@ -17,8 +17,9 @@ fibonacci__0_0:
   callee_save %rg6
   store %rp0, -8  // n__1
   %rg0 = load -8  // n__1
-  %rg1 = set 0
-  cmp %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = set 0
+  cmp %rg1, %rg0
   jump_eq %if_true_1 %if_false_2
 
 if_true_1:
@@ -35,8 +36,9 @@ if_true_1:
 
 if_false_2:
   %rg0 = load -8  // n__1
-  %rg1 = set 1
-  cmp %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = set 1
+  cmp %rg1, %rg0
   jump_eq %if_true_4 %if_false_5
 
 if_true_4:
@@ -53,27 +55,30 @@ if_true_4:
 
 if_false_5:
   %rg0 = load -8  // n__1
-  %rg1 = set 1
-  %rg1 = sub %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = set 1
+  %rg1 = sub %rg1, %rg0
   %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1
   call %fibonacci__0
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
-  %rg1 = load -8  // n__1
-  %rg2 = set 2
-  %rg2 = sub %rg1, %rg2
-  %rp0 = move %rg2
+  %rg1 = move %rt
+  %rg2 = move %rg1
+  %rg0 = load -8  // n__1
+  %rg1 = move %rg0
+  %rg0 = set 2
+  %rg1 = sub %rg1, %rg0
+  %rp0 = move %rg1
   caller_save %rg0
   caller_save %rg1
   call %fibonacci__0
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg1 = move %rt
-  %rg1 = add %rg0, %rg1
-  %rt = move %rg1
+  %rg2 = add %rg2, %rg1
+  %rt = move %rg2
   %rg6 = callee_restore
   %rg5 = callee_restore
   %rg4 = callee_restore

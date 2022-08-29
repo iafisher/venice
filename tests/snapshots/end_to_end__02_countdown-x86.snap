@@ -20,8 +20,9 @@ venice_main_0:
 
 while_cond_1:
   movq -8(%rbp), %r10
-  movq $0, %r11
-  cmpq %r11, %r10
+  movq %r10, %r11
+  movq $0, %r10
+  cmpq %r10, %r11
   jg while_2
   jmp while_end_3
 
@@ -35,9 +36,10 @@ while_2:
   popq %r10
   movq %rax, %r10
   movq -8(%rbp), %r10
-  movq $1, %r11
-  subq %r11, %r10
   movq %r10, %r11
+  movq $1, %r10
+  subq %r10, %r11
+  movq %r11, %r11
   movq %r11, -8(%rbp)
   jmp while_cond_1
 

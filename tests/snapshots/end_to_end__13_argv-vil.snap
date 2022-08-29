@@ -60,15 +60,16 @@ venice_main_0:
 
 while_cond_1:
   %rg0 = load -16  // i__1
-  %rg1 = load -8  // args__0
-  %rp0 = move %rg1
+  %rg1 = move %rg0
+  %rg0 = load -8  // args__0
+  %rp0 = move %rg0
   caller_save %rg0
   caller_save %rg1
   call %venice_list_length
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg1 = move %rt
-  cmp %rg0, %rg1
+  %rg0 = move %rt
+  cmp %rg1, %rg0
   jump_lt %while_2 %while_end_3
 
 while_2:
@@ -105,8 +106,9 @@ while_2:
   %rg0 = caller_restore
   %rg0 = move %rt
   %rg0 = load -16  // i__1
-  %rg1 = set 1
-  %rg1 = add %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = set 1
+  %rg1 = add %rg1, %rg0
   store %rg1, -16  // i__1
   jump %while_cond_1
 

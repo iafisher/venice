@@ -16,8 +16,9 @@ two_plus_two__0_0:
   callee_save %rg5
   callee_save %rg6
   %rg0 = set 2
-  %rg1 = set 2
-  %rg1 = add %rg0, %rg1
+  %rg1 = move %rg0
+  %rg0 = set 2
+  %rg1 = add %rg1, %rg0
   %rt = move %rg1
   %rg6 = callee_restore
   %rg5 = callee_restore

@@ -26,23 +26,23 @@ venice_main_0:
 
 if_true_4:
   movq -16(%rbp), %r10
-  movq %r10, %r10
+  movq %r10, %r11
   jmp if_end_6
 
 if_false_5:
   movq $0, %r10
-  movq %r10, %r10
+  movq %r10, %r11
   jmp if_end_6
 
 if_end_6:
   movq $1, %rax
-  cmpq %rax, %r10
+  cmpq %rax, %r11
   je if_true_1
   jmp if_false_2
 
 if_true_1:
   movq $1, %r10
-  movq %r10, %r10
+  movq %r10, %r11
   jmp if_end_3
 
 if_false_2:
@@ -51,11 +51,11 @@ if_false_2:
   testq %r10, %rax
   sete %al
   movq %rax, %r10
-  movq %r10, %r10
+  movq %r10, %r11
   jmp if_end_3
 
 if_end_3:
-  movq %r10, -24(%rbp)
+  movq %r11, -24(%rbp)
   movq -24(%rbp), %r10
   movq $1, %rax
   cmpq %rax, %r10
