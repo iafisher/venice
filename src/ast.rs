@@ -437,8 +437,7 @@ impl fmt::Display for IfStatement {
             format_block(f, &self.else_body)?;
             write!(f, ")")?;
         }
-
-        fmt::Result::Ok(())
+        write!(f, ")")
     }
 }
 
@@ -477,7 +476,7 @@ impl fmt::Display for AssertStatement {
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}):{}", self.kind, self.type_)
+        write!(f, "({}):{}:r{}", self.kind, self.type_, self.register)
     }
 }
 

@@ -38,6 +38,10 @@ struct Cli {
     /// Includes debugging symbols in the executable.
     #[clap(long)]
     debug: bool,
+
+    /// Prints the AST and exits.
+    #[clap(long)]
+    ast: bool,
 }
 
 fn main() {
@@ -71,8 +75,13 @@ fn main() {
         std::process::exit(1);
     }
 
-    // Generate a VIL program.
     let ast = ast_result.unwrap();
+    if cli.ast {
+        println!("{}", ast);
+        std::process::exit(0);
+    }
+
+    // Generate a VIL program.
     let vil_program = codegen::generate(&ast).unwrap();
     if cli.keep_intermediate {
         let mut vil_output_path = PathBuf::from(&cli.path);
