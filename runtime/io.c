@@ -16,7 +16,7 @@ void venice_print(venice_string_t* s) {
   printf("%s", s->data);
 }
 
-// TODO: support lines of arbitrary length
+// TODO(#146): support lines of arbitrary length
 #define MAX_LINE_LENGTH 128
 
 venice_string_t* venice_input(venice_string_t* s) {

@@ -335,8 +335,7 @@ impl Analyzer {
 
     fn analyze_for_statement(&mut self, stmt: &ptree::ForStatement) -> ast::Statement {
         // TODO
-        self.error("not implemented", stmt.location.clone());
-        ast::Statement::Error
+        panic!("internal error: for statements are not yet supported");
     }
 
     fn analyze_return_statement(&mut self, stmt: &ptree::ReturnStatement) -> ast::Statement {
@@ -806,8 +805,7 @@ impl Analyzer {
 
     fn analyze_record_literal(&mut self, expr: &ptree::RecordLiteral) -> ast::Expression {
         // TODO
-        self.error("not implemented", expr.location.clone());
-        ast::EXPRESSION_ERROR.clone()
+        panic!("internal error: record literals are not yet supported");
     }
 
     fn resolve_type(&mut self, type_: &ptree::Type) -> ast::Type {

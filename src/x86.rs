@@ -135,7 +135,7 @@ impl Generator {
     fn generate_block(&mut self, declaration: &vil::FunctionDeclaration, block: &vil::Block) {
         let mut instructions = Vec::new();
         for instruction in &block.instructions {
-            self.generate_instruction(declaration, &mut instructions, instruction);
+            self.generate_instruction(&mut instructions, instruction);
         }
         self.program.blocks.push(Block {
             global: false,
@@ -146,8 +146,6 @@ impl Generator {
 
     fn generate_instruction(
         &mut self,
-        // TODO: better way of exposing this information
-        _declaration: &vil::FunctionDeclaration,
         instructions: &mut Vec<Instruction>,
         instruction: &vil::Instruction,
     ) {

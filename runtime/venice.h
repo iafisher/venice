@@ -86,7 +86,7 @@ void venice_println(venice_string_t* s);
 // Prints a string to standard output. No trailing newline is printed.
 void venice_print(venice_string_t* s);
 
-// TODO: support lines of arbitrary length
+// TODO(#146): support lines of arbitrary length
 #define MAX_LINE_LENGTH 128
 
 // Prints a prompt to standard output and reads a line from standard input.

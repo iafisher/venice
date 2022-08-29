@@ -700,7 +700,7 @@ fn token_type_to_comparison_op_type(type_: TokenType) -> common::ComparisonOpTyp
 }
 
 fn parse_string_literal(s: &str) -> Result<String, ()> {
-    // TODO
+    // TODO: need to resolve backslash escapes
     Ok(String::from(&s[1..s.len() - 1]))
 }
 

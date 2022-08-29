@@ -309,7 +309,7 @@ impl Lexer {
     }
 
     fn ch(&self) -> char {
-        // TODO: more efficient way to do this?
+        // TODO(#145): more efficient way to do this?
         self.program.chars().nth(self.index).unwrap()
     }
 
