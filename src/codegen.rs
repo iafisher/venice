@@ -77,7 +77,7 @@ impl Generator {
         for (i, parameter) in declaration.parameters.iter().enumerate() {
             self.push_with_comment(
                 vil::InstructionKind::Store(
-                    vil::Register::param(i as u8),
+                    vil::Register::param(u8::try_from(i).unwrap()),
                     parameter.name.stack_offset,
                 ),
                 &parameter.name.unique_name,
@@ -95,7 +95,7 @@ impl Generator {
             Boolean(x) => {
                 self.push(vil::InstructionKind::Set(
                     r,
-                    vil::Immediate::Integer(*x as i64),
+                    vil::Immediate::Integer(i64::try_from(*x).unwrap()),
                 ));
             }
             Integer(x) => {

@@ -254,12 +254,14 @@ impl Generator {
                 instructions.push(Instruction::Push(RBP));
                 self.stack_alignment += 8;
                 instructions.push(Instruction::Mov(RBP, RSP));
-                instructions.push(Instruction::Sub(RSP, Value::Immediate(*size as i64)));
-                self.stack_alignment += *size as i64;
+                let size_as_i64 = i64::try_from(*size).unwrap();
+                instructions.push(Instruction::Sub(RSP, Value::Immediate(size_as_i64)));
+                self.stack_alignment += size_as_i64;
             }
             FrameTearDown(size) => {
-                instructions.push(Instruction::Add(RSP, Value::Immediate(*size as i64)));
-                self.stack_alignment -= *size as i64;
+                let size_as_i64 = i64::try_from(*size).unwrap();
+                instructions.push(Instruction::Add(RSP, Value::Immediate(size_as_i64)));
+                self.stack_alignment -= size_as_i64;
                 instructions.push(Instruction::Pop(RBP));
                 self.stack_alignment -= 8;
             }
