@@ -955,6 +955,7 @@ fn allocate_registers_in_block(block: &mut Vec<ast::Statement>) {
     }
 }
 
+/// Sets the `max_register_needed` field and returns it.
 fn allocate_registers(expr: &mut ast::Expression) -> u8 {
     use ast::ExpressionKind::*;
     match &mut expr.kind {
@@ -1002,10 +1003,15 @@ fn allocate_registers(expr: &mut ast::Expression) -> u8 {
     expr.max_register_needed
 }
 
+/// Returns the max register needed to calculate the binary expression.
 fn allocate_register_binary(left: u8, right: u8) -> u8 {
     if left == right {
+        // If both expressions need the same number of registers, we need an extra register to
+        // store the left-hand result while computing the right-hand result.
         left + 1
     } else {
+        // Otherwise, we can compute whichever expression uses more registers first, and the other
+        // expression won't overwrite the first result.
         cmp::max(left, right)
     }
 }

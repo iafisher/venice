@@ -1,0 +1,83 @@
+---
+source: tests/end_to_end.rs
+expression: vil_output
+---
+extern venice_string_new;
+extern venice_print;
+extern venice_printint;
+
+
+
+func venice_main {
+
+venice_main_0:
+  frame_set_up 0
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
+  %rg0 = set s_0
+  %rp0 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_string_new
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rp0 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_print
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rg0 = set 1
+  %rg1 = move %rg0
+  %rg0 = set 2
+  %rg1 = add %rg1, %rg0
+  %rg2 = move %rg1
+  %rg0 = set 3
+  %rg1 = move %rg0
+  %rg0 = set 4
+  %rg1 = add %rg1, %rg0
+  %rg0 = set 5
+  %rg1 = add %rg1, %rg0
+  %rg2 = add %rg2, %rg1
+  %rg3 = move %rg2
+  %rg0 = set 6
+  %rg1 = move %rg0
+  %rg0 = set 7
+  %rg1 = add %rg1, %rg0
+  %rg0 = set 8
+  %rg1 = add %rg1, %rg0
+  %rg2 = move %rg1
+  %rg0 = set 11
+  %rg1 = move %rg0
+  %rg0 = set 14
+  %rg1 = sub %rg1, %rg0
+  %rg0 = set 9
+  %rg1 = add %rg0, %rg1
+  %rg2 = add %rg2, %rg1
+  %rg3 = add %rg3, %rg2
+  %rp0 = move %rg3
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_printint
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg3 = move %rt
+  %rg0 = set 0
+  %rt = move %rg0
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
+  frame_tear_down 0
+  ret
+}
+
+
+data s_0 = "Should be 42: ";
+

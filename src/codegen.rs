@@ -127,8 +127,8 @@ impl Generator {
         r
     }
 
-    // A variant of `generate_expression` that generates more efficient code when an expression is
-    // being used as a control-flow condition, e.g. in an `if` statement or a `while` loop.
+    /// A variant of `generate_expression` that generates more efficient code when an expression is
+    /// being used as a control-flow condition, e.g. in an `if` statement or a `while` loop.
     fn generate_expression_as_condition(
         &mut self,
         expr: &ast::Expression,
@@ -137,13 +137,9 @@ impl Generator {
     ) {
         let r = vil::Register::gp(expr.max_register_needed);
         if let ast::ExpressionKind::Comparison(cmp_expr) = &expr.kind {
-            let left = self.generate_expression(&cmp_expr.left);
-            if cmp_expr.left.max_register_needed == cmp_expr.right.max_register_needed {
-                self.push(vil::InstructionKind::Move(r, left));
-            }
-            let right = self.generate_expression(&cmp_expr.right);
-
-            self.push(vil::InstructionKind::Cmp(r, right));
+            let (left, right) =
+                self.generate_generic_binary_expression(&cmp_expr.left, &cmp_expr.right, r);
+            self.push(vil::InstructionKind::Cmp(left, right));
             let exit = get_comparison_instruction(cmp_expr.op, true_label, false_label);
             self.push(exit);
         } else {
@@ -159,25 +155,21 @@ impl Generator {
     }
 
     fn generate_binary_expression(&mut self, expr: &ast::BinaryExpression, r: vil::Register) {
-        let left = self.generate_expression(&expr.left);
-        if expr.left.max_register_needed == expr.right.max_register_needed {
-            self.push(vil::InstructionKind::Move(r, left));
-        }
-        let right = self.generate_expression(&expr.right);
+        let (left, right) = self.generate_generic_binary_expression(&expr.left, &expr.right, r);
 
         use common::BinaryOpType::*;
         match expr.op {
             Add => {
-                self.push(vil::InstructionKind::Add(r, r, right));
+                self.push(vil::InstructionKind::Add(r, left, right));
             }
             Divide => {
-                self.push(vil::InstructionKind::Div(r, r, right));
+                self.push(vil::InstructionKind::Div(r, left, right));
             }
             Multiply => {
-                self.push(vil::InstructionKind::Mul(r, r, right));
+                self.push(vil::InstructionKind::Mul(r, left, right));
             }
             Subtract => {
-                self.push(vil::InstructionKind::Sub(r, r, right));
+                self.push(vil::InstructionKind::Sub(r, left, right));
             }
             And | Or => {
                 panic!(
@@ -187,6 +179,34 @@ impl Generator {
             _ => {
                 panic!("internal error: operator not implemented: {:?}", expr.op);
             }
+        }
+    }
+
+    /// Given a left and right expression and a target register, generates the code for the two
+    /// expressions and returns (left, right), the pair of registers that the results will be
+    /// placed in.
+    ///
+    /// The target register is necessary in the case where both expressions use the same number of
+    /// registers and an additional register is needed to store one of the results.
+    fn generate_generic_binary_expression(
+        &mut self,
+        left: &ast::Expression,
+        right: &ast::Expression,
+        r: vil::Register,
+    ) -> (vil::Register, vil::Register) {
+        if left.max_register_needed < right.max_register_needed {
+            let register_right = self.generate_expression(right);
+            let register_left = self.generate_expression(left);
+            (register_left, register_right)
+        } else if left.max_register_needed == right.max_register_needed {
+            let register_left = self.generate_expression(left);
+            self.push(vil::InstructionKind::Move(r, register_left));
+            let register_right = self.generate_expression(right);
+            (r, register_right)
+        } else {
+            let register_left = self.generate_expression(left);
+            let register_right = self.generate_expression(right);
+            (register_left, register_right)
         }
     }
 

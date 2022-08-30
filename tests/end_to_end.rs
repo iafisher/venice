@@ -93,6 +93,11 @@ fn test_14_file_io() {
     test_e2e("14_file_io");
 }
 
+#[test]
+fn test_15_register_overflow() {
+    test_e2e("15_register_overflow");
+}
+
 fn test_e2e(base_name: &str) {
     test_e2e_full_options(base_name, &[], /* expect_error= */ false);
 }
