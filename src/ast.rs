@@ -130,7 +130,7 @@ pub struct AssertStatement {
 pub struct Expression {
     pub kind: ExpressionKind,
     pub type_: Type,
-    pub register: u8,
+    pub max_register_needed: u8,
 }
 
 impl Expression {
@@ -138,7 +138,7 @@ impl Expression {
         Expression {
             kind,
             type_,
-            register: 0,
+            max_register_needed: 0,
         }
     }
 }
@@ -166,7 +166,7 @@ pub enum ExpressionKind {
 pub const EXPRESSION_ERROR: Expression = Expression {
     kind: ExpressionKind::Error,
     type_: Type::Error,
-    register: 0,
+    max_register_needed: 0,
 };
 
 #[derive(Clone, Debug)]
@@ -476,7 +476,11 @@ impl fmt::Display for AssertStatement {
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}):{}:r{}", self.kind, self.type_, self.register)
+        write!(
+            f,
+            "({}):{}:r{}",
+            self.kind, self.type_, self.max_register_needed
+        )
     }
 }
 

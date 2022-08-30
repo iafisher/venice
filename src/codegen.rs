@@ -88,7 +88,7 @@ impl Generator {
     }
 
     fn generate_expression(&mut self, expr: &ast::Expression) -> vil::Register {
-        let r = vil::Register::gp(expr.register);
+        let r = vil::Register::gp(expr.max_register_needed);
 
         use ast::ExpressionKind::*;
         match &expr.kind {
@@ -135,7 +135,7 @@ impl Generator {
         true_label: vil::Label,
         false_label: vil::Label,
     ) {
-        let r = vil::Register::gp(expr.register);
+        let r = vil::Register::gp(expr.max_register_needed);
         if let ast::ExpressionKind::Comparison(cmp_expr) = &expr.kind {
             let left = self.generate_expression(&cmp_expr.left);
             self.push(vil::InstructionKind::Move(r, left));

@@ -959,38 +959,38 @@ fn allocate_registers(expr: &mut ast::Expression) -> u8 {
     use ast::ExpressionKind::*;
     match &mut expr.kind {
         Boolean(_) | Integer(_) | String(_) | Symbol(_) => {
-            expr.register = 0;
+            expr.max_register_needed = 0;
         }
         Binary(ref mut e) => {
             let left = allocate_registers(&mut e.left);
             let right = allocate_registers(&mut e.right);
-            expr.register = allocate_register_binary(left, right);
+            expr.max_register_needed = allocate_register_binary(left, right);
         }
         Comparison(ref mut e) => {
             let left = allocate_registers(&mut e.left);
             let right = allocate_registers(&mut e.right);
-            expr.register = allocate_register_binary(left, right);
+            expr.max_register_needed = allocate_register_binary(left, right);
         }
         Unary(ref mut e) => {
-            expr.register = allocate_registers(&mut e.operand);
+            expr.max_register_needed = allocate_registers(&mut e.operand);
         }
         Call(ref mut e) => {
             let mut argument_registers = Vec::new();
             for mut argument in &mut e.arguments {
                 argument_registers.push(allocate_registers(&mut argument));
             }
-            expr.register = argument_registers.into_iter().max().unwrap_or(0);
+            expr.max_register_needed = argument_registers.into_iter().max().unwrap_or(0);
         }
         If(ref mut e) => {
             allocate_registers(&mut e.condition);
             let left = allocate_registers(&mut e.true_value);
             let right = allocate_registers(&mut e.false_value);
-            expr.register = allocate_register_binary(left, right);
+            expr.max_register_needed = allocate_register_binary(left, right);
         }
         Index(ref mut e) => {
             let left = allocate_registers(&mut e.value);
             let right = allocate_registers(&mut e.index);
-            expr.register = allocate_register_binary(left, right);
+            expr.max_register_needed = allocate_register_binary(left, right);
         }
         _ => {
             panic!(
@@ -999,7 +999,7 @@ fn allocate_registers(expr: &mut ast::Expression) -> u8 {
             );
         }
     }
-    expr.register
+    expr.max_register_needed
 }
 
 fn allocate_register_binary(left: u8, right: u8) -> u8 {
