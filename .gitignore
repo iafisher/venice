@@ -25,3 +25,5 @@ __pycache__
 
 /*.vn
 /runtime/test
+/compile
+/run

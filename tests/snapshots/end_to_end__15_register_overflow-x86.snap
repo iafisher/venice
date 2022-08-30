@@ -33,30 +33,24 @@ venice_main_0:
   popq %r11
   popq %r10
   movq %rax, %r10
-  movq $1, %r10
-  movq %r10, %r11
-  movq $2, %r10
-  addq %r10, %r11
-  movq %r11, %r11
-  movq %r11, %r12
-  movq $3, %r10
-  movq %r10, %r11
-  movq $4, %r10
-  addq %r10, %r11
-  movq %r11, %r11
-  movq $5, %r10
-  addq %r10, %r11
-  movq %r11, %r11
-  addq %r11, %r12
-  movq %r12, %r12
-  movq %r12, %r13
   movq $6, %r10
   movq %r10, %r11
   movq $7, %r10
   addq %r10, %r11
   movq %r11, %r11
-  movq $8, %r10
-  addq %r10, %r11
+  movq %r11, %r12
+  movq $88, %r10
+  movq %r10, %r11
+  movq $80, %r10
+  subq %r10, %r11
+  movq %r11, %r11
+  addq %r11, %r12
+  movq %r12, %r12
+  movq %r12, %r13
+  movq $99, %r10
+  movq %r10, %r11
+  movq $90, %r10
+  subq %r10, %r11
   movq %r11, %r11
   movq %r11, %r12
   movq $11, %r10
@@ -64,13 +58,34 @@ venice_main_0:
   movq $14, %r10
   subq %r10, %r11
   movq %r11, %r11
-  movq $9, %r10
-  addq %r11, %r10
-  movq %r10, %r11
   addq %r11, %r12
   movq %r12, %r12
   addq %r12, %r13
   movq %r13, %r13
+  movq $20, %r10
+  movq %r10, %r11
+  movq $19, %r10
+  subq %r10, %r11
+  movq %r11, %r11
+  movq $2, %r10
+  addq %r10, %r11
+  movq %r11, %r11
+  movq %r11, %r12
+  movq $40, %r10
+  movq %r10, %r11
+  movq $36, %r10
+  subq %r10, %r11
+  movq %r11, %r11
+  movq $5, %r10
+  addq %r10, %r11
+  movq %r11, %r11
+  movq $3, %r10
+  addq %r11, %r10
+  movq %r10, %r11
+  addq %r11, %r12
+  movq %r12, %r12
+  addq %r13, %r12
+  movq %r12, %r13
   movq %r13, %rdi
   pushq %r10
   pushq %r11

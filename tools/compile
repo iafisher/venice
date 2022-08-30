@@ -8,7 +8,8 @@
 set -eu
 
 main() {
-  cargo run -- --debug --keep-intermediate "$@"
+  cargo rustc -- -Awarnings  # -Awarnings suppresses warnings, which generate a lot of output.
+  ./target/debug/venice --debug --keep-intermediate "$@"
 }
 
 main "$@"

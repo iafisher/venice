@@ -137,12 +137,6 @@ fn test_e2e_full_options(base_name: &str, args: &[&str], expect_error: bool) {
         .unwrap();
     assert!(status.success());
 
-    // Check the intermediate files.
-    let vil_output = read_file(&vil_path);
-    insta::assert_display_snapshot!(format!("{}-vil", base_name), vil_output);
-    let x86_output = read_file(&x86_path);
-    insta::assert_display_snapshot!(format!("{}-x86", base_name), x86_output);
-
     // Run the binary itself, under the `timeout` utility so it doesn't run forever.
     let output = Command::new("timeout")
         .arg("5s")
@@ -162,6 +156,12 @@ fn test_e2e_full_options(base_name: &str, args: &[&str], expect_error: bool) {
     insta::assert_display_snapshot!(format!("{}-stdout", base_name), stdout);
     let stderr = str::from_utf8(&output.stderr).unwrap();
     insta::assert_display_snapshot!(format!("{}-stderr", base_name), stderr);
+
+    // Check the intermediate files.
+    let vil_output = read_file(&vil_path);
+    insta::assert_display_snapshot!(format!("{}-vil", base_name), vil_output);
+    let x86_output = read_file(&x86_path);
+    insta::assert_display_snapshot!(format!("{}-x86", base_name), x86_output);
 }
 
 struct CleanupFile(Vec<String>);

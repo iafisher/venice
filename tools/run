@@ -24,7 +24,9 @@ cleanup() {
 trap cleanup EXIT
 
 # Compile the program.
-cargo run -- "$input_path"
+cargo rustc -- -Awarnings  # -Awarnings suppresses warnings, which generate a lot of output.
+echo
+./target/debug/venice -- "$input_path"
 
 # Run the executable.
 ./"$output_path" "$@"
