@@ -17,20 +17,22 @@ venice_main_0:
   callee_save %rg5
   callee_save %rg6
   %rg0 = set s_0
-  %rp0 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg1
   call %venice_string_new
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
-  %rp0 = move %rg0
+  %rg1 = move %rt
+  %rg2 = move %rg1
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg2
   call %venice_panic
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
+  %rg2 = move %rt
   %rg0 = set 0
   %rt = move %rg0
   %rg6 = callee_restore

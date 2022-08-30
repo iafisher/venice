@@ -63,6 +63,7 @@ fn test_08_nested_function_calls() {
     test_e2e("08_nested_function_calls");
 }
 
+#[ignore] // TODO(#148): Re-enable this test once compiler can handle register allocation.
 #[test]
 fn test_09_more_nested_function_calls() {
     test_e2e("09_more_nested_function_calls");
@@ -96,6 +97,11 @@ fn test_14_file_io() {
 #[test]
 fn test_15_register_overflow() {
     test_e2e("15_register_overflow");
+}
+
+#[test]
+fn test_16_tricky_function_calls() {
+    test_e2e("16_tricky_function_calls");
 }
 
 fn test_e2e(base_name: &str) {

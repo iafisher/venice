@@ -23,68 +23,76 @@ venice_main_0:
   callee_save %rg5
   callee_save %rg6
   %rg0 = set s_0
-  %rp0 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg1
   call %venice_string_new
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
-  %rp0 = move %rg0
+  %rg1 = move %rt
+  %rg2 = move %rg1
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg2
   call %venice_file_open
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
-  store %rg0, -8  // f__0
+  %rg2 = move %rt
+  store %rg2, -8  // f__0
   %rg0 = load -8  // f__0
-  %rp0 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg1
   call %venice_file_read_all
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
-  store %rg0, -16  // content__1
+  %rg1 = move %rt
+  store %rg1, -16  // content__1
   %rg0 = load -8  // f__0
-  %rp0 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg1
   call %venice_file_close
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
+  %rg1 = move %rt
   %rg0 = set s_1
-  %rp0 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg1
   call %venice_string_new
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
-  %rp0 = move %rg0
+  %rg1 = move %rt
+  %rg2 = move %rg1
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg2
   call %venice_print
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
+  %rg2 = move %rt
   %rg0 = load -16  // content__1
-  %rp0 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg1
   call %venice_string_length
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
-  %rp0 = move %rg0
+  %rg1 = move %rt
+  %rg2 = move %rg1
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg2
   call %venice_printint
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
+  %rg2 = move %rt
   %rg0 = set 0
   %rt = move %rg0
   %rg6 = callee_restore

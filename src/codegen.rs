@@ -262,7 +262,7 @@ impl Generator {
         for (i, argument) in expr.arguments.iter().enumerate() {
             let argument_register = self.generate_expression(argument);
             self.push(vil::InstructionKind::Move(
-                vil::Register::param(i.try_into().unwrap()),
+                vil::Register::gp(r.index() - u8::try_from(i).unwrap()),
                 argument_register,
             ));
         }
@@ -275,6 +275,14 @@ impl Generator {
         // Save caller-save registers.
         self.push(vil::InstructionKind::CallerSave(vil::Register::gp(0)));
         self.push(vil::InstructionKind::CallerSave(vil::Register::gp(1)));
+
+        // Move the arguments from their result registers to the parameter registers.
+        for i in 0..expr.arguments.len() {
+            self.push(vil::InstructionKind::Move(
+                vil::Register::param(u8::try_from(i).unwrap()),
+                vil::Register::gp(r.index() - u8::try_from(i).unwrap()),
+            ));
+        }
 
         if expr.variadic {
             self.push(vil::InstructionKind::CallVariadic(vil::FunctionLabel(

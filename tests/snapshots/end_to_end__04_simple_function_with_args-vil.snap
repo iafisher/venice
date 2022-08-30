@@ -41,24 +41,27 @@ venice_main_1:
   callee_save %rg5
   callee_save %rg6
   %rg0 = set 47
-  %rp0 = move %rg0
+  %rg2 = move %rg0
   %rg0 = set 5
-  %rp1 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg2
+  %rp1 = move %rg1
   call %sub__0
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
-  store %rg0, -8  // x__3
+  %rg2 = move %rt
+  store %rg2, -8  // x__3
   %rg0 = load -8  // x__3
-  %rp0 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg1
   call %venice_printint
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
+  %rg1 = move %rt
   %rg0 = set 0
   %rt = move %rg0
   %rg6 = callee_restore

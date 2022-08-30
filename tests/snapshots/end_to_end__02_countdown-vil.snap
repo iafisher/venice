@@ -28,13 +28,14 @@ while_cond_1:
 
 while_2:
   %rg0 = load -8  // i__0
-  %rp0 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg1
   call %venice_printint
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
+  %rg1 = move %rt
   %rg0 = load -8  // i__0
   %rg1 = move %rg0
   %rg0 = set 1

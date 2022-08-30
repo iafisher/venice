@@ -21,15 +21,16 @@ venice_main_0:
   movq %r11, %r11
   movq %r11, -8(%rbp)
   movq -8(%rbp), %r10
-  movq %r10, %rdi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r11, %rdi
   subq $8, %rsp
   call venice_printint
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
+  movq %rax, %r11
   movq $84, %r10
   movq %r10, %r11
   movq $2, %r10
@@ -39,15 +40,16 @@ venice_main_0:
   movq %rax, %r11
   movq %r11, -16(%rbp)
   movq -16(%rbp), %r10
-  movq %r10, %rdi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r11, %rdi
   subq $8, %rsp
   call venice_printint
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
+  movq %rax, %r11
   movq $0, %r10
   movq %r10, %rax
   popq %rbx

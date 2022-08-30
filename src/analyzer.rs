@@ -976,11 +976,15 @@ fn allocate_registers(expr: &mut ast::Expression) -> u8 {
             expr.max_register_needed = allocate_registers(&mut e.operand);
         }
         Call(ref mut e) => {
-            let mut argument_registers = Vec::new();
+            let mut max_argument_register = 0;
             for mut argument in &mut e.arguments {
-                argument_registers.push(allocate_registers(&mut argument));
+                let argument_register = allocate_registers(&mut argument);
+                max_argument_register = cmp::max(argument_register, max_argument_register);
             }
-            expr.max_register_needed = argument_registers.into_iter().max().unwrap_or(0);
+            // This is conservative: depending on the difference between the max and min argument
+            // register, we may not need an extra register for each argument.
+            expr.max_register_needed =
+                max_argument_register + u8::try_from(e.arguments.len()).unwrap();
         }
         If(ref mut e) => {
             allocate_registers(&mut e.condition);

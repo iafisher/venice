@@ -2,23 +2,26 @@
 source: tests/end_to_end.rs
 expression: vil_output
 ---
+extern venice_string_new;
+extern venice_print;
 extern venice_printint;
 
 
 
-func increment__0 {
+func add__0 {
 
-increment__0_0:
-  frame_set_up 8
+add__0_0:
+  frame_set_up 16
   callee_save %rg2
   callee_save %rg3
   callee_save %rg4
   callee_save %rg5
   callee_save %rg6
   store %rp0, -8  // x__1
+  store %rp1, -16  // y__2
   %rg0 = load -8  // x__1
   %rg1 = move %rg0
-  %rg0 = set 1
+  %rg0 = load -16  // y__2
   %rg1 = add %rg1, %rg0
   %rt = move %rg1
   %rg6 = callee_restore
@@ -26,7 +29,7 @@ increment__0_0:
   %rg4 = callee_restore
   %rg3 = callee_restore
   %rg2 = callee_restore
-  frame_tear_down 8
+  frame_tear_down 16
   ret
 }
 
@@ -39,12 +42,12 @@ venice_main_1:
   callee_save %rg4
   callee_save %rg5
   callee_save %rg6
-  %rg0 = set 38
+  %rg0 = set s_0
   %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
   %rp0 = move %rg1
-  call %increment__0
+  call %venice_string_new
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg1 = move %rt
@@ -52,23 +55,30 @@ venice_main_1:
   caller_save %rg0
   caller_save %rg1
   %rp0 = move %rg2
-  call %increment__0
+  call %venice_print
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg2 = move %rt
+  %rg0 = set 20
+  %rg4 = move %rg0
+  %rg0 = set 5
+  %rg2 = move %rg0
+  %rg0 = set 17
+  %rg1 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  %rp0 = move %rg2
+  %rp1 = move %rg1
+  call %add__0
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg2 = move %rt
   %rg3 = move %rg2
   caller_save %rg0
   caller_save %rg1
-  %rp0 = move %rg3
-  call %increment__0
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg3 = move %rt
-  %rg4 = move %rg3
-  caller_save %rg0
-  caller_save %rg1
   %rp0 = move %rg4
-  call %increment__0
+  %rp1 = move %rg3
+  call %add__0
   %rg1 = caller_restore
   %rg0 = caller_restore
   %rg4 = move %rt
@@ -90,4 +100,7 @@ venice_main_1:
   frame_tear_down 0
   ret
 }
+
+
+data s_0 = "Should be 42: ";
 

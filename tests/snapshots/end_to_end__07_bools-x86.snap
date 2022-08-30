@@ -64,38 +64,42 @@ if_end_3:
 
 if_true_7:
   movq $.s_0, %r10
-  movq %r10, %rdi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r11, %rdi
   call venice_string_new
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq %r10, %rdi
+  movq %rax, %r11
+  movq %r11, %r12
   pushq %r10
   pushq %r11
+  movq %r12, %rdi
   call venice_println
   popq %r11
   popq %r10
-  movq %rax, %r10
+  movq %rax, %r12
   jmp if_end_9
 
 if_false_8:
   movq $.s_1, %r10
-  movq %r10, %rdi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r11, %rdi
   call venice_string_new
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq %r10, %rdi
+  movq %rax, %r11
+  movq %r11, %r12
   pushq %r10
   pushq %r11
+  movq %r12, %rdi
   call venice_println
   popq %r11
   popq %r10
-  movq %rax, %r10
+  movq %rax, %r12
   jmp if_end_9
 
 if_end_9:

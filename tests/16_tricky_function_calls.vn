@@ -1,0 +1,15 @@
+// Regression test for https://github.com/iafisher/venice/issues/149
+
+func add(x: i64, y: i64) -> i64 {
+  return x + y;
+}
+
+func main() -> i64 {
+  print("Should be 42: ");
+
+  // Previous versions of the Venice compiler would immediately load the result of the
+  // first argument into the first parameter register, which would then be overwritten
+  // by the second argument, causing incorrect output.
+  printint(add(20, add(5, 17)));
+  return 0;
+}

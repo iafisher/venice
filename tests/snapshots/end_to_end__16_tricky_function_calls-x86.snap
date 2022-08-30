@@ -2,13 +2,41 @@
 source: tests/end_to_end.rs
 expression: x86_output
 ---
-.globl venice_main
-venice_main:
+add__0:
 
-venice_main_0:
+add__0_0:
   pushq %rbp
   movq %rsp, %rbp
   subq $16, %rsp
+  pushq %r12
+  pushq %r13
+  pushq %r14
+  pushq %r15
+  pushq %rbx
+  movq %rdi, -8(%rbp)
+  movq %rsi, -16(%rbp)
+  movq -8(%rbp), %r10
+  movq %r10, %r11
+  movq -16(%rbp), %r10
+  addq %r10, %r11
+  movq %r11, %r11
+  movq %r11, %rax
+  popq %rbx
+  popq %r15
+  popq %r14
+  popq %r13
+  popq %r12
+  addq $16, %rsp
+  popq %rbp
+  retq
+
+.globl venice_main
+venice_main:
+
+venice_main_1:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $0, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
@@ -30,77 +58,48 @@ venice_main_0:
   pushq %r11
   movq %r12, %rdi
   subq $8, %rsp
-  call venice_file_open
-  addq $8, %rsp
-  popq %r11
-  popq %r10
-  movq %rax, %r12
-  movq %r12, -8(%rbp)
-  movq -8(%rbp), %r10
-  movq %r10, %r11
-  pushq %r10
-  pushq %r11
-  movq %r11, %rdi
-  subq $8, %rsp
-  call venice_file_read_all
-  addq $8, %rsp
-  popq %r11
-  popq %r10
-  movq %rax, %r11
-  movq %r11, -16(%rbp)
-  movq -8(%rbp), %r10
-  movq %r10, %r11
-  pushq %r10
-  pushq %r11
-  movq %r11, %rdi
-  subq $8, %rsp
-  call venice_file_close
-  addq $8, %rsp
-  popq %r11
-  popq %r10
-  movq %rax, %r11
-  movq $.s_1, %r10
-  movq %r10, %r11
-  pushq %r10
-  pushq %r11
-  movq %r11, %rdi
-  subq $8, %rsp
-  call venice_string_new
-  addq $8, %rsp
-  popq %r11
-  popq %r10
-  movq %rax, %r11
-  movq %r11, %r12
-  pushq %r10
-  pushq %r11
-  movq %r12, %rdi
-  subq $8, %rsp
   call venice_print
   addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r12
-  movq -16(%rbp), %r10
+  movq $20, %r10
+  movq %r10, %r14
+  movq $5, %r10
+  movq %r10, %r12
+  movq $17, %r10
   movq %r10, %r11
   pushq %r10
   pushq %r11
-  movq %r11, %rdi
+  movq %r12, %rdi
+  movq %r11, %rsi
   subq $8, %rsp
-  call venice_string_length
+  call add__0
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r11
-  movq %r11, %r12
+  movq %rax, %r12
+  movq %r12, %r13
   pushq %r10
   pushq %r11
-  movq %r12, %rdi
+  movq %r14, %rdi
+  movq %r13, %rsi
+  subq $8, %rsp
+  call add__0
+  addq $8, %rsp
+  popq %r11
+  popq %r10
+  movq %rax, %r14
+  movq %r14, %r15
+  pushq %r10
+  pushq %r11
+  movq %r15, %rdi
   subq $8, %rsp
   call venice_printint
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r12
+  movq %rax, %r15
   movq $0, %r10
   movq %r10, %rax
   popq %rbx
@@ -108,12 +107,10 @@ venice_main_0:
   popq %r14
   popq %r13
   popq %r12
-  addq $16, %rsp
+  addq $0, %rsp
   popq %rbp
   retq
 
 .s_0:
-  .string "tests/resources/lorem.txt"
-.s_1:
-  .string "File size: "
+  .string "Should be 42: "
 

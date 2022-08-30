@@ -42,51 +42,56 @@ venice_main_1:
   pushq %r15
   pushq %rbx
   movq $38, %r10
-  movq %r10, %rdi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r11, %rdi
   subq $8, %rsp
   call increment__0
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq %r10, %rdi
+  movq %rax, %r11
+  movq %r11, %r12
   pushq %r10
   pushq %r11
+  movq %r12, %rdi
   subq $8, %rsp
   call increment__0
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq %r10, %rdi
+  movq %rax, %r12
+  movq %r12, %r13
   pushq %r10
   pushq %r11
+  movq %r13, %rdi
   subq $8, %rsp
   call increment__0
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq %r10, %rdi
+  movq %rax, %r13
+  movq %r13, %r14
   pushq %r10
   pushq %r11
+  movq %r14, %rdi
   subq $8, %rsp
   call increment__0
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq %r10, %rdi
+  movq %rax, %r14
+  movq %r14, %r15
   pushq %r10
   pushq %r11
+  movq %r15, %rdi
   subq $8, %rsp
   call venice_printint
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
+  movq %rax, %r15
   movq $0, %r10
   movq %r10, %rax
   popq %rbx

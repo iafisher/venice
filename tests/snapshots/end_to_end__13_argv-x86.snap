@@ -16,105 +16,114 @@ venice_main_0:
   pushq %rbx
   movq %rdi, -8(%rbp)
   movq $.s_0, %r10
-  movq %r10, %rdi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r11, %rdi
   subq $8, %rsp
   call venice_string_new
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq %r10, %rdi
+  movq %rax, %r11
+  movq %r11, %r12
   pushq %r10
   pushq %r11
+  movq %r12, %rdi
   subq $8, %rsp
   call venice_print
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
+  movq %rax, %r12
   movq -8(%rbp), %r10
-  movq %r10, %rdi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r11, %rdi
   subq $8, %rsp
   call venice_list_length
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq %r10, %rdi
+  movq %rax, %r11
+  movq %r11, %r12
   pushq %r10
   pushq %r11
+  movq %r12, %rdi
   subq $8, %rsp
   call venice_printint
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
+  movq %rax, %r12
   movq $0, %r10
   movq %r10, -16(%rbp)
   jmp while_cond_1
 
 while_cond_1:
-  movq -16(%rbp), %r10
-  movq %r10, %r11
   movq -8(%rbp), %r10
-  movq %r10, %rdi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r11, %rdi
   subq $8, %rsp
   call venice_list_length
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
-  cmpq %r10, %r11
+  movq %rax, %r11
+  movq -16(%rbp), %r10
+  cmpq %r11, %r10
   jl while_2
   jmp while_end_3
 
 while_2:
   movq $.s_1, %r10
-  movq %r10, %rdi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r11, %rdi
   subq $8, %rsp
   call venice_string_new
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq %r10, %rdi
+  movq %rax, %r11
+  movq %r11, %r12
   pushq %r10
   pushq %r11
+  movq %r12, %rdi
   subq $8, %rsp
   call venice_print
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
+  movq %rax, %r12
   movq -8(%rbp), %r10
-  movq %r10, %rdi
+  movq %r10, %r12
   movq -16(%rbp), %r10
-  movq %r10, %rsi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r12, %rdi
+  movq %r11, %rsi
   subq $8, %rsp
   call venice_list_index
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
-  movq %r10, %rdi
+  movq %rax, %r12
+  movq %r12, %r13
   pushq %r10
   pushq %r11
+  movq %r13, %rdi
   subq $8, %rsp
   call venice_println
   addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r10
+  movq %rax, %r13
   movq -16(%rbp), %r10
   movq %r10, %r11
   movq $1, %r10

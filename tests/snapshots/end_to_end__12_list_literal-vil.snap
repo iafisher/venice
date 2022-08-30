@@ -18,39 +18,46 @@ venice_main_0:
   callee_save %rg5
   callee_save %rg6
   %rg0 = set 3
-  %rp0 = move %rg0
+  %rg4 = move %rg0
   %rg0 = set 1
   %rg0 = negate %rg0
-  %rp1 = move %rg0
+  %rg3 = move %rg0
   %rg0 = set 42
-  %rp2 = move %rg0
+  %rg2 = move %rg0
   %rg0 = set 1
   %rg0 = negate %rg0
-  %rp3 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg4
+  %rp1 = move %rg3
+  %rp2 = move %rg2
+  %rp3 = move %rg1
   call_variadic %venice_list_from_varargs
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
-  store %rg0, -8  // numbers__0
+  %rg4 = move %rt
+  store %rg4, -8  // numbers__0
   %rg0 = load -8  // numbers__0
-  %rp0 = move %rg0
+  %rg2 = move %rg0
   %rg0 = set 1
-  %rp1 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg2
+  %rp1 = move %rg1
   call %venice_list_index
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
-  %rp0 = move %rg0
+  %rg2 = move %rt
+  %rg3 = move %rg2
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg3
   call %venice_printint
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
+  %rg3 = move %rt
   %rg0 = set 0
   %rt = move %rg0
   %rg6 = callee_restore

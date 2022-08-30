@@ -28,13 +28,14 @@ while_cond_1:
 
 while_2:
   movq -8(%rbp), %r10
-  movq %r10, %rdi
+  movq %r10, %r11
   pushq %r10
   pushq %r11
+  movq %r11, %rdi
   call venice_printint
   popq %r11
   popq %r10
-  movq %rax, %r10
+  movq %rax, %r11
   movq -8(%rbp), %r10
   movq %r10, %r11
   movq $1, %r10

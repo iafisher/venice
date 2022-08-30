@@ -22,26 +22,28 @@ venice_main_0:
   %rg1 = mul %rg1, %rg0
   store %rg1, -8  // x__0
   %rg0 = load -8  // x__0
-  %rp0 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg1
   call %venice_printint
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
+  %rg1 = move %rt
   %rg0 = set 84
   %rg1 = move %rg0
   %rg0 = set 2
   %rg1 = div %rg1, %rg0
   store %rg1, -16  // y__1
   %rg0 = load -16  // y__1
-  %rp0 = move %rg0
+  %rg1 = move %rg0
   caller_save %rg0
   caller_save %rg1
+  %rp0 = move %rg1
   call %venice_printint
   %rg1 = caller_restore
   %rg0 = caller_restore
-  %rg0 = move %rt
+  %rg1 = move %rt
   %rg0 = set 0
   %rt = move %rg0
   %rg6 = callee_restore
