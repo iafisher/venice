@@ -59,6 +59,16 @@ fn test_07_bools() {
 }
 
 #[test]
+fn test_08_nested_function_calls() {
+    test_e2e("08_nested_function_calls");
+}
+
+#[test]
+fn test_09_more_nested_function_calls() {
+    test_e2e("09_more_nested_function_calls");
+}
+
+#[test]
 fn test_10_fibonacci() {
     test_e2e("10_fibonacci");
 }

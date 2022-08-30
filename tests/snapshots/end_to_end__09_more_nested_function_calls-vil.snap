@@ -1,0 +1,97 @@
+---
+source: tests/end_to_end.rs
+expression: vil_output
+---
+extern venice_printint;
+
+
+
+func add__0 {
+
+add__0_0:
+  frame_set_up 16
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
+  store %rp0, -8  // x__1
+  store %rp1, -16  // y__2
+  %rg0 = load -8  // x__1
+  %rg1 = move %rg0
+  %rg0 = load -16  // y__2
+  %rg1 = add %rg1, %rg0
+  %rt = move %rg1
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
+  frame_tear_down 16
+  ret
+}
+
+func venice_main {
+
+venice_main_1:
+  frame_set_up 0
+  callee_save %rg2
+  callee_save %rg3
+  callee_save %rg4
+  callee_save %rg5
+  callee_save %rg6
+  %rg0 = set 35
+  %rp0 = move %rg0
+  %rg0 = set 1
+  %rp1 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %add__0
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rp0 = move %rg0
+  %rg0 = set 3
+  %rp1 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %add__0
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rp0 = move %rg0
+  %rg0 = set 2
+  %rp1 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %add__0
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rp0 = move %rg0
+  %rg0 = set 1
+  %rp1 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %add__0
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rp0 = move %rg0
+  caller_save %rg0
+  caller_save %rg1
+  call %venice_printint
+  %rg1 = caller_restore
+  %rg0 = caller_restore
+  %rg0 = move %rt
+  %rg0 = set 0
+  %rt = move %rg0
+  %rg6 = callee_restore
+  %rg5 = callee_restore
+  %rg4 = callee_restore
+  %rg3 = callee_restore
+  %rg2 = callee_restore
+  frame_tear_down 0
+  ret
+}
+

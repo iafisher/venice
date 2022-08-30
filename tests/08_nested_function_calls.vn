@@ -1,0 +1,8 @@
+func increment(x: i64) -> i64 {
+  return x + 1;
+}
+
+func main() -> i64 {
+  printint(increment(increment(increment(increment(38)))));
+  return 0;
+}
