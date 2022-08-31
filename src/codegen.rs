@@ -259,12 +259,15 @@ impl Generator {
             panic!("internal error: compiler cannot handle more than 6 arguments")
         }
 
+        let mut final_argument_registers = Vec::new();
         for (i, argument) in expr.arguments.iter().enumerate() {
             let argument_register = self.generate_expression(argument);
+            let final_argument_register = vil::Register::gp(r.index() - u8::try_from(i).unwrap());
             self.push(vil::InstructionKind::Move(
-                vil::Register::gp(r.index() - u8::try_from(i).unwrap()),
+                final_argument_register,
                 argument_register,
             ));
+            final_argument_registers.push(final_argument_register);
         }
 
         let unique_name = &expr.function.unique_name;
@@ -277,22 +280,16 @@ impl Generator {
             self.push(vil::InstructionKind::CallerSave(*caller_save));
         }
 
-        // Move the arguments from their result registers to the parameter registers.
-        for i in 0..expr.arguments.len() {
-            self.push(vil::InstructionKind::Move(
-                vil::Register::param(u8::try_from(i).unwrap()),
-                vil::Register::gp(r.index() - u8::try_from(i).unwrap()),
-            ));
-        }
-
         if expr.variadic {
-            self.push(vil::InstructionKind::CallVariadic(vil::FunctionLabel(
-                unique_name.clone(),
-            )));
+            self.push(vil::InstructionKind::CallVariadic(
+                vil::FunctionLabel(unique_name.clone()),
+                final_argument_registers,
+            ));
         } else {
-            self.push(vil::InstructionKind::Call(vil::FunctionLabel(
-                unique_name.clone(),
-            )));
+            self.push(vil::InstructionKind::Call(
+                vil::FunctionLabel(unique_name.clone()),
+                final_argument_registers,
+            ));
         }
 
         // Restore caller-save registers.

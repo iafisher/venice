@@ -29,11 +29,7 @@ venice_main_0:
   R1 = move R0
   caller_save R0
   caller_save R1
-  R7 = move R4
-  R8 = move R3
-  R9 = move R2
-  R10 = move R1
-  call_variadic %venice_list_from_varargs
+  call_variadic %venice_list_from_varargs, R4, R3, R2, R1
   R1 = caller_restore
   R0 = caller_restore
   R4 = move R13
@@ -44,17 +40,14 @@ venice_main_0:
   R1 = move R0
   caller_save R0
   caller_save R1
-  R7 = move R2
-  R8 = move R1
-  call %venice_list_index
+  call %venice_list_index, R2, R1
   R1 = caller_restore
   R0 = caller_restore
   R2 = move R13
   R3 = move R2
   caller_save R0
   caller_save R1
-  R7 = move R3
-  call %venice_printint
+  call %venice_printint, R3
   R1 = caller_restore
   R0 = caller_restore
   R3 = move R13

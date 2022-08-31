@@ -70,6 +70,11 @@ impl Value {
     fn r(r: &vil::Register) -> Self {
         Value::Register(Register(r.index()))
     }
+
+    /// Constructs the x86 register for a function's i'th parameter (starting at 0).
+    fn param(i: u8) -> Self {
+        Value::Register(Register(i + 7))
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -233,12 +238,26 @@ impl Generator {
             Cmp(r1, r2) => {
                 instructions.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
-            Call(label) => {
+            Call(label, registers) => {
+                for (i, register) in registers.iter().enumerate() {
+                    instructions.push(Instruction::Mov(
+                        Value::param(u8::try_from(i).unwrap()),
+                        Value::r(register),
+                    ));
+                }
+
                 self.align_stack(instructions);
                 instructions.push(Instruction::Call(label.0.clone()));
                 self.unalign_stack(instructions);
             }
-            CallVariadic(label) => {
+            CallVariadic(label, registers) => {
+                for (i, register) in registers.iter().enumerate() {
+                    instructions.push(Instruction::Mov(
+                        Value::param(u8::try_from(i).unwrap()),
+                        Value::r(register),
+                    ));
+                }
+
                 // The System V ABI requires setting AL to the number of vector registers when
                 // calling a variadic function.
                 instructions.push(Instruction::Mov(

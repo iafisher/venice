@@ -28,16 +28,14 @@ venice_main_0:
   R1 = move R0
   caller_save R0
   caller_save R1
-  R7 = move R1
-  call %venice_string_new
+  call %venice_string_new, R1
   R1 = caller_restore
   R0 = caller_restore
   R1 = move R13
   R2 = move R1
   caller_save R0
   caller_save R1
-  R7 = move R2
-  call %venice_print
+  call %venice_print, R2
   R1 = caller_restore
   R0 = caller_restore
   R2 = move R13
@@ -45,16 +43,14 @@ venice_main_0:
   R1 = move R0
   caller_save R0
   caller_save R1
-  R7 = move R1
-  call %venice_list_length
+  call %venice_list_length, R1
   R1 = caller_restore
   R0 = caller_restore
   R1 = move R13
   R2 = move R1
   caller_save R0
   caller_save R1
-  R7 = move R2
-  call %venice_printint
+  call %venice_printint, R2
   R1 = caller_restore
   R0 = caller_restore
   R2 = move R13
@@ -67,8 +63,7 @@ while_cond_1:
   R1 = move R0
   caller_save R0
   caller_save R1
-  R7 = move R1
-  call %venice_list_length
+  call %venice_list_length, R1
   R1 = caller_restore
   R0 = caller_restore
   R1 = move R13
@@ -81,16 +76,14 @@ while_2:
   R1 = move R0
   caller_save R0
   caller_save R1
-  R7 = move R1
-  call %venice_string_new
+  call %venice_string_new, R1
   R1 = caller_restore
   R0 = caller_restore
   R1 = move R13
   R2 = move R1
   caller_save R0
   caller_save R1
-  R7 = move R2
-  call %venice_print
+  call %venice_print, R2
   R1 = caller_restore
   R0 = caller_restore
   R2 = move R13
@@ -100,17 +93,14 @@ while_2:
   R1 = move R0
   caller_save R0
   caller_save R1
-  R7 = move R2
-  R8 = move R1
-  call %venice_list_index
+  call %venice_list_index, R2, R1
   R1 = caller_restore
   R0 = caller_restore
   R2 = move R13
   R3 = move R2
   caller_save R0
   caller_save R1
-  R7 = move R3
-  call %venice_println
+  call %venice_println, R3
   R1 = caller_restore
   R0 = caller_restore
   R3 = move R13

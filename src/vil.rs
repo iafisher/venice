@@ -34,8 +34,8 @@ pub struct Instruction {
 #[derive(Debug)]
 pub enum InstructionKind {
     Add(Register, Register, Register),
-    Call(FunctionLabel),
-    CallVariadic(FunctionLabel),
+    Call(FunctionLabel, Vec<Register>),
+    CallVariadic(FunctionLabel, Vec<Register>),
     CalleeRestore(Register),
     CalleeSave(Register),
     CallerRestore(Register),
@@ -183,8 +183,20 @@ impl fmt::Display for InstructionKind {
         use InstructionKind::*;
         match self {
             Add(r1, r2, r3) => write!(f, "{} = add {}, {}", r1, r2, r3),
-            Call(func) => write!(f, "call {}", func),
-            CallVariadic(func) => write!(f, "call_variadic {}", func),
+            Call(func, registers) => {
+                write!(f, "call {}", func)?;
+                for register in registers {
+                    write!(f, ", {}", register)?;
+                }
+                fmt::Result::Ok(())
+            }
+            CallVariadic(func, registers) => {
+                write!(f, "call_variadic {}", func)?;
+                for register in registers {
+                    write!(f, ", {}", register)?;
+                }
+                fmt::Result::Ok(())
+            }
             CalleeSave(r) => write!(f, "callee_save {}", r),
             CalleeRestore(r) => write!(f, "{} = callee_restore", r),
             CallerSave(r) => write!(f, "caller_save {}", r),

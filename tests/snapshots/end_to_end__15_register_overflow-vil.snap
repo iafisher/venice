@@ -21,16 +21,14 @@ venice_main_0:
   R1 = move R0
   caller_save R0
   caller_save R1
-  R7 = move R1
-  call %venice_string_new
+  call %venice_string_new, R1
   R1 = caller_restore
   R0 = caller_restore
   R1 = move R13
   R2 = move R1
   caller_save R0
   caller_save R1
-  R7 = move R2
-  call %venice_print
+  call %venice_print, R2
   R1 = caller_restore
   R0 = caller_restore
   R2 = move R13
@@ -76,8 +74,7 @@ venice_main_0:
   R4 = move R3
   caller_save R0
   caller_save R1
-  R7 = move R4
-  call %venice_printint
+  call %venice_printint, R4
   R1 = caller_restore
   R0 = caller_restore
   R4 = move R13
