@@ -151,17 +151,17 @@ fn test_e2e_full_options(base_name: &str, args: &[&str], expect_error: bool) {
         .output()
         .unwrap();
 
-    if expect_error {
-        assert!(!output.status.success());
-    } else {
-        assert!(output.status.success());
-    }
-
     // Check the output.
     let stdout = str::from_utf8(&output.stdout).unwrap();
     insta::assert_display_snapshot!(format!("{}-stdout", base_name), stdout);
     let stderr = str::from_utf8(&output.stderr).unwrap();
     insta::assert_display_snapshot!(format!("{}-stderr", base_name), stderr);
+
+    if expect_error {
+        assert!(!output.status.success());
+    } else {
+        assert!(output.status.success());
+    }
 
     // Check the intermediate files.
     let vil_output = read_file(&vil_path);

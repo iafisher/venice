@@ -9,11 +9,6 @@ extern venice_printint;
 func venice_main {
 
 venice_main_0:
-  callee_save R2
-  callee_save R3
-  callee_save R4
-  callee_save R5
-  callee_save R6
   R0 = set 12
   R1 = move R0
   caller_save R0
@@ -36,21 +31,11 @@ venice_main_0:
   jump %venice_main_return_1
 
 venice_main_return_1:
-  R6 = callee_restore
-  R5 = callee_restore
-  R4 = callee_restore
-  R3 = callee_restore
-  R2 = callee_restore
 }
 
 func fibonacci__0 {
 
 fibonacci__0_2:
-  callee_save R2
-  callee_save R3
-  callee_save R4
-  callee_save R5
-  callee_save R6
   store R7, -8  // n__2
   R0 = set 1
   store R0, -16  // fib_i__3
@@ -90,10 +75,5 @@ while_end_6:
   jump %fibonacci__0_return_3
 
 fibonacci__0_return_3:
-  R6 = callee_restore
-  R5 = callee_restore
-  R4 = callee_restore
-  R3 = callee_restore
-  R2 = callee_restore
 }
 

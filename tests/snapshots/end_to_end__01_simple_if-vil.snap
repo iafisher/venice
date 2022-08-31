@@ -12,11 +12,6 @@ extern venice_println;
 func venice_main {
 
 venice_main_0:
-  callee_save R2
-  callee_save R3
-  callee_save R4
-  callee_save R5
-  callee_save R6
   R0 = set 1
   R13 = set 1
   cmp R0, R13
@@ -64,11 +59,6 @@ if_end_4:
   jump %venice_main_return_1
 
 venice_main_return_1:
-  R6 = callee_restore
-  R5 = callee_restore
-  R4 = callee_restore
-  R3 = callee_restore
-  R2 = callee_restore
 }
 
 

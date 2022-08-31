@@ -6,13 +6,13 @@ fibonacci__0:
   pushq %rbp
   movq %rsp, %rbp
   subq $8, %rsp
-
-fibonacci__0_0:
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
+
+fibonacci__0_0:
   movq %rdi, -8(%rbp)
   movq -8(%rbp), %r10
   movq %r10, %r11
@@ -95,13 +95,13 @@ venice_main:
   pushq %rbp
   movq %rsp, %rbp
   subq $8, %rsp
-
-venice_main_8:
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
+
+venice_main_8:
   movq $12, %r10
   movq %r10, %r11
   pushq %r10

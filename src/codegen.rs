@@ -69,11 +69,6 @@ impl Generator {
         self.return_label = self.claim_label(&format!("{}_return", name));
         self.start_block(label, None);
 
-        // Save callee-save registers.
-        for callee_save in vil::CALLEE_SAVE_REGISTERS {
-            self.push(vil::InstructionKind::CalleeSave(*callee_save));
-        }
-
         // Move parameters from registers onto the stack.
         for (i, parameter) in declaration.parameters.iter().enumerate() {
             self.push_with_comment(
@@ -86,13 +81,7 @@ impl Generator {
         }
 
         self.generate_block(&declaration.body);
-
         self.start_block(self.return_label.clone(), None);
-
-        // Restore callee-save registers.
-        for callee_save in vil::CALLEE_SAVE_REGISTERS.iter().rev() {
-            self.push(vil::InstructionKind::CalleeRestore(*callee_save));
-        }
     }
 
     fn generate_expression(&mut self, expr: &ast::Expression) -> vil::Register {

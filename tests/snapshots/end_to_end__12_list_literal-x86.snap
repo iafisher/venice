@@ -7,13 +7,13 @@ venice_main:
   pushq %rbp
   movq %rsp, %rbp
   subq $8, %rsp
-
-venice_main_0:
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
+
+venice_main_0:
   movq $3, %r10
   movq %r10, %r14
   movq $1, %r10

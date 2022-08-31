@@ -6,13 +6,13 @@ sub__0:
   pushq %rbp
   movq %rsp, %rbp
   subq $16, %rsp
-
-sub__0_0:
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
+
+sub__0_0:
   movq %rdi, -8(%rbp)
   movq %rsi, -16(%rbp)
   movq -8(%rbp), %r10
@@ -38,13 +38,13 @@ venice_main:
   pushq %rbp
   movq %rsp, %rbp
   subq $8, %rsp
-
-venice_main_2:
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
+
+venice_main_2:
   movq $47, %r10
   movq %r10, %r12
   movq $5, %r10

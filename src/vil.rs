@@ -69,13 +69,6 @@ pub const GP_REGISTER_COUNT: u8 = 7;
 const RETURN_REGISTER_INDEX: u8 = 13;
 
 pub const CALLER_SAVE_REGISTERS: &[Register] = &[Register(0), Register(1)];
-pub const CALLEE_SAVE_REGISTERS: &[Register] = &[
-    Register(2),
-    Register(3),
-    Register(4),
-    Register(5),
-    Register(6),
-];
 
 impl Register {
     pub fn index(self) -> u8 {

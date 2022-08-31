@@ -9,11 +9,6 @@ extern venice_printint;
 func sub__0 {
 
 sub__0_0:
-  callee_save R2
-  callee_save R3
-  callee_save R4
-  callee_save R5
-  callee_save R6
   store R7, -8  // x__1
   store R8, -16  // y__2
   R0 = load -8  // x__1
@@ -24,21 +19,11 @@ sub__0_0:
   jump %sub__0_return_1
 
 sub__0_return_1:
-  R6 = callee_restore
-  R5 = callee_restore
-  R4 = callee_restore
-  R3 = callee_restore
-  R2 = callee_restore
 }
 
 func venice_main {
 
 venice_main_2:
-  callee_save R2
-  callee_save R3
-  callee_save R4
-  callee_save R5
-  callee_save R6
   R0 = set 47
   R2 = move R0
   R0 = set 5
@@ -63,10 +48,5 @@ venice_main_2:
   jump %venice_main_return_3
 
 venice_main_return_3:
-  R6 = callee_restore
-  R5 = callee_restore
-  R4 = callee_restore
-  R3 = callee_restore
-  R2 = callee_restore
 }
 

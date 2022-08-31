@@ -9,11 +9,6 @@ extern venice_printint;
 func two_plus_two__0 {
 
 two_plus_two__0_0:
-  callee_save R2
-  callee_save R3
-  callee_save R4
-  callee_save R5
-  callee_save R6
   R0 = set 2
   R1 = move R0
   R0 = set 2
@@ -22,21 +17,11 @@ two_plus_two__0_0:
   jump %two_plus_two__0_return_1
 
 two_plus_two__0_return_1:
-  R6 = callee_restore
-  R5 = callee_restore
-  R4 = callee_restore
-  R3 = callee_restore
-  R2 = callee_restore
 }
 
 func venice_main {
 
 venice_main_2:
-  callee_save R2
-  callee_save R3
-  callee_save R4
-  callee_save R5
-  callee_save R6
   caller_save R0
   caller_save R1
   call %two_plus_two__0
@@ -57,10 +42,5 @@ venice_main_2:
   jump %venice_main_return_3
 
 venice_main_return_3:
-  R6 = callee_restore
-  R5 = callee_restore
-  R4 = callee_restore
-  R3 = callee_restore
-  R2 = callee_restore
 }
 

@@ -89,6 +89,8 @@ pub enum DataValue {
     Str(String),
 }
 
+pub const CALLEE_SAVE_REGISTERS: &[u8] = &[2, 3, 4, 5, 6];
+
 struct Generator {
     program: Program,
     stack_alignment: i64,
@@ -130,19 +132,29 @@ impl Generator {
             label: declaration.name.clone(),
             instructions: Vec::new(),
         };
+        self.program.blocks.push(block);
 
-        block.instructions.push(Instruction::Push(RBP));
+        self.push(Instruction::Push(RBP));
         self.stack_alignment += 8;
-        block.instructions.push(Instruction::Mov(RBP, RSP));
+        self.push(Instruction::Mov(RBP, RSP));
         let size_as_i64 = i64::try_from(declaration.stack_frame_size).unwrap();
-        block
-            .instructions
-            .push(Instruction::Sub(RSP, Value::Immediate(size_as_i64)));
+        self.push(Instruction::Sub(RSP, Value::Immediate(size_as_i64)));
         self.stack_alignment += size_as_i64;
 
-        self.program.blocks.push(block);
+        // Save callee-save registers.
+        for callee_save in CALLEE_SAVE_REGISTERS {
+            self.push(Instruction::Push(Value::Register(Register(*callee_save))));
+            self.stack_alignment += 8;
+        }
+
         for block in &declaration.blocks {
             self.generate_block(declaration, block);
+        }
+
+        // Restore callee-save registers.
+        for callee_save in CALLEE_SAVE_REGISTERS.iter().rev() {
+            self.push(Instruction::Pop(Value::Register(Register(*callee_save))));
+            self.stack_alignment -= 8;
         }
 
         let size_as_i64 = i64::try_from(declaration.stack_frame_size).unwrap();
