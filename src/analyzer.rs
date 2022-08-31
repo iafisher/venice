@@ -130,23 +130,19 @@ impl Analyzer {
     ) -> ast::Declaration {
         let return_type = self.resolve_type(&declaration.return_type);
         let mut parameters = Vec::new();
-        let mut stack_frame_size = 0;
-        let mut stack_offset = -8;
+        self.current_stack_offset = -8;
         for parameter in &declaration.parameters {
             let t = self.resolve_type(&parameter.type_);
             let unique_name = self.claim_unique_name(&parameter.name);
-            let entry = ast::SymbolEntry {
-                unique_name,
-                type_: t.clone(),
-                constant: false,
-                external: false,
-                stack_offset,
-            };
-
-            stack_frame_size += t.stack_size();
-            stack_offset -= t.stack_size();
+            let stack_offset = self.claim_stack_offset(&t);
             parameters.push(ast::FunctionParameter {
-                name: entry,
+                name: ast::SymbolEntry {
+                    unique_name,
+                    type_: t.clone(),
+                    constant: false,
+                    external: false,
+                    stack_offset,
+                },
                 type_: t,
             });
         }
@@ -158,12 +154,12 @@ impl Analyzer {
                 .insert(&ptree_parameter.name, ast_parameter.name.clone());
         }
 
-        self.current_function_info = Some(ast::FunctionInfo { stack_frame_size });
         self.current_function_return_type = Some(return_type.clone());
-        self.current_stack_offset = stack_offset;
         let body = self.analyze_block(&declaration.body);
         self.current_function_return_type = None;
-        self.current_stack_offset = -8;
+        self.current_function_info = Some(ast::FunctionInfo {
+            stack_frame_size: -(self.current_stack_offset + 8),
+        });
 
         // Pop off the function body's scope.
         self.symbols.pop_scope();
@@ -249,16 +245,10 @@ impl Analyzer {
             type_: declared_type.clone(),
             constant: false,
             external: false,
-            stack_offset: self.current_stack_offset,
+            stack_offset: self.claim_stack_offset(&declared_type),
         };
 
         self.symbols.insert(&stmt.symbol, entry.clone());
-        self.current_function_info
-            .as_mut()
-            .unwrap()
-            .stack_frame_size += entry.type_.stack_size();
-        self.current_stack_offset -= declared_type.stack_size();
-
         ast::Statement::Let(ast::LetStatement {
             symbol: entry,
             type_: declared_type,
@@ -873,6 +863,12 @@ impl Analyzer {
         let c = self.unique_name_counter;
         self.unique_name_counter += 1;
         format!("{}__{}", prefix, c)
+    }
+
+    fn claim_stack_offset(&mut self, type_: &ast::Type) -> i32 {
+        let ret = self.current_stack_offset;
+        self.current_stack_offset -= type_.stack_size();
+        ret
     }
 
     fn assert_type(
