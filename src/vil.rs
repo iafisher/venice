@@ -147,6 +147,7 @@ impl fmt::Display for FunctionDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f)?;
         writeln!(f, "func {} {{", self.name)?;
+        writeln!(f, "  // stack_frame_size = {}", self.stack_frame_size)?;
         for block in &self.blocks {
             write!(f, "{}", block)?;
         }

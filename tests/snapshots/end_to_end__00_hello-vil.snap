@@ -8,6 +8,7 @@ extern venice_println;
 
 
 func venice_main {
+  // stack_frame_size = 0
 
 venice_main_0:
   R0 = set s_0

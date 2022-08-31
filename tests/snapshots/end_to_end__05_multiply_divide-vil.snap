@@ -8,6 +8,7 @@ extern venice_printint;
 
 
 func venice_main {
+  // stack_frame_size = 16
 
 venice_main_0:
   R0 = set 21

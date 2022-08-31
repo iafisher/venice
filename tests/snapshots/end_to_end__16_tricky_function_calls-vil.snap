@@ -9,6 +9,7 @@ extern venice_printint;
 
 
 func add__0 {
+  // stack_frame_size = 16
 
 add__0_0:
   R0 = load -8  // x__1
@@ -22,6 +23,7 @@ add__0_return_1:
 }
 
 func venice_main {
+  // stack_frame_size = 0
 
 venice_main_2:
   R0 = set s_0

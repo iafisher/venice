@@ -7,6 +7,7 @@ extern venice_printint;
 
 
 func two_plus_two__0 {
+  // stack_frame_size = 0
 
 two_plus_two__0_0:
   R0 = set 2
@@ -20,6 +21,7 @@ two_plus_two__0_return_1:
 }
 
 func venice_main {
+  // stack_frame_size = 8
 
 venice_main_2:
   call two_plus_two__0

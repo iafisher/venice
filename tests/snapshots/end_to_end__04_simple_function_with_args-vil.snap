@@ -7,6 +7,7 @@ extern venice_printint;
 
 
 func sub__0 {
+  // stack_frame_size = 16
 
 sub__0_0:
   R0 = load -8  // x__1
@@ -20,6 +21,7 @@ sub__0_return_1:
 }
 
 func venice_main {
+  // stack_frame_size = 8
 
 venice_main_2:
   R0 = set 47

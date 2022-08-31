@@ -7,6 +7,7 @@ extern venice_printint;
 
 
 func venice_main {
+  // stack_frame_size = 8
 
 venice_main_0:
   R0 = set 12
@@ -26,6 +27,7 @@ venice_main_return_1:
 }
 
 func fibonacci__0 {
+  // stack_frame_size = 40
 
 fibonacci__0_2:
   R0 = set 1
