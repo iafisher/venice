@@ -20,33 +20,17 @@ venice_main_0:
   store R7, -8  // args__0
   R0 = set s_0
   R1 = move R0
-  caller_save R0
-  caller_save R1
   call %venice_string_new, R1
-  R1 = caller_restore
-  R0 = caller_restore
   R1 = move R13
   R2 = move R1
-  caller_save R0
-  caller_save R1
   call %venice_print, R2
-  R1 = caller_restore
-  R0 = caller_restore
   R2 = move R13
   R0 = load -8  // args__0
   R1 = move R0
-  caller_save R0
-  caller_save R1
   call %venice_list_length, R1
-  R1 = caller_restore
-  R0 = caller_restore
   R1 = move R13
   R2 = move R1
-  caller_save R0
-  caller_save R1
   call %venice_printint, R2
-  R1 = caller_restore
-  R0 = caller_restore
   R2 = move R13
   R0 = set 0
   store R0, -16  // i__1
@@ -55,11 +39,7 @@ venice_main_0:
 while_cond_2:
   R0 = load -8  // args__0
   R1 = move R0
-  caller_save R0
-  caller_save R1
   call %venice_list_length, R1
-  R1 = caller_restore
-  R0 = caller_restore
   R1 = move R13
   R0 = load -16  // i__1
   cmp R0, R1
@@ -68,35 +48,19 @@ while_cond_2:
 while_3:
   R0 = set s_1
   R1 = move R0
-  caller_save R0
-  caller_save R1
   call %venice_string_new, R1
-  R1 = caller_restore
-  R0 = caller_restore
   R1 = move R13
   R2 = move R1
-  caller_save R0
-  caller_save R1
   call %venice_print, R2
-  R1 = caller_restore
-  R0 = caller_restore
   R2 = move R13
   R0 = load -8  // args__0
   R2 = move R0
   R0 = load -16  // i__1
   R1 = move R0
-  caller_save R0
-  caller_save R1
   call %venice_list_index, R2, R1
-  R1 = caller_restore
-  R0 = caller_restore
   R2 = move R13
   R3 = move R2
-  caller_save R0
-  caller_save R1
   call %venice_println, R3
-  R1 = caller_restore
-  R0 = caller_restore
   R3 = move R13
   R0 = load -16  // i__1
   R1 = move R0

@@ -28,18 +28,10 @@ func venice_main {
 venice_main_2:
   R0 = set s_0
   R1 = move R0
-  caller_save R0
-  caller_save R1
   call %venice_string_new, R1
-  R1 = caller_restore
-  R0 = caller_restore
   R1 = move R13
   R2 = move R1
-  caller_save R0
-  caller_save R1
   call %venice_print, R2
-  R1 = caller_restore
-  R0 = caller_restore
   R2 = move R13
   R0 = set 20
   R4 = move R0
@@ -47,25 +39,13 @@ venice_main_2:
   R2 = move R0
   R0 = set 17
   R1 = move R0
-  caller_save R0
-  caller_save R1
   call %add__0, R2, R1
-  R1 = caller_restore
-  R0 = caller_restore
   R2 = move R13
   R3 = move R2
-  caller_save R0
-  caller_save R1
   call %add__0, R4, R3
-  R1 = caller_restore
-  R0 = caller_restore
   R4 = move R13
   R5 = move R4
-  caller_save R0
-  caller_save R1
   call %venice_printint, R5
-  R1 = caller_restore
-  R0 = caller_restore
   R5 = move R13
   R0 = set 0
   R13 = move R0

@@ -272,21 +272,11 @@ impl Generator {
             self.program.externs.push(unique_name.clone());
         }
 
-        // Save caller-save registers.
-        for caller_save in vil::CALLER_SAVE_REGISTERS {
-            self.push(vil::InstructionKind::CallerSave(*caller_save));
-        }
-
         self.push(vil::InstructionKind::Call {
             label: vil::FunctionLabel(unique_name.clone()),
             registers: final_argument_registers,
             variadic: expr.variadic,
         });
-
-        // Restore caller-save registers.
-        for caller_save in vil::CALLER_SAVE_REGISTERS.iter().rev() {
-            self.push(vil::InstructionKind::CallerRestore(*caller_save));
-        }
 
         self.push(vil::InstructionKind::Move(r, vil::Register::ret()));
     }

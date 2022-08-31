@@ -89,7 +89,8 @@ pub enum DataValue {
     Str(String),
 }
 
-pub const CALLEE_SAVE_REGISTERS: &[u8] = &[2, 3, 4, 5, 6];
+const CALLER_SAVE_REGISTERS: &[u8] = &[0, 1];
+const CALLEE_SAVE_REGISTERS: &[u8] = &[2, 3, 4, 5, 6];
 
 struct Generator {
     program: Program,
@@ -271,6 +272,12 @@ impl Generator {
                 registers,
                 variadic,
             } => {
+                // Save caller-save registers.
+                for caller_save in CALLER_SAVE_REGISTERS {
+                    self.push(Instruction::Push(Value::Register(Register(*caller_save))));
+                    self.stack_alignment += 8;
+                }
+
                 for (i, register) in registers.iter().enumerate() {
                     self.push(Instruction::Mov(
                         Value::param(u8::try_from(i).unwrap()),
@@ -290,6 +297,12 @@ impl Generator {
                 self.align_stack();
                 self.push(Instruction::Call(label.0.clone()));
                 self.unalign_stack();
+
+                // Restore caller-save registers.
+                for caller_save in CALLER_SAVE_REGISTERS.iter().rev() {
+                    self.push(Instruction::Pop(Value::Register(Register(*caller_save))));
+                    self.stack_alignment -= 8;
+                }
             }
             Jump(l) => {
                 self.push(Instruction::Jmp(l.0.clone()));
@@ -317,22 +330,6 @@ impl Generator {
             JumpNeq(true_label, false_label) => {
                 self.push(Instruction::Jne(true_label.0.clone()));
                 self.push(Instruction::Jmp(false_label.0.clone()));
-            }
-            CalleeRestore(r) => {
-                self.push(Instruction::Pop(Value::r(r)));
-                self.stack_alignment -= 8;
-            }
-            CalleeSave(r) => {
-                self.push(Instruction::Push(Value::r(r)));
-                self.stack_alignment += 8;
-            }
-            CallerRestore(r) => {
-                self.push(Instruction::Pop(Value::r(r)));
-                self.stack_alignment -= 8;
-            }
-            CallerSave(r) => {
-                self.push(Instruction::Push(Value::r(r)));
-                self.stack_alignment += 8;
             }
         }
     }

@@ -40,10 +40,6 @@ pub enum InstructionKind {
         registers: Vec<Register>,
         variadic: bool,
     },
-    CalleeRestore(Register),
-    CalleeSave(Register),
-    CallerRestore(Register),
-    CallerSave(Register),
     Cmp(Register, Register),
     Div(Register, Register, Register),
     Jump(Label),
@@ -70,8 +66,6 @@ pub struct Register(u8);
 pub const PARAM_REGISTER_COUNT: u8 = 6;
 pub const GP_REGISTER_COUNT: u8 = 7;
 const RETURN_REGISTER_INDEX: u8 = 13;
-
-pub const CALLER_SAVE_REGISTERS: &[Register] = &[Register(0), Register(1)];
 
 impl Register {
     pub fn index(self) -> u8 {
@@ -193,10 +187,6 @@ impl fmt::Display for InstructionKind {
                 }
                 fmt::Result::Ok(())
             }
-            CalleeSave(r) => write!(f, "callee_save {}", r),
-            CalleeRestore(r) => write!(f, "{} = callee_restore", r),
-            CallerSave(r) => write!(f, "caller_save {}", r),
-            CallerRestore(r) => write!(f, "{} = caller_restore", r),
             Cmp(r1, r2) => write!(f, "cmp {}, {}", r1, r2),
             Div(r1, r2, r3) => write!(f, "{} = div {}, {}", r1, r2, r3),
             Load(r, offset) => write!(f, "{} = load {}", r, offset),

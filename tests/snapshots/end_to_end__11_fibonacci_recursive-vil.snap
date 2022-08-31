@@ -41,11 +41,7 @@ if_false_6:
   R0 = set 1
   R1 = sub R1, R0
   R2 = move R1
-  caller_save R0
-  caller_save R1
   call %fibonacci__0, R2
-  R1 = caller_restore
-  R0 = caller_restore
   R2 = move R13
   R3 = move R2
   R0 = load -8  // n__1
@@ -53,11 +49,7 @@ if_false_6:
   R0 = set 2
   R1 = sub R1, R0
   R2 = move R1
-  caller_save R0
-  caller_save R1
   call %fibonacci__0, R2
-  R1 = caller_restore
-  R0 = caller_restore
   R2 = move R13
   R3 = add R3, R2
   R13 = move R3
@@ -77,20 +69,12 @@ func venice_main {
 venice_main_8:
   R0 = set 12
   R1 = move R0
-  caller_save R0
-  caller_save R1
   call %fibonacci__0, R1
-  R1 = caller_restore
-  R0 = caller_restore
   R1 = move R13
   store R1, -8  // x__2
   R0 = load -8  // x__2
   R1 = move R0
-  caller_save R0
-  caller_save R1
   call %venice_printint, R1
-  R1 = caller_restore
-  R0 = caller_restore
   R1 = move R13
   R0 = set 0
   R13 = move R0
