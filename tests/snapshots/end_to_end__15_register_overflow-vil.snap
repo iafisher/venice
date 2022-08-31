@@ -12,82 +12,82 @@ func venice_main {
 
 venice_main_0:
   frame_set_up 0
-  callee_save R8
-  callee_save R9
-  callee_save R10
-  callee_save R11
-  callee_save R12
-  R6 = set s_0
-  R7 = move R6
-  caller_save R6
-  caller_save R7
-  R0 = move R7
+  callee_save R2
+  callee_save R3
+  callee_save R4
+  callee_save R5
+  callee_save R6
+  R0 = set s_0
+  R1 = move R0
+  caller_save R0
+  caller_save R1
+  R7 = move R1
   call %venice_string_new
-  R7 = caller_restore
-  R6 = caller_restore
-  R7 = move R13
-  R8 = move R7
-  caller_save R6
-  caller_save R7
-  R0 = move R8
+  R1 = caller_restore
+  R0 = caller_restore
+  R1 = move R13
+  R2 = move R1
+  caller_save R0
+  caller_save R1
+  R7 = move R2
   call %venice_print
-  R7 = caller_restore
-  R6 = caller_restore
-  R8 = move R13
-  R6 = set 6
-  R7 = move R6
-  R6 = set 7
-  R7 = add R7, R6
-  R8 = move R7
-  R6 = set 88
-  R7 = move R6
-  R6 = set 80
-  R7 = sub R7, R6
-  R8 = add R8, R7
-  R9 = move R8
-  R6 = set 99
-  R7 = move R6
-  R6 = set 90
-  R7 = sub R7, R6
-  R8 = move R7
-  R6 = set 11
-  R7 = move R6
-  R6 = set 14
-  R7 = sub R7, R6
-  R8 = add R8, R7
-  R9 = add R9, R8
-  R6 = set 20
-  R7 = move R6
-  R6 = set 19
-  R7 = sub R7, R6
-  R6 = set 2
-  R7 = add R7, R6
-  R8 = move R7
-  R6 = set 40
-  R7 = move R6
-  R6 = set 36
-  R7 = sub R7, R6
-  R6 = set 5
-  R7 = add R7, R6
-  R6 = set 3
-  R7 = add R6, R7
-  R8 = add R8, R7
-  R9 = add R8, R9
-  R10 = move R9
-  caller_save R6
-  caller_save R7
-  R0 = move R10
+  R1 = caller_restore
+  R0 = caller_restore
+  R2 = move R13
+  R0 = set 6
+  R1 = move R0
+  R0 = set 7
+  R1 = add R1, R0
+  R2 = move R1
+  R0 = set 88
+  R1 = move R0
+  R0 = set 80
+  R1 = sub R1, R0
+  R2 = add R2, R1
+  R3 = move R2
+  R0 = set 99
+  R1 = move R0
+  R0 = set 90
+  R1 = sub R1, R0
+  R2 = move R1
+  R0 = set 11
+  R1 = move R0
+  R0 = set 14
+  R1 = sub R1, R0
+  R2 = add R2, R1
+  R3 = add R3, R2
+  R0 = set 20
+  R1 = move R0
+  R0 = set 19
+  R1 = sub R1, R0
+  R0 = set 2
+  R1 = add R1, R0
+  R2 = move R1
+  R0 = set 40
+  R1 = move R0
+  R0 = set 36
+  R1 = sub R1, R0
+  R0 = set 5
+  R1 = add R1, R0
+  R0 = set 3
+  R1 = add R0, R1
+  R2 = add R2, R1
+  R3 = add R2, R3
+  R4 = move R3
+  caller_save R0
+  caller_save R1
+  R7 = move R4
   call %venice_printint
-  R7 = caller_restore
-  R6 = caller_restore
-  R10 = move R13
-  R6 = set 0
-  R13 = move R6
-  R12 = callee_restore
-  R11 = callee_restore
-  R10 = callee_restore
-  R9 = callee_restore
-  R8 = callee_restore
+  R1 = caller_restore
+  R0 = caller_restore
+  R4 = move R13
+  R0 = set 0
+  R13 = move R0
+  R6 = callee_restore
+  R5 = callee_restore
+  R4 = callee_restore
+  R3 = callee_restore
+  R2 = callee_restore
   frame_tear_down 0
   ret
 }

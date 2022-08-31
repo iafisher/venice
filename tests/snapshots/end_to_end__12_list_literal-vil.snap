@@ -12,59 +12,59 @@ func venice_main {
 
 venice_main_0:
   frame_set_up 8
-  callee_save R8
-  callee_save R9
-  callee_save R10
-  callee_save R11
-  callee_save R12
-  R6 = set 3
-  R10 = move R6
-  R6 = set 1
-  R6 = negate R6
-  R9 = move R6
-  R6 = set 42
-  R8 = move R6
-  R6 = set 1
-  R6 = negate R6
-  R7 = move R6
-  caller_save R6
-  caller_save R7
-  R0 = move R10
-  R1 = move R9
-  R2 = move R8
-  R3 = move R7
+  callee_save R2
+  callee_save R3
+  callee_save R4
+  callee_save R5
+  callee_save R6
+  R0 = set 3
+  R4 = move R0
+  R0 = set 1
+  R0 = negate R0
+  R3 = move R0
+  R0 = set 42
+  R2 = move R0
+  R0 = set 1
+  R0 = negate R0
+  R1 = move R0
+  caller_save R0
+  caller_save R1
+  R7 = move R4
+  R8 = move R3
+  R9 = move R2
+  R10 = move R1
   call_variadic %venice_list_from_varargs
-  R7 = caller_restore
-  R6 = caller_restore
-  R10 = move R13
-  store R10, -8  // numbers__0
-  R6 = load -8  // numbers__0
-  R8 = move R6
-  R6 = set 1
-  R7 = move R6
-  caller_save R6
-  caller_save R7
-  R0 = move R8
-  R1 = move R7
+  R1 = caller_restore
+  R0 = caller_restore
+  R4 = move R13
+  store R4, -8  // numbers__0
+  R0 = load -8  // numbers__0
+  R2 = move R0
+  R0 = set 1
+  R1 = move R0
+  caller_save R0
+  caller_save R1
+  R7 = move R2
+  R8 = move R1
   call %venice_list_index
-  R7 = caller_restore
-  R6 = caller_restore
-  R8 = move R13
-  R9 = move R8
-  caller_save R6
-  caller_save R7
-  R0 = move R9
+  R1 = caller_restore
+  R0 = caller_restore
+  R2 = move R13
+  R3 = move R2
+  caller_save R0
+  caller_save R1
+  R7 = move R3
   call %venice_printint
-  R7 = caller_restore
-  R6 = caller_restore
-  R9 = move R13
-  R6 = set 0
-  R13 = move R6
-  R12 = callee_restore
-  R11 = callee_restore
-  R10 = callee_restore
-  R9 = callee_restore
-  R8 = callee_restore
+  R1 = caller_restore
+  R0 = caller_restore
+  R3 = move R13
+  R0 = set 0
+  R13 = move R0
+  R6 = callee_restore
+  R5 = callee_restore
+  R4 = callee_restore
+  R3 = callee_restore
+  R2 = callee_restore
   frame_tear_down 8
   ret
 }

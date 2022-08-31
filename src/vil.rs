@@ -70,29 +70,17 @@ pub const PARAM_REGISTER_COUNT: u8 = 6;
 pub const GP_REGISTER_COUNT: u8 = 7;
 const RETURN_REGISTER_INDEX: u8 = 13;
 
-pub const CALLER_SAVE_REGISTERS: &[Register] = &[Register(6), Register(7)];
+pub const CALLER_SAVE_REGISTERS: &[Register] = &[Register(0), Register(1)];
 pub const CALLEE_SAVE_REGISTERS: &[Register] = &[
-    Register(8),
-    Register(9),
-    Register(10),
-    Register(11),
-    Register(12),
+    Register(2),
+    Register(3),
+    Register(4),
+    Register(5),
+    Register(6),
 ];
 
 impl Register {
     pub fn index(self) -> u8 {
-        if self.0 < PARAM_REGISTER_COUNT {
-            self.0
-        } else if self.0 >= PARAM_REGISTER_COUNT
-            && self.0 < (PARAM_REGISTER_COUNT + GP_REGISTER_COUNT)
-        {
-            self.0 - PARAM_REGISTER_COUNT
-        } else {
-            self.0
-        }
-    }
-
-    pub fn absolute_index(self) -> u8 {
         self.0
     }
 
@@ -103,7 +91,7 @@ impl Register {
                 PARAM_REGISTER_COUNT
             );
         }
-        Register(i)
+        Register(i + GP_REGISTER_COUNT)
     }
 
     pub fn gp(i: u8) -> Self {
@@ -113,7 +101,7 @@ impl Register {
                 GP_REGISTER_COUNT
             );
         }
-        Register(i + PARAM_REGISTER_COUNT)
+        Register(i)
     }
 
     pub fn scratch() -> Self {

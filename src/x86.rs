@@ -68,7 +68,7 @@ pub enum Value {
 impl Value {
     /// Constructs an x86 register from a VIL register.
     fn r(r: &vil::Register) -> Self {
-        Value::Register(Register(r.absolute_index()))
+        Value::Register(Register(r.index()))
     }
 }
 
@@ -437,19 +437,19 @@ impl fmt::Display for Value {
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
-            0 => write!(f, "rdi"),
-            1 => write!(f, "rsi"),
-            2 => write!(f, "rdx"),
-            3 => write!(f, "rcx"),
-            4 => write!(f, "r8"),
-            5 => write!(f, "r9"),
-            6 => write!(f, "r10"),
-            7 => write!(f, "r11"),
-            8 => write!(f, "r12"),
-            9 => write!(f, "r13"),
-            10 => write!(f, "r14"),
-            11 => write!(f, "r15"),
-            12 => write!(f, "rbx"),
+            0 => write!(f, "r10"),
+            1 => write!(f, "r11"),
+            2 => write!(f, "r12"),
+            3 => write!(f, "r13"),
+            4 => write!(f, "r14"),
+            5 => write!(f, "r15"),
+            6 => write!(f, "rbx"),
+            7 => write!(f, "rdi"),
+            8 => write!(f, "rsi"),
+            9 => write!(f, "rdx"),
+            10 => write!(f, "rcx"),
+            11 => write!(f, "r8"),
+            12 => write!(f, "r9"),
             13 => write!(f, "rax"),
             14 => write!(f, "rsp"),
             15 => write!(f, "rbp"),

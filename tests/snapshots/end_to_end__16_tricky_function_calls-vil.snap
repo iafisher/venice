@@ -12,23 +12,23 @@ func add__0 {
 
 add__0_0:
   frame_set_up 16
-  callee_save R8
-  callee_save R9
-  callee_save R10
-  callee_save R11
-  callee_save R12
-  store R0, -8  // x__1
-  store R1, -16  // y__2
-  R6 = load -8  // x__1
-  R7 = move R6
-  R6 = load -16  // y__2
-  R7 = add R7, R6
-  R13 = move R7
-  R12 = callee_restore
-  R11 = callee_restore
-  R10 = callee_restore
-  R9 = callee_restore
-  R8 = callee_restore
+  callee_save R2
+  callee_save R3
+  callee_save R4
+  callee_save R5
+  callee_save R6
+  store R7, -8  // x__1
+  store R8, -16  // y__2
+  R0 = load -8  // x__1
+  R1 = move R0
+  R0 = load -16  // y__2
+  R1 = add R1, R0
+  R13 = move R1
+  R6 = callee_restore
+  R5 = callee_restore
+  R4 = callee_restore
+  R3 = callee_restore
+  R2 = callee_restore
   frame_tear_down 16
   ret
 }
@@ -37,66 +37,66 @@ func venice_main {
 
 venice_main_1:
   frame_set_up 0
-  callee_save R8
-  callee_save R9
-  callee_save R10
-  callee_save R11
-  callee_save R12
-  R6 = set s_0
-  R7 = move R6
-  caller_save R6
-  caller_save R7
-  R0 = move R7
+  callee_save R2
+  callee_save R3
+  callee_save R4
+  callee_save R5
+  callee_save R6
+  R0 = set s_0
+  R1 = move R0
+  caller_save R0
+  caller_save R1
+  R7 = move R1
   call %venice_string_new
-  R7 = caller_restore
-  R6 = caller_restore
-  R7 = move R13
-  R8 = move R7
-  caller_save R6
-  caller_save R7
-  R0 = move R8
+  R1 = caller_restore
+  R0 = caller_restore
+  R1 = move R13
+  R2 = move R1
+  caller_save R0
+  caller_save R1
+  R7 = move R2
   call %venice_print
-  R7 = caller_restore
-  R6 = caller_restore
-  R8 = move R13
-  R6 = set 20
-  R10 = move R6
-  R6 = set 5
-  R8 = move R6
-  R6 = set 17
-  R7 = move R6
-  caller_save R6
-  caller_save R7
-  R0 = move R8
-  R1 = move R7
+  R1 = caller_restore
+  R0 = caller_restore
+  R2 = move R13
+  R0 = set 20
+  R4 = move R0
+  R0 = set 5
+  R2 = move R0
+  R0 = set 17
+  R1 = move R0
+  caller_save R0
+  caller_save R1
+  R7 = move R2
+  R8 = move R1
   call %add__0
-  R7 = caller_restore
-  R6 = caller_restore
-  R8 = move R13
-  R9 = move R8
-  caller_save R6
-  caller_save R7
-  R0 = move R10
-  R1 = move R9
+  R1 = caller_restore
+  R0 = caller_restore
+  R2 = move R13
+  R3 = move R2
+  caller_save R0
+  caller_save R1
+  R7 = move R4
+  R8 = move R3
   call %add__0
-  R7 = caller_restore
-  R6 = caller_restore
-  R10 = move R13
-  R11 = move R10
-  caller_save R6
-  caller_save R7
-  R0 = move R11
+  R1 = caller_restore
+  R0 = caller_restore
+  R4 = move R13
+  R5 = move R4
+  caller_save R0
+  caller_save R1
+  R7 = move R5
   call %venice_printint
-  R7 = caller_restore
-  R6 = caller_restore
-  R11 = move R13
-  R6 = set 0
-  R13 = move R6
-  R12 = callee_restore
-  R11 = callee_restore
-  R10 = callee_restore
-  R9 = callee_restore
-  R8 = callee_restore
+  R1 = caller_restore
+  R0 = caller_restore
+  R5 = move R13
+  R0 = set 0
+  R13 = move R0
+  R6 = callee_restore
+  R5 = callee_restore
+  R4 = callee_restore
+  R3 = callee_restore
+  R2 = callee_restore
   frame_tear_down 0
   ret
 }

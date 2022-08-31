@@ -10,37 +10,37 @@ func venice_main {
 
 venice_main_0:
   frame_set_up 8
-  callee_save R8
-  callee_save R9
-  callee_save R10
-  callee_save R11
-  callee_save R12
-  R6 = set 12
-  R7 = move R6
-  caller_save R6
-  caller_save R7
-  R0 = move R7
+  callee_save R2
+  callee_save R3
+  callee_save R4
+  callee_save R5
+  callee_save R6
+  R0 = set 12
+  R1 = move R0
+  caller_save R0
+  caller_save R1
+  R7 = move R1
   call %fibonacci__0
-  R7 = caller_restore
-  R6 = caller_restore
-  R7 = move R13
-  store R7, -8  // x__1
-  R6 = load -8  // x__1
-  R7 = move R6
-  caller_save R6
-  caller_save R7
-  R0 = move R7
+  R1 = caller_restore
+  R0 = caller_restore
+  R1 = move R13
+  store R1, -8  // x__1
+  R0 = load -8  // x__1
+  R1 = move R0
+  caller_save R0
+  caller_save R1
+  R7 = move R1
   call %venice_printint
-  R7 = caller_restore
-  R6 = caller_restore
-  R7 = move R13
-  R6 = set 0
-  R13 = move R6
-  R12 = callee_restore
-  R11 = callee_restore
-  R10 = callee_restore
-  R9 = callee_restore
-  R8 = callee_restore
+  R1 = caller_restore
+  R0 = caller_restore
+  R1 = move R13
+  R0 = set 0
+  R13 = move R0
+  R6 = callee_restore
+  R5 = callee_restore
+  R4 = callee_restore
+  R3 = callee_restore
+  R2 = callee_restore
   frame_tear_down 8
   ret
 }
@@ -49,52 +49,52 @@ func fibonacci__0 {
 
 fibonacci__0_1:
   frame_set_up 40
-  callee_save R8
-  callee_save R9
-  callee_save R10
-  callee_save R11
-  callee_save R12
-  store R0, -8  // n__2
-  R6 = set 1
-  store R6, -16  // fib_i__3
-  R6 = set 0
-  store R6, -24  // fib_i_minus_1__4
-  R6 = set 1
-  store R6, -32  // i__5
+  callee_save R2
+  callee_save R3
+  callee_save R4
+  callee_save R5
+  callee_save R6
+  store R7, -8  // n__2
+  R0 = set 1
+  store R0, -16  // fib_i__3
+  R0 = set 0
+  store R0, -24  // fib_i_minus_1__4
+  R0 = set 1
+  store R0, -32  // i__5
   jump %while_cond_2
 
 while_cond_2:
-  R6 = load -32  // i__5
-  R7 = move R6
-  R6 = load -8  // n__2
-  cmp R7, R6
+  R0 = load -32  // i__5
+  R1 = move R0
+  R0 = load -8  // n__2
+  cmp R1, R0
   jump_lt %while_3 %while_end_4
 
 while_3:
-  R6 = load -16  // fib_i__3
-  store R6, -40  // tmp__6
-  R6 = load -16  // fib_i__3
-  R7 = move R6
-  R6 = load -24  // fib_i_minus_1__4
-  R7 = add R7, R6
-  store R7, -16  // fib_i__3
-  R6 = load -40  // tmp__6
-  store R6, -24  // fib_i_minus_1__4
-  R6 = load -32  // i__5
-  R7 = move R6
-  R6 = set 1
-  R7 = add R7, R6
-  store R7, -32  // i__5
+  R0 = load -16  // fib_i__3
+  store R0, -40  // tmp__6
+  R0 = load -16  // fib_i__3
+  R1 = move R0
+  R0 = load -24  // fib_i_minus_1__4
+  R1 = add R1, R0
+  store R1, -16  // fib_i__3
+  R0 = load -40  // tmp__6
+  store R0, -24  // fib_i_minus_1__4
+  R0 = load -32  // i__5
+  R1 = move R0
+  R0 = set 1
+  R1 = add R1, R0
+  store R1, -32  // i__5
   jump %while_cond_2
 
 while_end_4:
-  R6 = load -16  // fib_i__3
-  R13 = move R6
-  R12 = callee_restore
-  R11 = callee_restore
-  R10 = callee_restore
-  R9 = callee_restore
-  R8 = callee_restore
+  R0 = load -16  // fib_i__3
+  R13 = move R0
+  R6 = callee_restore
+  R5 = callee_restore
+  R4 = callee_restore
+  R3 = callee_restore
+  R2 = callee_restore
   frame_tear_down 40
   ret
 }
