@@ -3,11 +3,11 @@ source: tests/end_to_end.rs
 expression: x86_output
 ---
 increment__0:
-
-increment__0_0:
   pushq %rbp
   movq %rsp, %rbp
   subq $8, %rsp
+
+increment__0_0:
   pushq %r12
   pushq %r13
   pushq %r14
@@ -34,11 +34,11 @@ increment__0_return_1:
 
 .globl venice_main
 venice_main:
-
-venice_main_2:
   pushq %rbp
   movq %rsp, %rbp
   subq $0, %rsp
+
+venice_main_2:
   pushq %r12
   pushq %r13
   pushq %r14

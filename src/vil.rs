@@ -18,6 +18,7 @@ pub struct Program {
 pub struct FunctionDeclaration {
     pub name: String,
     pub blocks: Vec<Block>,
+    pub stack_frame_size: usize,
 }
 
 pub struct Block {
@@ -42,8 +43,6 @@ pub enum InstructionKind {
     CallerSave(Register),
     Cmp(Register, Register),
     Div(Register, Register, Register),
-    FrameSetUp(usize),
-    FrameTearDown(usize),
     Jump(Label),
     JumpEq(Label, Label),
     JumpGt(Label, Label),
@@ -56,7 +55,6 @@ pub enum InstructionKind {
     Move(Register, Register),
     Mul(Register, Register, Register),
     Negate(Register, Register),
-    Ret,
     Set(Register, Immediate),
     Store(Register, i32),
     Sub(Register, Register, Register),
@@ -203,8 +201,6 @@ impl fmt::Display for InstructionKind {
             CallerRestore(r) => write!(f, "{} = caller_restore", r),
             Cmp(r1, r2) => write!(f, "cmp {}, {}", r1, r2),
             Div(r1, r2, r3) => write!(f, "{} = div {}, {}", r1, r2, r3),
-            FrameSetUp(size) => write!(f, "frame_set_up {}", size),
-            FrameTearDown(size) => write!(f, "frame_tear_down {}", size),
             Load(r, offset) => write!(f, "{} = load {}", r, offset),
             Jump(label) => write!(f, "jump {}", label),
             JumpEq(l1, l2) => write!(f, "jump_eq {} {}", l1, l2),
@@ -217,7 +213,6 @@ impl fmt::Display for InstructionKind {
             Move(r1, r2) => write!(f, "{} = move {}", r1, r2),
             Mul(r1, r2, r3) => write!(f, "{} = mul {}, {}", r1, r2, r3),
             Negate(r1, r2) => write!(f, "{} = negate {}", r1, r2),
-            Ret => write!(f, "ret"),
             Set(r, x) => write!(f, "{} = set {}", r, x),
             Store(r, offset) => write!(f, "store {}, {}", r, offset),
             Sub(r1, r2, r3) => write!(f, "{} = sub {}, {}", r1, r2, r3),

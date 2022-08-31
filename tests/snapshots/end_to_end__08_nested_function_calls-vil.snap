@@ -9,7 +9,6 @@ extern venice_printint;
 func increment__0 {
 
 increment__0_0:
-  frame_set_up 8
   callee_save R2
   callee_save R3
   callee_save R4
@@ -29,14 +28,11 @@ increment__0_return_1:
   R4 = callee_restore
   R3 = callee_restore
   R2 = callee_restore
-  frame_tear_down 8
-  ret
 }
 
 func venice_main {
 
 venice_main_2:
-  frame_set_up 0
   callee_save R2
   callee_save R3
   callee_save R4
@@ -88,7 +84,5 @@ venice_main_return_3:
   R4 = callee_restore
   R3 = callee_restore
   R2 = callee_restore
-  frame_tear_down 0
-  ret
 }
 

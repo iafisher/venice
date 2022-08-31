@@ -58,18 +58,16 @@ impl Generator {
 
     fn generate_function_declaration(&mut self, declaration: &ast::FunctionDeclaration) {
         let name = &declaration.name.unique_name;
+        self.info = Some(declaration.info.clone());
         let vil_declaration = vil::FunctionDeclaration {
             name: name.clone(),
             blocks: Vec::new(),
+            stack_frame_size: self.info.as_ref().unwrap().stack_frame_size,
         };
-        self.info = Some(declaration.info.clone());
         self.program.declarations.push(vil_declaration);
         let label = self.claim_label(name);
         self.return_label = self.claim_label(&format!("{}_return", name));
         self.start_block(label, None);
-
-        let stack_frame_size = self.info.as_ref().unwrap().stack_frame_size;
-        self.push(vil::InstructionKind::FrameSetUp(stack_frame_size));
 
         // Save callee-save registers.
         for callee_save in vil::CALLEE_SAVE_REGISTERS {
@@ -95,11 +93,6 @@ impl Generator {
         for callee_save in vil::CALLEE_SAVE_REGISTERS.iter().rev() {
             self.push(vil::InstructionKind::CalleeRestore(*callee_save));
         }
-
-        self.push(vil::InstructionKind::FrameTearDown(
-            self.info.as_ref().unwrap().stack_frame_size,
-        ));
-        self.push(vil::InstructionKind::Ret);
     }
 
     fn generate_expression(&mut self, expr: &ast::Expression) -> vil::Register {

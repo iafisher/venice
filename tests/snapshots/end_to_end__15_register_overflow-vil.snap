@@ -11,7 +11,6 @@ extern venice_printint;
 func venice_main {
 
 venice_main_0:
-  frame_set_up 0
   callee_save R2
   callee_save R3
   callee_save R4
@@ -88,8 +87,6 @@ venice_main_return_1:
   R4 = callee_restore
   R3 = callee_restore
   R2 = callee_restore
-  frame_tear_down 0
-  ret
 }
 
 

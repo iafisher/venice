@@ -4,11 +4,11 @@ expression: x86_output
 ---
 .globl venice_main
 venice_main:
-
-venice_main_0:
   pushq %rbp
   movq %rsp, %rbp
   subq $24, %rsp
+
+venice_main_0:
   pushq %r12
   pushq %r13
   pushq %r14

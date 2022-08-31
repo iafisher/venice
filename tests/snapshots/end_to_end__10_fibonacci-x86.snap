@@ -4,11 +4,11 @@ expression: x86_output
 ---
 .globl venice_main
 venice_main:
-
-venice_main_0:
   pushq %rbp
   movq %rsp, %rbp
   subq $8, %rsp
+
+venice_main_0:
   pushq %r12
   pushq %r13
   pushq %r14
@@ -48,11 +48,11 @@ venice_main_return_1:
   retq
 
 fibonacci__0:
-
-fibonacci__0_2:
   pushq %rbp
   movq %rsp, %rbp
   subq $40, %rsp
+
+fibonacci__0_2:
   pushq %r12
   pushq %r13
   pushq %r14

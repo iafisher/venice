@@ -124,23 +124,39 @@ impl Generator {
     fn generate_declaration(&mut self, declaration: &vil::FunctionDeclaration) {
         self.stack_alignment = 8;
 
-        let block = Block {
+        let mut block = Block {
             // TODO: replace this with more robust logic
             global: declaration.name == "venice_main",
             label: declaration.name.clone(),
             instructions: Vec::new(),
         };
 
+        block.instructions.push(Instruction::Push(RBP));
+        self.stack_alignment += 8;
+        block.instructions.push(Instruction::Mov(RBP, RSP));
+        let size_as_i64 = i64::try_from(declaration.stack_frame_size).unwrap();
+        block
+            .instructions
+            .push(Instruction::Sub(RSP, Value::Immediate(size_as_i64)));
+        self.stack_alignment += size_as_i64;
+
         self.program.blocks.push(block);
         for block in &declaration.blocks {
             self.generate_block(declaration, block);
         }
+
+        let size_as_i64 = i64::try_from(declaration.stack_frame_size).unwrap();
+        self.push(Instruction::Add(RSP, Value::Immediate(size_as_i64)));
+        self.stack_alignment -= size_as_i64;
+        self.push(Instruction::Pop(RBP));
+        self.stack_alignment -= 8;
+        self.push(Instruction::Ret);
     }
 
     fn generate_block(&mut self, declaration: &vil::FunctionDeclaration, block: &vil::Block) {
         let mut instructions = Vec::new();
         for instruction in &block.instructions {
-            self.generate_instruction(&mut instructions, instruction);
+            self.generate_instruction(declaration, &mut instructions, instruction);
         }
         self.program.blocks.push(Block {
             global: false,
@@ -151,6 +167,7 @@ impl Generator {
 
     fn generate_instruction(
         &mut self,
+        declaration: &vil::FunctionDeclaration,
         instructions: &mut Vec<Instruction>,
         instruction: &vil::Instruction,
     ) {
@@ -269,24 +286,6 @@ impl Generator {
                 instructions.push(Instruction::Call(label.0.clone()));
                 self.unalign_stack(instructions);
             }
-            FrameSetUp(size) => {
-                instructions.push(Instruction::Push(RBP));
-                self.stack_alignment += 8;
-                instructions.push(Instruction::Mov(RBP, RSP));
-                let size_as_i64 = i64::try_from(*size).unwrap();
-                instructions.push(Instruction::Sub(RSP, Value::Immediate(size_as_i64)));
-                self.stack_alignment += size_as_i64;
-            }
-            FrameTearDown(size) => {
-                let size_as_i64 = i64::try_from(*size).unwrap();
-                instructions.push(Instruction::Add(RSP, Value::Immediate(size_as_i64)));
-                self.stack_alignment -= size_as_i64;
-                instructions.push(Instruction::Pop(RBP));
-                self.stack_alignment -= 8;
-            }
-            Ret => {
-                instructions.push(Instruction::Ret);
-            }
             Jump(l) => {
                 instructions.push(Instruction::Jmp(l.0.clone()));
             }
@@ -345,6 +344,11 @@ impl Generator {
         if diff > 0 {
             instructions.push(Instruction::Add(RSP, Value::Immediate(diff)));
         }
+    }
+
+    fn push(&mut self, instruction: Instruction) {
+        let index = self.program.blocks.len() - 1;
+        self.program.blocks[index].instructions.push(instruction);
     }
 }
 
