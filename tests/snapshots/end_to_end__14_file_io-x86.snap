@@ -103,6 +103,9 @@ venice_main_0:
   movq %rax, %r12
   movq $0, %r10
   movq %r10, %rax
+  jmp venice_main_return_1
+
+venice_main_return_1:
   popq %rbx
   popq %r15
   popq %r14

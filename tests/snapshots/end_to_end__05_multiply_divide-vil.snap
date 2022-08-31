@@ -44,6 +44,9 @@ venice_main_0:
   R1 = move R13
   R0 = set 0
   R13 = move R0
+  jump %venice_main_return_1
+
+venice_main_return_1:
   R6 = callee_restore
   R5 = callee_restore
   R4 = callee_restore

@@ -20,6 +20,7 @@ pub fn generate(ast: &ast::Program) -> Result<vil::Program, errors::VeniceError>
             strings: BTreeMap::new(),
         },
         info: None,
+        return_label: vil::Label(String::new()),
         label_counter: 0,
         string_counter: 0,
     };
@@ -31,6 +32,7 @@ struct Generator {
     // The program which is incrementally built up.
     program: vil::Program,
     info: Option<ast::FunctionInfo>,
+    return_label: vil::Label,
 
     // Counters for generating unique symbols.
     label_counter: u32,
@@ -63,6 +65,7 @@ impl Generator {
         self.info = Some(declaration.info.clone());
         self.program.declarations.push(vil_declaration);
         let label = self.claim_label(name);
+        self.return_label = self.claim_label(&format!("{}_return", name));
         self.start_block(label, None);
 
         let stack_frame_size = self.info.as_ref().unwrap().stack_frame_size;
@@ -85,6 +88,18 @@ impl Generator {
         }
 
         self.generate_block(&declaration.body);
+
+        self.start_block(self.return_label.clone(), None);
+
+        // Restore callee-save registers.
+        for callee_save in vil::CALLEE_SAVE_REGISTERS.iter().rev() {
+            self.push(vil::InstructionKind::CalleeRestore(*callee_save));
+        }
+
+        self.push(vil::InstructionKind::FrameTearDown(
+            self.info.as_ref().unwrap().stack_frame_size,
+        ));
+        self.push(vil::InstructionKind::Ret);
     }
 
     fn generate_expression(&mut self, expr: &ast::Expression) -> vil::Register {
@@ -425,16 +440,7 @@ impl Generator {
     fn generate_return_statement(&mut self, stmt: &ast::ReturnStatement) {
         let register = self.generate_expression(&stmt.value);
         self.push(vil::InstructionKind::Move(vil::Register::ret(), register));
-
-        // Restore callee-save registers.
-        for callee_save in vil::CALLEE_SAVE_REGISTERS.iter().rev() {
-            self.push(vil::InstructionKind::CalleeRestore(*callee_save));
-        }
-
-        self.push(vil::InstructionKind::FrameTearDown(
-            self.info.as_ref().unwrap().stack_frame_size,
-        ));
-        self.push(vil::InstructionKind::Ret);
+        self.push(vil::InstructionKind::Jump(self.return_label.clone()));
     }
 
     fn generate_while_statement(&mut self, stmt: &ast::WhileStatement) {

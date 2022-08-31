@@ -20,40 +20,28 @@ fibonacci__0_0:
   R1 = move R0
   R0 = set 0
   cmp R1, R0
-  jump_eq %if_true_1 %if_false_2
+  jump_eq %if_true_2 %if_false_3
 
-if_true_1:
+if_true_2:
   R0 = set 0
   R13 = move R0
-  R6 = callee_restore
-  R5 = callee_restore
-  R4 = callee_restore
-  R3 = callee_restore
-  R2 = callee_restore
-  frame_tear_down 8
-  ret
-  jump %if_end_3
+  jump %fibonacci__0_return_1
+  jump %if_end_4
 
-if_false_2:
+if_false_3:
   R0 = load -8  // n__1
   R1 = move R0
   R0 = set 1
   cmp R1, R0
-  jump_eq %if_true_4 %if_false_5
+  jump_eq %if_true_5 %if_false_6
 
-if_true_4:
+if_true_5:
   R0 = set 1
   R13 = move R0
-  R6 = callee_restore
-  R5 = callee_restore
-  R4 = callee_restore
-  R3 = callee_restore
-  R2 = callee_restore
-  frame_tear_down 8
-  ret
-  jump %if_end_6
+  jump %fibonacci__0_return_1
+  jump %if_end_7
 
-if_false_5:
+if_false_6:
   R0 = load -8  // n__1
   R1 = move R0
   R0 = set 1
@@ -79,6 +67,15 @@ if_false_5:
   R2 = move R13
   R3 = add R3, R2
   R13 = move R3
+  jump %fibonacci__0_return_1
+  jump %if_end_7
+
+if_end_7:
+  jump %if_end_4
+
+if_end_4:
+
+fibonacci__0_return_1:
   R6 = callee_restore
   R5 = callee_restore
   R4 = callee_restore
@@ -86,17 +83,11 @@ if_false_5:
   R2 = callee_restore
   frame_tear_down 8
   ret
-  jump %if_end_6
-
-if_end_6:
-  jump %if_end_3
-
-if_end_3:
 }
 
 func venice_main {
 
-venice_main_7:
+venice_main_8:
   frame_set_up 8
   callee_save R2
   callee_save R3
@@ -122,6 +113,9 @@ venice_main_7:
   R1 = move R13
   R0 = set 0
   R13 = move R0
+  jump %venice_main_return_9
+
+venice_main_return_9:
   R6 = callee_restore
   R5 = callee_restore
   R4 = callee_restore

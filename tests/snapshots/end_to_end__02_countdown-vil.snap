@@ -17,16 +17,16 @@ venice_main_0:
   callee_save R6
   R0 = set 10
   store R0, -8  // i__0
-  jump %while_cond_1
+  jump %while_cond_2
 
-while_cond_1:
+while_cond_2:
   R0 = load -8  // i__0
   R1 = move R0
   R0 = set 0
   cmp R1, R0
-  jump_gt %while_2 %while_end_3
+  jump_gt %while_3 %while_end_4
 
-while_2:
+while_3:
   R0 = load -8  // i__0
   R1 = move R0
   caller_save R0
@@ -40,11 +40,14 @@ while_2:
   R0 = set 1
   R1 = sub R1, R0
   store R1, -8  // i__0
-  jump %while_cond_1
+  jump %while_cond_2
 
-while_end_3:
+while_end_4:
   R0 = set 0
   R13 = move R0
+  jump %venice_main_return_1
+
+venice_main_return_1:
   R6 = callee_restore
   R5 = callee_restore
   R4 = callee_restore

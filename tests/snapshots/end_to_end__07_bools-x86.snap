@@ -21,48 +21,48 @@ venice_main_0:
   movq -8(%rbp), %r10
   movq $1, %rax
   cmpq %rax, %r10
-  je if_true_4
-  jmp if_false_5
+  je if_true_5
+  jmp if_false_6
 
-if_true_4:
+if_true_5:
   movq -16(%rbp), %r10
   movq %r10, %r11
-  jmp if_end_6
+  jmp if_end_7
 
-if_false_5:
+if_false_6:
   movq $0, %r10
   movq %r10, %r11
-  jmp if_end_6
+  jmp if_end_7
 
-if_end_6:
+if_end_7:
   movq $1, %rax
   cmpq %rax, %r11
-  je if_true_1
-  jmp if_false_2
+  je if_true_2
+  jmp if_false_3
 
-if_true_1:
+if_true_2:
   movq $1, %r10
   movq %r10, %r11
-  jmp if_end_3
+  jmp if_end_4
 
-if_false_2:
+if_false_3:
   movq -16(%rbp), %r10
   xorq %rax, %rax
   testq %r10, %rax
   sete %al
   movq %rax, %r10
   movq %r10, %r11
-  jmp if_end_3
+  jmp if_end_4
 
-if_end_3:
+if_end_4:
   movq %r11, -24(%rbp)
   movq -24(%rbp), %r10
   movq $1, %rax
   cmpq %rax, %r10
-  je if_true_7
-  jmp if_false_8
+  je if_true_8
+  jmp if_false_9
 
-if_true_7:
+if_true_8:
   movq $.s_0, %r10
   movq %r10, %r11
   pushq %r10
@@ -80,9 +80,9 @@ if_true_7:
   popq %r11
   popq %r10
   movq %rax, %r12
-  jmp if_end_9
+  jmp if_end_10
 
-if_false_8:
+if_false_9:
   movq $.s_1, %r10
   movq %r10, %r11
   pushq %r10
@@ -100,11 +100,14 @@ if_false_8:
   popq %r11
   popq %r10
   movq %rax, %r12
-  jmp if_end_9
+  jmp if_end_10
 
-if_end_9:
+if_end_10:
   movq $0, %r10
   movq %r10, %rax
+  jmp venice_main_return_1
+
+venice_main_return_1:
   popq %rbx
   popq %r15
   popq %r14

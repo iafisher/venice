@@ -19,6 +19,9 @@ two_plus_two__0_0:
   addq %r10, %r11
   movq %r11, %r11
   movq %r11, %rax
+  jmp two_plus_two__0_return_1
+
+two_plus_two__0_return_1:
   popq %rbx
   popq %r15
   popq %r14
@@ -31,7 +34,7 @@ two_plus_two__0_0:
 .globl venice_main
 venice_main:
 
-venice_main_1:
+venice_main_2:
   pushq %rbp
   movq %rsp, %rbp
   subq $8, %rsp
@@ -58,6 +61,9 @@ venice_main_1:
   movq %rax, %r11
   movq $0, %r10
   movq %r10, %rax
+  jmp venice_main_return_3
+
+venice_main_return_3:
   popq %rbx
   popq %r15
   popq %r14

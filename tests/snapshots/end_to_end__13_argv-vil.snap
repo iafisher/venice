@@ -56,9 +56,9 @@ venice_main_0:
   R2 = move R13
   R0 = set 0
   store R0, -16  // i__1
-  jump %while_cond_1
+  jump %while_cond_2
 
-while_cond_1:
+while_cond_2:
   R0 = load -8  // args__0
   R1 = move R0
   caller_save R0
@@ -69,9 +69,9 @@ while_cond_1:
   R1 = move R13
   R0 = load -16  // i__1
   cmp R0, R1
-  jump_lt %while_2 %while_end_3
+  jump_lt %while_3 %while_end_4
 
-while_2:
+while_3:
   R0 = set s_1
   R1 = move R0
   caller_save R0
@@ -109,11 +109,14 @@ while_2:
   R0 = set 1
   R1 = add R1, R0
   store R1, -16  // i__1
-  jump %while_cond_1
+  jump %while_cond_2
 
-while_end_3:
+while_end_4:
   R0 = set 0
   R13 = move R0
+  jump %venice_main_return_1
+
+venice_main_return_1:
   R6 = callee_restore
   R5 = callee_restore
   R4 = callee_restore

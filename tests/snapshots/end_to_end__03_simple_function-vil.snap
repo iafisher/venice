@@ -20,6 +20,9 @@ two_plus_two__0_0:
   R0 = set 2
   R1 = add R1, R0
   R13 = move R1
+  jump %two_plus_two__0_return_1
+
+two_plus_two__0_return_1:
   R6 = callee_restore
   R5 = callee_restore
   R4 = callee_restore
@@ -31,7 +34,7 @@ two_plus_two__0_0:
 
 func venice_main {
 
-venice_main_1:
+venice_main_2:
   frame_set_up 8
   callee_save R2
   callee_save R3
@@ -55,6 +58,9 @@ venice_main_1:
   R1 = move R13
   R0 = set 0
   R13 = move R0
+  jump %venice_main_return_3
+
+venice_main_return_3:
   R6 = callee_restore
   R5 = callee_restore
   R4 = callee_restore

@@ -25,42 +25,42 @@ venice_main_0:
   R0 = load -8  // x__0
   R13 = set 1
   cmp R0, R13
-  jump_eq %if_true_4 %if_false_5
+  jump_eq %if_true_5 %if_false_6
 
-if_true_4:
+if_true_5:
   R0 = load -16  // y__1
   R1 = move R0
-  jump %if_end_6
+  jump %if_end_7
 
-if_false_5:
+if_false_6:
   R0 = set 0
   R1 = move R0
-  jump %if_end_6
+  jump %if_end_7
 
-if_end_6:
+if_end_7:
   R13 = set 1
   cmp R1, R13
-  jump_eq %if_true_1 %if_false_2
+  jump_eq %if_true_2 %if_false_3
 
-if_true_1:
+if_true_2:
   R0 = set 1
   R1 = move R0
-  jump %if_end_3
+  jump %if_end_4
 
-if_false_2:
+if_false_3:
   R0 = load -16  // y__1
   R0 = logical_not R0
   R1 = move R0
-  jump %if_end_3
+  jump %if_end_4
 
-if_end_3:
+if_end_4:
   store R1, -24  // z__2
   R0 = load -24  // z__2
   R13 = set 1
   cmp R0, R13
-  jump_eq %if_true_7 %if_false_8
+  jump_eq %if_true_8 %if_false_9
 
-if_true_7:
+if_true_8:
   R0 = set s_0
   R1 = move R0
   caller_save R0
@@ -76,9 +76,9 @@ if_true_7:
   R1 = caller_restore
   R0 = caller_restore
   R2 = move R13
-  jump %if_end_9
+  jump %if_end_10
 
-if_false_8:
+if_false_9:
   R0 = set s_1
   R1 = move R0
   caller_save R0
@@ -94,11 +94,14 @@ if_false_8:
   R1 = caller_restore
   R0 = caller_restore
   R2 = move R13
-  jump %if_end_9
+  jump %if_end_10
 
-if_end_9:
+if_end_10:
   R0 = set 0
   R13 = move R0
+  jump %venice_main_return_1
+
+venice_main_return_1:
   R6 = callee_restore
   R5 = callee_restore
   R4 = callee_restore

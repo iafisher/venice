@@ -24,6 +24,9 @@ add__0_0:
   R0 = load -16  // y__2
   R1 = add R1, R0
   R13 = move R1
+  jump %add__0_return_1
+
+add__0_return_1:
   R6 = callee_restore
   R5 = callee_restore
   R4 = callee_restore
@@ -35,7 +38,7 @@ add__0_0:
 
 func venice_main {
 
-venice_main_1:
+venice_main_2:
   frame_set_up 0
   callee_save R2
   callee_save R3
@@ -85,6 +88,9 @@ venice_main_1:
   R5 = move R13
   R0 = set 0
   R13 = move R0
+  jump %venice_main_return_3
+
+venice_main_return_3:
   R6 = callee_restore
   R5 = callee_restore
   R4 = callee_restore

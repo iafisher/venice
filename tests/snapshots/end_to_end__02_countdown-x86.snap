@@ -16,17 +16,17 @@ venice_main_0:
   pushq %rbx
   movq $10, %r10
   movq %r10, -8(%rbp)
-  jmp while_cond_1
+  jmp while_cond_2
 
-while_cond_1:
+while_cond_2:
   movq -8(%rbp), %r10
   movq %r10, %r11
   movq $0, %r10
   cmpq %r10, %r11
-  jg while_2
-  jmp while_end_3
+  jg while_3
+  jmp while_end_4
 
-while_2:
+while_3:
   movq -8(%rbp), %r10
   movq %r10, %r11
   pushq %r10
@@ -42,11 +42,14 @@ while_2:
   subq %r10, %r11
   movq %r11, %r11
   movq %r11, -8(%rbp)
-  jmp while_cond_1
+  jmp while_cond_2
 
-while_end_3:
+while_end_4:
   movq $0, %r10
   movq %r10, %rax
+  jmp venice_main_return_1
+
+venice_main_return_1:
   popq %rbx
   popq %r15
   popq %r14
