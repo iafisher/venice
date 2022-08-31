@@ -266,7 +266,11 @@ impl Generator {
             Cmp(r1, r2) => {
                 self.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
-            Call(label, registers) => {
+            Call {
+                label,
+                registers,
+                variadic,
+            } => {
                 for (i, register) in registers.iter().enumerate() {
                     self.push(Instruction::Mov(
                         Value::param(u8::try_from(i).unwrap()),
@@ -274,24 +278,14 @@ impl Generator {
                     ));
                 }
 
-                self.align_stack();
-                self.push(Instruction::Call(label.0.clone()));
-                self.unalign_stack();
-            }
-            CallVariadic(label, registers) => {
-                for (i, register) in registers.iter().enumerate() {
+                if *variadic {
+                    // The System V ABI requires setting AL to the number of vector registers when
+                    // calling a variadic function.
                     self.push(Instruction::Mov(
-                        Value::param(u8::try_from(i).unwrap()),
-                        Value::r(register),
+                        Value::SpecialRegister(String::from("al")),
+                        Value::Immediate(0),
                     ));
                 }
-
-                // The System V ABI requires setting AL to the number of vector registers when
-                // calling a variadic function.
-                self.push(Instruction::Mov(
-                    Value::SpecialRegister(String::from("al")),
-                    Value::Immediate(0),
-                ));
 
                 self.align_stack();
                 self.push(Instruction::Call(label.0.clone()));

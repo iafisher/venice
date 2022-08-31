@@ -277,17 +277,11 @@ impl Generator {
             self.push(vil::InstructionKind::CallerSave(*caller_save));
         }
 
-        if expr.variadic {
-            self.push(vil::InstructionKind::CallVariadic(
-                vil::FunctionLabel(unique_name.clone()),
-                final_argument_registers,
-            ));
-        } else {
-            self.push(vil::InstructionKind::Call(
-                vil::FunctionLabel(unique_name.clone()),
-                final_argument_registers,
-            ));
-        }
+        self.push(vil::InstructionKind::Call {
+            label: vil::FunctionLabel(unique_name.clone()),
+            registers: final_argument_registers,
+            variadic: expr.variadic,
+        });
 
         // Restore caller-save registers.
         for caller_save in vil::CALLER_SAVE_REGISTERS.iter().rev() {
