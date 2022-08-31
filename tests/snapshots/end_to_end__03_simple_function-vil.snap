@@ -10,21 +10,21 @@ func two_plus_two__0 {
 
 two_plus_two__0_0:
   frame_set_up 0
-  callee_save %rg2
-  callee_save %rg3
-  callee_save %rg4
-  callee_save %rg5
-  callee_save %rg6
-  %rg0 = set 2
-  %rg1 = move %rg0
-  %rg0 = set 2
-  %rg1 = add %rg1, %rg0
-  %rt = move %rg1
-  %rg6 = callee_restore
-  %rg5 = callee_restore
-  %rg4 = callee_restore
-  %rg3 = callee_restore
-  %rg2 = callee_restore
+  callee_save R8
+  callee_save R9
+  callee_save R10
+  callee_save R11
+  callee_save R12
+  R6 = set 2
+  R7 = move R6
+  R6 = set 2
+  R7 = add R7, R6
+  R13 = move R7
+  R12 = callee_restore
+  R11 = callee_restore
+  R10 = callee_restore
+  R9 = callee_restore
+  R8 = callee_restore
   frame_tear_down 0
   ret
 }
@@ -33,34 +33,34 @@ func venice_main {
 
 venice_main_1:
   frame_set_up 8
-  callee_save %rg2
-  callee_save %rg3
-  callee_save %rg4
-  callee_save %rg5
-  callee_save %rg6
-  caller_save %rg0
-  caller_save %rg1
+  callee_save R8
+  callee_save R9
+  callee_save R10
+  callee_save R11
+  callee_save R12
+  caller_save R6
+  caller_save R7
   call %two_plus_two__0
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg0 = move %rt
-  store %rg0, -8  // x__1
-  %rg0 = load -8  // x__1
-  %rg1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  %rp0 = move %rg1
+  R7 = caller_restore
+  R6 = caller_restore
+  R6 = move R13
+  store R6, -8  // x__1
+  R6 = load -8  // x__1
+  R7 = move R6
+  caller_save R6
+  caller_save R7
+  R0 = move R7
   call %venice_printint
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg1 = move %rt
-  %rg0 = set 0
-  %rt = move %rg0
-  %rg6 = callee_restore
-  %rg5 = callee_restore
-  %rg4 = callee_restore
-  %rg3 = callee_restore
-  %rg2 = callee_restore
+  R7 = caller_restore
+  R6 = caller_restore
+  R7 = move R13
+  R6 = set 0
+  R13 = move R6
+  R12 = callee_restore
+  R11 = callee_restore
+  R10 = callee_restore
+  R9 = callee_restore
+  R8 = callee_restore
   frame_tear_down 8
   ret
 }

@@ -10,37 +10,37 @@ func venice_main {
 
 venice_main_0:
   frame_set_up 8
-  callee_save %rg2
-  callee_save %rg3
-  callee_save %rg4
-  callee_save %rg5
-  callee_save %rg6
-  %rg0 = set 12
-  %rg1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  %rp0 = move %rg1
+  callee_save R8
+  callee_save R9
+  callee_save R10
+  callee_save R11
+  callee_save R12
+  R6 = set 12
+  R7 = move R6
+  caller_save R6
+  caller_save R7
+  R0 = move R7
   call %fibonacci__0
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg1 = move %rt
-  store %rg1, -8  // x__1
-  %rg0 = load -8  // x__1
-  %rg1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  %rp0 = move %rg1
+  R7 = caller_restore
+  R6 = caller_restore
+  R7 = move R13
+  store R7, -8  // x__1
+  R6 = load -8  // x__1
+  R7 = move R6
+  caller_save R6
+  caller_save R7
+  R0 = move R7
   call %venice_printint
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg1 = move %rt
-  %rg0 = set 0
-  %rt = move %rg0
-  %rg6 = callee_restore
-  %rg5 = callee_restore
-  %rg4 = callee_restore
-  %rg3 = callee_restore
-  %rg2 = callee_restore
+  R7 = caller_restore
+  R6 = caller_restore
+  R7 = move R13
+  R6 = set 0
+  R13 = move R6
+  R12 = callee_restore
+  R11 = callee_restore
+  R10 = callee_restore
+  R9 = callee_restore
+  R8 = callee_restore
   frame_tear_down 8
   ret
 }
@@ -49,52 +49,52 @@ func fibonacci__0 {
 
 fibonacci__0_1:
   frame_set_up 40
-  callee_save %rg2
-  callee_save %rg3
-  callee_save %rg4
-  callee_save %rg5
-  callee_save %rg6
-  store %rp0, -8  // n__2
-  %rg0 = set 1
-  store %rg0, -16  // fib_i__3
-  %rg0 = set 0
-  store %rg0, -24  // fib_i_minus_1__4
-  %rg0 = set 1
-  store %rg0, -32  // i__5
+  callee_save R8
+  callee_save R9
+  callee_save R10
+  callee_save R11
+  callee_save R12
+  store R0, -8  // n__2
+  R6 = set 1
+  store R6, -16  // fib_i__3
+  R6 = set 0
+  store R6, -24  // fib_i_minus_1__4
+  R6 = set 1
+  store R6, -32  // i__5
   jump %while_cond_2
 
 while_cond_2:
-  %rg0 = load -32  // i__5
-  %rg1 = move %rg0
-  %rg0 = load -8  // n__2
-  cmp %rg1, %rg0
+  R6 = load -32  // i__5
+  R7 = move R6
+  R6 = load -8  // n__2
+  cmp R7, R6
   jump_lt %while_3 %while_end_4
 
 while_3:
-  %rg0 = load -16  // fib_i__3
-  store %rg0, -40  // tmp__6
-  %rg0 = load -16  // fib_i__3
-  %rg1 = move %rg0
-  %rg0 = load -24  // fib_i_minus_1__4
-  %rg1 = add %rg1, %rg0
-  store %rg1, -16  // fib_i__3
-  %rg0 = load -40  // tmp__6
-  store %rg0, -24  // fib_i_minus_1__4
-  %rg0 = load -32  // i__5
-  %rg1 = move %rg0
-  %rg0 = set 1
-  %rg1 = add %rg1, %rg0
-  store %rg1, -32  // i__5
+  R6 = load -16  // fib_i__3
+  store R6, -40  // tmp__6
+  R6 = load -16  // fib_i__3
+  R7 = move R6
+  R6 = load -24  // fib_i_minus_1__4
+  R7 = add R7, R6
+  store R7, -16  // fib_i__3
+  R6 = load -40  // tmp__6
+  store R6, -24  // fib_i_minus_1__4
+  R6 = load -32  // i__5
+  R7 = move R6
+  R6 = set 1
+  R7 = add R7, R6
+  store R7, -32  // i__5
   jump %while_cond_2
 
 while_end_4:
-  %rg0 = load -16  // fib_i__3
-  %rt = move %rg0
-  %rg6 = callee_restore
-  %rg5 = callee_restore
-  %rg4 = callee_restore
-  %rg3 = callee_restore
-  %rg2 = callee_restore
+  R6 = load -16  // fib_i__3
+  R13 = move R6
+  R12 = callee_restore
+  R11 = callee_restore
+  R10 = callee_restore
+  R9 = callee_restore
+  R8 = callee_restore
   frame_tear_down 40
   ret
 }

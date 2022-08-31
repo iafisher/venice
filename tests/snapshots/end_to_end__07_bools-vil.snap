@@ -13,101 +13,101 @@ func venice_main {
 
 venice_main_0:
   frame_set_up 24
-  callee_save %rg2
-  callee_save %rg3
-  callee_save %rg4
-  callee_save %rg5
-  callee_save %rg6
-  %rg0 = set 1
-  store %rg0, -8  // x__0
-  %rg0 = set 0
-  store %rg0, -16  // y__1
-  %rg0 = load -8  // x__0
-  %rt = set 1
-  cmp %rg0, %rt
+  callee_save R8
+  callee_save R9
+  callee_save R10
+  callee_save R11
+  callee_save R12
+  R6 = set 1
+  store R6, -8  // x__0
+  R6 = set 0
+  store R6, -16  // y__1
+  R6 = load -8  // x__0
+  R13 = set 1
+  cmp R6, R13
   jump_eq %if_true_4 %if_false_5
 
 if_true_4:
-  %rg0 = load -16  // y__1
-  %rg1 = move %rg0
+  R6 = load -16  // y__1
+  R7 = move R6
   jump %if_end_6
 
 if_false_5:
-  %rg0 = set 0
-  %rg1 = move %rg0
+  R6 = set 0
+  R7 = move R6
   jump %if_end_6
 
 if_end_6:
-  %rt = set 1
-  cmp %rg1, %rt
+  R13 = set 1
+  cmp R7, R13
   jump_eq %if_true_1 %if_false_2
 
 if_true_1:
-  %rg0 = set 1
-  %rg1 = move %rg0
+  R6 = set 1
+  R7 = move R6
   jump %if_end_3
 
 if_false_2:
-  %rg0 = load -16  // y__1
-  %rg0 = logical_not %rg0
-  %rg1 = move %rg0
+  R6 = load -16  // y__1
+  R6 = logical_not R6
+  R7 = move R6
   jump %if_end_3
 
 if_end_3:
-  store %rg1, -24  // z__2
-  %rg0 = load -24  // z__2
-  %rt = set 1
-  cmp %rg0, %rt
+  store R7, -24  // z__2
+  R6 = load -24  // z__2
+  R13 = set 1
+  cmp R6, R13
   jump_eq %if_true_7 %if_false_8
 
 if_true_7:
-  %rg0 = set s_0
-  %rg1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  %rp0 = move %rg1
+  R6 = set s_0
+  R7 = move R6
+  caller_save R6
+  caller_save R7
+  R0 = move R7
   call %venice_string_new
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg1 = move %rt
-  %rg2 = move %rg1
-  caller_save %rg0
-  caller_save %rg1
-  %rp0 = move %rg2
+  R7 = caller_restore
+  R6 = caller_restore
+  R7 = move R13
+  R8 = move R7
+  caller_save R6
+  caller_save R7
+  R0 = move R8
   call %venice_println
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg2 = move %rt
+  R7 = caller_restore
+  R6 = caller_restore
+  R8 = move R13
   jump %if_end_9
 
 if_false_8:
-  %rg0 = set s_1
-  %rg1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  %rp0 = move %rg1
+  R6 = set s_1
+  R7 = move R6
+  caller_save R6
+  caller_save R7
+  R0 = move R7
   call %venice_string_new
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg1 = move %rt
-  %rg2 = move %rg1
-  caller_save %rg0
-  caller_save %rg1
-  %rp0 = move %rg2
+  R7 = caller_restore
+  R6 = caller_restore
+  R7 = move R13
+  R8 = move R7
+  caller_save R6
+  caller_save R7
+  R0 = move R8
   call %venice_println
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg2 = move %rt
+  R7 = caller_restore
+  R6 = caller_restore
+  R8 = move R13
   jump %if_end_9
 
 if_end_9:
-  %rg0 = set 0
-  %rt = move %rg0
-  %rg6 = callee_restore
-  %rg5 = callee_restore
-  %rg4 = callee_restore
-  %rg3 = callee_restore
-  %rg2 = callee_restore
+  R6 = set 0
+  R13 = move R6
+  R12 = callee_restore
+  R11 = callee_restore
+  R10 = callee_restore
+  R9 = callee_restore
+  R8 = callee_restore
   frame_tear_down 24
   ret
 }

@@ -12,59 +12,59 @@ func venice_main {
 
 venice_main_0:
   frame_set_up 8
-  callee_save %rg2
-  callee_save %rg3
-  callee_save %rg4
-  callee_save %rg5
-  callee_save %rg6
-  %rg0 = set 3
-  %rg4 = move %rg0
-  %rg0 = set 1
-  %rg0 = negate %rg0
-  %rg3 = move %rg0
-  %rg0 = set 42
-  %rg2 = move %rg0
-  %rg0 = set 1
-  %rg0 = negate %rg0
-  %rg1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  %rp0 = move %rg4
-  %rp1 = move %rg3
-  %rp2 = move %rg2
-  %rp3 = move %rg1
+  callee_save R8
+  callee_save R9
+  callee_save R10
+  callee_save R11
+  callee_save R12
+  R6 = set 3
+  R10 = move R6
+  R6 = set 1
+  R6 = negate R6
+  R9 = move R6
+  R6 = set 42
+  R8 = move R6
+  R6 = set 1
+  R6 = negate R6
+  R7 = move R6
+  caller_save R6
+  caller_save R7
+  R0 = move R10
+  R1 = move R9
+  R2 = move R8
+  R3 = move R7
   call_variadic %venice_list_from_varargs
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg4 = move %rt
-  store %rg4, -8  // numbers__0
-  %rg0 = load -8  // numbers__0
-  %rg2 = move %rg0
-  %rg0 = set 1
-  %rg1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  %rp0 = move %rg2
-  %rp1 = move %rg1
+  R7 = caller_restore
+  R6 = caller_restore
+  R10 = move R13
+  store R10, -8  // numbers__0
+  R6 = load -8  // numbers__0
+  R8 = move R6
+  R6 = set 1
+  R7 = move R6
+  caller_save R6
+  caller_save R7
+  R0 = move R8
+  R1 = move R7
   call %venice_list_index
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg2 = move %rt
-  %rg3 = move %rg2
-  caller_save %rg0
-  caller_save %rg1
-  %rp0 = move %rg3
+  R7 = caller_restore
+  R6 = caller_restore
+  R8 = move R13
+  R9 = move R8
+  caller_save R6
+  caller_save R7
+  R0 = move R9
   call %venice_printint
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg3 = move %rt
-  %rg0 = set 0
-  %rt = move %rg0
-  %rg6 = callee_restore
-  %rg5 = callee_restore
-  %rg4 = callee_restore
-  %rg3 = callee_restore
-  %rg2 = callee_restore
+  R7 = caller_restore
+  R6 = caller_restore
+  R9 = move R13
+  R6 = set 0
+  R13 = move R6
+  R12 = callee_restore
+  R11 = callee_restore
+  R10 = callee_restore
+  R9 = callee_restore
+  R8 = callee_restore
   frame_tear_down 8
   ret
 }

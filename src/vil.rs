@@ -227,13 +227,7 @@ impl fmt::Display for InstructionKind {
 
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.0 < PARAM_REGISTER_COUNT {
-            write!(f, "%rp{}", self.0)
-        } else if self.0 == RETURN_REGISTER_INDEX {
-            write!(f, "%rt")
-        } else {
-            write!(f, "%rg{}", self.0 - PARAM_REGISTER_COUNT)
-        }
+        write!(f, "R{}", self.0)
     }
 }
 
