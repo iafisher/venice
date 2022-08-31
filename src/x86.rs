@@ -136,16 +136,13 @@ impl Generator {
         self.program.blocks.push(block);
 
         self.push(Instruction::Push(RBP));
-        self.stack_alignment += 8;
         self.push(Instruction::Mov(RBP, RSP));
         let size_as_i64 = i64::try_from(declaration.stack_frame_size).unwrap();
         self.push(Instruction::Sub(RSP, Value::Immediate(size_as_i64)));
-        self.stack_alignment += size_as_i64;
 
         // Save callee-save registers.
         for callee_save in CALLEE_SAVE_REGISTERS {
             self.push(Instruction::Push(Value::Register(Register(*callee_save))));
-            self.stack_alignment += 8;
         }
 
         // Move parameters from registers onto the stack.
@@ -168,14 +165,11 @@ impl Generator {
         // Restore callee-save registers.
         for callee_save in CALLEE_SAVE_REGISTERS.iter().rev() {
             self.push(Instruction::Pop(Value::Register(Register(*callee_save))));
-            self.stack_alignment -= 8;
         }
 
         let size_as_i64 = i64::try_from(declaration.stack_frame_size).unwrap();
         self.push(Instruction::Add(RSP, Value::Immediate(size_as_i64)));
-        self.stack_alignment -= size_as_i64;
         self.push(Instruction::Pop(RBP));
-        self.stack_alignment -= 8;
         self.push(Instruction::Ret);
     }
 
@@ -288,7 +282,6 @@ impl Generator {
                 // Save caller-save registers.
                 for caller_save in CALLER_SAVE_REGISTERS {
                     self.push(Instruction::Push(Value::Register(Register(*caller_save))));
-                    self.stack_alignment += 8;
                 }
 
                 for (i, register) in registers.iter().enumerate() {
@@ -314,7 +307,6 @@ impl Generator {
                 // Restore caller-save registers.
                 for caller_save in CALLER_SAVE_REGISTERS.iter().rev() {
                     self.push(Instruction::Pop(Value::Register(Register(*caller_save))));
-                    self.stack_alignment -= 8;
                 }
             }
             Jump(l) => {
@@ -350,18 +342,39 @@ impl Generator {
     fn align_stack(&mut self) {
         let diff = self.stack_alignment % 16;
         if diff > 0 {
-            self.push(Instruction::Sub(RSP, Value::Immediate(diff)));
+            self.push_no_stack_align(Instruction::Sub(RSP, Value::Immediate(diff)));
         }
     }
 
     fn unalign_stack(&mut self) {
         let diff = self.stack_alignment % 16;
         if diff > 0 {
-            self.push(Instruction::Add(RSP, Value::Immediate(diff)));
+            self.push_no_stack_align(Instruction::Add(RSP, Value::Immediate(diff)));
         }
     }
 
     fn push(&mut self, instruction: Instruction) {
+        match instruction {
+            Instruction::Push(_) => {
+                self.stack_alignment += 8;
+            }
+            Instruction::Pop(_) => {
+                self.stack_alignment -= 8;
+            }
+            Instruction::Sub(Value::Register(Register(14)), Value::Immediate(x)) => {
+                self.stack_alignment += x;
+            }
+            Instruction::Add(Value::Register(Register(14)), Value::Immediate(x)) => {
+                self.stack_alignment += x;
+            }
+            _ => {}
+        }
+
+        let index = self.program.blocks.len() - 1;
+        self.program.blocks[index].instructions.push(instruction);
+    }
+
+    fn push_no_stack_align(&mut self, instruction: Instruction) {
         let index = self.program.blocks.len() - 1;
         self.program.blocks[index].instructions.push(instruction);
     }
