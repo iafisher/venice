@@ -62,12 +62,8 @@ pub enum InstructionKind {
     Sub(Register, Register, Register),
 }
 
-#[derive(Copy, Clone, Debug)]
-pub enum Register {
-    Param(u8),
-    General(u8),
-    Return,
-}
+#[derive(Clone, Copy, Debug)]
+pub struct Register(u8);
 
 // TODO: make these private
 pub const PARAM_REGISTER_COUNT: u8 = 6;
@@ -76,20 +72,19 @@ const RETURN_REGISTER_INDEX: u8 = 13;
 
 impl Register {
     pub fn index(self) -> u8 {
-        use Register::*;
-        match self {
-            Param(i) => i,
-            General(i) => i,
-            Return => RETURN_REGISTER_INDEX,
+        if self.0 < PARAM_REGISTER_COUNT {
+            self.0
+        } else if self.0 >= PARAM_REGISTER_COUNT
+            && self.0 < (PARAM_REGISTER_COUNT + GP_REGISTER_COUNT)
+        {
+            self.0 - PARAM_REGISTER_COUNT
+        } else {
+            self.0
         }
     }
 
     pub fn absolute_index(self) -> u8 {
-        if let Register::General(i) = self {
-            i + PARAM_REGISTER_COUNT
-        } else {
-            self.index()
-        }
+        self.0
     }
 
     pub fn param(i: u8) -> Self {
@@ -99,7 +94,7 @@ impl Register {
                 PARAM_REGISTER_COUNT
             );
         }
-        Register::Param(i)
+        Register(i)
     }
 
     pub fn gp(i: u8) -> Self {
@@ -109,11 +104,15 @@ impl Register {
                 GP_REGISTER_COUNT
             );
         }
-        Register::General(i)
+        Register(i + PARAM_REGISTER_COUNT)
     }
 
     pub fn scratch() -> Self {
-        Register::Return
+        Register(RETURN_REGISTER_INDEX)
+    }
+
+    pub fn ret() -> Self {
+        Register(RETURN_REGISTER_INDEX)
     }
 }
 
@@ -219,11 +218,12 @@ impl fmt::Display for InstructionKind {
 
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Register::*;
-        match self {
-            Param(i) => write!(f, "%rp{}", i),
-            General(i) => write!(f, "%rg{}", i),
-            Return => write!(f, "%rt"),
+        if self.0 < PARAM_REGISTER_COUNT {
+            write!(f, "%rp{}", self.0)
+        } else if self.0 == RETURN_REGISTER_INDEX {
+            write!(f, "%rt")
+        } else {
+            write!(f, "%rg{}", self.0 - PARAM_REGISTER_COUNT)
         }
     }
 }

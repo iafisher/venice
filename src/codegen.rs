@@ -298,7 +298,7 @@ impl Generator {
         self.push(vil::InstructionKind::CallerRestore(vil::Register::gp(1)));
         self.push(vil::InstructionKind::CallerRestore(vil::Register::gp(0)));
 
-        self.push(vil::InstructionKind::Move(r, vil::Register::Return));
+        self.push(vil::InstructionKind::Move(r, vil::Register::ret()));
     }
 
     fn generate_if_expression(&mut self, expr: &ast::IfExpression, r: vil::Register) {
@@ -425,7 +425,7 @@ impl Generator {
 
     fn generate_return_statement(&mut self, stmt: &ast::ReturnStatement) {
         let register = self.generate_expression(&stmt.value);
-        self.push(vil::InstructionKind::Move(vil::Register::Return, register));
+        self.push(vil::InstructionKind::Move(vil::Register::ret(), register));
 
         // Restore callee-save registers.
         for i in (2..vil::GP_REGISTER_COUNT).rev() {
