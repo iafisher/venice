@@ -39,29 +39,44 @@ pub struct Instruction {
 
 #[derive(Debug)]
 pub enum InstructionKind {
-    Add(Register, Register, Register),
+    Binary(BinaryOp, Register, Register, Register),
+    Unary(UnaryOp, Register, Register),
     Call {
         label: FunctionLabel,
         registers: Vec<Register>,
         variadic: bool,
     },
     Cmp(Register, Register),
-    Div(Register, Register, Register),
     Jump(Label),
-    JumpEq(Label, Label),
-    JumpGt(Label, Label),
-    JumpGte(Label, Label),
-    JumpLt(Label, Label),
-    JumpLte(Label, Label),
-    JumpNeq(Label, Label),
+    JumpIf(JumpCondition, Label, Label),
     Load(Register, i32),
-    LogicalNot(Register, Register),
     Move(Register, Register),
-    Mul(Register, Register, Register),
-    Negate(Register, Register),
     Set(Register, Immediate),
     Store(Register, i32),
-    Sub(Register, Register, Register),
+}
+
+#[derive(Debug)]
+pub enum BinaryOp {
+    Add,
+    Div,
+    Mul,
+    Sub,
+}
+
+#[derive(Debug)]
+pub enum UnaryOp {
+    LogicalNot,
+    Negate,
+}
+
+#[derive(Debug)]
+pub enum JumpCondition {
+    Eq,
+    Gt,
+    Gte,
+    Lt,
+    Lte,
+    Neq,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -163,7 +178,17 @@ impl fmt::Display for InstructionKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use InstructionKind::*;
         match self {
-            Add(r1, r2, r3) => write!(f, "{} = add {}, {}", r1, r2, r3),
+            Binary(op, r1, r2, r3) => {
+                let opstr = match op {
+                    BinaryOp::Add => "add",
+                    BinaryOp::Div => "div",
+                    BinaryOp::Mul => "mul",
+                    BinaryOp::Sub => "sub",
+                };
+                write!(f, "{} = {} {}, {}", r1, opstr, r2, r3)
+            }
+            Unary(UnaryOp::LogicalNot, r1, r2) => write!(f, "{} = logical_not {}", r1, r2),
+            Unary(UnaryOp::Negate, r1, r2) => write!(f, "{} = negate {}", r1, r2),
             Call {
                 label,
                 registers,
@@ -181,22 +206,22 @@ impl fmt::Display for InstructionKind {
                 fmt::Result::Ok(())
             }
             Cmp(r1, r2) => write!(f, "cmp {}, {}", r1, r2),
-            Div(r1, r2, r3) => write!(f, "{} = div {}, {}", r1, r2, r3),
             Load(r, offset) => write!(f, "{} = load {}", r, offset),
             Jump(label) => write!(f, "jump {}", label),
-            JumpEq(l1, l2) => write!(f, "jump_eq {} {}", l1, l2),
-            JumpGt(l1, l2) => write!(f, "jump_gt {} {}", l1, l2),
-            JumpGte(l1, l2) => write!(f, "jump_gte {} {}", l1, l2),
-            JumpLt(l1, l2) => write!(f, "jump_lt {} {}", l1, l2),
-            JumpLte(l1, l2) => write!(f, "jump_lte {} {}", l1, l2),
-            JumpNeq(l1, l2) => write!(f, "jump_neq {} {}", l1, l2),
-            LogicalNot(r1, r2) => write!(f, "{} = logical_not {}", r1, r2),
+            JumpIf(cond, l1, l2) => {
+                let suffix = match cond {
+                    JumpCondition::Eq => "eq",
+                    JumpCondition::Gt => "gt",
+                    JumpCondition::Gte => "gte",
+                    JumpCondition::Lt => "lt",
+                    JumpCondition::Lte => "gte",
+                    JumpCondition::Neq => "neq",
+                };
+                write!(f, "jump_{} {}, {}", suffix, l1, l2)
+            }
             Move(r1, r2) => write!(f, "{} = move {}", r1, r2),
-            Mul(r1, r2, r3) => write!(f, "{} = mul {}, {}", r1, r2, r3),
-            Negate(r1, r2) => write!(f, "{} = negate {}", r1, r2),
             Set(r, x) => write!(f, "{} = set {}", r, x),
             Store(r, offset) => write!(f, "store {}, {}", r, offset),
-            Sub(r1, r2, r3) => write!(f, "{} = sub {}, {}", r1, r2, r3),
         }
     }
 }

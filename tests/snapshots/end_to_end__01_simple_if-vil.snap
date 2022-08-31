@@ -15,7 +15,7 @@ venice_main_0:
   R0 = set 1
   R13 = set 1
   cmp R0, R13
-  jump_eq %if_true_2 %if_false_3
+  jump_eq %if_true_2, %if_false_3
 
 if_true_2:
   R0 = set s_0

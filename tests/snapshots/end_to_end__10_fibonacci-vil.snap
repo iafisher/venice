@@ -41,7 +41,7 @@ while_cond_4:
   R1 = move R0
   R0 = load -8  // n__2
   cmp R1, R0
-  jump_lt %while_5 %while_end_6
+  jump_lt %while_5, %while_end_6
 
 while_5:
   R0 = load -16  // fib_i__3

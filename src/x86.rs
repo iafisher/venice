@@ -190,6 +190,7 @@ impl Generator {
         declaration: &vil::FunctionDeclaration,
         instruction: &vil::Instruction,
     ) {
+        use vil::BinaryOp::*;
         use vil::InstructionKind::*;
         match &instruction.kind {
             Set(r, imm) => match imm {
@@ -203,19 +204,19 @@ impl Generator {
             Move(r1, r2) => {
                 self.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
-            Add(r1, r2, r3) => {
+            Binary(Add, r1, r2, r3) => {
                 self.push(Instruction::Add(Value::r(r2), Value::r(r3)));
                 self.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
-            Sub(r1, r2, r3) => {
+            Binary(Sub, r1, r2, r3) => {
                 self.push(Instruction::Sub(Value::r(r2), Value::r(r3)));
                 self.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
-            Mul(r1, r2, r3) => {
+            Binary(Mul, r1, r2, r3) => {
                 self.push(Instruction::IMul(Value::r(r2), Value::r(r3)));
                 self.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
-            Div(r1, r2, r3) => {
+            Binary(Div, r1, r2, r3) => {
                 // In x86, `div RXX` computes RDX:RAX / RXX and stores the quotient in RAX and the
                 // remainder in RDX.
                 //
@@ -234,11 +235,11 @@ impl Generator {
                 // Move RAX into the destination register.
                 self.push(Instruction::Mov(Value::r(r1), RAX));
             }
-            Negate(r1, r2) => {
+            Unary(vil::UnaryOp::Negate, r1, r2) => {
                 self.push(Instruction::Neg(Value::r(r2)));
                 self.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
-            LogicalNot(r1, r2) => {
+            Unary(vil::UnaryOp::LogicalNot, r1, r2) => {
                 // XOR RAX with itself to produce 0, then test it against the source register and
                 // set AL to the ZF flag. Since we already zeroed out RAX, all the high bits will
                 // also be 0.
@@ -312,27 +313,27 @@ impl Generator {
             Jump(l) => {
                 self.push(Instruction::Jmp(l.0.clone()));
             }
-            JumpEq(true_label, false_label) => {
+            JumpIf(vil::JumpCondition::Eq, true_label, false_label) => {
                 self.push(Instruction::Je(true_label.0.clone()));
                 self.push(Instruction::Jmp(false_label.0.clone()));
             }
-            JumpGt(true_label, false_label) => {
+            JumpIf(vil::JumpCondition::Gt, true_label, false_label) => {
                 self.push(Instruction::Jg(true_label.0.clone()));
                 self.push(Instruction::Jmp(false_label.0.clone()));
             }
-            JumpGte(true_label, false_label) => {
+            JumpIf(vil::JumpCondition::Gte, true_label, false_label) => {
                 self.push(Instruction::Jge(true_label.0.clone()));
                 self.push(Instruction::Jmp(false_label.0.clone()));
             }
-            JumpLt(true_label, false_label) => {
+            JumpIf(vil::JumpCondition::Lt, true_label, false_label) => {
                 self.push(Instruction::Jl(true_label.0.clone()));
                 self.push(Instruction::Jmp(false_label.0.clone()));
             }
-            JumpLte(true_label, false_label) => {
+            JumpIf(vil::JumpCondition::Lte, true_label, false_label) => {
                 self.push(Instruction::Jle(true_label.0.clone()));
                 self.push(Instruction::Jmp(false_label.0.clone()));
             }
-            JumpNeq(true_label, false_label) => {
+            JumpIf(vil::JumpCondition::Neq, true_label, false_label) => {
                 self.push(Instruction::Jne(true_label.0.clone()));
                 self.push(Instruction::Jmp(false_label.0.clone()));
             }

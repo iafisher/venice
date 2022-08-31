@@ -13,7 +13,7 @@ fibonacci__0_0:
   R1 = move R0
   R0 = set 0
   cmp R1, R0
-  jump_eq %if_true_2 %if_false_3
+  jump_eq %if_true_2, %if_false_3
 
 if_true_2:
   R0 = set 0
@@ -26,7 +26,7 @@ if_false_3:
   R1 = move R0
   R0 = set 1
   cmp R1, R0
-  jump_eq %if_true_5 %if_false_6
+  jump_eq %if_true_5, %if_false_6
 
 if_true_5:
   R0 = set 1

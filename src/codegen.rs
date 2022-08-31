@@ -146,7 +146,11 @@ impl Generator {
                 vil::Immediate::Integer(1),
             ));
             self.push(vil::InstructionKind::Cmp(register, scratch));
-            self.push(vil::InstructionKind::JumpEq(true_label, false_label));
+            self.push(vil::InstructionKind::JumpIf(
+                vil::JumpCondition::Eq,
+                true_label,
+                false_label,
+            ));
         }
     }
 
@@ -154,19 +158,11 @@ impl Generator {
         let (left, right) = self.generate_generic_binary_expression(&expr.left, &expr.right, r);
 
         use common::BinaryOpType::*;
-        match expr.op {
-            Add => {
-                self.push(vil::InstructionKind::Add(r, left, right));
-            }
-            Divide => {
-                self.push(vil::InstructionKind::Div(r, left, right));
-            }
-            Multiply => {
-                self.push(vil::InstructionKind::Mul(r, left, right));
-            }
-            Subtract => {
-                self.push(vil::InstructionKind::Sub(r, left, right));
-            }
+        let op = match expr.op {
+            Add => vil::BinaryOp::Add,
+            Divide => vil::BinaryOp::Div,
+            Multiply => vil::BinaryOp::Mul,
+            Subtract => vil::BinaryOp::Sub,
             And | Or => {
                 panic!(
                     "internal error: and/or expressions should have been converted by the analyzer"
@@ -175,7 +171,8 @@ impl Generator {
             _ => {
                 panic!("internal error: operator not implemented: {:?}", expr.op);
             }
-        }
+        };
+        self.push(vil::InstructionKind::Binary(op, r, left, right));
     }
 
     /// Given a left and right expression and a target register, generates the code for the two
@@ -210,14 +207,11 @@ impl Generator {
         let operand = self.generate_expression(&expr.operand);
 
         use common::UnaryOpType::*;
-        match expr.op {
-            Negate => {
-                self.push(vil::InstructionKind::Negate(r, operand));
-            }
-            Not => {
-                self.push(vil::InstructionKind::LogicalNot(r, operand));
-            }
-        }
+        let op = match expr.op {
+            Negate => vil::UnaryOp::Negate,
+            Not => vil::UnaryOp::LogicalNot,
+        };
+        self.push(vil::InstructionKind::Unary(op, r, operand));
     }
 
     fn generate_comparison_expression(
@@ -295,7 +289,8 @@ impl Generator {
 
         self.start_block(
             true_label.clone(),
-            Some(vil::InstructionKind::JumpEq(
+            Some(vil::InstructionKind::JumpIf(
+                vil::JumpCondition::Eq,
                 true_label,
                 false_label.clone(),
             )),
@@ -502,11 +497,17 @@ fn get_comparison_instruction(
 ) -> vil::InstructionKind {
     use common::ComparisonOpType::*;
     match op {
-        Equals => vil::InstructionKind::JumpEq(true_label, false_label),
-        GreaterThan => vil::InstructionKind::JumpGt(true_label, false_label),
-        GreaterThanEquals => vil::InstructionKind::JumpGte(true_label, false_label),
-        LessThan => vil::InstructionKind::JumpLt(true_label, false_label),
-        LessThanEquals => vil::InstructionKind::JumpLte(true_label, false_label),
-        NotEquals => vil::InstructionKind::JumpNeq(true_label, false_label),
+        Equals => vil::InstructionKind::JumpIf(vil::JumpCondition::Eq, true_label, false_label),
+        GreaterThan => {
+            vil::InstructionKind::JumpIf(vil::JumpCondition::Gt, true_label, false_label)
+        }
+        GreaterThanEquals => {
+            vil::InstructionKind::JumpIf(vil::JumpCondition::Gte, true_label, false_label)
+        }
+        LessThan => vil::InstructionKind::JumpIf(vil::JumpCondition::Lt, true_label, false_label),
+        LessThanEquals => {
+            vil::InstructionKind::JumpIf(vil::JumpCondition::Lte, true_label, false_label)
+        }
+        NotEquals => vil::InstructionKind::JumpIf(vil::JumpCondition::Neq, true_label, false_label),
     }
 }

@@ -42,7 +42,7 @@ while_cond_2:
   R1 = move R13
   R0 = load -16  // i__1
   cmp R0, R1
-  jump_lt %while_3 %while_end_4
+  jump_lt %while_3, %while_end_4
 
 while_3:
   R0 = set s_1

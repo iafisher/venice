@@ -19,7 +19,7 @@ venice_main_0:
   R0 = load -8  // x__0
   R13 = set 1
   cmp R0, R13
-  jump_eq %if_true_5 %if_false_6
+  jump_eq %if_true_5, %if_false_6
 
 if_true_5:
   R0 = load -16  // y__1
@@ -34,7 +34,7 @@ if_false_6:
 if_end_7:
   R13 = set 1
   cmp R1, R13
-  jump_eq %if_true_2 %if_false_3
+  jump_eq %if_true_2, %if_false_3
 
 if_true_2:
   R0 = set 1
@@ -52,7 +52,7 @@ if_end_4:
   R0 = load -24  // z__2
   R13 = set 1
   cmp R0, R13
-  jump_eq %if_true_8 %if_false_9
+  jump_eq %if_true_8, %if_false_9
 
 if_true_8:
   R0 = set s_0
