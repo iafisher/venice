@@ -154,47 +154,46 @@ impl Generator {
     }
 
     fn generate_block(&mut self, declaration: &vil::FunctionDeclaration, block: &vil::Block) {
-        let mut instructions = Vec::new();
-        for instruction in &block.instructions {
-            self.generate_instruction(declaration, &mut instructions, instruction);
-        }
         self.program.blocks.push(Block {
             global: false,
             label: block.name.clone(),
-            instructions,
+            instructions: Vec::new(),
         });
+
+        for instruction in &block.instructions {
+            self.generate_instruction(declaration, instruction);
+        }
     }
 
     fn generate_instruction(
         &mut self,
         declaration: &vil::FunctionDeclaration,
-        instructions: &mut Vec<Instruction>,
         instruction: &vil::Instruction,
     ) {
         use vil::InstructionKind::*;
         match &instruction.kind {
             Set(r, imm) => match imm {
                 vil::Immediate::Integer(x) => {
-                    instructions.push(Instruction::Mov(Value::r(r), Value::Immediate(*x)));
+                    self.push(Instruction::Mov(Value::r(r), Value::Immediate(*x)));
                 }
                 vil::Immediate::Label(s) => {
-                    instructions.push(Instruction::Mov(Value::r(r), Value::Label(s.clone())));
+                    self.push(Instruction::Mov(Value::r(r), Value::Label(s.clone())));
                 }
             },
             Move(r1, r2) => {
-                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
+                self.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
             Add(r1, r2, r3) => {
-                instructions.push(Instruction::Add(Value::r(r2), Value::r(r3)));
-                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
+                self.push(Instruction::Add(Value::r(r2), Value::r(r3)));
+                self.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
             Sub(r1, r2, r3) => {
-                instructions.push(Instruction::Sub(Value::r(r2), Value::r(r3)));
-                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
+                self.push(Instruction::Sub(Value::r(r2), Value::r(r3)));
+                self.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
             Mul(r1, r2, r3) => {
-                instructions.push(Instruction::IMul(Value::r(r2), Value::r(r3)));
-                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
+                self.push(Instruction::IMul(Value::r(r2), Value::r(r3)));
+                self.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
             Div(r1, r2, r3) => {
                 // In x86, `div RXX` computes RDX:RAX / RXX and stores the quotient in RAX and the
@@ -204,34 +203,34 @@ impl Generator {
                 // to worry about the case where r1, r2, or r3 is RAX or RDX.
 
                 // First, we zero out RDX since we are only doing 64-bit division, not 128-bit.
-                instructions.push(Instruction::Xor(RDX, RDX));
+                self.push(Instruction::Xor(RDX, RDX));
 
                 // Move the dividend into RAX.
-                instructions.push(Instruction::Mov(RAX, Value::r(r2)));
+                self.push(Instruction::Mov(RAX, Value::r(r2)));
 
                 // Divide by the divisor.
-                instructions.push(Instruction::IDiv(Value::r(r3)));
+                self.push(Instruction::IDiv(Value::r(r3)));
 
                 // Move RAX into the destination register.
-                instructions.push(Instruction::Mov(Value::r(r1), RAX));
+                self.push(Instruction::Mov(Value::r(r1), RAX));
             }
             Negate(r1, r2) => {
-                instructions.push(Instruction::Neg(Value::r(r2)));
-                instructions.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
+                self.push(Instruction::Neg(Value::r(r2)));
+                self.push(Instruction::Mov(Value::r(r1), Value::r(r2)));
             }
             LogicalNot(r1, r2) => {
                 // XOR RAX with itself to produce 0, then test it against the source register and
                 // set AL to the ZF flag. Since we already zeroed out RAX, all the high bits will
                 // also be 0.
-                instructions.push(Instruction::Xor(RAX, RAX));
-                instructions.push(Instruction::Test(RAX, Value::r(r2)));
-                instructions.push(Instruction::SetE(Value::SpecialRegister(String::from(
+                self.push(Instruction::Xor(RAX, RAX));
+                self.push(Instruction::Test(RAX, Value::r(r2)));
+                self.push(Instruction::SetE(Value::SpecialRegister(String::from(
                     "al",
                 ))));
-                instructions.push(Instruction::Mov(Value::r(r1), RAX));
+                self.push(Instruction::Mov(Value::r(r1), RAX));
             }
             Load(r, offset) => {
-                instructions.push(Instruction::Mov(
+                self.push(Instruction::Mov(
                     Value::r(r),
                     Value::Memory {
                         scale: 1,
@@ -242,7 +241,7 @@ impl Generator {
                 ));
             }
             Store(r, offset) => {
-                instructions.push(Instruction::Mov(
+                self.push(Instruction::Mov(
                     Value::Memory {
                         scale: 1,
                         displacement: *offset,
@@ -253,23 +252,23 @@ impl Generator {
                 ));
             }
             Cmp(r1, r2) => {
-                instructions.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
+                self.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
             Call(label, registers) => {
                 for (i, register) in registers.iter().enumerate() {
-                    instructions.push(Instruction::Mov(
+                    self.push(Instruction::Mov(
                         Value::param(u8::try_from(i).unwrap()),
                         Value::r(register),
                     ));
                 }
 
-                self.align_stack(instructions);
-                instructions.push(Instruction::Call(label.0.clone()));
-                self.unalign_stack(instructions);
+                self.align_stack();
+                self.push(Instruction::Call(label.0.clone()));
+                self.unalign_stack();
             }
             CallVariadic(label, registers) => {
                 for (i, register) in registers.iter().enumerate() {
-                    instructions.push(Instruction::Mov(
+                    self.push(Instruction::Mov(
                         Value::param(u8::try_from(i).unwrap()),
                         Value::r(register),
                     ));
@@ -277,72 +276,72 @@ impl Generator {
 
                 // The System V ABI requires setting AL to the number of vector registers when
                 // calling a variadic function.
-                instructions.push(Instruction::Mov(
+                self.push(Instruction::Mov(
                     Value::SpecialRegister(String::from("al")),
                     Value::Immediate(0),
                 ));
 
-                self.align_stack(instructions);
-                instructions.push(Instruction::Call(label.0.clone()));
-                self.unalign_stack(instructions);
+                self.align_stack();
+                self.push(Instruction::Call(label.0.clone()));
+                self.unalign_stack();
             }
             Jump(l) => {
-                instructions.push(Instruction::Jmp(l.0.clone()));
+                self.push(Instruction::Jmp(l.0.clone()));
             }
             JumpEq(true_label, false_label) => {
-                instructions.push(Instruction::Je(true_label.0.clone()));
-                instructions.push(Instruction::Jmp(false_label.0.clone()));
+                self.push(Instruction::Je(true_label.0.clone()));
+                self.push(Instruction::Jmp(false_label.0.clone()));
             }
             JumpGt(true_label, false_label) => {
-                instructions.push(Instruction::Jg(true_label.0.clone()));
-                instructions.push(Instruction::Jmp(false_label.0.clone()));
+                self.push(Instruction::Jg(true_label.0.clone()));
+                self.push(Instruction::Jmp(false_label.0.clone()));
             }
             JumpGte(true_label, false_label) => {
-                instructions.push(Instruction::Jge(true_label.0.clone()));
-                instructions.push(Instruction::Jmp(false_label.0.clone()));
+                self.push(Instruction::Jge(true_label.0.clone()));
+                self.push(Instruction::Jmp(false_label.0.clone()));
             }
             JumpLt(true_label, false_label) => {
-                instructions.push(Instruction::Jl(true_label.0.clone()));
-                instructions.push(Instruction::Jmp(false_label.0.clone()));
+                self.push(Instruction::Jl(true_label.0.clone()));
+                self.push(Instruction::Jmp(false_label.0.clone()));
             }
             JumpLte(true_label, false_label) => {
-                instructions.push(Instruction::Jle(true_label.0.clone()));
-                instructions.push(Instruction::Jmp(false_label.0.clone()));
+                self.push(Instruction::Jle(true_label.0.clone()));
+                self.push(Instruction::Jmp(false_label.0.clone()));
             }
             JumpNeq(true_label, false_label) => {
-                instructions.push(Instruction::Jne(true_label.0.clone()));
-                instructions.push(Instruction::Jmp(false_label.0.clone()));
+                self.push(Instruction::Jne(true_label.0.clone()));
+                self.push(Instruction::Jmp(false_label.0.clone()));
             }
             CalleeRestore(r) => {
-                instructions.push(Instruction::Pop(Value::r(r)));
+                self.push(Instruction::Pop(Value::r(r)));
                 self.stack_alignment -= 8;
             }
             CalleeSave(r) => {
-                instructions.push(Instruction::Push(Value::r(r)));
+                self.push(Instruction::Push(Value::r(r)));
                 self.stack_alignment += 8;
             }
             CallerRestore(r) => {
-                instructions.push(Instruction::Pop(Value::r(r)));
+                self.push(Instruction::Pop(Value::r(r)));
                 self.stack_alignment -= 8;
             }
             CallerSave(r) => {
-                instructions.push(Instruction::Push(Value::r(r)));
+                self.push(Instruction::Push(Value::r(r)));
                 self.stack_alignment += 8;
             }
         }
     }
 
-    fn align_stack(&mut self, instructions: &mut Vec<Instruction>) {
+    fn align_stack(&mut self) {
         let diff = self.stack_alignment % 16;
         if diff > 0 {
-            instructions.push(Instruction::Sub(RSP, Value::Immediate(diff)));
+            self.push(Instruction::Sub(RSP, Value::Immediate(diff)));
         }
     }
 
-    fn unalign_stack(&mut self, instructions: &mut Vec<Instruction>) {
+    fn unalign_stack(&mut self) {
         let diff = self.stack_alignment % 16;
         if diff > 0 {
-            instructions.push(Instruction::Add(RSP, Value::Immediate(diff)));
+            self.push(Instruction::Add(RSP, Value::Immediate(diff)));
         }
     }
 
