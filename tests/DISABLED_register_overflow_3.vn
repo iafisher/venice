@@ -1,0 +1,36 @@
+func add(a: i64, b: i64, c: i64, d: i64) -> i64 {
+  return a + b + c + d;
+}
+
+func sub(a: i64, b: i64) -> i64 {
+  return a - b;
+}
+
+func main() -> i64 {
+  print("Should be 100: ");
+  printint(
+    add(
+      // 30
+      add(
+        // 10
+        add(
+          // 2
+          sub(
+            // 104
+            add(25, 26, 28, 24),
+            102
+          ),
+          3,
+          4,
+          1
+        ),
+        7,
+        8,
+        5
+      ),
+      24,
+      27,
+      19
+    )
+  );
+}
