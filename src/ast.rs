@@ -41,7 +41,7 @@ pub struct FunctionDeclaration {
 
 #[derive(Clone, Debug)]
 pub struct FunctionInfo {
-    pub stack_frame_size: usize,
+    pub stack_frame_size: i32,
 }
 
 #[derive(Debug)]
@@ -330,7 +330,7 @@ impl Type {
         }
     }
 
-    pub fn stack_size(&self) -> usize {
+    pub fn stack_size(&self) -> i32 {
         use Type::*;
         match self {
             Void | Error => 0,

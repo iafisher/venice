@@ -144,7 +144,7 @@ impl Analyzer {
             };
 
             stack_frame_size += t.stack_size();
-            stack_offset -= i32::try_from(t.stack_size()).unwrap();
+            stack_offset -= t.stack_size();
             parameters.push(ast::FunctionParameter {
                 name: entry,
                 type_: t,
@@ -257,7 +257,7 @@ impl Analyzer {
             .as_mut()
             .unwrap()
             .stack_frame_size += entry.type_.stack_size();
-        self.current_stack_offset -= i32::try_from(declared_type.stack_size()).unwrap();
+        self.current_stack_offset -= declared_type.stack_size();
 
         ast::Statement::Let(ast::LetStatement {
             symbol: entry,

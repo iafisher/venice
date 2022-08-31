@@ -18,7 +18,7 @@ pub struct Program {
 pub struct FunctionDeclaration {
     pub name: String,
     pub blocks: Vec<Block>,
-    pub stack_frame_size: usize,
+    pub stack_frame_size: i32,
     pub parameters: Vec<FunctionParameter>,
 }
 
