@@ -12,9 +12,9 @@ venice_main:
   pushq %r14
   pushq %r15
   pushq %rbx
+  movq %rdi, -8(%rbp)
 
 venice_main_0:
-  movq %rdi, -8(%rbp)
   movq $.s_0, %r10
   movq %r10, %r11
   pushq %r10

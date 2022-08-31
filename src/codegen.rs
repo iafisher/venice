@@ -59,33 +59,32 @@ impl Generator {
     fn generate_function_declaration(&mut self, declaration: &ast::FunctionDeclaration) {
         let name = &declaration.name.unique_name;
         self.info = Some(declaration.info.clone());
+
+        let mut parameters = Vec::new();
+        for parameter in &declaration.parameters {
+            parameters.push(vil::FunctionParameter {
+                stack_offset: parameter.name.stack_offset,
+            });
+        }
+
         let vil_declaration = vil::FunctionDeclaration {
             name: name.clone(),
+            parameters,
             blocks: Vec::new(),
             stack_frame_size: self.info.as_ref().unwrap().stack_frame_size,
         };
+
         self.program.declarations.push(vil_declaration);
         let label = self.claim_label(name);
         self.return_label = self.claim_label(&format!("{}_return", name));
+
         self.start_block(label, None);
-
-        // Move parameters from registers onto the stack.
-        for (i, parameter) in declaration.parameters.iter().enumerate() {
-            self.push_with_comment(
-                vil::InstructionKind::Store(
-                    vil::Register::param(u8::try_from(i).unwrap()),
-                    parameter.name.stack_offset,
-                ),
-                &parameter.name.unique_name,
-            );
-        }
-
         self.generate_block(&declaration.body);
         self.start_block(self.return_label.clone(), None);
     }
 
     fn generate_expression(&mut self, expr: &ast::Expression) -> vil::Register {
-        let r = vil::Register::gp(expr.max_register_needed);
+        let r = vil::Register::new(expr.max_register_needed);
 
         use ast::ExpressionKind::*;
         match &expr.kind {
@@ -132,7 +131,7 @@ impl Generator {
         true_label: vil::Label,
         false_label: vil::Label,
     ) {
-        let r = vil::Register::gp(expr.max_register_needed);
+        let r = vil::Register::new(expr.max_register_needed);
         if let ast::ExpressionKind::Comparison(cmp_expr) = &expr.kind {
             let (left, right) =
                 self.generate_generic_binary_expression(&cmp_expr.left, &cmp_expr.right, r);
@@ -259,7 +258,7 @@ impl Generator {
         let mut final_argument_registers = Vec::new();
         for (i, argument) in expr.arguments.iter().enumerate() {
             let argument_register = self.generate_expression(argument);
-            let final_argument_register = vil::Register::gp(r.index() - u8::try_from(i).unwrap());
+            let final_argument_register = vil::Register::new(r.index() - u8::try_from(i).unwrap());
             self.push(vil::InstructionKind::Move(
                 final_argument_register,
                 argument_register,

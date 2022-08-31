@@ -9,8 +9,6 @@ extern venice_printint;
 func sub__0 {
 
 sub__0_0:
-  store R7, -8  // x__1
-  store R8, -16  // y__2
   R0 = load -8  // x__1
   R1 = move R0
   R0 = load -16  // y__2

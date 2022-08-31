@@ -17,7 +17,6 @@ extern venice_println;
 func venice_main {
 
 venice_main_0:
-  store R7, -8  // args__0
   R0 = set s_0
   R1 = move R0
   call %venice_string_new, R1

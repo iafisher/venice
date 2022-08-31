@@ -9,7 +9,6 @@ extern venice_printint;
 func fibonacci__0 {
 
 fibonacci__0_0:
-  store R7, -8  // n__1
   R0 = load -8  // n__1
   R1 = move R0
   R0 = set 0

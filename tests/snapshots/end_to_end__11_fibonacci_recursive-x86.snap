@@ -11,9 +11,9 @@ fibonacci__0:
   pushq %r14
   pushq %r15
   pushq %rbx
+  movq %rdi, -8(%rbp)
 
 fibonacci__0_0:
-  movq %rdi, -8(%rbp)
   movq -8(%rbp), %r10
   movq %r10, %r11
   movq $0, %r10

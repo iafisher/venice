@@ -19,6 +19,11 @@ pub struct FunctionDeclaration {
     pub name: String,
     pub blocks: Vec<Block>,
     pub stack_frame_size: usize,
+    pub parameters: Vec<FunctionParameter>,
+}
+
+pub struct FunctionParameter {
+    pub stack_offset: i32,
 }
 
 pub struct Block {
@@ -62,9 +67,7 @@ pub enum InstructionKind {
 #[derive(Clone, Copy, Debug)]
 pub struct Register(u8);
 
-// TODO: make these private
-pub const PARAM_REGISTER_COUNT: u8 = 6;
-pub const GP_REGISTER_COUNT: u8 = 7;
+const GP_REGISTER_COUNT: u8 = 7;
 const RETURN_REGISTER_INDEX: u8 = 13;
 
 impl Register {
@@ -72,17 +75,7 @@ impl Register {
         self.0
     }
 
-    pub fn param(i: u8) -> Self {
-        if i >= PARAM_REGISTER_COUNT {
-            panic!(
-                "internal error: tried to use a parameter register but all {} are taken",
-                PARAM_REGISTER_COUNT
-            );
-        }
-        Register(i + GP_REGISTER_COUNT)
-    }
-
-    pub fn gp(i: u8) -> Self {
+    pub fn new(i: u8) -> Self {
         if i >= GP_REGISTER_COUNT {
             panic!(
                 "internal error: tried to use a general-purpose register but all {} are taken",

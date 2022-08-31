@@ -28,7 +28,6 @@ venice_main_return_1:
 func fibonacci__0 {
 
 fibonacci__0_2:
-  store R7, -8  // n__2
   R0 = set 1
   store R0, -16  // fib_i__3
   R0 = set 0

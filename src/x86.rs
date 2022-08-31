@@ -127,7 +127,7 @@ impl Generator {
     fn generate_declaration(&mut self, declaration: &vil::FunctionDeclaration) {
         self.stack_alignment = 8;
 
-        let mut block = Block {
+        let block = Block {
             // TODO: replace this with more robust logic
             global: declaration.name == "venice_main",
             label: declaration.name.clone(),
@@ -146,6 +146,19 @@ impl Generator {
         for callee_save in CALLEE_SAVE_REGISTERS {
             self.push(Instruction::Push(Value::Register(Register(*callee_save))));
             self.stack_alignment += 8;
+        }
+
+        // Move parameters from registers onto the stack.
+        for (i, parameter) in declaration.parameters.iter().enumerate() {
+            self.push(Instruction::Mov(
+                Value::Memory {
+                    scale: 1,
+                    displacement: parameter.stack_offset,
+                    base: RBP_REGISTER,
+                    index: None,
+                },
+                Value::param(u8::try_from(i).unwrap()),
+            ));
         }
 
         for block in &declaration.blocks {

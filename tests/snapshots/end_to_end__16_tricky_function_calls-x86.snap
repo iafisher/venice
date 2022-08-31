@@ -11,10 +11,10 @@ add__0:
   pushq %r14
   pushq %r15
   pushq %rbx
-
-add__0_0:
   movq %rdi, -8(%rbp)
   movq %rsi, -16(%rbp)
+
+add__0_0:
   movq -8(%rbp), %r10
   movq %r10, %r11
   movq -16(%rbp), %r10
