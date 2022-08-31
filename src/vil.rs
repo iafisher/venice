@@ -244,12 +244,12 @@ impl fmt::Display for Immediate {
 
 impl fmt::Display for Label {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "%{}", self.0)
+        write!(f, "{}", self.0)
     }
 }
 
 impl fmt::Display for FunctionLabel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "%{}", self.0)
+        write!(f, "{}", self.0)
     }
 }

@@ -14,7 +14,7 @@ two_plus_two__0_0:
   R0 = set 2
   R1 = add R1, R0
   R13 = move R1
-  jump %two_plus_two__0_return_1
+  jump two_plus_two__0_return_1
 
 two_plus_two__0_return_1:
 }
@@ -22,16 +22,16 @@ two_plus_two__0_return_1:
 func venice_main {
 
 venice_main_2:
-  call %two_plus_two__0
+  call two_plus_two__0
   R0 = move R13
   store R0, -8  // x__1
   R0 = load -8  // x__1
   R1 = move R0
-  call %venice_printint, R1
+  call venice_printint, R1
   R1 = move R13
   R0 = set 0
   R13 = move R0
-  jump %venice_main_return_3
+  jump venice_main_return_3
 
 venice_main_return_3:
 }

@@ -19,65 +19,65 @@ venice_main_0:
   R0 = load -8  // x__0
   R13 = set 1
   cmp R0, R13
-  jump_eq %if_true_5, %if_false_6
+  jump_eq if_true_5, if_false_6
 
 if_true_5:
   R0 = load -16  // y__1
   R1 = move R0
-  jump %if_end_7
+  jump if_end_7
 
 if_false_6:
   R0 = set 0
   R1 = move R0
-  jump %if_end_7
+  jump if_end_7
 
 if_end_7:
   R13 = set 1
   cmp R1, R13
-  jump_eq %if_true_2, %if_false_3
+  jump_eq if_true_2, if_false_3
 
 if_true_2:
   R0 = set 1
   R1 = move R0
-  jump %if_end_4
+  jump if_end_4
 
 if_false_3:
   R0 = load -16  // y__1
   R0 = logical_not R0
   R1 = move R0
-  jump %if_end_4
+  jump if_end_4
 
 if_end_4:
   store R1, -24  // z__2
   R0 = load -24  // z__2
   R13 = set 1
   cmp R0, R13
-  jump_eq %if_true_8, %if_false_9
+  jump_eq if_true_8, if_false_9
 
 if_true_8:
   R0 = set s_0
   R1 = move R0
-  call %venice_string_new, R1
+  call venice_string_new, R1
   R1 = move R13
   R2 = move R1
-  call %venice_println, R2
+  call venice_println, R2
   R2 = move R13
-  jump %if_end_10
+  jump if_end_10
 
 if_false_9:
   R0 = set s_1
   R1 = move R0
-  call %venice_string_new, R1
+  call venice_string_new, R1
   R1 = move R13
   R2 = move R1
-  call %venice_println, R2
+  call venice_println, R2
   R2 = move R13
-  jump %if_end_10
+  jump if_end_10
 
 if_end_10:
   R0 = set 0
   R13 = move R0
-  jump %venice_main_return_1
+  jump venice_main_return_1
 
 venice_main_return_1:
 }

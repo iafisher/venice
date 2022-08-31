@@ -11,16 +11,16 @@ func venice_main {
 venice_main_0:
   R0 = set 12
   R1 = move R0
-  call %fibonacci__0, R1
+  call fibonacci__0, R1
   R1 = move R13
   store R1, -8  // x__1
   R0 = load -8  // x__1
   R1 = move R0
-  call %venice_printint, R1
+  call venice_printint, R1
   R1 = move R13
   R0 = set 0
   R13 = move R0
-  jump %venice_main_return_1
+  jump venice_main_return_1
 
 venice_main_return_1:
 }
@@ -34,14 +34,14 @@ fibonacci__0_2:
   store R0, -24  // fib_i_minus_1__4
   R0 = set 1
   store R0, -32  // i__5
-  jump %while_cond_4
+  jump while_cond_4
 
 while_cond_4:
   R0 = load -32  // i__5
   R1 = move R0
   R0 = load -8  // n__2
   cmp R1, R0
-  jump_lt %while_5, %while_end_6
+  jump_lt while_5, while_end_6
 
 while_5:
   R0 = load -16  // fib_i__3
@@ -58,12 +58,12 @@ while_5:
   R0 = set 1
   R1 = add R1, R0
   store R1, -32  // i__5
-  jump %while_cond_4
+  jump while_cond_4
 
 while_end_6:
   R0 = load -16  // fib_i__3
   R13 = move R0
-  jump %fibonacci__0_return_3
+  jump fibonacci__0_return_3
 
 fibonacci__0_return_3:
 }

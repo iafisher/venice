@@ -18,38 +18,38 @@ func venice_main {
 venice_main_0:
   R0 = set s_0
   R1 = move R0
-  call %venice_string_new, R1
+  call venice_string_new, R1
   R1 = move R13
   R2 = move R1
-  call %venice_file_open, R2
+  call venice_file_open, R2
   R2 = move R13
   store R2, -8  // f__0
   R0 = load -8  // f__0
   R1 = move R0
-  call %venice_file_read_all, R1
+  call venice_file_read_all, R1
   R1 = move R13
   store R1, -16  // content__1
   R0 = load -8  // f__0
   R1 = move R0
-  call %venice_file_close, R1
+  call venice_file_close, R1
   R1 = move R13
   R0 = set s_1
   R1 = move R0
-  call %venice_string_new, R1
+  call venice_string_new, R1
   R1 = move R13
   R2 = move R1
-  call %venice_print, R2
+  call venice_print, R2
   R2 = move R13
   R0 = load -16  // content__1
   R1 = move R0
-  call %venice_string_length, R1
+  call venice_string_length, R1
   R1 = move R13
   R2 = move R1
-  call %venice_printint, R2
+  call venice_printint, R2
   R2 = move R13
   R0 = set 0
   R13 = move R0
-  jump %venice_main_return_1
+  jump venice_main_return_1
 
 venice_main_return_1:
 }

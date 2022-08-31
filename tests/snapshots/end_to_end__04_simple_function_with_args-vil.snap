@@ -14,7 +14,7 @@ sub__0_0:
   R0 = load -16  // y__2
   R1 = sub R1, R0
   R13 = move R1
-  jump %sub__0_return_1
+  jump sub__0_return_1
 
 sub__0_return_1:
 }
@@ -26,16 +26,16 @@ venice_main_2:
   R2 = move R0
   R0 = set 5
   R1 = move R0
-  call %sub__0, R2, R1
+  call sub__0, R2, R1
   R2 = move R13
   store R2, -8  // x__3
   R0 = load -8  // x__3
   R1 = move R0
-  call %venice_printint, R1
+  call venice_printint, R1
   R1 = move R13
   R0 = set 0
   R13 = move R0
-  jump %venice_main_return_3
+  jump venice_main_return_3
 
 venice_main_return_3:
 }

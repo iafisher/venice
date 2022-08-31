@@ -21,21 +21,21 @@ venice_main_0:
   R0 = set 1
   R0 = negate R0
   R1 = move R0
-  call_variadic %venice_list_from_varargs, R4, R3, R2, R1
+  call_variadic venice_list_from_varargs, R4, R3, R2, R1
   R4 = move R13
   store R4, -8  // numbers__0
   R0 = load -8  // numbers__0
   R2 = move R0
   R0 = set 1
   R1 = move R0
-  call %venice_list_index, R2, R1
+  call venice_list_index, R2, R1
   R2 = move R13
   R3 = move R2
-  call %venice_printint, R3
+  call venice_printint, R3
   R3 = move R13
   R0 = set 0
   R13 = move R0
-  jump %venice_main_return_1
+  jump venice_main_return_1
 
 venice_main_return_1:
 }
