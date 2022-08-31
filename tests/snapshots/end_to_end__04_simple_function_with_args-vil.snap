@@ -21,20 +21,20 @@ sub__0_return_1:
 }
 
 func venice_main {
-  // stack_frame_size = 8
+  // stack_frame_size = 32
 
 venice_main_2:
   R0 = set 47
-  R2 = move R0
+  store R0, -8
   R0 = set 5
-  R1 = move R0
-  call sub__0, R2, R1
-  R2 = move R13
-  store R2, -8  // x__3
-  R0 = load -8  // x__3
-  R1 = move R0
-  call venice_printint, R1
-  R1 = move R13
+  store R0, -16
+  call sub__0, mem[-8], mem[-16]
+  R0 = move R13
+  store R0, -24  // x__3
+  R0 = load -24  // x__3
+  store R0, -32
+  call venice_printint, mem[-32]
+  R0 = move R13
   R0 = set 0
   R13 = move R0
   jump venice_main_return_3

@@ -370,27 +370,33 @@ impl Analyzer {
                 ast::Expression::new(ast::ExpressionKind::Boolean(*x), ast::Type::Boolean)
             }
             Integer(x) => ast::Expression::new(ast::ExpressionKind::Integer(*x), ast::Type::I64),
-            String(x) => ast::Expression::new(
-                ast::ExpressionKind::Call(ast::CallExpression {
-                    function: ast::SymbolEntry {
-                        unique_name: std::string::String::from("venice_string_new"),
-                        type_: ast::Type::Error,
-                        constant: true,
-                        external: true,
-                        stack_offset: 0,
-                    },
-                    arguments: vec![ast::Expression::new(
-                        ast::ExpressionKind::String(x.clone()),
-                        // Technically this should have a different type from the overall type of
-                        // the expression, because it is a raw string literal rather than a
-                        // `venice_string_t` runtime object, but since nothing accesses its type it
-                        // doesn't really matter.
-                        ast::Type::String,
-                    )],
-                    variadic: false,
-                }),
-                ast::Type::String,
-            ),
+            String(x) => {
+                let mut arg = ast::Expression::new(
+                    ast::ExpressionKind::String(x.clone()),
+                    // Technically this should have a different type from the overall type of
+                    // the expression, because it is a raw string literal rather than a
+                    // `venice_string_t` runtime object, but since nothing accesses its type it
+                    // doesn't really matter.
+                    ast::Type::String,
+                );
+
+                // TODO(#151): This logic is brittle.
+                arg.stack_offset = self.claim_stack_offset(&arg.type_);
+                ast::Expression::new(
+                    ast::ExpressionKind::Call(ast::CallExpression {
+                        function: ast::SymbolEntry {
+                            unique_name: std::string::String::from("venice_string_new"),
+                            type_: ast::Type::Error,
+                            constant: true,
+                            external: true,
+                            stack_offset: 0,
+                        },
+                        arguments: vec![arg],
+                        variadic: false,
+                    }),
+                    ast::Type::String,
+                )
+            }
             Symbol(ref e) => self.analyze_symbol(e, &expr.location),
             Binary(ref e) => self.analyze_binary_expression(e),
             Comparison(ref e) => self.analyze_comparison_expression(e),
@@ -416,8 +422,8 @@ impl Analyzer {
     }
 
     fn analyze_binary_expression(&mut self, expr: &ptree::BinaryExpression) -> ast::Expression {
-        let left = self.analyze_expression(&expr.left);
-        let right = self.analyze_expression(&expr.right);
+        let mut left = self.analyze_expression(&expr.left);
+        let mut right = self.analyze_expression(&expr.right);
 
         use common::BinaryOpType::*;
         match expr.op {
@@ -431,6 +437,9 @@ impl Analyzer {
                         );
                         ast::EXPRESSION_ERROR.clone()
                     } else {
+                        // TODO(#151): This logic is brittle.
+                        left.stack_offset = self.claim_stack_offset(&left.type_);
+                        right.stack_offset = self.claim_stack_offset(&right.type_);
                         ast::Expression::new(
                             ast::ExpressionKind::Call(ast::CallExpression {
                                 function: ast::SymbolEntry {
@@ -619,7 +628,8 @@ impl Analyzer {
 
                 let mut arguments = Vec::new();
                 for (parameter, argument) in parameters.iter().zip(expr.arguments.iter()) {
-                    let typed_argument = self.analyze_expression(argument);
+                    let mut typed_argument = self.analyze_expression(argument);
+                    typed_argument.stack_offset = self.claim_stack_offset(&typed_argument.type_);
                     self.assert_type(parameter, &typed_argument.type_, argument.location.clone());
                     arguments.push(typed_argument);
                 }
@@ -645,14 +655,19 @@ impl Analyzer {
     }
 
     fn analyze_index_expression(&mut self, expr: &ptree::IndexExpression) -> ast::Expression {
-        let value = self.analyze_expression(&expr.value);
-        let index = self.analyze_expression(&expr.index);
+        let mut value = self.analyze_expression(&expr.value);
+        let mut index = self.analyze_expression(&expr.index);
 
         use ast::Type::*;
         match &value.type_ {
             List(ref t) => {
                 self.assert_type(&index.type_, &ast::Type::I64, expr.index.location.clone());
                 let type_ = *t.clone();
+
+                // TODO(#151): This logic is brittle.
+                value.stack_offset = self.claim_stack_offset(&value.type_);
+                index.stack_offset = self.claim_stack_offset(&index.type_);
+
                 ast::Expression::new(
                     ast::ExpressionKind::Call(ast::CallExpression {
                         function: ast::SymbolEntry {
@@ -734,17 +749,24 @@ impl Analyzer {
         }
 
         let mut arguments = Vec::new();
-        arguments.push(ast::Expression::new(
+        let mut varargs_count = ast::Expression::new(
             ast::ExpressionKind::Integer(i64::try_from(expr.items.len()).unwrap()),
             ast::Type::I64,
-        ));
+        );
+        // TODO(#151): This logic is brittle.
+        varargs_count.stack_offset = self.claim_stack_offset(&varargs_count.type_);
+        arguments.push(varargs_count);
 
-        let first_item = self.analyze_expression(&expr.items[0]);
+        let mut first_item = self.analyze_expression(&expr.items[0]);
+        // TODO(#151): This logic is brittle.
+        first_item.stack_offset = self.claim_stack_offset(&first_item.type_);
         let item_type = first_item.type_.clone();
         arguments.push(first_item);
 
         for i in 1..expr.items.len() {
-            let typed_item = self.analyze_expression(&expr.items[i]);
+            let mut typed_item = self.analyze_expression(&expr.items[i]);
+            // TODO(#151): This logic is brittle.
+            typed_item.stack_offset = self.claim_stack_offset(&typed_item.type_);
             self.assert_type(
                 &typed_item.type_,
                 &item_type,
@@ -977,10 +999,7 @@ fn allocate_registers(expr: &mut ast::Expression) -> u8 {
                 let argument_register = allocate_registers(&mut argument);
                 max_argument_register = cmp::max(argument_register, max_argument_register);
             }
-            // This is conservative: depending on the difference between the max and min argument
-            // register, we may not need an extra register for each argument.
-            expr.max_register_needed =
-                max_argument_register + u8::try_from(e.arguments.len()).unwrap();
+            expr.max_register_needed = max_argument_register;
         }
         If(ref mut e) => {
             allocate_registers(&mut e.condition);

@@ -6,7 +6,7 @@ expression: x86_output
 venice_main:
   pushq %rbp
   movq %rsp, %rbp
-  subq $0, %rsp
+  subq $24, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
@@ -15,26 +15,22 @@ venice_main:
 
 venice_main_0:
   movq $.s_0, %r10
-  movq %r10, %r11
+  movq %r10, -8(%rbp)
   pushq %r10
   pushq %r11
-  movq %r11, %rdi
-  subq $8, %rsp
+  movq -8(%rbp), %rdi
   call venice_string_new
-  addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r11
-  movq %r11, %r12
+  movq %rax, %r10
+  movq %r10, -16(%rbp)
   pushq %r10
   pushq %r11
-  movq %r12, %rdi
-  subq $8, %rsp
+  movq -16(%rbp), %rdi
   call venice_print
-  addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r12
+  movq %rax, %r10
   movq $6, %r10
   movq %r10, %r11
   movq $7, %r10
@@ -88,16 +84,14 @@ venice_main_0:
   movq %r12, %r12
   addq %r13, %r12
   movq %r12, %r13
-  movq %r13, %r14
+  movq %r13, -24(%rbp)
   pushq %r10
   pushq %r11
-  movq %r14, %rdi
-  subq $8, %rsp
+  movq -24(%rbp), %rdi
   call venice_printint
-  addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r14
+  movq %rax, %r13
   movq $0, %r10
   movq %r10, %rax
   jmp venice_main_return_1
@@ -108,7 +102,7 @@ venice_main_return_1:
   popq %r14
   popq %r13
   popq %r12
-  addq $0, %rsp
+  addq $24, %rsp
   popq %rbp
   retq
 

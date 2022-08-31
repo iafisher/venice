@@ -8,7 +8,7 @@ extern venice_printint;
 
 
 func venice_main {
-  // stack_frame_size = 16
+  // stack_frame_size = 32
 
 venice_main_0:
   R0 = set 21
@@ -17,18 +17,18 @@ venice_main_0:
   R1 = mul R1, R0
   store R1, -8  // x__0
   R0 = load -8  // x__0
-  R1 = move R0
-  call venice_printint, R1
-  R1 = move R13
+  store R0, -16
+  call venice_printint, mem[-16]
+  R0 = move R13
   R0 = set 84
   R1 = move R0
   R0 = set 2
   R1 = div R1, R0
-  store R1, -16  // y__1
-  R0 = load -16  // y__1
-  R1 = move R0
-  call venice_printint, R1
-  R1 = move R13
+  store R1, -24  // y__1
+  R0 = load -24  // y__1
+  store R0, -32
+  call venice_printint, mem[-32]
+  R0 = move R13
   R0 = set 0
   R13 = move R0
   jump venice_main_return_1

@@ -37,22 +37,24 @@ pub struct Instruction {
     pub comment: String,
 }
 
+type MemoryOffset = i32;
+
 #[derive(Debug)]
 pub enum InstructionKind {
     Binary(BinaryOp, Register, Register, Register),
     Unary(UnaryOp, Register, Register),
     Call {
         label: FunctionLabel,
-        registers: Vec<Register>,
+        offsets: Vec<MemoryOffset>,
         variadic: bool,
     },
     Cmp(Register, Register),
     Jump(Label),
     JumpIf(JumpCondition, Label, Label),
-    Load(Register, i32),
+    Load(Register, MemoryOffset),
     Move(Register, Register),
     Set(Register, Immediate),
-    Store(Register, i32),
+    Store(Register, MemoryOffset),
 }
 
 #[derive(Debug)]
@@ -192,7 +194,7 @@ impl fmt::Display for InstructionKind {
             Unary(UnaryOp::Negate, r1, r2) => write!(f, "{} = negate {}", r1, r2),
             Call {
                 label,
-                registers,
+                offsets,
                 variadic,
             } => {
                 if *variadic {
@@ -201,8 +203,8 @@ impl fmt::Display for InstructionKind {
                     write!(f, "call {}", label)?;
                 }
 
-                for register in registers {
-                    write!(f, ", {}", register)?;
+                for offset in offsets {
+                    write!(f, ", mem[{}]", offset)?;
                 }
                 fmt::Result::Ok(())
             }

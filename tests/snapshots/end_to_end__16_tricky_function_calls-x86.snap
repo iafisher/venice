@@ -37,7 +37,7 @@ add__0_return_1:
 venice_main:
   pushq %rbp
   movq %rsp, %rbp
-  subq $0, %rsp
+  subq $56, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
@@ -46,63 +46,53 @@ venice_main:
 
 venice_main_2:
   movq $.s_0, %r10
-  movq %r10, %r11
+  movq %r10, -8(%rbp)
   pushq %r10
   pushq %r11
-  movq %r11, %rdi
-  subq $8, %rsp
+  movq -8(%rbp), %rdi
   call venice_string_new
-  addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r11
-  movq %r11, %r12
+  movq %rax, %r10
+  movq %r10, -16(%rbp)
   pushq %r10
   pushq %r11
-  movq %r12, %rdi
-  subq $8, %rsp
+  movq -16(%rbp), %rdi
   call venice_print
-  addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r12
+  movq %rax, %r10
   movq $20, %r10
-  movq %r10, %r14
+  movq %r10, -24(%rbp)
   movq $5, %r10
-  movq %r10, %r12
+  movq %r10, -32(%rbp)
   movq $17, %r10
-  movq %r10, %r11
+  movq %r10, -40(%rbp)
   pushq %r10
   pushq %r11
-  movq %r12, %rdi
-  movq %r11, %rsi
-  subq $8, %rsp
+  movq -32(%rbp), %rdi
+  movq -40(%rbp), %rsi
   call add__0
-  addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r12
-  movq %r12, %r13
+  movq %rax, %r10
+  movq %r10, -48(%rbp)
   pushq %r10
   pushq %r11
-  movq %r14, %rdi
-  movq %r13, %rsi
-  subq $8, %rsp
+  movq -24(%rbp), %rdi
+  movq -48(%rbp), %rsi
   call add__0
-  addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r14
-  movq %r14, %r15
+  movq %rax, %r10
+  movq %r10, -56(%rbp)
   pushq %r10
   pushq %r11
-  movq %r15, %rdi
-  subq $8, %rsp
+  movq -56(%rbp), %rdi
   call venice_printint
-  addq $8, %rsp
   popq %r11
   popq %r10
-  movq %rax, %r15
+  movq %rax, %r10
   movq $0, %r10
   movq %r10, %rax
   jmp venice_main_return_3
@@ -113,7 +103,7 @@ venice_main_return_3:
   popq %r14
   popq %r13
   popq %r12
-  addq $0, %rsp
+  addq $56, %rsp
   popq %rbp
   retq
 

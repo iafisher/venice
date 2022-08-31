@@ -249,15 +249,20 @@ impl Generator {
             panic!("internal error: compiler cannot handle more than 6 arguments")
         }
 
-        let mut final_argument_registers = Vec::new();
+        let mut offsets = Vec::new();
         for (i, argument) in expr.arguments.iter().enumerate() {
             let argument_register = self.generate_expression(argument);
-            let final_argument_register = vil::Register::new(r.index() - u8::try_from(i).unwrap());
-            self.push(vil::InstructionKind::Move(
-                final_argument_register,
+            if argument.stack_offset == 0 {
+                panic!(
+                    "internal error: argument {} has invalid stack offset in call to {}",
+                    i, expr.function.unique_name
+                );
+            }
+            self.push(vil::InstructionKind::Store(
                 argument_register,
+                argument.stack_offset,
             ));
-            final_argument_registers.push(final_argument_register);
+            offsets.push(argument.stack_offset);
         }
 
         let unique_name = &expr.function.unique_name;
@@ -267,7 +272,7 @@ impl Generator {
 
         self.push(vil::InstructionKind::Call {
             label: vil::FunctionLabel(unique_name.clone()),
-            registers: final_argument_registers,
+            offsets,
             variadic: expr.variadic,
         });
 

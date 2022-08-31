@@ -131,6 +131,7 @@ pub struct Expression {
     pub kind: ExpressionKind,
     pub type_: Type,
     pub max_register_needed: u8,
+    pub stack_offset: i32,
 }
 
 impl Expression {
@@ -139,6 +140,7 @@ impl Expression {
             kind,
             type_,
             max_register_needed: 0,
+            stack_offset: 0,
         }
     }
 }
@@ -167,6 +169,7 @@ pub const EXPRESSION_ERROR: Expression = Expression {
     kind: ExpressionKind::Error,
     type_: Type::Error,
     max_register_needed: 0,
+    stack_offset: 0,
 };
 
 #[derive(Clone, Debug)]

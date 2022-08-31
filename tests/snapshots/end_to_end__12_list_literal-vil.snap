@@ -9,31 +9,31 @@ extern venice_printint;
 
 
 func venice_main {
-  // stack_frame_size = 8
+  // stack_frame_size = 64
 
 venice_main_0:
   R0 = set 3
-  R4 = move R0
+  store R0, -8
   R0 = set 1
   R0 = negate R0
-  R3 = move R0
+  store R0, -16
   R0 = set 42
-  R2 = move R0
+  store R0, -24
   R0 = set 1
   R0 = negate R0
-  R1 = move R0
-  call_variadic venice_list_from_varargs, R4, R3, R2, R1
-  R4 = move R13
-  store R4, -8  // numbers__0
-  R0 = load -8  // numbers__0
-  R2 = move R0
+  store R0, -32
+  call_variadic venice_list_from_varargs, mem[-8], mem[-16], mem[-24], mem[-32]
+  R0 = move R13
+  store R0, -40  // numbers__0
+  R0 = load -40  // numbers__0
+  store R0, -48
   R0 = set 1
-  R1 = move R0
-  call venice_list_index, R2, R1
-  R2 = move R13
-  R3 = move R2
-  call venice_printint, R3
-  R3 = move R13
+  store R0, -56
+  call venice_list_index, mem[-48], mem[-56]
+  R0 = move R13
+  store R0, -64
+  call venice_printint, mem[-64]
+  R0 = move R13
   R0 = set 0
   R13 = move R0
   jump venice_main_return_1

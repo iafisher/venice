@@ -277,7 +277,7 @@ impl Generator {
             }
             Call {
                 label,
-                registers,
+                offsets,
                 variadic,
             } => {
                 // Save caller-save registers.
@@ -285,10 +285,15 @@ impl Generator {
                     self.push(Instruction::Push(Value::Register(Register(*caller_save))));
                 }
 
-                for (i, register) in registers.iter().enumerate() {
+                for (i, offset) in offsets.iter().enumerate() {
                     self.push(Instruction::Mov(
                         Value::param(u8::try_from(i).unwrap()),
-                        Value::r(register),
+                        Value::Memory {
+                            scale: 1,
+                            displacement: *offset,
+                            base: RBP_REGISTER,
+                            index: None,
+                        },
                     ));
                 }
 

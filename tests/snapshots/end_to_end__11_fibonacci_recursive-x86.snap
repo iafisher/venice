@@ -5,7 +5,7 @@ expression: x86_output
 fibonacci__0:
   pushq %rbp
   movq %rsp, %rbp
-  subq $8, %rsp
+  subq $24, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
@@ -47,31 +47,31 @@ if_false_6:
   movq $1, %r10
   subq %r10, %r11
   movq %r11, %r11
-  movq %r11, %r12
+  movq %r11, -16(%rbp)
   pushq %r10
   pushq %r11
-  movq %r12, %rdi
+  movq -16(%rbp), %rdi
   call fibonacci__0
   popq %r11
   popq %r10
-  movq %rax, %r12
-  movq %r12, %r13
+  movq %rax, %r11
+  movq %r11, %r12
   movq -8(%rbp), %r10
   movq %r10, %r11
   movq $2, %r10
   subq %r10, %r11
   movq %r11, %r11
-  movq %r11, %r12
+  movq %r11, -24(%rbp)
   pushq %r10
   pushq %r11
-  movq %r12, %rdi
+  movq -24(%rbp), %rdi
   call fibonacci__0
   popq %r11
   popq %r10
-  movq %rax, %r12
-  addq %r12, %r13
-  movq %r13, %r13
-  movq %r13, %rax
+  movq %rax, %r11
+  addq %r11, %r12
+  movq %r12, %r12
+  movq %r12, %rax
   jmp fibonacci__0_return_1
   jmp if_end_7
 
@@ -86,7 +86,7 @@ fibonacci__0_return_1:
   popq %r14
   popq %r13
   popq %r12
-  addq $8, %rsp
+  addq $24, %rsp
   popq %rbp
   retq
 
@@ -94,7 +94,7 @@ fibonacci__0_return_1:
 venice_main:
   pushq %rbp
   movq %rsp, %rbp
-  subq $8, %rsp
+  subq $24, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
@@ -103,24 +103,24 @@ venice_main:
 
 venice_main_8:
   movq $12, %r10
-  movq %r10, %r11
+  movq %r10, -8(%rbp)
   pushq %r10
   pushq %r11
-  movq %r11, %rdi
+  movq -8(%rbp), %rdi
   call fibonacci__0
   popq %r11
   popq %r10
-  movq %rax, %r11
-  movq %r11, -8(%rbp)
-  movq -8(%rbp), %r10
-  movq %r10, %r11
+  movq %rax, %r10
+  movq %r10, -16(%rbp)
+  movq -16(%rbp), %r10
+  movq %r10, -24(%rbp)
   pushq %r10
   pushq %r11
-  movq %r11, %rdi
+  movq -24(%rbp), %rdi
   call venice_printint
   popq %r11
   popq %r10
-  movq %rax, %r11
+  movq %rax, %r10
   movq $0, %r10
   movq %r10, %rax
   jmp venice_main_return_9
@@ -131,7 +131,7 @@ venice_main_return_9:
   popq %r14
   popq %r13
   popq %r12
-  addq $8, %rsp
+  addq $24, %rsp
   popq %rbp
   retq
 
