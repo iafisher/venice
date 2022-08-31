@@ -69,8 +69,8 @@ impl Generator {
         self.push(vil::InstructionKind::FrameSetUp(stack_frame_size));
 
         // Save callee-save registers.
-        for i in 2..vil::GP_REGISTER_COUNT {
-            self.push(vil::InstructionKind::CalleeSave(vil::Register::gp(i)));
+        for callee_save in vil::CALLEE_SAVE_REGISTERS {
+            self.push(vil::InstructionKind::CalleeSave(*callee_save));
         }
 
         // Move parameters from registers onto the stack.
@@ -273,8 +273,9 @@ impl Generator {
         }
 
         // Save caller-save registers.
-        self.push(vil::InstructionKind::CallerSave(vil::Register::gp(0)));
-        self.push(vil::InstructionKind::CallerSave(vil::Register::gp(1)));
+        for caller_save in vil::CALLER_SAVE_REGISTERS {
+            self.push(vil::InstructionKind::CallerSave(*caller_save));
+        }
 
         // Move the arguments from their result registers to the parameter registers.
         for i in 0..expr.arguments.len() {
@@ -295,8 +296,9 @@ impl Generator {
         }
 
         // Restore caller-save registers.
-        self.push(vil::InstructionKind::CallerRestore(vil::Register::gp(1)));
-        self.push(vil::InstructionKind::CallerRestore(vil::Register::gp(0)));
+        for caller_save in vil::CALLER_SAVE_REGISTERS.iter().rev() {
+            self.push(vil::InstructionKind::CallerRestore(*caller_save));
+        }
 
         self.push(vil::InstructionKind::Move(r, vil::Register::ret()));
     }
@@ -428,8 +430,8 @@ impl Generator {
         self.push(vil::InstructionKind::Move(vil::Register::ret(), register));
 
         // Restore callee-save registers.
-        for i in (2..vil::GP_REGISTER_COUNT).rev() {
-            self.push(vil::InstructionKind::CalleeRestore(vil::Register::gp(i)));
+        for callee_save in vil::CALLEE_SAVE_REGISTERS.iter().rev() {
+            self.push(vil::InstructionKind::CalleeRestore(*callee_save));
         }
 
         self.push(vil::InstructionKind::FrameTearDown(
