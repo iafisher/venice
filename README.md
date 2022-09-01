@@ -8,8 +8,8 @@ Venice is a modern, high-level, statically-typed programming language. It pairs 
 import map, join from "itertools"
 
 enum Json {
-  JsonObject({string: Json}),
-  JsonArray([Json]),
+  JsonObject(map<string: Json>),
+  JsonArray(list<Json>),
   JsonString(string),
   JsonNumber(real),
   JsonBoolean(bool),
@@ -19,23 +19,23 @@ enum Json {
 func serialize_json(j: Json) -> string {
   match j {
     case JsonObject(obj) {
-      let it = ("\(key): \(serialize_json(value))" for key, value in obj)
-      return "{" ++ join(it, ", ") ++ "}"
+      let it = ("\(key): \(serialize_json(value))" for key, value in obj);
+      return "{" ++ join(it, ", ") ++ "}";
     }
     case JsonArray(values) {
-      return "[" ++ join(map(values, serialize_json), ", ") ++ "]"
+      return "[" ++ join(map(values, serialize_json), ", ") ++ "]";
     }
     case JsonString(s) {
-      return s.quoted()
+      return s.quoted();
     }
     case JsonNumber(x) {
-      return string(x)
+      return string(x);
     }
     case JsonBoolean(x) {
-      return string(x)
+      return string(x);
     }
     case JsonNull {
-      return "null"
+      return "null";
     }
   }
 }
