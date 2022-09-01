@@ -1,0 +1,62 @@
+---
+source: tests/end_to_end.rs
+expression: vil_output
+---
+extern venice_string_new;
+extern venice_string_new;
+extern venice_list_from_varargs;
+extern venice_list_index;
+extern venice_string_new;
+extern venice_string_concat;
+extern venice_string_new;
+extern venice_string_concat;
+extern venice_println;
+
+
+
+func venice_main {
+  // stack_frame_size = 112
+
+venice_main_0:
+  R0 = set 2
+  store R0, -8
+  R0 = set s_0
+  store R0, -16
+  R0 = call venice_string_new, mem[-16]
+  store R0, -24
+  R0 = set s_1
+  store R0, -32
+  R0 = call venice_string_new, mem[-32]
+  store R0, -40
+  R0 = call_variadic venice_list_from_varargs, mem[-8], mem[-24], mem[-40]
+  store R0, -48
+  R0 = set 0
+  store R0, -56
+  R0 = call venice_list_index, mem[-48], mem[-56]
+  store R0, -72
+  R0 = set s_2
+  store R0, -64
+  R0 = call venice_string_new, mem[-64]
+  store R0, -80
+  R0 = call venice_string_concat, mem[-72], mem[-80]
+  store R0, -96
+  R0 = set s_3
+  store R0, -88
+  R0 = call venice_string_new, mem[-88]
+  store R0, -104
+  R0 = call venice_string_concat, mem[-96], mem[-104]
+  store R0, -112
+  R0 = call venice_println, mem[-112]
+  R0 = set 0
+  R13 = move R0
+  jump venice_main_return_1
+
+venice_main_return_1:
+}
+
+
+data s_0 = "Hello";
+data s_1 = "Goodbye";
+data s_2 = ", ";
+data s_3 = "world!";
+

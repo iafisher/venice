@@ -91,6 +91,11 @@ void test_string_concat() {
   venice_string_t* right = venice_string_new(", world!");
   venice_string_t* result = venice_string_concat(left, right);
   ASSERT_STRING_EQ(result->data, "Hello, world!");
+
+  venice_string_t* another = venice_string_new(" Lorem ipsum");
+  venice_string_t* result2 = venice_string_concat(result, another);
+  ASSERT_STRING_EQ(result2->data, "Hello, world! Lorem ipsum");
+
   global_tests_passed++;
 }
 

@@ -28,7 +28,7 @@ venice_string_t* venice_string_concat(venice_string_t* left,
   char* data = venice_malloc((sizeof *data) * length);
   memcpy(data, left->data, left->length);
   memcpy(data + left->length, right->data, right->length + 1);
-  return venice_string_new_no_alloc(length, data);
+  return venice_string_new_no_alloc(length - 1, data);
 }
 
 uint64_t venice_string_length(venice_string_t* string) {

@@ -1,0 +1,146 @@
+---
+source: tests/end_to_end.rs
+expression: x86_output
+---
+.globl venice_main
+venice_main:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $112, %rsp
+  pushq %r12
+  pushq %r13
+  pushq %r14
+  pushq %r15
+  pushq %rbx
+
+venice_main_0:
+  movq $2, %r10
+  movq %r10, -8(%rbp)
+  movq $.s_0, %r10
+  movq %r10, -16(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -16(%rbp), %rdi
+  subq $8, %rsp
+  call venice_string_new
+  addq $8, %rsp
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -24(%rbp)
+  movq $.s_1, %r10
+  movq %r10, -32(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -32(%rbp), %rdi
+  subq $8, %rsp
+  call venice_string_new
+  addq $8, %rsp
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -40(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -8(%rbp), %rdi
+  movq -24(%rbp), %rsi
+  movq -40(%rbp), %rdx
+  movb $0, %al
+  subq $8, %rsp
+  call venice_list_from_varargs
+  addq $8, %rsp
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -48(%rbp)
+  movq $0, %r10
+  movq %r10, -56(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -48(%rbp), %rdi
+  movq -56(%rbp), %rsi
+  subq $8, %rsp
+  call venice_list_index
+  addq $8, %rsp
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -72(%rbp)
+  movq $.s_2, %r10
+  movq %r10, -64(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -64(%rbp), %rdi
+  subq $8, %rsp
+  call venice_string_new
+  addq $8, %rsp
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -80(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -72(%rbp), %rdi
+  movq -80(%rbp), %rsi
+  subq $8, %rsp
+  call venice_string_concat
+  addq $8, %rsp
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -96(%rbp)
+  movq $.s_3, %r10
+  movq %r10, -88(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -88(%rbp), %rdi
+  subq $8, %rsp
+  call venice_string_new
+  addq $8, %rsp
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -104(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -96(%rbp), %rdi
+  movq -104(%rbp), %rsi
+  subq $8, %rsp
+  call venice_string_concat
+  addq $8, %rsp
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -112(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -112(%rbp), %rdi
+  subq $8, %rsp
+  call venice_println
+  addq $8, %rsp
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq $0, %r10
+  movq %r10, %rax
+  jmp venice_main_return_1
+
+venice_main_return_1:
+  popq %rbx
+  popq %r15
+  popq %r14
+  popq %r13
+  popq %r12
+  addq $112, %rsp
+  popq %rbp
+  retq
+
+.s_0:
+  .string "Hello"
+.s_1:
+  .string "Goodbye"
+.s_2:
+  .string ", "
+.s_3:
+  .string "world!"
+

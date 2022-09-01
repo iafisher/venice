@@ -114,6 +114,11 @@ fn test_18_register_overflow_3() {
     test_e2e("18_register_overflow_3");
 }
 
+#[test]
+fn test_19_concat() {
+    test_e2e("19_concat");
+}
+
 fn test_e2e(base_name: &str) {
     test_e2e_with_options(
         base_name,
