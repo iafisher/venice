@@ -86,7 +86,7 @@ fn test_12_list_literal() {
 
 #[test]
 fn test_13_argv() {
-    test_e2e_with_args("13_argv", &["a", "b", "c"]);
+    test_e2e_with_args("13_argv", vec!["a", "b", "c"]);
 }
 
 #[test]
@@ -115,18 +115,41 @@ fn test_18_register_overflow_3() {
 }
 
 fn test_e2e(base_name: &str) {
-    test_e2e_full_options(base_name, &[], /* expect_error= */ false);
+    test_e2e_with_options(
+        base_name,
+        TestOptions {
+            args: Vec::new(),
+            expect_error: false,
+        },
+    );
 }
 
-fn test_e2e_with_args(base_name: &str, args: &[&str]) {
-    test_e2e_full_options(base_name, args, /* expect_error= */ false);
+fn test_e2e_with_args(base_name: &str, args: Vec<&'static str>) {
+    test_e2e_with_options(
+        base_name,
+        TestOptions {
+            args,
+            expect_error: false,
+        },
+    );
 }
 
 fn test_e2e_expect_error(base_name: &str) {
-    test_e2e_full_options(base_name, &[], /* expect_error= */ true);
+    test_e2e_with_options(
+        base_name,
+        TestOptions {
+            args: Vec::new(),
+            expect_error: true,
+        },
+    );
 }
 
-fn test_e2e_full_options(base_name: &str, args: &[&str], expect_error: bool) {
+struct TestOptions {
+    args: Vec<&'static str>,
+    expect_error: bool,
+}
+
+fn test_e2e_with_options(base_name: &str, options: TestOptions) {
     let bin_path = build_path(base_name, "");
     let obj_path = build_path(base_name, "o");
     let vil_path = build_path(base_name, "vil");
@@ -157,7 +180,7 @@ fn test_e2e_full_options(base_name: &str, args: &[&str], expect_error: bool) {
     let output = Command::new("timeout")
         .arg("5s")
         .arg(&bin_path)
-        .args(args)
+        .args(options.args)
         .output()
         .unwrap();
 
@@ -167,7 +190,7 @@ fn test_e2e_full_options(base_name: &str, args: &[&str], expect_error: bool) {
     let stderr = str::from_utf8(&output.stderr).unwrap();
     insta::assert_display_snapshot!(format!("{}-stderr", base_name), stderr);
 
-    if expect_error {
+    if options.expect_error {
         assert!(!output.status.success());
     } else {
         assert!(output.status.success());
