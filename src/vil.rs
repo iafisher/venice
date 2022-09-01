@@ -44,6 +44,7 @@ pub enum InstructionKind {
     Binary(BinaryOp, Register, Register, Register),
     Unary(UnaryOp, Register, Register),
     Call {
+        destination: Register,
         label: FunctionLabel,
         offsets: Vec<MemoryOffset>,
         variadic: bool,
@@ -193,10 +194,12 @@ impl fmt::Display for InstructionKind {
             Unary(UnaryOp::LogicalNot, r1, r2) => write!(f, "{} = logical_not {}", r1, r2),
             Unary(UnaryOp::Negate, r1, r2) => write!(f, "{} = negate {}", r1, r2),
             Call {
+                destination,
                 label,
                 offsets,
                 variadic,
             } => {
+                write!(f, "{} = ", destination)?;
                 if *variadic {
                     write!(f, "call_variadic {}", label)?;
                 } else {

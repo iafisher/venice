@@ -18,8 +18,7 @@ venice_main_0:
   store R1, -8  // x__0
   R0 = load -8  // x__0
   store R0, -16
-  call venice_printint, mem[-16]
-  R0 = move R13
+  R0 = call venice_printint, mem[-16]
   R0 = set 84
   R1 = move R0
   R0 = set 2
@@ -27,8 +26,7 @@ venice_main_0:
   store R1, -24  // y__1
   R0 = load -24  // y__1
   store R0, -32
-  call venice_printint, mem[-32]
-  R0 = move R13
+  R0 = call venice_printint, mem[-32]
   R0 = set 0
   R13 = move R0
   jump venice_main_return_1

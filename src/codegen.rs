@@ -271,12 +271,11 @@ impl Generator {
         }
 
         self.push(vil::InstructionKind::Call {
+            destination: r,
             label: vil::FunctionLabel(unique_name.clone()),
             offsets,
             variadic: expr.variadic,
         });
-
-        self.push(vil::InstructionKind::Move(r, vil::Register::ret()));
     }
 
     fn generate_if_expression(&mut self, expr: &ast::IfExpression, r: vil::Register) {

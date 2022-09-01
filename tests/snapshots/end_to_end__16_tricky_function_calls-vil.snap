@@ -28,25 +28,20 @@ func venice_main {
 venice_main_2:
   R0 = set s_0
   store R0, -8
-  call venice_string_new, mem[-8]
-  R0 = move R13
+  R0 = call venice_string_new, mem[-8]
   store R0, -16
-  call venice_print, mem[-16]
-  R0 = move R13
+  R0 = call venice_print, mem[-16]
   R0 = set 20
   store R0, -24
   R0 = set 5
   store R0, -32
   R0 = set 17
   store R0, -40
-  call add__0, mem[-32], mem[-40]
-  R0 = move R13
+  R0 = call add__0, mem[-32], mem[-40]
   store R0, -48
-  call add__0, mem[-24], mem[-48]
-  R0 = move R13
+  R0 = call add__0, mem[-24], mem[-48]
   store R0, -56
-  call venice_printint, mem[-56]
-  R0 = move R13
+  R0 = call venice_printint, mem[-56]
   R0 = set 0
   R13 = move R0
   jump venice_main_return_3

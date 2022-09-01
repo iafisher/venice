@@ -26,20 +26,15 @@ func venice_main {
 venice_main_2:
   R0 = set 38
   store R0, -8
-  call increment__0, mem[-8]
-  R0 = move R13
+  R0 = call increment__0, mem[-8]
   store R0, -16
-  call increment__0, mem[-16]
-  R0 = move R13
+  R0 = call increment__0, mem[-16]
   store R0, -24
-  call increment__0, mem[-24]
-  R0 = move R13
+  R0 = call increment__0, mem[-24]
   store R0, -32
-  call increment__0, mem[-32]
-  R0 = move R13
+  R0 = call increment__0, mem[-32]
   store R0, -40
-  call venice_printint, mem[-40]
-  R0 = move R13
+  R0 = call venice_printint, mem[-40]
   R0 = set 0
   R13 = move R0
   jump venice_main_return_3

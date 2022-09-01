@@ -12,13 +12,11 @@ func venice_main {
 venice_main_0:
   R0 = set 12
   store R0, -8
-  call fibonacci__0, mem[-8]
-  R0 = move R13
+  R0 = call fibonacci__0, mem[-8]
   store R0, -16  // x__1
   R0 = load -16  // x__1
   store R0, -24
-  call venice_printint, mem[-24]
-  R0 = move R13
+  R0 = call venice_printint, mem[-24]
   R0 = set 0
   R13 = move R0
   jump venice_main_return_1

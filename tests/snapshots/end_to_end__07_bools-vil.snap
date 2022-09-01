@@ -58,21 +58,17 @@ if_end_4:
 if_true_8:
   R0 = set s_0
   store R0, -32
-  call venice_string_new, mem[-32]
-  R0 = move R13
+  R0 = call venice_string_new, mem[-32]
   store R0, -40
-  call venice_println, mem[-40]
-  R0 = move R13
+  R0 = call venice_println, mem[-40]
   jump if_end_10
 
 if_false_9:
   R0 = set s_1
   store R0, -48
-  call venice_string_new, mem[-48]
-  R0 = move R13
+  R0 = call venice_string_new, mem[-48]
   store R0, -56
-  call venice_println, mem[-56]
-  R0 = move R13
+  R0 = call venice_println, mem[-56]
   jump if_end_10
 
 if_end_10:

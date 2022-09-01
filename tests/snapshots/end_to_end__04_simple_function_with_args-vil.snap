@@ -28,13 +28,11 @@ venice_main_2:
   store R0, -8
   R0 = set 5
   store R0, -16
-  call sub__0, mem[-8], mem[-16]
-  R0 = move R13
+  R0 = call sub__0, mem[-8], mem[-16]
   store R0, -24  // x__3
   R0 = load -24  // x__3
   store R0, -32
-  call venice_printint, mem[-32]
-  R0 = move R13
+  R0 = call venice_printint, mem[-32]
   R0 = set 0
   R13 = move R0
   jump venice_main_return_3

@@ -24,8 +24,7 @@ while_cond_2:
 while_3:
   R0 = load -8  // i__0
   store R0, -16
-  call venice_printint, mem[-16]
-  R0 = move R13
+  R0 = call venice_printint, mem[-16]
   R0 = load -8  // i__0
   R1 = move R0
   R0 = set 1

@@ -22,18 +22,15 @@ venice_main_0:
   R0 = set 1
   R0 = negate R0
   store R0, -32
-  call_variadic venice_list_from_varargs, mem[-8], mem[-16], mem[-24], mem[-32]
-  R0 = move R13
+  R0 = call_variadic venice_list_from_varargs, mem[-8], mem[-16], mem[-24], mem[-32]
   store R0, -40  // numbers__0
   R0 = load -40  // numbers__0
   store R0, -48
   R0 = set 1
   store R0, -56
-  call venice_list_index, mem[-48], mem[-56]
-  R0 = move R13
+  R0 = call venice_list_index, mem[-48], mem[-56]
   store R0, -64
-  call venice_printint, mem[-64]
-  R0 = move R13
+  R0 = call venice_printint, mem[-64]
   R0 = set 0
   R13 = move R0
   jump venice_main_return_1

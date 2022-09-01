@@ -276,6 +276,7 @@ impl Generator {
                 self.push(Instruction::Cmp(Value::r(r1), Value::r(r2)));
             }
             Call {
+                destination,
                 label,
                 offsets,
                 variadic,
@@ -314,6 +315,8 @@ impl Generator {
                 for caller_save in CALLER_SAVE_REGISTERS.iter().rev() {
                     self.push(Instruction::Pop(Value::Register(Register(*caller_save))));
                 }
+
+                self.push(Instruction::Mov(Value::r(destination), RAX));
             }
             Jump(l) => {
                 self.push(Instruction::Jmp(l.0.clone()));

@@ -20,18 +20,14 @@ func venice_main {
 venice_main_0:
   R0 = set s_0
   store R0, -16
-  call venice_string_new, mem[-16]
-  R0 = move R13
+  R0 = call venice_string_new, mem[-16]
   store R0, -24
-  call venice_print, mem[-24]
-  R0 = move R13
+  R0 = call venice_print, mem[-24]
   R0 = load -8  // args__0
   store R0, -32
-  call venice_list_length, mem[-32]
-  R0 = move R13
+  R0 = call venice_list_length, mem[-32]
   store R0, -40
-  call venice_printint, mem[-40]
-  R0 = move R13
+  R0 = call venice_printint, mem[-40]
   R0 = set 0
   store R0, -48  // i__1
   jump while_cond_2
@@ -41,28 +37,23 @@ while_cond_2:
   R1 = move R0
   R0 = load -8  // args__0
   store R0, -56
-  call venice_list_length, mem[-56]
-  R0 = move R13
+  R0 = call venice_list_length, mem[-56]
   cmp R1, R0
   jump_lt while_3, while_end_4
 
 while_3:
   R0 = set s_1
   store R0, -64
-  call venice_string_new, mem[-64]
-  R0 = move R13
+  R0 = call venice_string_new, mem[-64]
   store R0, -72
-  call venice_print, mem[-72]
-  R0 = move R13
+  R0 = call venice_print, mem[-72]
   R0 = load -8  // args__0
   store R0, -80
   R0 = load -48  // i__1
   store R0, -88
-  call venice_list_index, mem[-80], mem[-88]
-  R0 = move R13
+  R0 = call venice_list_index, mem[-80], mem[-88]
   store R0, -96
-  call venice_println, mem[-96]
-  R0 = move R13
+  R0 = call venice_println, mem[-96]
   R0 = load -48  // i__1
   R1 = move R0
   R0 = set 1
