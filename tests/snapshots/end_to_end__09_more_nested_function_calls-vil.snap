@@ -7,91 +7,46 @@ extern venice_printint;
 
 
 func add__0 {
+  // stack_frame_size = 16
 
 add__0_0:
-  frame_set_up 16
-  callee_save %rg2
-  callee_save %rg3
-  callee_save %rg4
-  callee_save %rg5
-  callee_save %rg6
-  store %rp0, -8  // x__1
-  store %rp1, -16  // y__2
-  %rg0 = load -8  // x__1
-  %rg1 = move %rg0
-  %rg0 = load -16  // y__2
-  %rg1 = add %rg1, %rg0
-  %rt = move %rg1
-  %rg6 = callee_restore
-  %rg5 = callee_restore
-  %rg4 = callee_restore
-  %rg3 = callee_restore
-  %rg2 = callee_restore
-  frame_tear_down 16
-  ret
+  R0 = load -8  // x__1
+  R1 = move R0
+  R0 = load -16  // y__2
+  R1 = add R1, R0
+  R13 = move R1
+  jump add__0_return_1
+
+add__0_return_1:
 }
 
 func venice_main {
+  // stack_frame_size = 72
 
-venice_main_1:
-  frame_set_up 0
-  callee_save %rg2
-  callee_save %rg3
-  callee_save %rg4
-  callee_save %rg5
-  callee_save %rg6
-  %rg0 = set 35
-  %rp0 = move %rg0
-  %rg0 = set 1
-  %rp1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  call %add__0
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg0 = move %rt
-  %rp0 = move %rg0
-  %rg0 = set 3
-  %rp1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  call %add__0
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg0 = move %rt
-  %rp0 = move %rg0
-  %rg0 = set 2
-  %rp1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  call %add__0
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg0 = move %rt
-  %rp0 = move %rg0
-  %rg0 = set 1
-  %rp1 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  call %add__0
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg0 = move %rt
-  %rp0 = move %rg0
-  caller_save %rg0
-  caller_save %rg1
-  call %venice_printint
-  %rg1 = caller_restore
-  %rg0 = caller_restore
-  %rg0 = move %rt
-  %rg0 = set 0
-  %rt = move %rg0
-  %rg6 = callee_restore
-  %rg5 = callee_restore
-  %rg4 = callee_restore
-  %rg3 = callee_restore
-  %rg2 = callee_restore
-  frame_tear_down 0
-  ret
+venice_main_2:
+  R0 = set 35
+  store R0, -8
+  R0 = set 1
+  store R0, -16
+  R0 = call add__0, mem[-8], mem[-16]
+  store R0, -24
+  R0 = set 3
+  store R0, -32
+  R0 = call add__0, mem[-24], mem[-32]
+  store R0, -40
+  R0 = set 2
+  store R0, -48
+  R0 = call add__0, mem[-40], mem[-48]
+  store R0, -56
+  R0 = set 1
+  store R0, -64
+  R0 = call add__0, mem[-56], mem[-64]
+  store R0, -72
+  R0 = call venice_printint, mem[-72]
+  R0 = set 0
+  R13 = move R0
+  jump venice_main_return_3
+
+venice_main_return_3:
 }
 

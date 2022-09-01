@@ -3,8 +3,6 @@ source: tests/end_to_end.rs
 expression: x86_output
 ---
 add__0:
-
-add__0_0:
   pushq %rbp
   movq %rsp, %rbp
   subq $16, %rsp
@@ -15,12 +13,17 @@ add__0_0:
   pushq %rbx
   movq %rdi, -8(%rbp)
   movq %rsi, -16(%rbp)
+
+add__0_0:
   movq -8(%rbp), %r10
   movq %r10, %r11
   movq -16(%rbp), %r10
   addq %r10, %r11
   movq %r11, %r11
   movq %r11, %rax
+  jmp add__0_return_1
+
+add__0_return_1:
   popq %rbx
   popq %r15
   popq %r14
@@ -32,78 +35,80 @@ add__0_0:
 
 .globl venice_main
 venice_main:
-
-venice_main_1:
   pushq %rbp
   movq %rsp, %rbp
-  subq $0, %rsp
+  subq $72, %rsp
   pushq %r12
   pushq %r13
   pushq %r14
   pushq %r15
   pushq %rbx
+
+venice_main_2:
   movq $35, %r10
-  movq %r10, %rdi
+  movq %r10, -8(%rbp)
   movq $1, %r10
-  movq %r10, %rsi
+  movq %r10, -16(%rbp)
   pushq %r10
   pushq %r11
-  subq $8, %rsp
+  movq -8(%rbp), %rdi
+  movq -16(%rbp), %rsi
   call add__0
-  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r10
-  movq %r10, %rdi
+  movq %r10, -24(%rbp)
   movq $3, %r10
-  movq %r10, %rsi
+  movq %r10, -32(%rbp)
   pushq %r10
   pushq %r11
-  subq $8, %rsp
+  movq -24(%rbp), %rdi
+  movq -32(%rbp), %rsi
   call add__0
-  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r10
-  movq %r10, %rdi
+  movq %r10, -40(%rbp)
   movq $2, %r10
-  movq %r10, %rsi
+  movq %r10, -48(%rbp)
   pushq %r10
   pushq %r11
-  subq $8, %rsp
+  movq -40(%rbp), %rdi
+  movq -48(%rbp), %rsi
   call add__0
-  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r10
-  movq %r10, %rdi
+  movq %r10, -56(%rbp)
   movq $1, %r10
-  movq %r10, %rsi
+  movq %r10, -64(%rbp)
   pushq %r10
   pushq %r11
-  subq $8, %rsp
+  movq -56(%rbp), %rdi
+  movq -64(%rbp), %rsi
   call add__0
-  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r10
-  movq %r10, %rdi
+  movq %r10, -72(%rbp)
   pushq %r10
   pushq %r11
-  subq $8, %rsp
+  movq -72(%rbp), %rdi
   call venice_printint
-  addq $8, %rsp
   popq %r11
   popq %r10
   movq %rax, %r10
   movq $0, %r10
   movq %r10, %rax
+  jmp venice_main_return_3
+
+venice_main_return_3:
   popq %rbx
   popq %r15
   popq %r14
   popq %r13
   popq %r12
-  addq $0, %rsp
+  addq $72, %rsp
   popq %rbp
   retq
 
