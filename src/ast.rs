@@ -131,6 +131,8 @@ pub struct Expression {
     pub kind: ExpressionKind,
     pub type_: Type,
     pub max_register_needed: u8,
+    // This field is only used for placing arguments on the stack before calling a function. For
+    // the stack offset of a named symbol, check its `SymbolEntry` instead.
     pub stack_offset: i32,
 }
 
@@ -248,6 +250,8 @@ pub enum Type {
     // TODO: this shouldn't be a primitive type
     File,
     Void,
+    // The `Any` type is used in a few places by the runtime, e.g. `list_length` can accept a list
+    // of any type.
     Any,
     Tuple(Vec<Type>),
     List(Box<Type>),
@@ -298,6 +302,7 @@ impl SymbolEntry {
 }
 
 impl Type {
+    /// Returns true if the type is compatible with the other type.
     pub fn matches(&self, other: &Type) -> bool {
         use Type::*;
         match (self, other) {
@@ -333,7 +338,8 @@ impl Type {
         }
     }
 
-    pub fn stack_size(&self) -> i32 {
+    /// Returns the number of bytes required to store a value of the type.
+    pub fn storage_size(&self) -> i32 {
         use Type::*;
         match self {
             Void | Error => 0,

@@ -2,7 +2,12 @@
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 //
-// Code generation from an abstract syntax tree to a VIL program.
+// Code generation from an abstract syntax tree to a VIL program. For translating VIL code into x86
+// assembly code, see the x86.rs module.
+//
+// While recursively generating the VIL program from the AST, the code generator uses an unlimited
+// number of registers. This is cleaned up in a subsequent step where registers are spilled onto
+// the stack as necessary.
 
 use std::collections::BTreeMap;
 use std::collections::HashMap;
@@ -27,6 +32,7 @@ pub fn generate(ast: &ast::Program) -> Result<vil::Program, errors::VeniceError>
     };
     generator.generate_program(ast);
 
+    // TODO: Take backend config as an option rather than hard-coding an x86 value here.
     let mut register_spiller = RegisterSpiller::new(X86_REGISTER_COUNT);
     register_spiller.spill(&mut generator.program);
 
@@ -279,7 +285,7 @@ impl Generator {
 
         self.push(vil::InstructionKind::Call {
             destination: r,
-            label: vil::FunctionLabel(unique_name.clone()),
+            label: vil::Label(unique_name.clone()),
             offsets,
             variadic: expr.variadic,
         });
@@ -660,7 +666,7 @@ impl RegisterSpiller {
             }
             // Explicitly list other instructions so that if I add another instruction I'll be
             // forced to consider it here.
-            Call { .. } | Jump(..) | JumpIf(..) => {
+            Jump(..) | JumpIf(..) => {
                 destination.push(instruction.clone());
             }
         };

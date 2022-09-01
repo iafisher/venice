@@ -3,7 +3,15 @@
 // found in the LICENSE file.
 //
 // The Venice Intermediate Language (VIL) is the intermediate representation used inside the Venice
-// compiler. See docs/vil.md for details.
+// compiler. It is a linear, block-based IR, broadly similar to LLVM but simpler and more closely
+// tied to x86.
+//
+// Most VIL instructions operate on registers, of which VIL has an unlimited number. `load` and
+// `store` instructions are provided to interface with memory.
+//
+// In its current state, VIL is not a totally coherent IR. Some operations, like moving a
+// function's arguments onto the stack at the beginning of the function body, are implicit and
+// handled by the x86 code generator.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -41,20 +49,39 @@ pub type MemoryOffset = i32;
 
 #[derive(Clone, Debug)]
 pub enum InstructionKind {
+    // Binary(op, r1, r2, r3) computes the binary operation with `r2` as its left operand and `r3`
+    // as its right, and places the result in `r1`. The same register can be used multiple times in
+    // a single binary instruction.
+    //
+    // Binary operations are represented by a single instruction kind with an `op` enum to identify
+    // the desired operation, instead of separate `Add`, `Div`, etc. variants. This makes it easier
+    // for the code generator to process instructions uniformly, e.g. when spilling registers.
     Binary(BinaryOp, Register, Register, Register),
+    // Unary(op, r1, r2) computes the unary operation on `r2` and places the result in `r1`. `r1`
+    // and `r2` may be the same register.
     Unary(UnaryOp, Register, Register),
+    // Calls the function with its arguments as the given memory offsets, and places the return
+    // value in the destination register.
     Call {
         destination: Register,
-        label: FunctionLabel,
+        label: Label,
         offsets: Vec<MemoryOffset>,
         variadic: bool,
     },
+    // Compares the two registers and sets flags for a subsequent jump operation.
     Cmp(Register, Register),
+    // Unconditionally jumps to the label.
     Jump(Label),
+    // Jumps to the first label if the condition is true (according to the flags set  by a previous
+    // `Cmp` instruction), to the second label otherwise.
     JumpIf(JumpCondition, Label, Label),
+    // Loads the value at the memory offset into the register.
     Load(Register, MemoryOffset),
+    // Move(r1, r2) copies the value in `r2` into `r1`.
     Move(Register, Register),
+    // Sets the register to the immediate value.
     Set(Register, Immediate),
+    // Stores the value in the register into memory at the given offset.
     Store(Register, MemoryOffset),
 }
 
@@ -85,24 +112,29 @@ pub enum JumpCondition {
 #[derive(Clone, Copy, Debug)]
 pub struct Register(u8);
 
-const GP_REGISTER_COUNT: u8 = 7;
 const RETURN_REGISTER_INDEX: u8 = 13;
+// TODO(#157): These scratch register indices may conflict with general-purpose registers.
+const SCRATCH_REGISTER_INDEX: u8 = RETURN_REGISTER_INDEX;
+const SCRATCH2_REGISTER_INDEX: u8 = 7;
 
 impl Register {
     pub fn index(self) -> u8 {
         self.0
     }
 
+    // Grab a general-purpose register.
     pub fn new(i: u8) -> Self {
         Register(i)
     }
 
+    // Grab a scratch register.
     pub fn scratch() -> Self {
-        Register(RETURN_REGISTER_INDEX)
+        Register(SCRATCH_REGISTER_INDEX)
     }
 
+    // Grab a second scratch register.
     pub fn scratch2() -> Self {
-        Register(GP_REGISTER_COUNT)
+        Register(SCRATCH2_REGISTER_INDEX)
     }
 
     pub fn ret() -> Self {
@@ -115,10 +147,9 @@ pub enum Immediate {
     Integer(i64),
     Label(String),
 }
+
 #[derive(Clone, Debug)]
 pub struct Label(pub String);
-#[derive(Clone, Debug)]
-pub struct FunctionLabel(pub String);
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -247,12 +278,6 @@ impl fmt::Display for Immediate {
 }
 
 impl fmt::Display for Label {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl fmt::Display for FunctionLabel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }

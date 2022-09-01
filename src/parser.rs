@@ -2,7 +2,9 @@
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 //
-// The parser transforms the stream of tokens emitted by the lexer into a parse tree.
+// The parser transforms the stream of tokens emitted by the lexer into a parse tree. It is a
+// hand-written recursive-descent parser that uses Pratt parsing to parse expressions with
+// precedence.
 
 use super::common;
 use super::errors;
@@ -43,6 +45,11 @@ impl Parser {
         }
         ptree::Program { declarations }
     }
+
+    // In general, each `ptree` node type has a corresponding `match_XYZ` function. The invariant
+    // for each is that `match_XYZ` is called with `self.lexer.token()` on the first token of the
+    // node, and it returns with `self.lexer.token()` on the first token of the next node. This
+    // allows chaining several `match_XYZ` calls in a row.
 
     fn match_declaration(&mut self) -> Result<ptree::Declaration, ()> {
         let token = self.lexer.token();
@@ -301,9 +308,6 @@ impl Parser {
     fn match_return_statement(&mut self) -> Result<ptree::ReturnStatement, ()> {
         let mut token = self.lexer.token();
         let location = token.location.clone();
-        // TODO: remove all of these? they are redundant unless I've made a programming
-        // error since match_XYZ_statement will only be called when XYZ is the current
-        // token.
         self.expect_token(&token, TokenType::Return, "return")?;
 
         self.lexer.next();
@@ -719,7 +723,7 @@ fn token_type_to_comparison_op_type(type_: TokenType) -> common::ComparisonOpTyp
 }
 
 fn parse_string_literal(s: &str) -> Result<String, ()> {
-    // TODO: need to resolve backslash escapes
+    // TODO(#159): need to resolve backslash escapes
     Ok(String::from(&s[1..s.len() - 1]))
 }
 

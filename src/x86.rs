@@ -2,7 +2,13 @@
 // Use of this source code is governed by an MIT-style license that can be
 // found in the LICENSE file.
 //
-// Compiles a VIL program into concrete x86 machine code.
+// Compiles a VIL program into concrete x86 machine code. This is meant to be a mostly
+// straightforward translation, although currently VIL leaves a lot implicit (like function set-up
+// and tear-down) that the x86 code generator must supply.
+//
+// For simplicity, all values in a Venice program are currently 64 bits (compound data types like
+// strings and lists are represented by 64-bit pointers) so all x86 instructions (with a few
+// hard-coded exceptions) can be quadword.
 
 use super::vil;
 use std::fmt;
@@ -77,7 +83,7 @@ impl Value {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Register(u8);
 
 pub struct Data {
@@ -94,6 +100,9 @@ const CALLEE_SAVE_REGISTERS: &[u8] = &[2, 3, 4, 5, 6];
 
 struct Generator {
     program: Program,
+    // The System V ABI requires the stack to be aligned on a 16-byte boundary when calling a
+    // function, so we track the current alignment of the stack as we generate x86 instructions,
+    // and insert instructions to align and un-align the stack around function calls as necessary.
     stack_alignment: i64,
 }
 
@@ -190,6 +199,9 @@ impl Generator {
         declaration: &vil::FunctionDeclaration,
         instruction: &vil::Instruction,
     ) {
+        // All code that pushes a new instruction should use the `self.push` method because it
+        // handles updating the stack alignment automatically.
+
         use vil::BinaryOp::*;
         use vil::InstructionKind::*;
         match &instruction.kind {
@@ -370,10 +382,10 @@ impl Generator {
             Instruction::Pop(_) => {
                 self.stack_alignment -= 8;
             }
-            Instruction::Sub(Value::Register(Register(14)), Value::Immediate(x)) => {
+            Instruction::Sub(Value::Register(RSP_REGISTER), Value::Immediate(x)) => {
                 self.stack_alignment += x;
             }
-            Instruction::Add(Value::Register(Register(14)), Value::Immediate(x)) => {
+            Instruction::Add(Value::Register(RSP_REGISTER), Value::Immediate(x)) => {
                 self.stack_alignment += x;
             }
             _ => {}
@@ -496,6 +508,7 @@ impl fmt::Display for Value {
 
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO: Is there a better way to map VIL registers to x86 ones?
         match self.0 {
             0 => write!(f, "r10"),
             1 => write!(f, "r11"),
