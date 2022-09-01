@@ -5,6 +5,7 @@
 // Code generation from an abstract syntax tree to a VIL program.
 
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use super::ast;
 use super::common;
@@ -25,8 +26,14 @@ pub fn generate(ast: &ast::Program) -> Result<vil::Program, errors::VeniceError>
         string_counter: 0,
     };
     generator.generate_program(ast);
+
+    let mut register_spiller = RegisterSpiller::new(X86_REGISTER_COUNT);
+    register_spiller.spill(&mut generator.program);
+
     Ok(generator.program)
 }
+
+const X86_REGISTER_COUNT: u8 = 14;
 
 struct Generator {
     // The program which is incrementally built up.
@@ -491,6 +498,221 @@ impl Generator {
         let function = self.current_function();
         let index = function.blocks.len() - 1;
         &mut function.blocks[index]
+    }
+}
+
+struct RegisterSpiller {
+    register_count: u8,
+    spilled: HashMap<u8, vil::MemoryOffset>,
+    current_stack_offset: i32,
+}
+
+impl RegisterSpiller {
+    fn new(register_count: u8) -> Self {
+        RegisterSpiller {
+            register_count,
+            spilled: HashMap::new(),
+            current_stack_offset: 0,
+        }
+    }
+
+    fn spill(&mut self, program: &mut vil::Program) {
+        for declaration in &mut program.declarations {
+            self.spilled.clear();
+            self.current_stack_offset = -(declaration.stack_frame_size + 8);
+
+            for block in &mut declaration.blocks {
+                let mut new_instructions = Vec::new();
+                for instruction in &mut block.instructions {
+                    self.spill_instruction(&mut new_instructions, &instruction);
+                }
+                block.instructions = new_instructions;
+            }
+
+            declaration.stack_frame_size = -(self.current_stack_offset + 8);
+        }
+    }
+
+    fn spill_instruction(
+        &mut self,
+        destination: &mut Vec<vil::Instruction>,
+        instruction: &vil::Instruction,
+    ) {
+        use vil::InstructionKind::*;
+        match &instruction.kind {
+            Binary(op, r1, r2, r3) => {
+                let real_r3 = self.maybe_spill_read_register(destination, &r3, 0);
+                let real_r2 = self.maybe_spill_read_register(destination, &r2, 1);
+
+                if r1.index() >= self.register_count {
+                    let scratch = vil::Register::scratch();
+                    destination.push(vil::Instruction {
+                        kind: Binary(*op, scratch, real_r2, real_r3),
+                        comment: instruction.comment.clone(),
+                    });
+
+                    self.spill_write_register(destination, &r1, scratch);
+                } else {
+                    destination.push(vil::Instruction {
+                        kind: Binary(*op, r1.clone(), real_r2, real_r3),
+                        comment: instruction.comment.clone(),
+                    });
+                }
+            }
+            Unary(op, r1, r2) => {
+                let real_r2 = self.maybe_spill_read_register(destination, &r2, 0);
+                if r1.index() >= self.register_count {
+                    let scratch = vil::Register::scratch();
+                    destination.push(vil::Instruction {
+                        kind: Unary(*op, scratch, real_r2),
+                        comment: instruction.comment.clone(),
+                    });
+
+                    self.spill_write_register(destination, &r1, scratch);
+                } else {
+                    destination.push(vil::Instruction {
+                        kind: Unary(*op, r1.clone(), real_r2),
+                        comment: instruction.comment.clone(),
+                    });
+                }
+            }
+            Call {
+                destination: r,
+                label,
+                offsets,
+                variadic,
+            } => {
+                if r.index() >= self.register_count {
+                    let scratch = vil::Register::scratch();
+                    destination.push(vil::Instruction {
+                        kind: Call {
+                            destination: scratch,
+                            label: label.clone(),
+                            offsets: offsets.clone(),
+                            variadic: *variadic,
+                        },
+                        comment: instruction.comment.clone(),
+                    });
+
+                    self.spill_write_register(destination, &r, scratch);
+                } else {
+                    destination.push(instruction.clone());
+                }
+            }
+            Cmp(r1, r2) => {
+                let real_r2 = self.maybe_spill_read_register(destination, &r2, 0);
+                let real_r1 = self.maybe_spill_read_register(destination, &r1, 1);
+
+                destination.push(vil::Instruction {
+                    kind: Cmp(real_r1, real_r2),
+                    comment: instruction.comment.clone(),
+                });
+            }
+            Load(r, offset) => {
+                if r.index() >= self.register_count {
+                    let scratch = vil::Register::scratch();
+                    destination.push(vil::Instruction {
+                        kind: Load(scratch, *offset),
+                        comment: instruction.comment.clone(),
+                    });
+
+                    self.spill_write_register(destination, &r, scratch);
+                } else {
+                    destination.push(instruction.clone());
+                }
+            }
+            Move(r1, r2) => {
+                let real_r2 = self.maybe_spill_read_register(destination, &r2, 0);
+                if r1.index() >= self.register_count {
+                    let scratch = vil::Register::scratch();
+                    destination.push(vil::Instruction {
+                        kind: Move(scratch, real_r2),
+                        comment: instruction.comment.clone(),
+                    });
+
+                    self.spill_write_register(destination, &r1, scratch);
+                } else {
+                    destination.push(vil::Instruction {
+                        kind: Move(r1.clone(), real_r2),
+                        comment: instruction.comment.clone(),
+                    });
+                }
+            }
+            Set(r, imm) => {
+                if r.index() >= self.register_count {
+                    let scratch = vil::Register::scratch();
+                    destination.push(vil::Instruction {
+                        kind: Set(scratch, imm.clone()),
+                        comment: instruction.comment.clone(),
+                    });
+
+                    self.spill_write_register(destination, &r, scratch);
+                } else {
+                    destination.push(instruction.clone());
+                }
+            }
+            Store(r, offset) => {
+                let real_r = self.maybe_spill_read_register(destination, &r, 0);
+                destination.push(vil::Instruction {
+                    kind: Store(real_r, *offset),
+                    comment: instruction.comment.clone(),
+                });
+            }
+            // Explicitly list other instructions so that if I add another instruction I'll be
+            // forced to consider it here.
+            Call { .. } | Jump(..) | JumpIf(..) => {
+                destination.push(instruction.clone());
+            }
+        };
+    }
+
+    fn maybe_spill_read_register(
+        &mut self,
+        destination: &mut Vec<vil::Instruction>,
+        r: &vil::Register,
+        index: u8,
+    ) -> vil::Register {
+        if r.index() >= self.register_count {
+            let offset = self.spilled.get(&r.index()).unwrap();
+            let scratch = if index == 0 {
+                vil::Register::scratch()
+            } else {
+                vil::Register::scratch2()
+            };
+            destination.push(vil::Instruction {
+                kind: vil::InstructionKind::Load(scratch.clone(), *offset),
+                comment: String::from("spilled"),
+            });
+            scratch
+        } else {
+            r.clone()
+        }
+    }
+
+    fn spill_write_register(
+        &mut self,
+        destination: &mut Vec<vil::Instruction>,
+        r: &vil::Register,
+        scratch: vil::Register,
+    ) {
+        let offset = if let Some(offset) = self.spilled.get(&r.index()) {
+            *offset
+        } else {
+            let offset = self.claim_stack_offset();
+            self.spilled.insert(r.index(), offset);
+            offset
+        };
+
+        destination.push(vil::Instruction {
+            kind: vil::InstructionKind::Store(scratch, offset),
+            comment: String::from("spilled"),
+        });
+    }
+
+    fn claim_stack_offset(&mut self) -> i32 {
+        let ret = self.current_stack_offset;
+        self.current_stack_offset -= 8;
+        ret
     }
 }
 

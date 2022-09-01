@@ -1,0 +1,208 @@
+---
+source: tests/end_to_end.rs
+expression: x86_output
+---
+add__0:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $32, %rsp
+  pushq %r12
+  pushq %r13
+  pushq %r14
+  pushq %r15
+  pushq %rbx
+  movq %rdi, -8(%rbp)
+  movq %rsi, -16(%rbp)
+  movq %rdx, -24(%rbp)
+  movq %rcx, -32(%rbp)
+
+add__0_0:
+  movq -8(%rbp), %r10
+  movq %r10, %r11
+  movq -16(%rbp), %r10
+  addq %r10, %r11
+  movq %r11, %r11
+  movq -24(%rbp), %r10
+  addq %r10, %r11
+  movq %r11, %r11
+  movq -32(%rbp), %r10
+  addq %r10, %r11
+  movq %r11, %r11
+  movq %r11, %rax
+  jmp add__0_return_1
+
+add__0_return_1:
+  popq %rbx
+  popq %r15
+  popq %r14
+  popq %r13
+  popq %r12
+  addq $32, %rsp
+  popq %rbp
+  retq
+
+sub__1:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $16, %rsp
+  pushq %r12
+  pushq %r13
+  pushq %r14
+  pushq %r15
+  pushq %rbx
+  movq %rdi, -8(%rbp)
+  movq %rsi, -16(%rbp)
+
+sub__1_2:
+  movq -8(%rbp), %r10
+  movq %r10, %r11
+  movq -16(%rbp), %r10
+  subq %r10, %r11
+  movq %r11, %r11
+  movq %r11, %rax
+  jmp sub__1_return_3
+
+sub__1_return_3:
+  popq %rbx
+  popq %r15
+  popq %r14
+  popq %r13
+  popq %r12
+  addq $16, %rsp
+  popq %rbp
+  retq
+
+.globl venice_main
+venice_main:
+  pushq %rbp
+  movq %rsp, %rbp
+  subq $168, %rsp
+  pushq %r12
+  pushq %r13
+  pushq %r14
+  pushq %r15
+  pushq %rbx
+
+venice_main_4:
+  movq $.s_0, %r10
+  movq %r10, -8(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -8(%rbp), %rdi
+  call venice_string_new
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -16(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -16(%rbp), %rdi
+  call venice_print
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq $25, %r10
+  movq %r10, -24(%rbp)
+  movq $26, %r10
+  movq %r10, -32(%rbp)
+  movq $29, %r10
+  movq %r10, -40(%rbp)
+  movq $24, %r10
+  movq %r10, -48(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -24(%rbp), %rdi
+  movq -32(%rbp), %rsi
+  movq -40(%rbp), %rdx
+  movq -48(%rbp), %rcx
+  call add__0
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -56(%rbp)
+  movq $102, %r10
+  movq %r10, -64(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -56(%rbp), %rdi
+  movq -64(%rbp), %rsi
+  call sub__1
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -72(%rbp)
+  movq $3, %r10
+  movq %r10, -80(%rbp)
+  movq $4, %r10
+  movq %r10, -88(%rbp)
+  movq $1, %r10
+  movq %r10, -96(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -72(%rbp), %rdi
+  movq -80(%rbp), %rsi
+  movq -88(%rbp), %rdx
+  movq -96(%rbp), %rcx
+  call add__0
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -104(%rbp)
+  movq $7, %r10
+  movq %r10, -112(%rbp)
+  movq $8, %r10
+  movq %r10, -120(%rbp)
+  movq $5, %r10
+  movq %r10, -128(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -104(%rbp), %rdi
+  movq -112(%rbp), %rsi
+  movq -120(%rbp), %rdx
+  movq -128(%rbp), %rcx
+  call add__0
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -136(%rbp)
+  movq $24, %r10
+  movq %r10, -144(%rbp)
+  movq $27, %r10
+  movq %r10, -152(%rbp)
+  movq $19, %r10
+  movq %r10, -160(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -136(%rbp), %rdi
+  movq -144(%rbp), %rsi
+  movq -152(%rbp), %rdx
+  movq -160(%rbp), %rcx
+  call add__0
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq %r10, -168(%rbp)
+  pushq %r10
+  pushq %r11
+  movq -168(%rbp), %rdi
+  call venice_printint
+  popq %r11
+  popq %r10
+  movq %rax, %r10
+  movq $0, %r10
+  movq %r10, %rax
+  jmp venice_main_return_5
+
+venice_main_return_5:
+  popq %rbx
+  popq %r15
+  popq %r14
+  popq %r13
+  popq %r12
+  addq $168, %rsp
+  popq %rbp
+  retq
+
+.s_0:
+  .string "Should be 100: "
+

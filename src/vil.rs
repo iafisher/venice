@@ -31,15 +31,15 @@ pub struct Block {
     pub instructions: Vec<Instruction>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Instruction {
     pub kind: InstructionKind,
     pub comment: String,
 }
 
-type MemoryOffset = i32;
+pub type MemoryOffset = i32;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum InstructionKind {
     Binary(BinaryOp, Register, Register, Register),
     Unary(UnaryOp, Register, Register),
@@ -58,7 +58,7 @@ pub enum InstructionKind {
     Store(Register, MemoryOffset),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum BinaryOp {
     Add,
     Div,
@@ -66,13 +66,13 @@ pub enum BinaryOp {
     Sub,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum UnaryOp {
     LogicalNot,
     Negate,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum JumpCondition {
     Eq,
     Gt,
@@ -94,17 +94,15 @@ impl Register {
     }
 
     pub fn new(i: u8) -> Self {
-        if i >= GP_REGISTER_COUNT {
-            panic!(
-                "internal error: tried to use a general-purpose register but all {} are taken",
-                GP_REGISTER_COUNT
-            );
-        }
         Register(i)
     }
 
     pub fn scratch() -> Self {
         Register(RETURN_REGISTER_INDEX)
+    }
+
+    pub fn scratch2() -> Self {
+        Register(GP_REGISTER_COUNT)
     }
 
     pub fn ret() -> Self {

@@ -104,6 +104,16 @@ fn test_16_tricky_function_calls() {
     test_e2e("16_tricky_function_calls");
 }
 
+#[test]
+fn test_17_register_overflow_2() {
+    test_e2e("17_register_overflow_2");
+}
+
+#[test]
+fn test_18_register_overflow_3() {
+    test_e2e("18_register_overflow_3");
+}
+
 fn test_e2e(base_name: &str) {
     test_e2e_full_options(base_name, &[], /* expect_error= */ false);
 }

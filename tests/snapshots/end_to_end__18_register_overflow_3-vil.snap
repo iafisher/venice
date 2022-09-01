@@ -1,0 +1,100 @@
+---
+source: tests/end_to_end.rs
+expression: vil_output
+---
+extern venice_string_new;
+extern venice_print;
+extern venice_printint;
+
+
+
+func add__0 {
+  // stack_frame_size = 32
+
+add__0_0:
+  R0 = load -8  // a__2
+  R1 = move R0
+  R0 = load -16  // b__3
+  R1 = add R1, R0
+  R0 = load -24  // c__4
+  R1 = add R1, R0
+  R0 = load -32  // d__5
+  R1 = add R1, R0
+  R13 = move R1
+  jump add__0_return_1
+
+add__0_return_1:
+}
+
+func sub__1 {
+  // stack_frame_size = 16
+
+sub__1_2:
+  R0 = load -8  // a__6
+  R1 = move R0
+  R0 = load -16  // b__7
+  R1 = sub R1, R0
+  R13 = move R1
+  jump sub__1_return_3
+
+sub__1_return_3:
+}
+
+func venice_main {
+  // stack_frame_size = 168
+
+venice_main_4:
+  R0 = set s_0
+  store R0, -8
+  R0 = call venice_string_new, mem[-8]
+  store R0, -16
+  R0 = call venice_print, mem[-16]
+  R0 = set 25
+  store R0, -24
+  R0 = set 26
+  store R0, -32
+  R0 = set 29
+  store R0, -40
+  R0 = set 24
+  store R0, -48
+  R0 = call add__0, mem[-24], mem[-32], mem[-40], mem[-48]
+  store R0, -56
+  R0 = set 102
+  store R0, -64
+  R0 = call sub__1, mem[-56], mem[-64]
+  store R0, -72
+  R0 = set 3
+  store R0, -80
+  R0 = set 4
+  store R0, -88
+  R0 = set 1
+  store R0, -96
+  R0 = call add__0, mem[-72], mem[-80], mem[-88], mem[-96]
+  store R0, -104
+  R0 = set 7
+  store R0, -112
+  R0 = set 8
+  store R0, -120
+  R0 = set 5
+  store R0, -128
+  R0 = call add__0, mem[-104], mem[-112], mem[-120], mem[-128]
+  store R0, -136
+  R0 = set 24
+  store R0, -144
+  R0 = set 27
+  store R0, -152
+  R0 = set 19
+  store R0, -160
+  R0 = call add__0, mem[-136], mem[-144], mem[-152], mem[-160]
+  store R0, -168
+  R0 = call venice_printint, mem[-168]
+  R0 = set 0
+  R13 = move R0
+  jump venice_main_return_5
+
+venice_main_return_5:
+}
+
+
+data s_0 = "Should be 100: ";
+
