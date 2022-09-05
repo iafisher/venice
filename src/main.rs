@@ -9,6 +9,7 @@ use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::Instant;
 
 #[macro_use]
 extern crate lazy_static;
@@ -42,6 +43,10 @@ struct Cli {
     /// Prints the AST and exits.
     #[clap(long)]
     ast: bool,
+
+    /// Prints execution time of the different stages of compilation.
+    #[clap(long)]
+    profile: bool,
 }
 
 fn main() {
@@ -56,6 +61,7 @@ fn main() {
         .expect("could not read from file");
 
     // Lex and parse the program.
+    let mut now = Instant::now();
     let lexer = lexer::Lexer::new(&cli.path, &program);
     let ptree_result = parser::parse(lexer);
     if let Err(errors) = ptree_result {
@@ -65,7 +71,13 @@ fn main() {
         std::process::exit(1);
     }
 
+    if cli.profile {
+        let elapsed = now.elapsed();
+        println!("Parsing: {:.2?}", elapsed);
+    }
+
     // Type-check the program.
+    now = Instant::now();
     let ptree = ptree_result.unwrap();
     let ast_result = analyzer::analyze(&ptree);
     if let Err(errors) = ast_result {
@@ -75,6 +87,11 @@ fn main() {
         std::process::exit(1);
     }
 
+    if cli.profile {
+        let elapsed = now.elapsed();
+        println!("Analysis: {:.2?}", elapsed);
+    }
+
     let ast = ast_result.unwrap();
     if cli.ast {
         println!("{}", ast);
@@ -82,6 +99,7 @@ fn main() {
     }
 
     // Generate a VIL program.
+    now = Instant::now();
     let vil_program = codegen::generate(&ast).unwrap();
     if cli.keep_intermediate {
         let mut vil_output_path = PathBuf::from(&cli.path);
@@ -95,8 +113,19 @@ fn main() {
         }
     }
 
+    if cli.profile {
+        let elapsed = now.elapsed();
+        println!("Code generation (VIL): {:.2?}", elapsed);
+    }
+
     // Generate an x86 program.
+    now = Instant::now();
     let x86_program = x86::generate(&vil_program).unwrap();
+
+    if cli.profile {
+        let elapsed = now.elapsed();
+        println!("Code generation (x86): {:.2?}", elapsed);
+    }
 
     // Write the assembly program to disk.
     let mut x86_output_path = PathBuf::from(&cli.path);
