@@ -41,7 +41,7 @@ venice_main_0:
   store R0, -80
   R0 = call venice_printint, mem[-80]
   R0 = set 0
-  R13 = move R0
+  RRET = move R0
   jump venice_main_return_1
 
 venice_main_return_1:

@@ -34,7 +34,7 @@ while_3:
 
 while_end_4:
   R0 = set 0
-  R13 = move R0
+  RRET = move R0
   jump venice_main_return_1
 
 venice_main_return_1:

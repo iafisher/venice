@@ -14,7 +14,7 @@ increment__0_0:
   R1 = move R0
   R0 = set 1
   R1 = add R1, R0
-  R13 = move R1
+  RRET = move R1
   jump increment__0_return_1
 
 increment__0_return_1:
@@ -36,7 +36,7 @@ venice_main_2:
   store R0, -40
   R0 = call venice_printint, mem[-40]
   R0 = set 0
-  R13 = move R0
+  RRET = move R0
   jump venice_main_return_3
 
 venice_main_return_3:

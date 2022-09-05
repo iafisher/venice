@@ -74,7 +74,15 @@ pub enum Value {
 impl Value {
     /// Constructs an x86 register from a VIL register.
     fn r(r: &vil::Register) -> Self {
-        Value::Register(Register(r.index()))
+        use vil::Register::*;
+        match r {
+            General(x) => Value::Register(Register(*x)),
+            // TODO(#157): These scratch register indices may conflict with general-purpose
+            // registers.
+            Scratch1 => Value::Register(Register(13)),
+            Scratch2 => Value::Register(Register(12)),
+            Return => Value::Register(Register(13)),
+        }
     }
 
     /// Constructs the x86 register for a function's i'th parameter (starting at 0).

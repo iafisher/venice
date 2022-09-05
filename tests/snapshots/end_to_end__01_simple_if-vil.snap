@@ -14,8 +14,8 @@ func venice_main {
 
 venice_main_0:
   R0 = set 1
-  R13 = set 1
-  cmp R0, R13
+  RS1 = set 1
+  cmp R0, RS1
   jump_eq if_true_2, if_false_3
 
 if_true_2:
@@ -36,7 +36,7 @@ if_false_3:
 
 if_end_4:
   R0 = set 0
-  R13 = move R0
+  RRET = move R0
   jump venice_main_return_1
 
 venice_main_return_1:

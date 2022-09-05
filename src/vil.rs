@@ -110,35 +110,38 @@ pub enum JumpCondition {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Register(u8);
-
-const RETURN_REGISTER_INDEX: u8 = 13;
-// TODO(#157): These scratch register indices may conflict with general-purpose registers.
-const SCRATCH_REGISTER_INDEX: u8 = RETURN_REGISTER_INDEX;
-const SCRATCH2_REGISTER_INDEX: u8 = 7;
+pub enum Register {
+    General(u8),
+    Scratch1,
+    Scratch2,
+    Return,
+}
 
 impl Register {
     pub fn index(self) -> u8 {
-        self.0
+        match self {
+            Register::General(x) => x,
+            _ => 0,
+        }
     }
 
     // Grab a general-purpose register.
     pub fn new(i: u8) -> Self {
-        Register(i)
+        Register::General(i)
     }
 
     // Grab a scratch register.
     pub fn scratch() -> Self {
-        Register(SCRATCH_REGISTER_INDEX)
+        Register::Scratch1
     }
 
     // Grab a second scratch register.
     pub fn scratch2() -> Self {
-        Register(SCRATCH2_REGISTER_INDEX)
+        Register::Scratch2
     }
 
     pub fn ret() -> Self {
-        Register(RETURN_REGISTER_INDEX)
+        Register::Return
     }
 }
 
@@ -263,7 +266,13 @@ impl fmt::Display for InstructionKind {
 
 impl fmt::Display for Register {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "R{}", self.0)
+        use Register::*;
+        match self {
+            General(x) => write!(f, "R{}", x),
+            Scratch1 => write!(f, "RS1"),
+            Scratch2 => write!(f, "RS2"),
+            Return => write!(f, "RRET"),
+        }
     }
 }
 

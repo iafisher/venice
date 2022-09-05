@@ -20,7 +20,7 @@ add__0_0:
   R1 = add R1, R0
   R0 = load -32  // d__5
   R1 = add R1, R0
-  R13 = move R1
+  RRET = move R1
   jump add__0_return_1
 
 add__0_return_1:
@@ -34,7 +34,7 @@ sub__1_2:
   R1 = move R0
   R0 = load -16  // b__7
   R1 = sub R1, R0
-  R13 = move R1
+  RRET = move R1
   jump sub__1_return_3
 
 sub__1_return_3:
@@ -89,7 +89,7 @@ venice_main_4:
   store R0, -168
   R0 = call venice_printint, mem[-168]
   R0 = set 0
-  R13 = move R0
+  RRET = move R0
   jump venice_main_return_5
 
 venice_main_return_5:
