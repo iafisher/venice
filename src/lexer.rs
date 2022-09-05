@@ -70,10 +70,10 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(type_: TokenType, value: &str, location: common::Location) -> Self {
+    pub fn new(type_: TokenType, value: String, location: common::Location) -> Self {
         Token {
             type_,
-            value: String::from(value),
+            value,
             location,
         }
     }
@@ -87,7 +87,10 @@ impl PartialEq for Token {
 impl Eq for Token {}
 
 pub struct Lexer {
-    program: String,
+    // The program is stored as a vector of characters so that we can iterate over Unicode scalar
+    // values in linear time.
+    chars: Vec<char>,
+    // `index` and `start` are indices into the `chars` array, not into the original string.
     index: usize,
     start: usize,
     location: common::Location,
@@ -128,25 +131,25 @@ lazy_static! {
         m.insert(('+', '+'), TokenType::Concat);
         m
     };
-    static ref KEYWORDS: HashMap<&'static str, TokenType> = {
+    static ref KEYWORDS: HashMap<String, TokenType> = {
         let mut m = HashMap::new();
-        m.insert("and", TokenType::And);
-        m.insert("assert", TokenType::Assert);
-        m.insert("const", TokenType::Const);
-        m.insert("else", TokenType::Else);
-        m.insert("false", TokenType::False);
-        m.insert("for", TokenType::For);
-        m.insert("func", TokenType::Func);
-        m.insert("if", TokenType::If);
-        m.insert("in", TokenType::In);
-        m.insert("let", TokenType::Let);
-        m.insert("new", TokenType::New);
-        m.insert("not", TokenType::Not);
-        m.insert("or", TokenType::Or);
-        m.insert("record", TokenType::Record);
-        m.insert("return", TokenType::Return);
-        m.insert("true", TokenType::True);
-        m.insert("while", TokenType::While);
+        m.insert(String::from("and"), TokenType::And);
+        m.insert(String::from("assert"), TokenType::Assert);
+        m.insert(String::from("const"), TokenType::Const);
+        m.insert(String::from("else"), TokenType::Else);
+        m.insert(String::from("false"), TokenType::False);
+        m.insert(String::from("for"), TokenType::For);
+        m.insert(String::from("func"), TokenType::Func);
+        m.insert(String::from("if"), TokenType::If);
+        m.insert(String::from("in"), TokenType::In);
+        m.insert(String::from("let"), TokenType::Let);
+        m.insert(String::from("new"), TokenType::New);
+        m.insert(String::from("not"), TokenType::Not);
+        m.insert(String::from("or"), TokenType::Or);
+        m.insert(String::from("record"), TokenType::Record);
+        m.insert(String::from("return"), TokenType::Return);
+        m.insert(String::from("true"), TokenType::True);
+        m.insert(String::from("while"), TokenType::While);
         m
     };
 }
@@ -162,7 +165,7 @@ impl Lexer {
             line: 1,
         };
         let mut lexer = Lexer {
-            program: String::from(program),
+            chars: program.chars().collect(),
             index: 0,
             start: 0,
             location: location.clone(),
@@ -199,7 +202,7 @@ impl Lexer {
 
         let c = self.ch();
 
-        if self.index + 1 < self.program.len() {
+        if self.index + 1 < self.chars.len() {
             let c2 = self.peek(1);
             if let Some(type_) = TWO_CHAR_TOKENS.get(&(c, c2)) {
                 self.increment_index();
@@ -223,7 +226,7 @@ impl Lexer {
     }
 
     pub fn done(&self) -> bool {
-        self.index >= self.program.len()
+        self.index >= self.chars.len()
     }
 
     fn read_number(&mut self) -> Token {
@@ -258,8 +261,8 @@ impl Lexer {
         while !self.done() && is_symbol_character(self.ch()) {
             self.increment_index()
         }
-        let value = &self.program[self.start..self.index];
-        if let Some(type_) = KEYWORDS.get(value) {
+        let value: String = self.chars[self.start..self.index].iter().collect();
+        if let Some(type_) = KEYWORDS.get(&value) {
             self.make_token(*type_)
         } else {
             self.make_token(TokenType::Symbol)
@@ -285,7 +288,7 @@ impl Lexer {
     fn make_token(&mut self, type_: TokenType) -> Token {
         let token = Token::new(
             type_,
-            &self.program[self.start..self.index],
+            self.chars[self.start..self.index].iter().collect(),
             self.start_location.clone(),
         );
         self.start = self.index;
@@ -309,12 +312,11 @@ impl Lexer {
     }
 
     fn ch(&self) -> char {
-        // TODO(#145): more efficient way to do this?
-        self.program.chars().nth(self.index).unwrap()
+        self.chars[self.index]
     }
 
     fn peek(&self, n: usize) -> char {
-        self.program.chars().nth(self.index + n).unwrap()
+        self.chars[self.index + n]
     }
 }
 
@@ -331,7 +333,7 @@ mod tests {
     use super::*;
 
     fn token(type_: TokenType, value: &str) -> Token {
-        Token::new(type_, value, common::Location::empty())
+        Token::new(type_, String::from(value), common::Location::empty())
     }
 
     #[test]
