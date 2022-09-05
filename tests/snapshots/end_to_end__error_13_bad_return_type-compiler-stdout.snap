@@ -1,0 +1,6 @@
+---
+source: tests/end_to_end.rs
+expression: stdout
+---
+error: expected i64, got string (line 2, column 3 of tests/error_13_bad_return_type.vn)
+

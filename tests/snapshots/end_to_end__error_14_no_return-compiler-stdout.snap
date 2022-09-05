@@ -1,0 +1,7 @@
+---
+source: tests/end_to_end.rs
+expression: stdout
+---
+error: control reaches end of non-void function (line 1, column 1 of tests/error_14_no_return.vn)
+error: control reaches end of non-void function (line 3, column 1 of tests/error_14_no_return.vn)
+

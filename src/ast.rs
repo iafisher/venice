@@ -35,7 +35,7 @@ pub struct FunctionDeclaration {
     pub name: SymbolEntry,
     pub parameters: Vec<FunctionParameter>,
     pub return_type: Type,
-    pub body: Vec<Statement>,
+    pub body: Block,
     pub info: FunctionInfo,
 }
 
@@ -70,8 +70,15 @@ pub struct RecordField {
 }
 
 #[derive(Debug)]
+pub struct Block {
+    pub statements: Vec<Statement>,
+    pub return_type: Type,
+}
+
+#[derive(Debug)]
 pub struct Statement {
     pub kind: StatementKind,
+    pub return_type: Type,
 }
 
 #[derive(Debug)]
@@ -89,6 +96,7 @@ pub enum StatementKind {
 
 pub const STATEMENT_ERROR: Statement = Statement {
     kind: StatementKind::Error,
+    return_type: Type::Any,
 };
 
 #[derive(Debug)]
@@ -107,14 +115,14 @@ pub struct AssignStatement {
 #[derive(Debug)]
 pub struct IfStatement {
     pub condition: Expression,
-    pub body: Vec<Statement>,
-    pub else_body: Vec<Statement>,
+    pub body: Block,
+    pub else_body: Block,
 }
 
 #[derive(Debug)]
 pub struct WhileStatement {
     pub condition: Expression,
-    pub body: Vec<Statement>,
+    pub body: Block,
 }
 
 #[derive(Debug)]
@@ -122,7 +130,7 @@ pub struct ForStatement {
     pub symbol: SymbolEntry,
     pub symbol2: Option<SymbolEntry>,
     pub iterator: Expression,
-    pub body: Vec<Statement>,
+    pub body: Block,
 }
 
 #[derive(Debug)]
@@ -394,7 +402,7 @@ impl fmt::Display for FunctionDeclaration {
         write!(f, ") ")?;
         write!(f, "{}", self.return_type)?;
 
-        for statement in &self.body {
+        for statement in &self.body.statements {
             write!(f, " {}", statement)?;
         }
         write!(f, ")")
@@ -412,6 +420,16 @@ impl fmt::Display for RecordDeclaration {
         write!(f, "(record-decl {}", self.name)?;
         for field in &self.fields {
             write!(f, "({} {})", field.name, field.type_)?;
+        }
+        write!(f, ")")
+    }
+}
+
+impl fmt::Display for Block {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(block")?;
+        for stmt in &self.statements {
+            write!(f, " {}", stmt)?;
         }
         write!(f, ")")
     }
@@ -454,12 +472,9 @@ impl fmt::Display for AssignStatement {
 
 impl fmt::Display for IfStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(if {} ", self.condition)?;
-        format_block(f, &self.body)?;
-        if !self.else_body.is_empty() {
-            write!(f, " (else ")?;
-            format_block(f, &self.else_body)?;
-            write!(f, ")")?;
+        write!(f, "(if {} {}", self.condition, self.body)?;
+        if !self.else_body.statements.is_empty() {
+            write!(f, " (else {})", self.else_body)?;
         }
         write!(f, ")")
     }
@@ -467,9 +482,7 @@ impl fmt::Display for IfStatement {
 
 impl fmt::Display for WhileStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(while {} ", self.condition)?;
-        format_block(f, &self.body)?;
-        write!(f, ")")
+        write!(f, "(while {} {})", self.condition, self.body)
     }
 }
 
@@ -481,8 +494,7 @@ impl fmt::Display for ForStatement {
         } else {
             write!(f, "{}", self.symbol)?;
         }
-        write!(f, " {}", self.iterator)?;
-        format_block(f, &self.body)
+        write!(f, " {} {})", self.iterator, self.body)
     }
 }
 
@@ -667,12 +679,4 @@ impl fmt::Display for SymbolEntry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.unique_name)
     }
-}
-
-fn format_block(f: &mut fmt::Formatter<'_>, block: &[Statement]) -> fmt::Result {
-    write!(f, "(block")?;
-    for stmt in block {
-        write!(f, " {}", stmt)?;
-    }
-    write!(f, ")")
 }

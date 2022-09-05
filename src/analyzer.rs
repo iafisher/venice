@@ -190,6 +190,16 @@ impl Analyzer {
         let body = self.analyze_block(&declaration.body);
         self.current_function_return_type = None;
 
+        if !body.return_type.matches(&return_type) {
+            if let ast::Type::Void = body.return_type {
+                self.error(
+                    "control reaches end of non-void function",
+                    declaration.location.clone(),
+                );
+            }
+            // If the body doesn't return void, then we've already checked the return type.
+        }
+
         // Pop off the function body's scope.
         self.symbols.pop_scope();
 
@@ -241,12 +251,19 @@ impl Analyzer {
         panic!("internal error: record declarations are not yet supported");
     }
 
-    fn analyze_block(&mut self, block: &[ptree::Statement]) -> Vec<ast::Statement> {
-        let mut ret = Vec::new();
+    fn analyze_block(&mut self, block: &[ptree::Statement]) -> ast::Block {
+        let mut statements = Vec::new();
         for stmt in block {
-            ret.push(self.analyze_statement(stmt));
+            statements.push(self.analyze_statement(stmt));
         }
-        ret
+        let return_type = statements
+            .last()
+            .map(|stmt| stmt.return_type.clone())
+            .unwrap_or(ast::Type::Void);
+        ast::Block {
+            statements,
+            return_type,
+        }
     }
 
     fn analyze_statement(&mut self, stmt: &ptree::Statement) -> ast::Statement {
@@ -261,6 +278,7 @@ impl Analyzer {
             Assert(s) => self.analyze_assert_statement(s),
             Expression(expr) => ast::Statement {
                 kind: ast::StatementKind::Expression(self.analyze_expression(expr)),
+                return_type: ast::Type::Void,
             },
         }
     }
@@ -288,6 +306,7 @@ impl Analyzer {
                 type_: declared_type,
                 value,
             }),
+            return_type: ast::Type::Void,
         }
     }
 
@@ -302,6 +321,7 @@ impl Analyzer {
                     symbol: entry.clone(),
                     value,
                 }),
+                return_type: ast::Type::Void,
             }
         } else {
             let msg = format!("assignment to unknown symbol '{}'", stmt.symbol);
@@ -343,19 +363,28 @@ impl Analyzer {
 
         let mut current_else = else_body;
         for clause in clauses.into_iter() {
-            current_else = vec![ast::Statement {
-                kind: ast::StatementKind::If(ast::IfStatement {
-                    condition: clause.0,
-                    body: clause.1,
-                    else_body: current_else,
-                }),
-            }];
+            let return_type = if clause.1.return_type.matches(&current_else.return_type) {
+                clause.1.return_type.clone()
+            } else {
+                ast::Type::Void
+            };
+            current_else = ast::Block {
+                statements: vec![ast::Statement {
+                    kind: ast::StatementKind::If(ast::IfStatement {
+                        condition: clause.0,
+                        body: clause.1,
+                        else_body: current_else,
+                    }),
+                    return_type: return_type.clone(),
+                }],
+                return_type,
+            };
         }
 
         // `current_else` should always have a length of one since it should only contain a single
         // if-else statement.
-        assert!(current_else.len() == 1);
-        current_else.pop().unwrap()
+        assert!(current_else.statements.len() == 1);
+        current_else.statements.pop().unwrap()
     }
 
     fn analyze_while_statement(&mut self, stmt: &ptree::WhileStatement) -> ast::Statement {
@@ -370,6 +399,7 @@ impl Analyzer {
         let body = self.analyze_block(&stmt.body);
         ast::Statement {
             kind: ast::StatementKind::While(ast::WhileStatement { condition, body }),
+            return_type: ast::Type::Void,
         }
     }
 
@@ -394,8 +424,11 @@ impl Analyzer {
                 stmt.location.clone(),
             );
         }
+
+        let return_type = value.type_.clone();
         ast::Statement {
             kind: ast::StatementKind::Return(ast::ReturnStatement { value }),
+            return_type,
         }
     }
 
@@ -410,6 +443,7 @@ impl Analyzer {
         }
         ast::Statement {
             kind: ast::StatementKind::Assert(ast::AssertStatement { condition }),
+            return_type: ast::Type::Void,
         }
     }
 
@@ -995,8 +1029,8 @@ fn allocate_registers_in_program(program: &mut ast::Program) {
     }
 }
 
-fn allocate_registers_in_block(block: &mut Vec<ast::Statement>) {
-    for statement in block {
+fn allocate_registers_in_block(block: &mut ast::Block) {
+    for statement in &mut block.statements {
         use ast::StatementKind::*;
         match &mut statement.kind {
             Assert(stmt) => {

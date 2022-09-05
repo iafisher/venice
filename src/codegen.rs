@@ -328,8 +328,8 @@ impl Generator {
         );
     }
 
-    fn generate_block(&mut self, block: &[ast::Statement]) {
-        for stmt in block {
+    fn generate_block(&mut self, block: &ast::Block) {
+        for stmt in &block.statements {
             self.generate_statement(stmt);
         }
     }

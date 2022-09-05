@@ -200,6 +200,16 @@ fn test_error_12_bad_list_indices() {
     test_e2e("error_12_bad_list_indices", TestOptions::compile_error());
 }
 
+#[test]
+fn test_error_13_bad_return_type() {
+    test_e2e("error_13_bad_return_type", TestOptions::compile_error());
+}
+
+#[test]
+fn test_error_14_no_return() {
+    test_e2e("error_14_no_return", TestOptions::compile_error());
+}
+
 struct TestOptions {
     args: Vec<&'static str>,
     expect_compile_error: bool,

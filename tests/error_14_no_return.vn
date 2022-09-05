@@ -1,0 +1,19 @@
+func no_return() -> i64 {}
+
+func no_return_with_if_statement() -> i64 {
+  if true {
+    return 42;
+  }
+}
+
+func okay() -> i64 {
+  if true {
+    return 42;
+  } else {
+     return -1;
+  }
+}
+
+func main() -> i64 {
+  return 0;
+}
