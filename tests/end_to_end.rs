@@ -50,7 +50,7 @@ fn test_05_multiply_divide() {
 
 #[test]
 fn test_06_panic() {
-    test_e2e_expect_error("06_panic");
+    test_e2e_expect_runtime_error("06_panic");
 }
 
 #[test]
@@ -124,6 +124,8 @@ fn test_e2e(base_name: &str) {
         TestOptions {
             args: Vec::new(),
             expect_error: false,
+            snapshot_vil: true,
+            snapshot_x86: true,
         },
     );
 }
@@ -134,16 +136,20 @@ fn test_e2e_with_args(base_name: &str, args: Vec<&'static str>) {
         TestOptions {
             args,
             expect_error: false,
+            snapshot_vil: true,
+            snapshot_x86: true,
         },
     );
 }
 
-fn test_e2e_expect_error(base_name: &str) {
+fn test_e2e_expect_runtime_error(base_name: &str) {
     test_e2e_with_options(
         base_name,
         TestOptions {
             args: Vec::new(),
             expect_error: true,
+            snapshot_vil: true,
+            snapshot_x86: true,
         },
     );
 }
@@ -151,6 +157,8 @@ fn test_e2e_expect_error(base_name: &str) {
 struct TestOptions {
     args: Vec<&'static str>,
     expect_error: bool,
+    snapshot_vil: bool,
+    snapshot_x86: bool,
 }
 
 fn test_e2e_with_options(base_name: &str, options: TestOptions) {
@@ -201,10 +209,15 @@ fn test_e2e_with_options(base_name: &str, options: TestOptions) {
     }
 
     // Check the intermediate files.
-    let vil_output = read_file(&vil_path);
-    insta::assert_display_snapshot!(format!("{}-vil", base_name), vil_output);
-    let x86_output = read_file(&x86_path);
-    insta::assert_display_snapshot!(format!("{}-x86", base_name), x86_output);
+    if options.snapshot_vil {
+        let vil_output = read_file(&vil_path);
+        insta::assert_display_snapshot!(format!("{}-vil", base_name), vil_output);
+    }
+
+    if options.snapshot_x86 {
+        let x86_output = read_file(&x86_path);
+        insta::assert_display_snapshot!(format!("{}-x86", base_name), x86_output);
+    }
 }
 
 struct CleanupFile(Vec<String>);
