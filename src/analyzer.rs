@@ -317,20 +317,38 @@ impl Analyzer {
         let body = self.analyze_block(&stmt.if_clause.body);
         let else_body = self.analyze_block(&stmt.else_body);
 
-        if !stmt.elif_clauses.is_empty() {
-            // TODO(#156)
-            self.error(
-                "not implemented",
-                stmt.elif_clauses[0].condition.location.clone(),
-            );
-            ast::Statement::Error
-        } else {
-            ast::Statement::If(ast::IfStatement {
-                condition,
-                body,
-                else_body,
-            })
+        // We need to turn a flat structure of else-if clauses into a nested set of if-else
+        // statements. With Rust's borrow checker, this is easiest to do last-to-first, i.e.
+        // creating the innermost if-else, then the one that wraps it, and so on until the last one
+        // we've constructed is the one we return.
+        let mut clauses = Vec::new();
+        for clause in stmt.elif_clauses.iter().rev() {
+            let elif_condition = self.analyze_expression(&clause.condition);
+            if !elif_condition.type_.matches(&ast::Type::Boolean) {
+                self.error_type_mismatch(
+                    &ast::Type::Boolean,
+                    &elif_condition.type_,
+                    clause.condition.location.clone(),
+                );
+            }
+            let elif_body = self.analyze_block(&clause.body);
+            clauses.push((elif_condition, elif_body));
         }
+        clauses.push((condition, body));
+
+        let mut current_else = else_body;
+        for clause in clauses.into_iter() {
+            current_else = vec![ast::Statement::If(ast::IfStatement {
+                condition: clause.0,
+                body: clause.1,
+                else_body: current_else,
+            })];
+        }
+
+        // `current_else` should always have a length of one since it should only contain a single
+        // if-else statement.
+        assert!(current_else.len() == 1);
+        current_else.pop().unwrap()
     }
 
     fn analyze_while_statement(&mut self, stmt: &ptree::WhileStatement) -> ast::Statement {

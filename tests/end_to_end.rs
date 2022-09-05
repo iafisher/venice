@@ -118,6 +118,13 @@ fn test_19_concat() {
     test_e2e("19_concat");
 }
 
+#[test]
+fn test_20_else_if() {
+    test_e2e_simple("20_else_if");
+}
+
+/// Runs a full end-to-end test, checking the VIL and x86 code and the output of the program
+/// against stored snapshots.
 fn test_e2e(base_name: &str) {
     test_e2e_with_options(
         base_name,
@@ -130,6 +137,20 @@ fn test_e2e(base_name: &str) {
     );
 }
 
+/// Runs an end-to-end test only checking the output of the program, not the VIL and x86 snapshots.
+fn test_e2e_simple(base_name: &str) {
+    test_e2e_with_options(
+        base_name,
+        TestOptions {
+            args: Vec::new(),
+            expect_error: false,
+            snapshot_vil: false,
+            snapshot_x86: false,
+        },
+    );
+}
+
+/// Like `test_e2e`, except that the arguments are passed to the program.
 fn test_e2e_with_args(base_name: &str, args: Vec<&'static str>) {
     test_e2e_with_options(
         base_name,
@@ -142,6 +163,7 @@ fn test_e2e_with_args(base_name: &str, args: Vec<&'static str>) {
     );
 }
 
+/// Like `test_e2e`, except that the program is expected to return an error code.
 fn test_e2e_expect_runtime_error(base_name: &str) {
     test_e2e_with_options(
         base_name,
