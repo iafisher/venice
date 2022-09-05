@@ -1,0 +1,4 @@
+func main() -> i64 {
+  printint("not an int");
+  return 0;
+}

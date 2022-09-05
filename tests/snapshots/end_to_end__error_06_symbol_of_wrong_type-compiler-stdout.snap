@@ -1,0 +1,6 @@
+---
+source: tests/end_to_end.rs
+expression: stdout
+---
+error: expected i64, got string (line 3, column 12 of tests/error_06_symbol_of_wrong_type.vn)
+

@@ -37,17 +37,16 @@ pub fn analyze(ptree: &ptree::Program) -> Result<ast::Program, Vec<errors::Venic
     let mut analyzer = Analyzer::new();
     let mut program = analyzer.analyze_program(ptree);
 
+    if !analyzer.errors.is_empty() {
+        return Err(analyzer.errors.clone());
+    }
+
     // Register allocation here means determining the number of registers needed to compute each
     // expression in the program. It should not be confused with the process of turning an
     // unlimited number of VIL registers into a bounded number of machine registers, which is
     // implemented in the code generation phase.
     allocate_registers_in_program(&mut program);
-
-    if !analyzer.errors.is_empty() {
-        Err(analyzer.errors.clone())
-    } else {
-        Ok(program)
-    }
+    Ok(program)
 }
 
 struct Analyzer {
@@ -305,7 +304,7 @@ impl Analyzer {
                 }),
             }
         } else {
-            let msg = format!("assignment to unknown symbol {}", stmt.symbol);
+            let msg = format!("assignment to unknown symbol '{}'", stmt.symbol);
             self.error(&msg, stmt.location.clone());
             ast::STATEMENT_ERROR
         }
@@ -681,7 +680,7 @@ impl Analyzer {
                 for (parameter, argument) in parameters.iter().zip(expr.arguments.iter()) {
                     let mut typed_argument = self.analyze_expression(argument);
                     typed_argument.stack_offset = self.claim_stack_offset(&typed_argument.type_);
-                    self.assert_type(parameter, &typed_argument.type_, argument.location.clone());
+                    self.assert_type(&typed_argument.type_, parameter, argument.location.clone());
                     arguments.push(typed_argument);
                 }
 

@@ -13,7 +13,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::str;
 
 extern crate insta;
@@ -123,8 +123,86 @@ fn test_20_else_if() {
     test_e2e("20_else_if", TestOptions::simple());
 }
 
+#[test]
+fn test_error_00_bad_addition() {
+    test_e2e("error_00_bad_addition", TestOptions::compile_error());
+}
+
+#[test]
+fn test_error_01_bad_printint() {
+    test_e2e("error_01_bad_printint", TestOptions::compile_error());
+}
+
+#[test]
+fn test_error_02_too_many_arguments() {
+    test_e2e("error_02_too_many_arguments", TestOptions::compile_error());
+}
+
+#[test]
+fn test_error_03_too_few_arguments() {
+    test_e2e("error_03_too_few_arguments", TestOptions::compile_error());
+}
+
+#[test]
+fn test_error_04_bad_parameter() {
+    test_e2e("error_04_bad_parameter", TestOptions::compile_error());
+}
+
+#[test]
+fn test_error_05_undefined_symbol() {
+    test_e2e("error_05_undefined_symbol", TestOptions::compile_error());
+}
+
+#[test]
+fn test_error_06_symbol_of_wrong_type() {
+    test_e2e(
+        "error_06_symbol_of_wrong_type",
+        TestOptions::compile_error(),
+    );
+}
+
+#[test]
+fn test_error_07_assign_to_unknown_symbol() {
+    test_e2e(
+        "error_07_assign_to_unknown_symbol",
+        TestOptions::compile_error(),
+    );
+}
+
+#[test]
+fn test_error_08_assign_of_wrong_type() {
+    test_e2e(
+        "error_08_assign_of_wrong_type",
+        TestOptions::compile_error(),
+    );
+}
+
+#[test]
+fn test_error_09_bad_if_conditions() {
+    test_e2e("error_09_bad_if_conditions", TestOptions::compile_error());
+}
+
+#[test]
+fn test_error_10_bad_while_condition() {
+    test_e2e("error_10_bad_while_condition", TestOptions::compile_error());
+}
+
+#[test]
+fn test_error_11_calling_not_a_function() {
+    test_e2e(
+        "error_11_calling_not_a_function",
+        TestOptions::compile_error(),
+    );
+}
+
+#[test]
+fn test_error_12_bad_list_indices() {
+    test_e2e("error_12_bad_list_indices", TestOptions::compile_error());
+}
+
 struct TestOptions {
     args: Vec<&'static str>,
+    expect_compile_error: bool,
     expect_error: bool,
     snapshot_vil: bool,
     snapshot_x86: bool,
@@ -136,6 +214,7 @@ impl TestOptions {
     fn full() -> Self {
         TestOptions {
             args: Vec::new(),
+            expect_compile_error: false,
             expect_error: false,
             snapshot_vil: true,
             snapshot_x86: true,
@@ -147,6 +226,7 @@ impl TestOptions {
     fn simple() -> Self {
         TestOptions {
             args: Vec::new(),
+            expect_compile_error: false,
             expect_error: false,
             snapshot_vil: false,
             snapshot_x86: false,
@@ -157,6 +237,7 @@ impl TestOptions {
     fn full_with_args(args: Vec<&'static str>) -> Self {
         TestOptions {
             args,
+            expect_compile_error: false,
             expect_error: false,
             snapshot_vil: true,
             snapshot_x86: true,
@@ -167,9 +248,22 @@ impl TestOptions {
     fn runtime_error() -> Self {
         TestOptions {
             args: Vec::new(),
+            expect_compile_error: false,
             expect_error: true,
             snapshot_vil: true,
             snapshot_x86: true,
+        }
+    }
+
+    /// An end-to-end test that expects the Venice program to fail to compile and checks the error
+    /// message against a stored snapshot.
+    fn compile_error() -> Self {
+        TestOptions {
+            args: Vec::new(),
+            expect_compile_error: true,
+            expect_error: false,
+            snapshot_vil: false,
+            snapshot_x86: false,
         }
     }
 }
@@ -190,16 +284,21 @@ fn test_e2e(base_name: &str, options: TestOptions) {
     ]);
 
     // Run the compiler.
-    let status = Command::new("target/debug/venice")
+    let compiler_output = Command::new("target/debug/venice")
         .arg(&input_path)
         .arg("--debug")
         .arg("--keep-intermediate")
-        .stdout(Stdio::null())
-        .spawn()
-        .unwrap()
-        .wait()
+        .output()
         .unwrap();
-    assert!(status.success());
+
+    if options.expect_compile_error {
+        assert!(!compiler_output.status.success());
+        let stdout = str::from_utf8(&compiler_output.stdout).unwrap();
+        insta::assert_display_snapshot!(format!("{}-compiler-stdout", base_name), stdout);
+        return;
+    } else {
+        assert!(compiler_output.status.success());
+    }
 
     // Run the binary itself, under the `timeout` utility so it doesn't run forever.
     let output = Command::new("timeout")

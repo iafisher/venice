@@ -1,0 +1,4 @@
+func main() -> i64 {
+  unknown_symbol = 42;
+  return 0;
+}

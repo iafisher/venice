@@ -1,0 +1,8 @@
+func add(x: i64, y: i64) -> i64 {
+  return x + y;
+}
+
+func main() -> i64 {
+  printint(add(1, "2"));
+  return 0;
+}

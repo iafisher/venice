@@ -1,0 +1,5 @@
+func main() -> i64 {
+  let i_am_not_a_function: i64 = 0;
+  i_am_not_a_function();
+  return 0;
+}

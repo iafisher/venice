@@ -1,0 +1,7 @@
+---
+source: tests/end_to_end.rs
+expression: stdout
+---
+error: expected bool, got i64 (line 3, column 6 of tests/error_09_bad_if_conditions.vn)
+error: expected bool, got string (line 4, column 13 of tests/error_09_bad_if_conditions.vn)
+

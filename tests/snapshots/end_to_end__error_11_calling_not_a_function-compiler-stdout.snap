@@ -1,0 +1,6 @@
+---
+source: tests/end_to_end.rs
+expression: stdout
+---
+error: cannot call non-function type i64 (line 3, column 22 of tests/error_11_calling_not_a_function.vn)
+

@@ -1,0 +1,5 @@
+func main() -> i64 {
+  let i_am_an_int: i64 = 42;
+  i_am_an_int = "not an int";
+  return 0;
+}

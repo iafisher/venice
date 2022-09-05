@@ -1,0 +1,4 @@
+func main() -> i64 {
+  printint(undefined_symbol);
+  return 0;
+}

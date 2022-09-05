@@ -1,0 +1,8 @@
+func main() -> i64 {
+  let not_a_bool: i64 = 1;
+  if not_a_bool {
+  } else if "not a bool" {
+  } else {
+  }
+  return 0;
+}

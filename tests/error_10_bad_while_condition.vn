@@ -1,0 +1,5 @@
+func main() -> i64 {
+  while "not a bool" {
+  }
+  return 0;
+}

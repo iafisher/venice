@@ -1,0 +1,6 @@
+func main() -> i64 {
+  let l: list<i64> = [1, 2, 3];
+  l["not an int"];
+  10[0];
+  return 0;
+}

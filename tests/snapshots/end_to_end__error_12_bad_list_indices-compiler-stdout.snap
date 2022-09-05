@@ -1,0 +1,7 @@
+---
+source: tests/end_to_end.rs
+expression: stdout
+---
+error: expected i64, got string (line 3, column 5 of tests/error_12_bad_list_indices.vn)
+error: cannot index non-list, non-map type i64 (line 4, column 3 of tests/error_12_bad_list_indices.vn)
+
