@@ -39,7 +39,9 @@ pub fn generate(ast: &ast::Program) -> Result<vil::Program, errors::VeniceError>
     Ok(generator.program)
 }
 
-const X86_REGISTER_COUNT: u8 = 14;
+// x86-64 has 16 registers, but 4 are reserved for special purposes: RSP and RBP as the stack and
+// base pointers, respectively, and R9 and RAX as scratch registers.
+const X86_REGISTER_COUNT: u8 = 12;
 
 struct Generator {
     // The program which is incrementally built up.
@@ -687,7 +689,7 @@ impl RegisterSpiller {
             };
             destination.push(vil::Instruction {
                 kind: vil::InstructionKind::Load(scratch.clone(), *offset),
-                comment: String::from("spilled"),
+                comment: format!("spilled {}", r),
             });
             scratch
         } else {
@@ -711,7 +713,7 @@ impl RegisterSpiller {
 
         destination.push(vil::Instruction {
             kind: vil::InstructionKind::Store(scratch, offset),
-            comment: String::from("spilled"),
+            comment: format!("spilled {}", r),
         });
     }
 

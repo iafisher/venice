@@ -124,6 +124,11 @@ fn test_20_else_if() {
 }
 
 #[test]
+fn test_21_register_overflow_extreme() {
+    test_e2e("21_register_overflow_extreme", TestOptions::simple());
+}
+
+#[test]
 fn test_error_00_bad_addition() {
     test_e2e("error_00_bad_addition", TestOptions::compile_error());
 }
@@ -324,12 +329,6 @@ fn test_e2e(base_name: &str, options: TestOptions) {
     let stderr = str::from_utf8(&output.stderr).unwrap();
     insta::assert_display_snapshot!(format!("{}-stderr", base_name), stderr);
 
-    if options.expect_error {
-        assert!(!output.status.success());
-    } else {
-        assert!(output.status.success());
-    }
-
     // Check the intermediate files.
     if options.snapshot_vil {
         let vil_output = read_file(&vil_path);
@@ -339,6 +338,12 @@ fn test_e2e(base_name: &str, options: TestOptions) {
     if options.snapshot_x86 {
         let x86_output = read_file(&x86_path);
         insta::assert_display_snapshot!(format!("{}-x86", base_name), x86_output);
+    }
+
+    if options.expect_error {
+        assert!(!output.status.success());
+    } else {
+        assert!(output.status.success());
     }
 }
 
