@@ -81,6 +81,19 @@ pub struct Statement {
     pub return_type: Type,
 }
 
+impl Statement {
+    pub fn new(kind: StatementKind) -> Self {
+        Statement {
+            kind,
+            return_type: Type::Void,
+        }
+    }
+
+    pub fn with_return_type(kind: StatementKind, return_type: Type) -> Self {
+        Statement { kind, return_type }
+    }
+}
+
 #[derive(Debug)]
 pub enum StatementKind {
     Assert(AssertStatement),

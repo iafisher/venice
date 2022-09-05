@@ -276,10 +276,9 @@ impl Analyzer {
             For(s) => self.analyze_for_statement(s),
             Return(s) => self.analyze_return_statement(s),
             Assert(s) => self.analyze_assert_statement(s),
-            Expression(expr) => ast::Statement {
-                kind: ast::StatementKind::Expression(self.analyze_expression(expr)),
-                return_type: ast::Type::Void,
-            },
+            Expression(expr) => ast::Statement::new(ast::StatementKind::Expression(
+                self.analyze_expression(expr),
+            )),
         }
     }
 
@@ -300,14 +299,11 @@ impl Analyzer {
         };
 
         self.symbols.insert(&stmt.symbol, entry.clone());
-        ast::Statement {
-            kind: ast::StatementKind::Let(ast::LetStatement {
-                symbol: entry,
-                type_: declared_type,
-                value,
-            }),
-            return_type: ast::Type::Void,
-        }
+        ast::Statement::new(ast::StatementKind::Let(ast::LetStatement {
+            symbol: entry,
+            type_: declared_type,
+            value,
+        }))
     }
 
     fn analyze_assign_statement(&mut self, stmt: &ptree::AssignStatement) -> ast::Statement {
@@ -316,13 +312,10 @@ impl Analyzer {
             if !entry.type_.matches(&value.type_) {
                 self.error_type_mismatch(&entry.type_, &value.type_, stmt.location.clone());
             }
-            ast::Statement {
-                kind: ast::StatementKind::Assign(ast::AssignStatement {
-                    symbol: entry.clone(),
-                    value,
-                }),
-                return_type: ast::Type::Void,
-            }
+            ast::Statement::new(ast::StatementKind::Assign(ast::AssignStatement {
+                symbol: entry.clone(),
+                value,
+            }))
         } else {
             let msg = format!("assignment to unknown symbol '{}'", stmt.symbol);
             self.error(&msg, stmt.location.clone());
@@ -369,14 +362,14 @@ impl Analyzer {
                 ast::Type::Void
             };
             current_else = ast::Block {
-                statements: vec![ast::Statement {
-                    kind: ast::StatementKind::If(ast::IfStatement {
+                statements: vec![ast::Statement::with_return_type(
+                    ast::StatementKind::If(ast::IfStatement {
                         condition: clause.0,
                         body: clause.1,
                         else_body: current_else,
                     }),
-                    return_type: return_type.clone(),
-                }],
+                    return_type.clone(),
+                )],
                 return_type,
             };
         }
@@ -397,10 +390,10 @@ impl Analyzer {
             );
         }
         let body = self.analyze_block(&stmt.body);
-        ast::Statement {
-            kind: ast::StatementKind::While(ast::WhileStatement { condition, body }),
-            return_type: ast::Type::Void,
-        }
+        ast::Statement::new(ast::StatementKind::While(ast::WhileStatement {
+            condition,
+            body,
+        }))
     }
 
     fn analyze_for_statement(&mut self, stmt: &ptree::ForStatement) -> ast::Statement {
@@ -426,10 +419,10 @@ impl Analyzer {
         }
 
         let return_type = value.type_.clone();
-        ast::Statement {
-            kind: ast::StatementKind::Return(ast::ReturnStatement { value }),
+        ast::Statement::with_return_type(
+            ast::StatementKind::Return(ast::ReturnStatement { value }),
             return_type,
-        }
+        )
     }
 
     fn analyze_assert_statement(&mut self, stmt: &ptree::AssertStatement) -> ast::Statement {
@@ -441,10 +434,9 @@ impl Analyzer {
                 stmt.condition.location.clone(),
             );
         }
-        ast::Statement {
-            kind: ast::StatementKind::Assert(ast::AssertStatement { condition }),
-            return_type: ast::Type::Void,
-        }
+        ast::Statement::new(ast::StatementKind::Assert(ast::AssertStatement {
+            condition,
+        }))
     }
 
     fn analyze_expression(&mut self, expr: &ptree::Expression) -> ast::Expression {
