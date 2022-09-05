@@ -20,160 +20,107 @@ extern crate insta;
 
 #[test]
 fn test_00_hello() {
-    test_e2e("00_hello");
+    test_e2e("00_hello", TestOptions::full());
 }
 
 #[test]
 fn test_01_simple_if() {
-    test_e2e("01_simple_if");
+    test_e2e("01_simple_if", TestOptions::full());
 }
 
 #[test]
 fn test_02_countdown() {
-    test_e2e("02_countdown");
+    test_e2e("02_countdown", TestOptions::full());
 }
 
 #[test]
 fn test_03_simple_function() {
-    test_e2e("03_simple_function");
+    test_e2e("03_simple_function", TestOptions::full());
 }
 
 #[test]
 fn test_04_simple_function_with_args() {
-    test_e2e("04_simple_function_with_args");
+    test_e2e("04_simple_function_with_args", TestOptions::full());
 }
 
 #[test]
 fn test_05_multiply_divide() {
-    test_e2e("05_multiply_divide");
+    test_e2e("05_multiply_divide", TestOptions::full());
 }
 
 #[test]
 fn test_06_panic() {
-    test_e2e_expect_runtime_error("06_panic");
+    test_e2e("06_panic", TestOptions::runtime_error());
 }
 
 #[test]
 fn test_07_bools() {
-    test_e2e("07_bools");
+    test_e2e("07_bools", TestOptions::full());
 }
 
 #[test]
 fn test_08_nested_function_calls() {
-    test_e2e("08_nested_function_calls");
+    test_e2e("08_nested_function_calls", TestOptions::full());
 }
 
 #[test]
 fn test_09_more_nested_function_calls() {
-    test_e2e("09_more_nested_function_calls");
+    test_e2e("09_more_nested_function_calls", TestOptions::full());
 }
 
 #[test]
 fn test_10_fibonacci() {
-    test_e2e("10_fibonacci");
+    test_e2e("10_fibonacci", TestOptions::full());
 }
 
 #[test]
 fn test_11_fibonacci_recursive() {
-    test_e2e("11_fibonacci_recursive");
+    test_e2e("11_fibonacci_recursive", TestOptions::full());
 }
 
 #[test]
 fn test_12_list_literal() {
-    test_e2e("12_list_literal");
+    test_e2e("12_list_literal", TestOptions::full());
 }
 
 #[test]
 fn test_13_argv() {
-    test_e2e_with_args("13_argv", vec!["a", "b", "c"]);
+    test_e2e("13_argv", TestOptions::full_with_args(vec!["a", "b", "c"]));
 }
 
 #[test]
 fn test_14_file_io() {
-    test_e2e("14_file_io");
+    test_e2e("14_file_io", TestOptions::full());
 }
 
 #[test]
 fn test_15_register_overflow() {
-    test_e2e("15_register_overflow");
+    test_e2e("15_register_overflow", TestOptions::full());
 }
 
 #[test]
 fn test_16_tricky_function_calls() {
-    test_e2e("16_tricky_function_calls");
+    test_e2e("16_tricky_function_calls", TestOptions::full());
 }
 
 #[test]
 fn test_17_register_overflow_2() {
-    test_e2e("17_register_overflow_2");
+    test_e2e("17_register_overflow_2", TestOptions::full());
 }
 
 #[test]
 fn test_18_register_overflow_3() {
-    test_e2e("18_register_overflow_3");
+    test_e2e("18_register_overflow_3", TestOptions::full());
 }
 
 #[test]
 fn test_19_concat() {
-    test_e2e("19_concat");
+    test_e2e("19_concat", TestOptions::full());
 }
 
 #[test]
 fn test_20_else_if() {
-    test_e2e_simple("20_else_if");
-}
-
-/// Runs a full end-to-end test, checking the VIL and x86 code and the output of the program
-/// against stored snapshots.
-fn test_e2e(base_name: &str) {
-    test_e2e_with_options(
-        base_name,
-        TestOptions {
-            args: Vec::new(),
-            expect_error: false,
-            snapshot_vil: true,
-            snapshot_x86: true,
-        },
-    );
-}
-
-/// Runs an end-to-end test only checking the output of the program, not the VIL and x86 snapshots.
-fn test_e2e_simple(base_name: &str) {
-    test_e2e_with_options(
-        base_name,
-        TestOptions {
-            args: Vec::new(),
-            expect_error: false,
-            snapshot_vil: false,
-            snapshot_x86: false,
-        },
-    );
-}
-
-/// Like `test_e2e`, except that the arguments are passed to the program.
-fn test_e2e_with_args(base_name: &str, args: Vec<&'static str>) {
-    test_e2e_with_options(
-        base_name,
-        TestOptions {
-            args,
-            expect_error: false,
-            snapshot_vil: true,
-            snapshot_x86: true,
-        },
-    );
-}
-
-/// Like `test_e2e`, except that the program is expected to return an error code.
-fn test_e2e_expect_runtime_error(base_name: &str) {
-    test_e2e_with_options(
-        base_name,
-        TestOptions {
-            args: Vec::new(),
-            expect_error: true,
-            snapshot_vil: true,
-            snapshot_x86: true,
-        },
-    );
+    test_e2e("20_else_if", TestOptions::simple());
 }
 
 struct TestOptions {
@@ -183,7 +130,51 @@ struct TestOptions {
     snapshot_x86: bool,
 }
 
-fn test_e2e_with_options(base_name: &str, options: TestOptions) {
+impl TestOptions {
+    /// A full end-to-end test that checks the VIL and x86 code and the output of the Venice program
+    /// against stored snapshots.
+    fn full() -> Self {
+        TestOptions {
+            args: Vec::new(),
+            expect_error: false,
+            snapshot_vil: true,
+            snapshot_x86: true,
+        }
+    }
+
+    /// Simple test that only checks the output of the Venice program, not the VIL and x86
+    /// snapshots.
+    fn simple() -> Self {
+        TestOptions {
+            args: Vec::new(),
+            expect_error: false,
+            snapshot_vil: false,
+            snapshot_x86: false,
+        }
+    }
+
+    /// Like `full`, except that arguments can be specified to pass to the Venice program.
+    fn full_with_args(args: Vec<&'static str>) -> Self {
+        TestOptions {
+            args,
+            expect_error: false,
+            snapshot_vil: true,
+            snapshot_x86: true,
+        }
+    }
+
+    /// Like `full`, except that the Venice program is expected to return an error code.
+    fn runtime_error() -> Self {
+        TestOptions {
+            args: Vec::new(),
+            expect_error: true,
+            snapshot_vil: true,
+            snapshot_x86: true,
+        }
+    }
+}
+
+fn test_e2e(base_name: &str, options: TestOptions) {
     let bin_path = build_path(base_name, "");
     let obj_path = build_path(base_name, "o");
     let vil_path = build_path(base_name, "vil");
