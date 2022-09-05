@@ -335,8 +335,8 @@ impl Generator {
     }
 
     fn generate_statement(&mut self, stmt: &ast::Statement) {
-        use ast::Statement::*;
-        match stmt {
+        use ast::StatementKind::*;
+        match &stmt.kind {
             Assign(stmt) => self.generate_assign_statement(stmt),
             Expression(expr) => {
                 let _ = self.generate_expression(expr);

@@ -70,7 +70,12 @@ pub struct RecordField {
 }
 
 #[derive(Debug)]
-pub enum Statement {
+pub struct Statement {
+    pub kind: StatementKind,
+}
+
+#[derive(Debug)]
+pub enum StatementKind {
     Assert(AssertStatement),
     Assign(AssignStatement),
     Expression(Expression),
@@ -81,6 +86,10 @@ pub enum Statement {
     While(WhileStatement),
     Error,
 }
+
+pub const STATEMENT_ERROR: Statement = Statement {
+    kind: StatementKind::Error,
+};
 
 #[derive(Debug)]
 pub struct LetStatement {
@@ -410,7 +419,13 @@ impl fmt::Display for RecordDeclaration {
 
 impl fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use Statement::*;
+        write!(f, "{}", self.kind)
+    }
+}
+
+impl fmt::Display for StatementKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use StatementKind::*;
         match self {
             Let(stmt) => write!(f, "{}", stmt),
             Assign(stmt) => write!(f, "{}", stmt),

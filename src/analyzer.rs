@@ -260,7 +260,9 @@ impl Analyzer {
             For(s) => self.analyze_for_statement(s),
             Return(s) => self.analyze_return_statement(s),
             Assert(s) => self.analyze_assert_statement(s),
-            Expression(expr) => ast::Statement::Expression(self.analyze_expression(expr)),
+            Expression(expr) => ast::Statement {
+                kind: ast::StatementKind::Expression(self.analyze_expression(expr)),
+            },
         }
     }
 
@@ -281,11 +283,13 @@ impl Analyzer {
         };
 
         self.symbols.insert(&stmt.symbol, entry.clone());
-        ast::Statement::Let(ast::LetStatement {
-            symbol: entry,
-            type_: declared_type,
-            value,
-        })
+        ast::Statement {
+            kind: ast::StatementKind::Let(ast::LetStatement {
+                symbol: entry,
+                type_: declared_type,
+                value,
+            }),
+        }
     }
 
     fn analyze_assign_statement(&mut self, stmt: &ptree::AssignStatement) -> ast::Statement {
@@ -294,14 +298,16 @@ impl Analyzer {
             if !entry.type_.matches(&value.type_) {
                 self.error_type_mismatch(&entry.type_, &value.type_, stmt.location.clone());
             }
-            ast::Statement::Assign(ast::AssignStatement {
-                symbol: entry.clone(),
-                value,
-            })
+            ast::Statement {
+                kind: ast::StatementKind::Assign(ast::AssignStatement {
+                    symbol: entry.clone(),
+                    value,
+                }),
+            }
         } else {
             let msg = format!("assignment to unknown symbol {}", stmt.symbol);
             self.error(&msg, stmt.location.clone());
-            ast::Statement::Error
+            ast::STATEMENT_ERROR
         }
     }
 
@@ -338,11 +344,13 @@ impl Analyzer {
 
         let mut current_else = else_body;
         for clause in clauses.into_iter() {
-            current_else = vec![ast::Statement::If(ast::IfStatement {
-                condition: clause.0,
-                body: clause.1,
-                else_body: current_else,
-            })];
+            current_else = vec![ast::Statement {
+                kind: ast::StatementKind::If(ast::IfStatement {
+                    condition: clause.0,
+                    body: clause.1,
+                    else_body: current_else,
+                }),
+            }];
         }
 
         // `current_else` should always have a length of one since it should only contain a single
@@ -361,7 +369,9 @@ impl Analyzer {
             );
         }
         let body = self.analyze_block(&stmt.body);
-        ast::Statement::While(ast::WhileStatement { condition, body })
+        ast::Statement {
+            kind: ast::StatementKind::While(ast::WhileStatement { condition, body }),
+        }
     }
 
     fn analyze_for_statement(&mut self, stmt: &ptree::ForStatement) -> ast::Statement {
@@ -385,7 +395,9 @@ impl Analyzer {
                 stmt.location.clone(),
             );
         }
-        ast::Statement::Return(ast::ReturnStatement { value })
+        ast::Statement {
+            kind: ast::StatementKind::Return(ast::ReturnStatement { value }),
+        }
     }
 
     fn analyze_assert_statement(&mut self, stmt: &ptree::AssertStatement) -> ast::Statement {
@@ -397,7 +409,9 @@ impl Analyzer {
                 stmt.condition.location.clone(),
             );
         }
-        ast::Statement::Assert(ast::AssertStatement { condition })
+        ast::Statement {
+            kind: ast::StatementKind::Assert(ast::AssertStatement { condition }),
+        }
     }
 
     fn analyze_expression(&mut self, expr: &ptree::Expression) -> ast::Expression {
@@ -984,35 +998,36 @@ fn allocate_registers_in_program(program: &mut ast::Program) {
 
 fn allocate_registers_in_block(block: &mut Vec<ast::Statement>) {
     for statement in block {
-        match statement {
-            ast::Statement::Assert(stmt) => {
+        use ast::StatementKind::*;
+        match &mut statement.kind {
+            Assert(stmt) => {
                 allocate_registers(&mut stmt.condition);
             }
-            ast::Statement::Assign(stmt) => {
+            Assign(stmt) => {
                 allocate_registers(&mut stmt.value);
             }
-            ast::Statement::Expression(expr) => {
+            Expression(expr) => {
                 allocate_registers(expr);
             }
-            ast::Statement::For(stmt) => {
+            For(stmt) => {
                 allocate_registers_in_block(&mut stmt.body);
             }
-            ast::Statement::If(stmt) => {
+            If(stmt) => {
                 allocate_registers(&mut stmt.condition);
                 allocate_registers_in_block(&mut stmt.body);
                 allocate_registers_in_block(&mut stmt.else_body);
             }
-            ast::Statement::Let(stmt) => {
+            Let(stmt) => {
                 allocate_registers(&mut stmt.value);
             }
-            ast::Statement::Return(stmt) => {
+            Return(stmt) => {
                 allocate_registers(&mut stmt.value);
             }
-            ast::Statement::While(stmt) => {
+            While(stmt) => {
                 allocate_registers(&mut stmt.condition);
                 allocate_registers_in_block(&mut stmt.body);
             }
-            ast::Statement::Error => {}
+            Error => {}
         }
     }
 }
